@@ -13,7 +13,7 @@ export default function robots() {
           "/private/",
         ],
       },
-      // Block known scrapers only (not search engines)
+      // Block known scrapers and content harvesters
       { userAgent: "HTTrack", disallow: "/" },
       { userAgent: "WebCopier", disallow: "/" },
       { userAgent: "SiteSnagger", disallow: "/" },
@@ -21,6 +21,11 @@ export default function robots() {
       { userAgent: "WebZIP", disallow: "/" },
       { userAgent: "WebStripper", disallow: "/" },
       { userAgent: "WebCapture", disallow: "/" },
+      { userAgent: "Scrapy", disallow: "/" },
+      { userAgent: "Bytespider", disallow: "/" },
+      { userAgent: "ClaudeBot", disallow: "/" },
+      { userAgent: "GPTBot", disallow: "/" },
+      { userAgent: "CCBot", disallow: "/" },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,
     host: baseUrl,

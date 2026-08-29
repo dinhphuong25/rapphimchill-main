@@ -2,6 +2,9 @@
   "name": "rapphimchill-unified",
   "version": "1.0.0",
   "private": true,
+  "license": "UNLICENSED",
+  "author": "Kim Đình Phương <kdphuonglqcc2311088@student.ctuet.edu.vn>",
+  "copyright": "Copyright (c) 2025-2026 Kim Đình Phương. All rights reserved.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

@@ -52,17 +52,27 @@ export default function SecurityGuard() {
       e.preventDefault();
     };
 
-    // 4. In cảnh báo Console để răn đe
+    // 4. In cảnh báo Console & Thông cáo bản quyền sở hữu trí tuệ
     const runConsoleWarning = () => {
-      console.clear();
-      console.log(
-        "%cDừng lại!",
-        "color: red; font-size: 50px; font-weight: bold; text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;"
-      );
-      console.log(
-        "%cĐây là tính năng dành cho nhà phát triển. Nếu ai đó bảo bạn sao chép đoạn mã vào đây để 'bật một tính năng' hoặc 'hack' truy cập, thì đó RẤT CÓ THỂ LÀ LỪA ĐẢO và sẽ khiến bạn bị mất tài khoản hoặc lộ thông tin.",
-        "font-size: 16px;"
-      );
+      try {
+        console.clear();
+        console.log(
+          "%c🎬 RẠP PHIM CHILL - THÔNG CÁO BẢN QUYỀN & SỞ HỮU TRÍ TUỆ",
+          "color: #22c55e; font-size: 20px; font-weight: 900; padding: 8px; background: #000; border: 2px solid #22c55e; border-radius: 6px;"
+        );
+        console.log(
+          "%c© 2025 - 2026 Bản quyền tác giả & Quyền sở hữu trí tuệ thuộc về: Kim Đình Phương.\nNghiêm cấm mọi hành vi sao chép, trích xuất, đảo ngược mã nguồn (reverse engineering) hoặc sử dụng trái phép khi chưa có sự đồng ý bằng văn bản của tác giả.",
+          "color: #94a3b8; font-size: 13px; font-weight: bold; line-height: 1.6;"
+        );
+        console.log(
+          "%cDừng lại!",
+          "color: red; font-size: 40px; font-weight: bold; text-shadow: 2px 2px 0 #000;"
+        );
+        console.log(
+          "%cĐây là tính năng dành cho nhà phát triển. Nếu ai đó bảo bạn sao chép đoạn mã vào đây để 'bật tính năng' hoặc 'hack', thì đó là lừa đảo có thể làm lộ thông tin của bạn.",
+          "font-size: 14px; color: #ef4444;"
+        );
+      } catch {}
     };
 
     runConsoleWarning();
