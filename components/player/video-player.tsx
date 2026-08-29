@@ -17,7 +17,6 @@ import {
   SkipBack,
   ChevronsRight,
   ChevronsLeft,
-  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -101,9 +100,7 @@ export default function VideoPlayer({
   const [shortcutFeedback, setShortcutFeedback] = useState<{ icon: string, text?: string, id: number } | null>(null);
   const lastToggleTimeRef = useRef(0);
 
-  const [topMaskMode, setTopMaskMode] = useState<'off' | 'on' | 'auto'>('auto');
-
-  // Load saved volume and top mask preferences on mount
+  // Load saved volume preferences on mount
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const savedVol = localStorage.getItem('cinema_volume');
@@ -115,38 +112,11 @@ export default function VideoPlayer({
     setVolume(savedMuted ? 0 : initialVol);
     setIsMuted(savedMuted);
 
-    const savedMask = localStorage.getItem('cinema_top_mask');
-    if (savedMask === 'on' || savedMask === 'off' || savedMask === 'auto') {
-      setTopMaskMode(savedMask as any);
-    } else {
-      setTopMaskMode('auto');
-    }
-
     if (videoRef.current) {
       videoRef.current.volume = initialVol;
       videoRef.current.muted = savedMuted;
     }
   }, []);
-
-  const toggleTopMask = useCallback(() => {
-    setTopMaskMode((prev) => {
-      let next: 'off' | 'on' | 'auto';
-      if (prev === 'auto') {
-        next = 'on';
-      } else if (prev === 'on') {
-        next = 'off';
-      } else {
-        next = 'auto';
-      }
-      localStorage.setItem('cinema_top_mask', next);
-      return next;
-    });
-  }, []);
-
-  // Check if top mask should be visibly active
-  const isMaskVisible =
-    topMaskMode === 'on' ||
-    (topMaskMode === 'auto' && currentTime > 0 && currentTime < 40);
 
   // Helper to immediately restore audio if browser autoplay forced muted mode
   const attemptUnmute = useCallback(() => {
@@ -667,14 +637,6 @@ export default function VideoPlayer({
     >
       <video ref={videoRef} className="w-full h-full object-contain" poster={poster} playsInline />
       
-      {/* Smart Top Mask - Auto conceals hard-burned gambling watermark during ad period */}
-      <div
-        className={cn(
-          "absolute top-0 left-0 right-0 h-10 sm:h-12 md:h-14 bg-gradient-to-b from-black/95 via-black/85 to-transparent z-25 pointer-events-none transition-all duration-700 backdrop-blur-[5px]",
-          isMaskVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
-        )}
-      />
-      
       {/* Floating Unmute Button if browser forced autoplay muted */}
       {autoplayMutedRef.current && isMuted && (
         <div className="absolute top-4 left-4 z-50 animate-bounce">
@@ -793,40 +755,6 @@ export default function VideoPlayer({
             <div className="text-white text-xs tabular-nums font-bold">{formatTime(currentTime)} / {formatTime(duration)}</div>
           </div>
           <div className="flex items-center gap-2">
-            {/* Toggle Top Mask / Anti-Ad Shield */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleTopMask}
-              className={cn(
-                "text-white hover:bg-white/10 transition-colors cursor-pointer relative",
-                topMaskMode === 'on' ? "text-brand-green bg-brand-green/10" : topMaskMode === 'auto' ? "text-white/80" : "text-white/35"
-              )}
-              title={
-                topMaskMode === 'on'
-                  ? "Che quảng cáo: Đang BẬT toàn thời gian (Nhấp để đổi)"
-                  : topMaskMode === 'auto'
-                  ? "Che quảng cáo: Đang ở chế độ TỰ ĐỘNG (tự che khi có quảng cáo 0-40s)"
-                  : "Che quảng cáo: Đang TẮT (Nhấp để bật)"
-              }
-            >
-              <ShieldCheck
-                className={cn(
-                  "w-5 h-5",
-                  topMaskMode === 'on'
-                    ? "text-brand-green fill-brand-green/20"
-                    : topMaskMode === 'auto'
-                    ? "text-brand-green/80"
-                    : "text-white/40"
-                )}
-              />
-              {topMaskMode === 'auto' && (
-                <span className="absolute top-1.5 right-1.5 flex h-1.5 w-1.5">
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-brand-green"></span>
-                </span>
-              )}
-            </Button>
-
             <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="text-white hover:bg-white/10 cursor-pointer">{isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}</Button>
           </div>
         </div>
