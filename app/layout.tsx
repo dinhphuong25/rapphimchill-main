@@ -98,6 +98,9 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://rapphimchill.app" },
   verification: {
     google: "oOs1HYmXd-muliYGGR8v91joJyTEVTbr-mRtnIpXrPY",
+    other: {
+      "dmca-site-verification": "MkFjU1d2RTgwK1BXdndRaHRUMUpOd1BxdEFPRmg3RUhzRHIxWjFYM1BlMD01",
+    },
   },
   icons: {
     icon: [
@@ -116,6 +119,9 @@ export default function RootLayout({
   return (
     <html lang="vi" suppressHydrationWarning className="dark">
       <head>
+        {/* DMCA Site Verification */}
+        <meta name="dmca-site-verification" content="MkFjU1d2RTgwK1BXdndRaHRUMUpOd1BxdEFPRmg3RUhzRHIxWjFYM1BlMD01" />
+
         {/* Favicon */}
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/favicon.svg" />
