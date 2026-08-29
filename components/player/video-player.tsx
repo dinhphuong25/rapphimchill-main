@@ -23,13 +23,6 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 
 interface VideoPlayerProps {
   videoUrl: string;
@@ -787,23 +780,6 @@ export default function VideoPlayer({
             <div className="text-white text-xs tabular-nums font-bold">{formatTime(currentTime)} / {formatTime(duration)}</div>
           </div>
           <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild><Button variant="ghost" className="text-white text-xs font-bold hover:bg-white/20 px-2 cursor-pointer">{playbackRate}x</Button></DropdownMenuTrigger>
-              <DropdownMenuContent side="top" className="bg-black/90 border-white/10 text-white min-w-[100px] z-[100]">
-                {[0.5, 0.75, 1, 1.25, 1.5, 2].map(r => <DropdownMenuItem key={r} onClick={() => handlePlaybackRateChange(r)} className="cursor-pointer hover:bg-white/10">{r === 1 ? 'Chuẩn (1x)' : `${r}x`}</DropdownMenuItem>)}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {qualities.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild><Button variant="ghost" className="text-white text-xs font-bold hover:bg-white/20 px-2 cursor-pointer">{quality === -1 ? 'Auto' : `${qualities.find(q => q.level === quality)?.height || '?'}p`}</Button></DropdownMenuTrigger>
-                <DropdownMenuContent side="top" className="bg-black/90 border-white/10 text-white min-w-[120px] z-[100]">
-                  <DropdownMenuItem onClick={() => handleQualityChange(-1)} className="cursor-pointer hover:bg-white/10">Tự động (Auto)</DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-white/10" />
-                  {qualities.map((q) => <DropdownMenuItem key={q.level} onClick={() => handleQualityChange(q.level)} className="cursor-pointer hover:bg-white/10">{q.height}p {q.height >= 1080 ? '🔥' : q.height >= 720 ? '✨' : ''}</DropdownMenuItem>)}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-
             {/* Toggle Top Mask / Anti-Ad Shield */}
             <Button
               variant="ghost"
