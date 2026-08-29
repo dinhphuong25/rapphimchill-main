@@ -14,6 +14,7 @@ import {
   Flame,
   Clock,
   Heart,
+  Cat,
   ChevronRight,
   ChevronLeft,
   Globe,
@@ -34,7 +35,7 @@ const NAV_MAIN = [
   { href: "/?typeList=phim-chieu-rap", label: "Chiếu Rạp", icon: Clapperboard, typeList: "phim-chieu-rap" },
   { href: "/?typeList=phim-bo", label: "Phim Bộ", icon: Tv, typeList: "phim-bo" },
   { href: "/?typeList=phim-le", label: "Phim Lẻ", icon: Film, typeList: "phim-le" },
-  { href: "/?typeList=hoat-hinh", label: "Hoạt Hình", icon: Sparkles, typeList: "hoat-hinh" },
+  { href: "/?typeList=hoat-hinh", label: "Hoạt Hình", icon: Cat, typeList: "hoat-hinh" },
   { href: "/new-updates", label: "Mới Cập Nhật", icon: Flame },
 ];
 
