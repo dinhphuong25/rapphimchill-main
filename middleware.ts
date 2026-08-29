@@ -36,9 +36,8 @@ const BLOCKED_PATHS = [
     '/xmlrpc.php',
 ];
 
-// Cache-friendly paths (static assets that can be cached aggressively)
+// Cache-friendly paths (static fonts and assets)
 const CACHE_ASSET_PATHS = [
-    /^\/_next\/static\//,
     /\.woff2?$/,
     /\.ttf$/,
     /\.eot$/,

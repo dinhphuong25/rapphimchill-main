@@ -3,7 +3,7 @@
  * Utilities to help optimize React component rendering
  */
 
-import { memo, useMemo, useCallback, PropsWithChildren, Ref } from 'react';
+import React, { memo, useMemo, useCallback, PropsWithChildren, Ref } from 'react';
 
 /**
  * Create a memoized component with custom comparison
@@ -137,8 +137,6 @@ export function useSelector<T, R>(
 /**
  * Context consumer with selector - prevents unnecessary re-renders
  */
-import React from 'react';
-
 export function useContextSelector<ContextValue, Selected>(
   context: React.Context<ContextValue>,
   selector: (value: ContextValue) => Selected,

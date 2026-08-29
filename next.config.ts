@@ -30,7 +30,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "img.phimapi.com", pathname: "/**" },
     ],
     formats: ["image/avif", "image/webp"],
-    qualities: [50, 75, 85],
+    qualities: [50, 70, 75, 85],
     minimumCacheTTL: 31536000,
     dangerouslyAllowSVG: false,
     contentDispositionType: "attachment",
@@ -108,10 +108,6 @@ const nextConfig: NextConfig = {
 
   async headers() {
     return [
-      {
-        source: "/_next/static/:path*",
-        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
-      },
       {
         source: "/images/:path*",
         headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }],
