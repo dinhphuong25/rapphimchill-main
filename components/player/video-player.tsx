@@ -79,7 +79,6 @@ export default function VideoPlayer({
   const didSeekInitialTimeRef = useRef<boolean>(false);
   const autoplayMutedRef = useRef<boolean>(false);
   const lastNonZeroVolumeRef = useRef<number>(1);
-  const lastAutoSkipTimeRef = useRef<number>(0);
 
   // 2. STATES
   const [isPlaying, setIsPlaying] = useState(false);
@@ -98,8 +97,43 @@ export default function VideoPlayer({
   const retryCountRef = useRef(0);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [skipAnimation, setSkipAnimation] = useState<{ side: 'left' | 'right', id: number } | null>(null);
-  const [shortcutFeedback, setShortcutFeedback] = useState<{ icon: string, text?: string, id: number } | null>(null);
-  const lastToggleTimeRef = useRef(0);
+  const [shortcutFeedback, setShortcutFeedback] = useState<{
+    icon: 'play' | 'pause' | 'volume' | 'mute' | 'seek';
+    text?: string;
+    id: number;
+  } | null>(null);
+
+  // Auto Unmute Helper
+  const attemptUnmute = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (video.muted || autoplayMutedRef.current) {
+      video.muted = false;
+      const targetVolume = lastNonZeroVolumeRef.current > 0 ? lastNonZeroVolumeRef.current : 1;
+      video.volume = targetVolume;
+      setVolume(targetVolume);
+      setIsMuted(false);
+      autoplayMutedRef.current = false;
+    }
+  }, []);
+
+  // Global first user interaction listener to unmute cleanly
+  useEffect(() => {
+    const onUserInteraction = () => {
+      attemptUnmute();
+    };
+
+    window.addEventListener('click', onUserInteraction, { capture: true, once: true });
+    window.addEventListener('pointerdown', onUserInteraction, { capture: true, once: true });
+    window.addEventListener('keydown', onUserInteraction, { capture: true, once: true });
+
+    return () => {
+      window.removeEventListener('click', onUserInteraction, { capture: true });
+      window.removeEventListener('pointerdown', onUserInteraction, { capture: true });
+      window.removeEventListener('keydown', onUserInteraction, { capture: true });
+    };
+  }, [attemptUnmute]);
 
   // Load saved volume preferences on mount
   useEffect(() => {
@@ -117,126 +151,6 @@ export default function VideoPlayer({
       videoRef.current.volume = initialVol;
       videoRef.current.muted = savedMuted;
     }
-  }, []);
-
-  // Helper to immediately restore audio if browser autoplay forced muted mode
-  const attemptUnmute = useCallback(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (autoplayMutedRef.current) {
-      const isUserMuted = typeof window !== 'undefined' && localStorage.getItem('cinema_muted') === 'true';
-      if (!isUserMuted) {
-        const savedVol = typeof window !== 'undefined' ? Number(localStorage.getItem('cinema_volume') || 1) : 1;
-        const targetVol = savedVol > 0 ? savedVol : 1;
-        video.muted = false;
-        video.volume = targetVol;
-        setIsMuted(false);
-        setVolume(targetVol);
-      }
-      autoplayMutedRef.current = false;
-    }
-  }, []);
-
-  // Listen for user interaction on the page to unmute
-  useEffect(() => {
-    const onUserInteraction = () => {
-      attemptUnmute();
-    };
-
-    window.addEventListener('pointerdown', onUserInteraction, { capture: true, passive: true });
-    window.addEventListener('keydown', onUserInteraction, { capture: true, passive: true });
-
-    return () => {
-      window.removeEventListener('pointerdown', onUserInteraction, { capture: true });
-      window.removeEventListener('keydown', onUserInteraction, { capture: true });
-    };
-  }, [attemptUnmute]);
-
-  // Automatic Gambling / Sponsor Text Banner Detector
-  const [hasAdBanner, setHasAdBanner] = useState(false);
-  const scannerCanvasRef = useRef<HTMLCanvasElement | null>(null);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    if (!scannerCanvasRef.current) {
-      scannerCanvasRef.current = document.createElement('canvas');
-      scannerCanvasRef.current.width = 120;
-      scannerCanvasRef.current.height = 24;
-    }
-
-    const canvas = scannerCanvasRef.current;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    if (!ctx) return;
-
-    let detectedStreak = 0;
-    let absentStreak = 0;
-
-    const scanInterval = setInterval(() => {
-      const video = videoRef.current;
-      if (!video || video.paused || video.readyState < 2) return;
-
-      try {
-        const vw = video.videoWidth || 1280;
-        const vh = video.videoHeight || 720;
-
-        // Sample the top region: x 10%-90%, y 1%-11%
-        const sx = vw * 0.10;
-        const sy = vh * 0.01;
-        const sw = vw * 0.80;
-        const sh = vh * 0.11;
-
-        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imgData.data;
-
-        // Count bright text pixels (white & gold/yellow sponsor texts)
-        let textPixelCount = 0;
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-
-          const isWhiteText = r > 210 && g > 210 && b > 200;
-          const isYellowText = r > 200 && g > 175 && b < 100;
-
-          if (isWhiteText || isYellowText) {
-            textPixelCount++;
-          }
-        }
-
-        // When text banner is present across 120x24 sample, count >= 25
-        if (textPixelCount >= 25) {
-          detectedStreak++;
-          absentStreak = 0;
-          if (detectedStreak >= 1) {
-            setHasAdBanner(true);
-
-            // Auto Skip past the video ad segment if not skipped recently
-            const now = Date.now();
-            if (now - lastAutoSkipTimeRef.current > 3000 && (video.duration ? video.currentTime < video.duration - 30 : true)) {
-              lastAutoSkipTimeRef.current = now;
-              const skipTarget = video.currentTime + 15;
-              video.currentTime = skipTarget;
-              setCurrentTime(skipTarget);
-              setShortcutFeedback({ icon: 'seek', text: 'Tự động bỏ qua quảng cáo +15s', id: now });
-            }
-          }
-        } else {
-          absentStreak++;
-          detectedStreak = 0;
-          if (absentStreak >= 3) {
-            setHasAdBanner(false);
-          }
-        }
-      } catch (err) {
-        // Ignore cross-origin error if any
-      }
-    }, 1000);
-
-    return () => {
-      clearInterval(scanInterval);
-    };
   }, []);
 
   // 3. ACTIONS (Strictly defined before any useEffect)
@@ -396,7 +310,7 @@ export default function VideoPlayer({
       if (!videoRef.current) return;
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
       
-      const showFeedback = (icon: string, text?: string) => {
+      const showFeedback = (icon: 'play' | 'pause' | 'volume' | 'mute' | 'seek', text?: string) => {
         setShortcutFeedback({ icon, text, id: Date.now() });
       };
 
@@ -725,14 +639,6 @@ export default function VideoPlayer({
     >
       <video ref={videoRef} className="w-full h-full object-contain" poster={poster} playsInline />
       
-      {/* Smart Auto-Conceal Mask - Only visible when sponsor text banner appears */}
-      <div
-        className={cn(
-          "absolute top-0 left-0 right-0 h-[10.5%] min-h-[42px] max-h-[58px] bg-gradient-to-b from-black/95 via-black/85 to-transparent z-25 pointer-events-none transition-all duration-500 backdrop-blur-[5px]",
-          hasAdBanner ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
-        )}
-      />
-      
       {/* Floating Unmute Button if browser forced autoplay muted */}
       {autoplayMutedRef.current && isMuted && (
         <div className="absolute top-4 left-4 z-50 animate-bounce">
@@ -745,27 +651,6 @@ export default function VideoPlayer({
           >
             <Volume2 className="w-4 h-4" />
             <span>Bấm để bật âm thanh</span>
-          </button>
-        </div>
-      )}
-
-      {/* Floating Skip Ad Button when ad banner is detected */}
-      {hasAdBanner && (
-        <div className="absolute bottom-20 right-6 z-45 animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (videoRef.current) {
-                const nextTime = Math.min((videoRef.current.duration || 99999), videoRef.current.currentTime + 15);
-                videoRef.current.currentTime = nextTime;
-                setCurrentTime(nextTime);
-                setShortcutFeedback({ icon: 'seek', text: 'Đã bỏ qua quảng cáo +15s', id: Date.now() });
-              }
-            }}
-            className="flex items-center gap-2 bg-black/80 hover:bg-brand-green hover:text-black text-white text-xs font-bold px-4 py-2.5 rounded-full border border-white/20 shadow-2xl backdrop-blur-md cursor-pointer transition-all active:scale-95"
-          >
-            <SkipForward className="w-4 h-4" />
-            <span>Bỏ qua quảng cáo (+15s)</span>
           </button>
         </div>
       )}
