@@ -21,7 +21,7 @@ export default function Footer() {
               </a>
             </p>
             <p className="text-[11px] text-gray-500">
-              © 2025 - 2026 Rạp Phim Chill. Bản quyền và quyền sở hữu trí tuệ thuộc về Kim Đình Phương. All rights reserved.
+              © 2025 - 2026 Rạp Phim Chill. All rights reserved.
             </p>
           </div>
 
