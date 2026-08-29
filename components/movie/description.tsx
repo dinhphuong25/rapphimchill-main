@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
-import Episode, { EpisodeList } from "./episode";
+import Episode from "./episode";
 import WatchHeader from "../watch/watch-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -537,7 +537,7 @@ export default function Description({ movie, serverData }: any) {
           </div>
         </div>
 
-        <div className="w-full xl:w-[380px] 2xl:w-[420px] shrink-0 flex flex-col gap-6">
+        <div className="w-full xl:w-[380px] 2xl:w-[420px] shrink-0 flex flex-col gap-6 sticky top-20">
           <Episode
             serverData={serverData}
             currentServerIndex={currentEpisodeIndex?.server || 0}
@@ -547,13 +547,6 @@ export default function Description({ movie, serverData }: any) {
             thumb_url={movie.thumb_url}
             playerMode={playerMode}
             onPlayerModeChange={(mode) => setPlayerMode(mode)}
-          />
-          <EpisodeList
-            serverData={serverData}
-            currentServerIndex={currentEpisodeIndex?.server || 0}
-            currentEpisodeIndex={currentEpisodeIndex?.episode || 0}
-            onSelectEpisode={handleSelectEpisode}
-            playerMode={playerMode}
             movieSlug={movie.slug}
           />
         </div>
