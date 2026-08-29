@@ -186,7 +186,7 @@ export default function Description({ movie, serverData }: any) {
 
   // Resume progress
   useEffect(() => {
-    if (!currentEpisodeIndex || playerMode !== 'm3u8') {
+    if (typeof window === "undefined" || !currentEpisodeIndex || playerMode !== 'm3u8') {
       setResumeTime(0);
       return;
     }

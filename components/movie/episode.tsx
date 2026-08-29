@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Search, Server, Film } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -50,6 +50,11 @@ export default function Episode({
 }: EpisodeProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeRangeIndex, setActiveRangeIndex] = useState(0);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleServerChange = (index: number) => {
     const firstEpisode = serverData[index]?.server_data?.[0];
@@ -248,7 +253,7 @@ export default function Episode({
                   const originalIndex = episode.originalIndex;
                   const isActive = originalIndex === currentEpisodeIndex;
 
-                  const isWatched = Boolean(completedEpisodes?.[originalIndex]);
+                  const isWatched = mounted && Boolean(completedEpisodes?.[originalIndex]);
 
                   return (
                     <button
