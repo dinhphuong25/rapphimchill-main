@@ -108,6 +108,57 @@ export default function VideoPlayer({
   const [shortcutFeedback, setShortcutFeedback] = useState<{ icon: string, text?: string, id: number } | null>(null);
   const lastToggleTimeRef = useRef(0);
 
+  // Load saved volume preferences on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const savedVol = localStorage.getItem('cinema_volume');
+    const savedMuted = localStorage.getItem('cinema_muted') === 'true';
+    const volNum = savedVol !== null ? Number(savedVol) : 1;
+    const initialVol = !isNaN(volNum) && volNum >= 0 && volNum <= 1 ? volNum : 1;
+    
+    if (initialVol > 0) lastNonZeroVolumeRef.current = initialVol;
+    setVolume(savedMuted ? 0 : initialVol);
+    setIsMuted(savedMuted);
+
+    if (videoRef.current) {
+      videoRef.current.volume = initialVol;
+      videoRef.current.muted = savedMuted;
+    }
+  }, []);
+
+  // Helper to immediately restore audio if browser autoplay forced muted mode
+  const attemptUnmute = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (autoplayMutedRef.current) {
+      const isUserMuted = typeof window !== 'undefined' && localStorage.getItem('cinema_muted') === 'true';
+      if (!isUserMuted) {
+        const savedVol = typeof window !== 'undefined' ? Number(localStorage.getItem('cinema_volume') || 1) : 1;
+        const targetVol = savedVol > 0 ? savedVol : 1;
+        video.muted = false;
+        video.volume = targetVol;
+        setIsMuted(false);
+        setVolume(targetVol);
+      }
+      autoplayMutedRef.current = false;
+    }
+  }, []);
+
+  // Listen for user interaction on the page to unmute
+  useEffect(() => {
+    const onUserInteraction = () => {
+      attemptUnmute();
+    };
+
+    window.addEventListener('pointerdown', onUserInteraction, { capture: true, passive: true });
+    window.addEventListener('keydown', onUserInteraction, { capture: true, passive: true });
+
+    return () => {
+      window.removeEventListener('pointerdown', onUserInteraction, { capture: true });
+      window.removeEventListener('keydown', onUserInteraction, { capture: true });
+    };
+  }, [attemptUnmute]);
+
   // 3. ACTIONS (Strictly defined before any useEffect)
   const showControlsHandler = useCallback(() => {
     setShowControls(true);
@@ -119,24 +170,13 @@ export default function VideoPlayer({
 
   const togglePlay = useCallback(async () => {
     if (!videoRef.current) return;
+    attemptUnmute();
 
     try {
       if (videoRef.current.paused) {
-        if (autoplayMutedRef.current && videoRef.current.muted) {
-          videoRef.current.muted = false;
-          setIsMuted(false);
-          if (videoRef.current.volume === 0) {
-            const restoredVolume = Math.max(0.1, lastNonZeroVolumeRef.current);
-            videoRef.current.volume = restoredVolume;
-            setVolume(restoredVolume);
-          }
-          autoplayMutedRef.current = false;
-        }
-
         if (hlsRef.current) {
           hlsRef.current.startLoad();
         }
-
         await videoRef.current.play();
       } else {
         videoRef.current.pause();
@@ -151,12 +191,11 @@ export default function VideoPlayer({
           setError("Click để phát video");
         });
       } else if (err.name === 'AbortError') {
-        // Ignore AbortError: play() was interrupted by a call to pause()
         console.warn("Play request was interrupted");
       }
     }
     showControlsHandler();
-  }, [showControlsHandler]);
+  }, [attemptUnmute, showControlsHandler]);
 
   const skip = useCallback((seconds: number) => {
     if (videoRef.current) {
@@ -172,9 +211,14 @@ export default function VideoPlayer({
       videoRef.current.muted = newVolume === 0;
       if (newVolume > 0) {
         lastNonZeroVolumeRef.current = newVolume;
+        localStorage.setItem('cinema_volume', String(newVolume));
+        localStorage.setItem('cinema_muted', 'false');
+      } else {
+        localStorage.setItem('cinema_muted', 'true');
       }
       setVolume(newVolume);
       setIsMuted(newVolume === 0);
+      autoplayMutedRef.current = false;
     }
   }, []);
 
@@ -190,16 +234,19 @@ export default function VideoPlayer({
       const nextMuted = !videoRef.current.muted;
       videoRef.current.muted = nextMuted;
       setIsMuted(nextMuted);
+      localStorage.setItem('cinema_muted', String(nextMuted));
       if (nextMuted) {
         if (videoRef.current.volume > 0) {
           lastNonZeroVolumeRef.current = videoRef.current.volume;
         }
         setVolume(0);
       } else {
-        const restoredVolume = Math.max(0.1, lastNonZeroVolumeRef.current);
+        const restoredVolume = Math.max(0.1, lastNonZeroVolumeRef.current || 1);
         videoRef.current.volume = restoredVolume;
         setVolume(restoredVolume);
+        localStorage.setItem('cinema_volume', String(restoredVolume));
       }
+      autoplayMutedRef.current = false;
     }
   }, []);
 
@@ -364,14 +411,23 @@ export default function VideoPlayer({
           setQualities(availableQualities);
           
           if (autoplay) {
+            const isUserMuted = typeof window !== 'undefined' && localStorage.getItem('cinema_muted') === 'true';
+            const savedVol = typeof window !== 'undefined' ? Number(localStorage.getItem('cinema_volume') || 1) : 1;
+            const targetVol = savedVol > 0 ? savedVol : 1;
+
+            video.volume = targetVol;
+            video.muted = isUserMuted;
+
             video.play().catch(() => {
-              if (video.volume > 0) {
-                lastNonZeroVolumeRef.current = video.volume;
+              // If unmuted autoplay is blocked by browser policy
+              if (!isUserMuted) {
+                autoplayMutedRef.current = true;
+                video.muted = true;
+                setIsMuted(true);
+                video.play().catch(() => setIsLoading(false));
+              } else {
+                setIsLoading(false);
               }
-              video.muted = true;
-              setIsMuted(true);
-              autoplayMutedRef.current = true;
-              video.play().catch(() => setIsLoading(false));
             });
           }
         });
@@ -408,7 +464,21 @@ export default function VideoPlayer({
         video.src = videoUrl; 
         video.addEventListener('loadedmetadata', () => { 
           setIsLoading(false); 
-          if (autoplay) video.play().catch(() => {});
+          if (autoplay) {
+            const isUserMuted = typeof window !== 'undefined' && localStorage.getItem('cinema_muted') === 'true';
+            const savedVol = typeof window !== 'undefined' ? Number(localStorage.getItem('cinema_volume') || 1) : 1;
+            const targetVol = savedVol > 0 ? savedVol : 1;
+            video.volume = targetVol;
+            video.muted = isUserMuted;
+            video.play().catch(() => {
+              if (!isUserMuted) {
+                autoplayMutedRef.current = true;
+                video.muted = true;
+                setIsMuted(true);
+                video.play().catch(() => {});
+              }
+            });
+          }
         });
       }
     };
@@ -522,35 +592,6 @@ export default function VideoPlayer({
     };
   }, []);
 
-  // Initial Interaction to enable Autoplay
-  useEffect(() => {
-    const startPlay = () => {
-      const video = videoRef.current;
-      if (video && video.paused && autoplay) {
-        video.play().then(() => {
-          if (autoplayMutedRef.current && video.muted) {
-            video.muted = false;
-            setIsMuted(false);
-            if (video.volume === 0) {
-              const restoredVolume = Math.max(0.1, lastNonZeroVolumeRef.current);
-              video.volume = restoredVolume;
-              setVolume(restoredVolume);
-            }
-            autoplayMutedRef.current = false;
-          }
-        }).catch(() => {});
-      }
-    };
-
-    window.addEventListener('touchstart', startPlay, { once: true });
-    window.addEventListener('mousedown', startPlay, { once: true });
-    
-    return () => {
-      window.removeEventListener('touchstart', startPlay);
-      window.removeEventListener('mousedown', startPlay);
-    };
-  }, [autoplay]);
-
   // PiP Storage Cleanup
   useEffect(() => {
     return () => {
@@ -564,6 +605,7 @@ export default function VideoPlayer({
   // Smart Click / Touch
   const handleSmartClick = (e: React.MouseEvent<HTMLDivElement>, side: 'left' | 'right' | 'center') => {
     e.stopPropagation();
+    attemptUnmute();
 
     // Use e.detail for double tap detection
     if (e.detail >= 2) {
@@ -599,9 +641,26 @@ export default function VideoPlayer({
       )} 
       onMouseMove={showControlsHandler} 
       onMouseLeave={() => isPlaying && setShowControls(false)}
+      onClick={attemptUnmute}
     >
       <video ref={videoRef} className="w-full h-full object-contain" poster={poster} playsInline />
       
+      {/* Floating Unmute Button if browser forced autoplay muted */}
+      {autoplayMutedRef.current && isMuted && (
+        <div className="absolute top-4 left-4 z-50 animate-bounce">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              attemptUnmute();
+            }}
+            className="flex items-center gap-2 bg-brand-green hover:bg-brand-green-hover text-cinema-bg font-extrabold text-xs px-3.5 py-2 rounded-full shadow-[0_0_20px_rgba(34,197,94,0.5)] cursor-pointer transition-transform hover:scale-105 active:scale-95"
+          >
+            <Volume2 className="w-4 h-4" />
+            <span>Bấm để bật âm thanh</span>
+          </button>
+        </div>
+      )}
+
       <div className="absolute inset-0 flex z-10">
         <div className="w-[35%] h-full z-20 cursor-pointer" onClick={(e) => handleSmartClick(e, 'left')} />
         <div className="w-[30%] h-full z-20 cursor-pointer" onClick={(e) => handleSmartClick(e, 'center')} />
