@@ -32,6 +32,7 @@ interface EpisodeProps {
   playerMode: "m3u8" | "embed";
   onPlayerModeChange: (mode: "m3u8" | "embed") => void;
   movieSlug?: string;
+  completedEpisodes?: Record<number, boolean>;
 }
 
 const ITEMS_PER_RANGE = 50;
@@ -45,6 +46,7 @@ export default function Episode({
   playerMode,
   onPlayerModeChange,
   movieSlug,
+  completedEpisodes,
 }: EpisodeProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeRangeIndex, setActiveRangeIndex] = useState(0);
@@ -246,14 +248,14 @@ export default function Episode({
                   const originalIndex = episode.originalIndex;
                   const isActive = originalIndex === currentEpisodeIndex;
 
-                  const isWatched =
-                    typeof window !== "undefined" && movieSlug
-                      ? Boolean(
-                          localStorage.getItem(
-                            `watchProgress_${movieSlug}_${currentServerIndex}_${originalIndex}`
-                          )
-                        )
-                      : false;
+                  const isWatched = Boolean(
+                    completedEpisodes?.[originalIndex] ??
+                      (typeof window !== "undefined" && movieSlug
+                        ? localStorage.getItem(
+                            `completedEp_${movieSlug}_${currentServerIndex}_${originalIndex}`
+                          ) === "true"
+                        : false)
+                  );
 
                   return (
                     <button

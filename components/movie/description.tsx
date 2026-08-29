@@ -57,6 +57,7 @@ export default function Description({ movie, serverData }: any) {
     episode: number;
   } | null>(null);
   const [playerMode, setPlayerMode] = useState<'m3u8' | 'embed'>('m3u8');
+  const [completedEpisodes, setCompletedEpisodes] = useState<Record<number, boolean>>({});
   const { updateProgress } = useContinueWatching();
   const { addToHistory } = useWatchHistory();
   const prefetchedNextRef = useRef<string | null>(null);
@@ -66,6 +67,28 @@ export default function Description({ movie, serverData }: any) {
   const getEpisodeProgressKey = useCallback((serverIndex: number, episodeIndex: number) => {
     return `watchProgress_${movie.slug}_${serverIndex}_${episodeIndex}`;
   }, [movie.slug]);
+
+  const markEpisodeCompleted = useCallback((serverIndex: number, episodeIndex: number) => {
+    if (typeof window === "undefined" || !movie?.slug) return;
+    localStorage.setItem(`completedEp_${movie.slug}_${serverIndex}_${episodeIndex}`, "true");
+    setCompletedEpisodes((prev) => ({ ...prev, [episodeIndex]: true }));
+    const key = getEpisodeProgressKey(serverIndex, episodeIndex);
+    localStorage.removeItem(key);
+  }, [movie?.slug, getEpisodeProgressKey]);
+
+  // Load completed episodes from storage on server change
+  useEffect(() => {
+    if (typeof window === "undefined" || !movie?.slug || !serverData) return;
+    const serverIndex = currentEpisodeIndex?.server || 0;
+    const episodes = serverData[serverIndex]?.server_data || [];
+    const completedMap: Record<number, boolean> = {};
+    episodes.forEach((_: any, idx: number) => {
+      if (localStorage.getItem(`completedEp_${movie.slug}_${serverIndex}_${idx}`) === "true") {
+        completedMap[idx] = true;
+      }
+    });
+    setCompletedEpisodes(completedMap);
+  }, [movie?.slug, serverData, currentEpisodeIndex?.server]);
 
   const clearEpisodeProgress = useCallback((serverIndex: number, episodeIndex: number) => {
     localStorage.removeItem(getEpisodeProgressKey(serverIndex, episodeIndex));
@@ -180,9 +203,12 @@ export default function Description({ movie, serverData }: any) {
 
   const handleProgress = useCallback((currentTime: number, duration: number) => {
     if (!currentEpisodeIndex || playerMode !== 'm3u8') return;
-    const key = getEpisodeProgressKey(currentEpisodeIndex.server, currentEpisodeIndex.episode);
-    if (duration > 0 && currentTime >= duration - 15) {
-      localStorage.removeItem(key);
+    const { server, episode } = currentEpisodeIndex;
+    const key = getEpisodeProgressKey(server, episode);
+
+    // Episode is considered completed when watched >= 90% or within last 20 seconds of a video with duration >= 30s
+    if (duration >= 30 && (currentTime >= duration * 0.9 || currentTime >= duration - 20)) {
+      markEpisodeCompleted(server, episode);
     } else if (currentTime > 5) {
       localStorage.setItem(key, String(Math.floor(currentTime)));
     }
@@ -193,23 +219,22 @@ export default function Description({ movie, serverData }: any) {
       name: movie.name,
       poster_url: movie.poster_url,
       thumb_url: movie.thumb_url,
-      serverIndex: currentEpisodeIndex.server,
-      episodeIndex: currentEpisodeIndex.episode,
-      episodeName: serverData?.[currentEpisodeIndex.server]?.server_data?.[currentEpisodeIndex.episode]?.name || "",
+      serverIndex: server,
+      episodeIndex: episode,
+      episodeName: serverData?.[server]?.server_data?.[episode]?.name || "",
       currentTime: Math.floor(currentTime),
       duration: Math.floor(duration),
     });
 
     // Background Prefetch next episode at 70% duration
     if (duration > 0 && currentTime > duration * 0.7 && serverData && currentEpisodeIndex) {
-      const { server, episode } = currentEpisodeIndex;
       const nextEp = serverData[server]?.server_data?.[episode + 1];
       if (nextEp?.link_m3u8 && prefetchedNextRef.current !== nextEp.link_m3u8) {
         prefetchedNextRef.current = nextEp.link_m3u8;
         fetch(nextEp.link_m3u8, { mode: 'no-cors' }).catch(() => {});
       }
     }
-  }, [currentEpisodeIndex, playerMode, getEpisodeProgressKey, updateProgress, movie, serverData]);
+  }, [currentEpisodeIndex, playerMode, getEpisodeProgressKey, markEpisodeCompleted, updateProgress, movie, serverData]);
 
   const handleNextEpisode = useCallback(() => {
     if (!serverData || !currentEpisodeIndex) return;
@@ -364,6 +389,11 @@ export default function Description({ movie, serverData }: any) {
                     }}
                     hasNextEpisode={hasNextEpisode()}
                     onNextEpisode={handleNextEpisode}
+                    onEnded={() => {
+                      if (currentEpisodeIndex) {
+                        markEpisodeCompleted(currentEpisodeIndex.server, currentEpisodeIndex.episode);
+                      }
+                    }}
                   />
                 ) : (
                   <EmbedPlayer videoUrl={currentEpisodeUrl} />
@@ -548,6 +578,7 @@ export default function Description({ movie, serverData }: any) {
             playerMode={playerMode}
             onPlayerModeChange={(mode) => setPlayerMode(mode)}
             movieSlug={movie.slug}
+            completedEpisodes={completedEpisodes}
           />
         </div>
 
