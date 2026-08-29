@@ -74,6 +74,8 @@
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover { background: var(--brand-green); }
+}
+
 @layer utilities {
   .custom-scrollbar {
     scrollbar-width: thin;
