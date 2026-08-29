@@ -1,0 +1,156 @@
+"use client";
+
+import { memo } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { Play, Star, Heart } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useFavorites } from "@/hooks/useLocalStorage";
+
+interface MovieCardEditorialProps {
+  movie: {
+    _id?: string;
+    slug: string;
+    name: string;
+    origin_name?: string;
+    thumb_url?: string;
+    poster_url?: string;
+    year?: number;
+    quality?: string;
+    episode_current?: string;
+    imdb?: { rating: number };
+    tmdb?: { vote_average: number };
+  };
+  priority?: boolean;
+}
+
+const shimmer = (w: number, h: number) => `
+<svg width="${w}" height="${h}" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <linearGradient id="g">
+      <stop stop-color="#111827" offset="20%" />
+      <stop stop-color="#1f2937" offset="50%" />
+      <stop stop-color="#111827" offset="70%" />
+    </linearGradient>
+  </defs>
+  <rect width="${w}" height="${h}" fill="#111827" />
+  <rect id="r" width="${w}" height="${h}" fill="url(#g)" />
+  <animate xlink:href="#r" attributeName="x" from="-${w}" to="${w}" dur="1s" repeatCount="indefinite"  />
+</svg>`;
+
+const toBase64 = (str: string) =>
+  typeof window === "undefined"
+    ? Buffer.from(str).toString("base64")
+    : window.btoa(str);
+
+export const MovieCardEditorial = memo(function MovieCardEditorial({
+  movie,
+  priority = false,
+}: MovieCardEditorialProps) {
+  const { toggleFavorite, isFavorite } = useFavorites();
+  if (!movie || !movie.slug) return null;
+  const rawUrl = movie.poster_url || movie.thumb_url || "";
+  const imageUrl = rawUrl.startsWith("http") ? rawUrl : (rawUrl ? `https://phimimg.com/${rawUrl}` : "");
+  const rawRating = movie.imdb?.rating || movie.tmdb?.vote_average;
+  const rating = Number(rawRating);
+  const isValidRating = !isNaN(rating) && rating > 0;
+  const isFav = isFavorite(movie.slug);
+
+  return (
+    <div className="group relative flex flex-col h-full select-none">
+      {/* Poster Image Container Wrapper */}
+      <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-cinema-surface border border-white/10 group-hover:border-brand-green/50 transition-all duration-500 group-hover:-translate-y-2 group-hover:scale-[1.02] shadow-xl group-hover:shadow-[0_10px_30px_rgba(32,214,107,0.25)]">
+        
+        <Link
+          href={`/phim/${movie.slug}`}
+          className="absolute inset-0 z-0 block"
+        >
+        <Image
+          src={imageUrl}
+          alt={movie.name}
+          fill
+          priority={priority}
+          placeholder="blur"
+          blurDataURL={`data:image/svg+xml;base64,${toBase64(shimmer(300, 450))}`}
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+          quality={75}
+          className="object-cover group-hover:scale-105 transition-transform duration-500"
+        />
+
+        {/* Poster Gradient Mask */}
+        <div className="absolute inset-0 bg-gradient-to-t from-cinema-bg via-transparent to-transparent opacity-80 group-hover:opacity-40 transition-opacity" />
+
+        {/* Quality Badge Top Left (font-mono aitmpl style) */}
+        {movie.quality && (
+          <span className="absolute top-2.5 left-2.5 z-10 px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider uppercase bg-cinema-bg/85 backdrop-blur-md text-white border border-white/15 shadow-sm">
+            {movie.quality}
+          </span>
+        )}
+
+        {/* Rating Badge Top Right (font-mono aitmpl style) */}
+        {isValidRating && (
+          <span className="absolute top-2.5 right-2.5 z-10 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cinema-bg/85 backdrop-blur-md text-cinema-gold border border-white/15 flex items-center gap-1 shadow-sm">
+            <Star className="w-3 h-3 fill-cinema-gold" />
+            {rating.toFixed(1)}
+          </span>
+        )}
+
+        {/* Center Hover Play Button */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40 backdrop-blur-[2px]">
+          <div className="w-12 h-12 rounded-full bg-brand-green flex items-center justify-center text-cinema-bg shadow-xl shadow-brand-green/30 scale-90 group-hover:scale-100 transition-transform">
+            <Play className="w-5 h-5 fill-cinema-bg ml-0.5" />
+          </div>
+        </div>
+
+        {/* Current Episode Badge Bottom Left */}
+        {movie.episode_current && movie.episode_current !== "Full" && (
+          <span className="absolute bottom-2.5 left-2.5 z-10 text-[10px] font-mono font-semibold text-white/80 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded border border-white/10 truncate max-w-[80%]">
+            {movie.episode_current}
+          </span>
+        )}
+        </Link>
+
+        {/* Favorite Toggle Button */}
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleFavorite({
+              slug: movie.slug,
+              name: movie.name,
+              thumb_url: imageUrl,
+              year: movie.year,
+              quality: movie.quality,
+            });
+          }}
+          aria-label="Yêu thích"
+          className={cn(
+            "absolute bottom-2.5 right-2.5 z-20 p-2 rounded-full backdrop-blur-md border transition-all active:scale-90 opacity-0 group-hover:opacity-100",
+            isFav
+              ? "bg-brand-green/20 border-brand-green text-brand-green opacity-100"
+              : "bg-black/50 border-white/15 text-white/70 hover:text-white"
+          )}
+        >
+          <Heart className={cn("w-3.5 h-3.5", isFav && "fill-brand-green")} />
+        </button>
+      </div>
+
+      {/* Info Under Poster */}
+      <div className="mt-2.5 flex flex-col">
+        <Link
+          href={`/phim/${movie.slug}`}
+          className="text-xs font-bold text-cinema-text hover:text-brand-green transition-colors line-clamp-1 flex items-center justify-between group/title"
+        >
+          <span className="truncate">{movie.name}</span>
+          <span className="font-mono text-brand-green opacity-0 group-hover/title:opacity-100 transition-opacity ml-1 shrink-0 text-sm">›</span>
+        </Link>
+        <div className="flex items-center justify-between text-[11px] font-mono text-cinema-text-dim mt-0.5">
+          <span>{movie.year || "2025"}</span>
+          {movie.origin_name && <span className="truncate max-w-[120px] font-sans">{movie.origin_name}</span>}
+        </div>
+      </div>
+    </div>
+  );
+});
+
+export default MovieCardEditorial;

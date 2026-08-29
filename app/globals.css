@@ -1,0 +1,134 @@
+@import '@/styles/animations.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   RẠP PHIM CHILL — CINEMATIC EDITORIAL DESIGN SYSTEM
+   Palette: #050807 | Accent: #20D66B | Gold: #D7C7A0
+   ============================================================ */
+
+@layer base {
+  :root {
+    --cinema-bg: #050807;
+    --cinema-sub: #0B100E;
+    --cinema-surface: #111714;
+    --cinema-hover: #151D19;
+    --cinema-border: rgba(255, 255, 255, 0.10);
+    --cinema-border-strong: rgba(255, 255, 255, 0.18);
+    --cinema-text: #F4F5F2;
+    --cinema-text-muted: rgba(244, 245, 242, 0.68);
+    --cinema-text-dim: rgba(244, 245, 242, 0.45);
+    --brand-green: #20D66B;
+    --brand-green-hover: #2AE376;
+    --cinema-gold: #D7C7A0;
+
+    --background: 160 20% 2%;
+    --foreground: 80 10% 95%;
+    --card: 150 15% 8%;
+    --card-foreground: 80 10% 95%;
+    --popover: 150 18% 5%;
+    --popover-foreground: 80 10% 95%;
+    --primary: 147 74% 48%; /* #20D66B */
+    --primary-foreground: 160 20% 2%;
+    --muted: 150 15% 8%;
+    --muted-foreground: 160 5% 65%;
+    --border: 0 0% 100% / 0.10;
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+    border-color: var(--cinema-border);
+  }
+
+  html {
+    font-family: var(--font-be-vietnam, var(--font-inter, system-ui, sans-serif));
+    background-color: var(--cinema-bg);
+    color: var(--cinema-text);
+    scroll-behavior: smooth;
+    overflow-x: clip;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.15) var(--cinema-bg);
+  }
+
+  body {
+    background-color: var(--cinema-bg);
+    color: var(--cinema-text);
+    min-height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    user-select: none;
+  }
+
+  input, textarea { user-select: text; }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--cinema-bg); }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.15);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--brand-green); }
+}
+
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--brand-green); }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+  }
+  .scrollbar-hide::-webkit-scrollbar { display: none !important; }
+
+  /* Editorial Glassmorphism */
+  .editorial-glass {
+    background: rgba(11, 16, 14, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--cinema-border);
+  }
+
+  .editorial-glass-subtle {
+    background: rgba(17, 23, 20, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* Editorial Typography */
+  .text-editorial-gold {
+    color: var(--cinema-gold);
+  }
+
+  .text-editorial-dim {
+    color: var(--cinema-text-dim);
+  }
+
+  .text-brand-green {
+    color: var(--brand-green);
+  }
+
+  /* Section Divider Line */
+  .editorial-line {
+    height: 1px;
+    background: linear-gradient(90deg, var(--cinema-border) 0%, rgba(255,255,255,0.02) 100%);
+  }
+
+  /* Poster mask */
+  .poster-mask-bottom {
+    background: linear-gradient(to top, var(--cinema-bg) 0%, rgba(5,8,7,0.7) 40%, transparent 100%);
+  }
+
+  .hero-right-mask {
+    mask-image: linear-gradient(to left, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 100%);
+    -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 100%);
+  }
+}
