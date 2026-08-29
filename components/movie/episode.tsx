@@ -190,17 +190,16 @@ export function EpisodeList({
   };
 
   return (
-    <div className="bg-[#0a0a0a]/80 backdrop-blur-2xl shadow-2xl sm:rounded-2xl lg:rounded-3xl border-0 sm:border border-white/[0.08] p-4 sm:p-6 flex flex-col w-full z-10 relative mt-4 xl:mt-0 overflow-hidden">
-      {/* Subtle top glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-[1px] bg-gradient-to-r from-transparent via-brand-green/20 to-transparent" />
-
+    <div className="bg-[#141414] rounded-2xl border border-white/5 p-5 flex flex-col w-full z-10 relative overflow-hidden">
       {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-white/[0.08] relative z-10">
-        <div className="flex items-center gap-2.5">
-          <span className="w-1.5 h-4 rounded-full bg-brand-green shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
-          <h4 className="text-white font-extrabold text-base sm:text-lg tracking-wide">
-            Danh sách tập
-          </h4>
+      <div className="flex flex-col gap-3 mb-4 pb-3 border-b border-white/[0.06] relative z-10">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-4 rounded-full bg-brand-green shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
+            <h4 className="text-white/80 font-bold text-sm tracking-wide">
+              Danh sách tập
+            </h4>
+          </div>
           <span className="text-white/40 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-white/5 rounded-full border border-white/10">
             {allEpisodes.length} tập
           </span>
@@ -208,14 +207,14 @@ export function EpisodeList({
 
         {/* Search input for quick episode lookup */}
         {allEpisodes.length > 8 && (
-          <div className="relative w-full sm:w-60">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+          <div className="relative w-full">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
             <Input
               type="text"
               placeholder="Tìm tập phim..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-3 py-1.5 h-9 bg-white/5 border-white/10 text-xs text-white placeholder:text-white/40 rounded-xl focus:border-brand-green/50 focus:ring-brand-green/20"
+              className="pl-8 pr-3 py-1 h-8 bg-white/5 border-white/10 text-xs text-white placeholder:text-white/40 rounded-xl focus:border-brand-green/50 focus:ring-brand-green/20"
             />
           </div>
         )}
@@ -223,7 +222,7 @@ export function EpisodeList({
 
       {/* Range Tabs for large series (50+ episodes) */}
       {totalRanges > 1 && !searchQuery && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-4 scrollbar-hide">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-3 scrollbar-hide">
           {Array.from({ length: totalRanges }).map((_, rIdx) => {
             const startEp = rIdx * ITEMS_PER_RANGE + 1;
             const endEp = Math.min((rIdx + 1) * ITEMS_PER_RANGE, sortedEpisodes.length);
@@ -234,7 +233,7 @@ export function EpisodeList({
                 key={rIdx}
                 onClick={() => setActiveRangeIndex(rIdx)}
                 className={cn(
-                  "px-3 py-1.5 text-xs font-bold rounded-xl border transition-all shrink-0",
+                  "px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all shrink-0",
                   isSelected
                     ? "bg-brand-green/20 text-brand-green border-brand-green/40 shadow-[0_0_12px_rgba(34,197,94,0.2)]"
                     : "bg-white/5 text-white/60 border-white/10 hover:bg-white/10 hover:text-white"
@@ -248,9 +247,9 @@ export function EpisodeList({
       )}
 
       {/* Grid of Episodes */}
-      <div className="w-full">
+      <div className="w-full max-h-[380px] overflow-y-auto pr-1">
         {displayedEpisodes.length > 0 ? (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(85px,1fr))] gap-2.5 sm:gap-3 w-full">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(72px,1fr))] gap-2 w-full">
             {displayedEpisodes.map((episode) => {
               const originalIndex = episode.originalIndex;
               const isActive = originalIndex === currentEpisodeIndex;

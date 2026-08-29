@@ -450,15 +450,6 @@ export default function Description({ movie, serverData }: any) {
             </div>
           </div>
 
-          <EpisodeList
-            serverData={serverData}
-            currentServerIndex={currentEpisodeIndex?.server || 0}
-            currentEpisodeIndex={currentEpisodeIndex?.episode || 0}
-            onSelectEpisode={handleSelectEpisode}
-            playerMode={playerMode}
-            movieSlug={movie.slug}
-          />
-
           {/* Movie Details & Description Card - Single Column Card inside Left Stage */}
           <div className="w-full sm:rounded-2xl lg:rounded-3xl border border-white/[0.08] bg-[#0a0a0a]/80 backdrop-blur-2xl shadow-2xl overflow-hidden relative">
             {/* Subtle top glow */}
@@ -546,7 +537,7 @@ export default function Description({ movie, serverData }: any) {
           </div>
         </div>
 
-        <div className="w-full xl:w-[380px] 2xl:w-[420px] shrink-0 flex flex-col gap-6 sticky top-20">
+        <div className="w-full xl:w-[380px] 2xl:w-[420px] shrink-0 flex flex-col gap-6">
           <Episode
             serverData={serverData}
             currentServerIndex={currentEpisodeIndex?.server || 0}
@@ -556,6 +547,14 @@ export default function Description({ movie, serverData }: any) {
             thumb_url={movie.thumb_url}
             playerMode={playerMode}
             onPlayerModeChange={(mode) => setPlayerMode(mode)}
+          />
+          <EpisodeList
+            serverData={serverData}
+            currentServerIndex={currentEpisodeIndex?.server || 0}
+            currentEpisodeIndex={currentEpisodeIndex?.episode || 0}
+            onSelectEpisode={handleSelectEpisode}
+            playerMode={playerMode}
+            movieSlug={movie.slug}
           />
         </div>
 
