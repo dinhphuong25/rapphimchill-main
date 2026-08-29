@@ -359,7 +359,7 @@ export default function Description({ movie, serverData }: any) {
       )}
 
       {/* 2-Column Cinema Layout */}
-      <div className="flex flex-col xl:flex-row gap-6 xl:gap-8 items-start w-full max-w-[1600px] mx-auto pt-2">
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start w-full max-w-[1600px] mx-auto pt-2">
         
         {/* Left Primary Stage: Video Player & Movie Details */}
         <div className="flex-1 w-full min-w-0 flex flex-col gap-6">
@@ -481,7 +481,7 @@ export default function Description({ movie, serverData }: any) {
           </div>
 
           {/* Mobile Server Selector & Episode List (Directly after player & toolbar on mobile/tablet) */}
-          <div className="w-full xl:hidden">
+          <div className="w-full lg:hidden">
             <Episode
               serverData={serverData}
               currentServerIndex={currentEpisodeIndex?.server || 0}
@@ -584,7 +584,7 @@ export default function Description({ movie, serverData }: any) {
         </div>
 
         {/* Desktop Right Sidebar Episode List */}
-        <div className="hidden xl:flex w-full xl:w-[380px] 2xl:w-[420px] shrink-0 flex-col gap-6 sticky top-20">
+        <div className="hidden lg:flex w-full lg:w-[380px] 2xl:w-[420px] shrink-0 flex-col gap-6 sticky top-20">
           <Episode
             serverData={serverData}
             currentServerIndex={currentEpisodeIndex?.server || 0}
