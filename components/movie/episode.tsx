@@ -241,21 +241,14 @@ export default function Episode({
           )}
 
           {/* Grid of Episodes */}
-          <div className="w-full max-h-[350px] 2xl:max-h-[420px] overflow-y-auto pr-1">
+          <div className="w-full max-h-[350px] 2xl:max-h-[420px] overflow-y-auto pr-2 custom-scrollbar">
             {displayedEpisodes.length > 0 ? (
               <div className="grid grid-cols-4 gap-2 w-full">
                 {displayedEpisodes.map((episode) => {
                   const originalIndex = episode.originalIndex;
                   const isActive = originalIndex === currentEpisodeIndex;
 
-                  const isWatched = Boolean(
-                    completedEpisodes?.[originalIndex] ??
-                      (typeof window !== "undefined" && movieSlug
-                        ? localStorage.getItem(
-                            `completedEp_${movieSlug}_${currentServerIndex}_${originalIndex}`
-                          ) === "true"
-                        : false)
-                  );
+                  const isWatched = Boolean(completedEpisodes?.[originalIndex]);
 
                   return (
                     <button
