@@ -20,7 +20,6 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 
@@ -134,13 +133,10 @@ export default function VideoPlayer({
       let next: 'off' | 'on' | 'auto';
       if (prev === 'auto') {
         next = 'on';
-        toast.success("Đã BẬT che quảng cáo toàn bộ video");
       } else if (prev === 'on') {
         next = 'off';
-        toast.info("Đã TẮT hoàn toàn che quảng cáo");
       } else {
         next = 'auto';
-        toast.success("Chế độ TỰ ĐỘNG: Tự che khi có quảng cáo đầu phim (0-40s)");
       }
       localStorage.setItem('cinema_top_mask', next);
       return next;
