@@ -79,6 +79,7 @@ export default function VideoPlayer({
   const didSeekInitialTimeRef = useRef<boolean>(false);
   const autoplayMutedRef = useRef<boolean>(false);
   const lastNonZeroVolumeRef = useRef<number>(1);
+  const lastAutoSkipTimeRef = useRef<number>(0);
 
   // 2. STATES
   const [isPlaying, setIsPlaying] = useState(false);
@@ -210,6 +211,16 @@ export default function VideoPlayer({
           absentStreak = 0;
           if (detectedStreak >= 1) {
             setHasAdBanner(true);
+
+            // Auto Skip past the video ad segment if not skipped recently
+            const now = Date.now();
+            if (now - lastAutoSkipTimeRef.current > 3000 && (video.duration ? video.currentTime < video.duration - 30 : true)) {
+              lastAutoSkipTimeRef.current = now;
+              const skipTarget = video.currentTime + 15;
+              video.currentTime = skipTarget;
+              setCurrentTime(skipTarget);
+              setShortcutFeedback({ icon: 'seek', text: 'Tự động bỏ qua quảng cáo +15s', id: now });
+            }
           }
         } else {
           absentStreak++;
@@ -734,6 +745,27 @@ export default function VideoPlayer({
           >
             <Volume2 className="w-4 h-4" />
             <span>Bấm để bật âm thanh</span>
+          </button>
+        </div>
+      )}
+
+      {/* Floating Skip Ad Button when ad banner is detected */}
+      {hasAdBanner && (
+        <div className="absolute bottom-20 right-6 z-45 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (videoRef.current) {
+                const nextTime = Math.min((videoRef.current.duration || 99999), videoRef.current.currentTime + 15);
+                videoRef.current.currentTime = nextTime;
+                setCurrentTime(nextTime);
+                setShortcutFeedback({ icon: 'seek', text: 'Đã bỏ qua quảng cáo +15s', id: Date.now() });
+              }
+            }}
+            className="flex items-center gap-2 bg-black/80 hover:bg-brand-green hover:text-black text-white text-xs font-bold px-4 py-2.5 rounded-full border border-white/20 shadow-2xl backdrop-blur-md cursor-pointer transition-all active:scale-95"
+          >
+            <SkipForward className="w-4 h-4" />
+            <span>Bỏ qua quảng cáo (+15s)</span>
           </button>
         </div>
       )}
