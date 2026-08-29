@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { Search, Server, Keyboard } from "lucide-react";
+import { Search, Server } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 interface EpisodeData {
@@ -124,38 +124,6 @@ export default function Episode({
                 </span>
               </button>,
             ])}
-          </div>
-        </div>
-
-        {/* Keyboard Shortcuts Section */}
-        <div className="pt-2 min-w-0 z-10 relative">
-          <h4 className="text-white/60 text-[13px] font-bold uppercase tracking-widest flex items-center gap-2 mb-4 whitespace-nowrap">
-            <Keyboard className="w-4 h-4 text-white/60 shrink-0" />
-            Phím tắt
-          </h4>
-          <div className="flex flex-col gap-3 px-1 text-[13px]">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-white/70 whitespace-nowrap font-medium">Tạm dừng / Phát</span>
-              <kbd className="bg-[#222222] px-2 py-1 rounded text-[10px] font-extrabold text-white/90 uppercase whitespace-nowrap">Space</kbd>
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-white/70 whitespace-nowrap font-medium">Tua 10s</span>
-              <div className="flex gap-1.5 shrink-0">
-                <kbd className="bg-[#222222] px-2 py-1 rounded text-[10px] font-bold text-white/90">◀</kbd>
-                <kbd className="bg-[#222222] px-2 py-1 rounded text-[10px] font-bold text-white/90">▶</kbd>
-              </div>
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-white/70 whitespace-nowrap font-medium">Tập tiếp / Tập trước</span>
-              <div className="flex gap-1.5 shrink-0">
-                <kbd className="bg-[#222222] px-2 py-1 rounded text-[10px] font-bold text-white/90">N</kbd>
-                <kbd className="bg-[#222222] px-2 py-1 rounded text-[10px] font-bold text-white/90">P</kbd>
-              </div>
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-white/70 whitespace-nowrap font-medium">Toàn màn hình</span>
-              <kbd className="bg-[#222222] px-2 py-1 rounded text-[10px] font-extrabold text-white/90 uppercase whitespace-nowrap">F</kbd>
-            </div>
           </div>
         </div>
       </div>
