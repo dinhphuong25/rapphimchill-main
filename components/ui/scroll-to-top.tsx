@@ -26,9 +26,9 @@ export default function ScrollToTop() {
       onClick={scrollToTop}
       aria-label="Cuộn lên đầu trang"
       className={cn(
-        "fixed bottom-6 right-6 z-40 p-3 rounded-full",
+        "fixed bottom-20 md:bottom-24 right-6 z-40 p-3 rounded-full",
         "bg-primary text-black font-bold shadow-lg shadow-primary/20",
-        "hover:bg-primary/90 hover:scale-110 active:scale-95 transition-all duration-200"
+        "hover:bg-primary/90 hover:scale-110 active:scale-95 transition-all duration-200 cursor-pointer"
       )}
     >
       <ArrowUp className="w-5 h-5 stroke-[2.5]" />
