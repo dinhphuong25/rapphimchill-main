@@ -17,6 +17,7 @@ import {
   SkipBack,
   ChevronsRight,
   ChevronsLeft,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -108,7 +109,9 @@ export default function VideoPlayer({
   const [shortcutFeedback, setShortcutFeedback] = useState<{ icon: string, text?: string, id: number } | null>(null);
   const lastToggleTimeRef = useRef(0);
 
-  // Load saved volume preferences on mount
+  const [showTopMask, setShowTopMask] = useState(true);
+
+  // Load saved volume and top mask preferences on mount
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const savedVol = localStorage.getItem('cinema_volume');
@@ -120,10 +123,24 @@ export default function VideoPlayer({
     setVolume(savedMuted ? 0 : initialVol);
     setIsMuted(savedMuted);
 
+    const savedMask = localStorage.getItem('cinema_top_mask');
+    if (savedMask !== null) {
+      setShowTopMask(savedMask === 'true');
+    }
+
     if (videoRef.current) {
       videoRef.current.volume = initialVol;
       videoRef.current.muted = savedMuted;
     }
+  }, []);
+
+  const toggleTopMask = useCallback(() => {
+    setShowTopMask((prev) => {
+      const next = !prev;
+      localStorage.setItem('cinema_top_mask', String(next));
+      toast.success(next ? "Đã bật chế độ che quảng cáo nguồn" : "Đã tắt chế độ che quảng cáo nguồn");
+      return next;
+    });
   }, []);
 
   // Helper to immediately restore audio if browser autoplay forced muted mode
@@ -645,6 +662,13 @@ export default function VideoPlayer({
     >
       <video ref={videoRef} className="w-full h-full object-contain" poster={poster} playsInline />
       
+      {/* Smart Top Mask to conceal hard-burned gambling watermark */}
+      {showTopMask && (
+        <div
+          className="absolute top-0 left-0 right-0 h-10 sm:h-12 md:h-14 bg-gradient-to-b from-black via-black/95 to-transparent z-25 pointer-events-none transition-opacity duration-300 backdrop-blur-[6px]"
+        />
+      )}
+      
       {/* Floating Unmute Button if browser forced autoplay muted */}
       {autoplayMutedRef.current && isMuted && (
         <div className="absolute top-4 left-4 z-50 animate-bounce">
@@ -779,6 +803,21 @@ export default function VideoPlayer({
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
+
+            {/* Toggle Top Mask / Anti-Ad Shield */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTopMask}
+              className={cn(
+                "text-white hover:bg-white/10 transition-colors cursor-pointer relative",
+                showTopMask && "text-brand-green"
+              )}
+              title={showTopMask ? "Đang che biểu ngữ quảng cáo nguồn (Nhấp để tắt)" : "Che biểu ngữ quảng cáo nguồn (Nhấp để bật)"}
+            >
+              <ShieldCheck className={cn("w-5 h-5", showTopMask ? "text-brand-green fill-brand-green/20" : "text-white/60")} />
+            </Button>
+
             <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="text-white hover:bg-white/10 cursor-pointer">{isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}</Button>
           </div>
         </div>
