@@ -102,7 +102,7 @@ export default function VideoPlayer({
   const [shortcutFeedback, setShortcutFeedback] = useState<{ icon: string, text?: string, id: number } | null>(null);
   const lastToggleTimeRef = useRef(0);
 
-  const [showTopMask, setShowTopMask] = useState(true);
+  const [topMaskMode, setTopMaskMode] = useState<'off' | 'on' | 'auto'>('auto');
 
   // Load saved volume and top mask preferences on mount
   useEffect(() => {
@@ -117,8 +117,10 @@ export default function VideoPlayer({
     setIsMuted(savedMuted);
 
     const savedMask = localStorage.getItem('cinema_top_mask');
-    if (savedMask !== null) {
-      setShowTopMask(savedMask === 'true');
+    if (savedMask === 'on' || savedMask === 'off' || savedMask === 'auto') {
+      setTopMaskMode(savedMask as any);
+    } else {
+      setTopMaskMode('auto');
     }
 
     if (videoRef.current) {
@@ -128,13 +130,27 @@ export default function VideoPlayer({
   }, []);
 
   const toggleTopMask = useCallback(() => {
-    setShowTopMask((prev) => {
-      const next = !prev;
-      localStorage.setItem('cinema_top_mask', String(next));
-      toast.success(next ? "Đã bật chế độ che quảng cáo nguồn" : "Đã tắt chế độ che quảng cáo nguồn");
+    setTopMaskMode((prev) => {
+      let next: 'off' | 'on' | 'auto';
+      if (prev === 'auto') {
+        next = 'on';
+        toast.success("Đã BẬT che quảng cáo toàn bộ video");
+      } else if (prev === 'on') {
+        next = 'off';
+        toast.info("Đã TẮT hoàn toàn che quảng cáo");
+      } else {
+        next = 'auto';
+        toast.success("Chế độ TỰ ĐỘNG: Tự che khi có quảng cáo đầu phim (0-40s)");
+      }
+      localStorage.setItem('cinema_top_mask', next);
       return next;
     });
   }, []);
+
+  // Check if top mask should be visibly active
+  const isMaskVisible =
+    topMaskMode === 'on' ||
+    (topMaskMode === 'auto' && currentTime > 0 && currentTime < 40);
 
   // Helper to immediately restore audio if browser autoplay forced muted mode
   const attemptUnmute = useCallback(() => {
@@ -655,12 +671,13 @@ export default function VideoPlayer({
     >
       <video ref={videoRef} className="w-full h-full object-contain" poster={poster} playsInline />
       
-      {/* Smart Top Mask to conceal hard-burned gambling watermark */}
-      {showTopMask && (
-        <div
-          className="absolute top-0 left-0 right-0 h-10 sm:h-12 md:h-14 bg-gradient-to-b from-black via-black/95 to-transparent z-25 pointer-events-none transition-opacity duration-300 backdrop-blur-[6px]"
-        />
-      )}
+      {/* Smart Top Mask - Auto conceals hard-burned gambling watermark during ad period */}
+      <div
+        className={cn(
+          "absolute top-0 left-0 right-0 h-10 sm:h-12 md:h-14 bg-gradient-to-b from-black/95 via-black/85 to-transparent z-25 pointer-events-none transition-all duration-700 backdrop-blur-[5px]",
+          isMaskVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
+        )}
+      />
       
       {/* Floating Unmute Button if browser forced autoplay muted */}
       {autoplayMutedRef.current && isMuted && (
@@ -787,11 +804,31 @@ export default function VideoPlayer({
               onClick={toggleTopMask}
               className={cn(
                 "text-white hover:bg-white/10 transition-colors cursor-pointer relative",
-                showTopMask && "text-brand-green"
+                topMaskMode === 'on' ? "text-brand-green bg-brand-green/10" : topMaskMode === 'auto' ? "text-white/80" : "text-white/35"
               )}
-              title={showTopMask ? "Đang che biểu ngữ quảng cáo nguồn (Nhấp để tắt)" : "Che biểu ngữ quảng cáo nguồn (Nhấp để bật)"}
+              title={
+                topMaskMode === 'on'
+                  ? "Che quảng cáo: Đang BẬT toàn thời gian (Nhấp để đổi)"
+                  : topMaskMode === 'auto'
+                  ? "Che quảng cáo: Đang ở chế độ TỰ ĐỘNG (tự che khi có quảng cáo 0-40s)"
+                  : "Che quảng cáo: Đang TẮT (Nhấp để bật)"
+              }
             >
-              <ShieldCheck className={cn("w-5 h-5", showTopMask ? "text-brand-green fill-brand-green/20" : "text-white/60")} />
+              <ShieldCheck
+                className={cn(
+                  "w-5 h-5",
+                  topMaskMode === 'on'
+                    ? "text-brand-green fill-brand-green/20"
+                    : topMaskMode === 'auto'
+                    ? "text-brand-green/80"
+                    : "text-white/40"
+                )}
+              />
+              {topMaskMode === 'auto' && (
+                <span className="absolute top-1.5 right-1.5 flex h-1.5 w-1.5">
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-brand-green"></span>
+                </span>
+              )}
             </Button>
 
             <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="text-white hover:bg-white/10 cursor-pointer">{isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}</Button>
