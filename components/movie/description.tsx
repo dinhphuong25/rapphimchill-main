@@ -480,6 +480,22 @@ export default function Description({ movie, serverData }: any) {
             </div>
           </div>
 
+          {/* Mobile Server Selector & Episode List (Directly after player & toolbar on mobile/tablet) */}
+          <div className="w-full xl:hidden">
+            <Episode
+              serverData={serverData}
+              currentServerIndex={currentEpisodeIndex?.server || 0}
+              currentEpisodeIndex={currentEpisodeIndex?.episode || 0}
+              onSelectEpisode={handleSelectEpisode}
+              onServerChange={handleServerChange}
+              thumb_url={movie.thumb_url}
+              playerMode={playerMode}
+              onPlayerModeChange={(mode) => setPlayerMode(mode)}
+              movieSlug={movie.slug}
+              completedEpisodes={completedEpisodes}
+            />
+          </div>
+
           {/* Movie Details & Description Card - Single Column Card inside Left Stage */}
           <div className="w-full sm:rounded-2xl lg:rounded-3xl border border-white/[0.08] bg-[#0a0a0a]/80 backdrop-blur-2xl shadow-2xl overflow-hidden relative">
             {/* Subtle top glow */}
@@ -567,7 +583,8 @@ export default function Description({ movie, serverData }: any) {
           </div>
         </div>
 
-        <div className="w-full xl:w-[380px] 2xl:w-[420px] shrink-0 flex flex-col gap-6 sticky top-20">
+        {/* Desktop Right Sidebar Episode List */}
+        <div className="hidden xl:flex w-full xl:w-[380px] 2xl:w-[420px] shrink-0 flex-col gap-6 sticky top-20">
           <Episode
             serverData={serverData}
             currentServerIndex={currentEpisodeIndex?.server || 0}
