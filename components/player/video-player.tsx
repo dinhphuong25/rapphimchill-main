@@ -151,6 +151,83 @@ export default function VideoPlayer({
     };
   }, [attemptUnmute]);
 
+  // Automatic Gambling / Sponsor Text Banner Detector
+  const [hasAdBanner, setHasAdBanner] = useState(false);
+  const scannerCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (!scannerCanvasRef.current) {
+      scannerCanvasRef.current = document.createElement('canvas');
+      scannerCanvasRef.current.width = 120;
+      scannerCanvasRef.current.height = 24;
+    }
+
+    const canvas = scannerCanvasRef.current;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+
+    let detectedStreak = 0;
+    let absentStreak = 0;
+
+    const scanInterval = setInterval(() => {
+      const video = videoRef.current;
+      if (!video || video.paused || video.readyState < 2) return;
+
+      try {
+        const vw = video.videoWidth || 1280;
+        const vh = video.videoHeight || 720;
+
+        // Sample the top region: x 10%-90%, y 1%-11%
+        const sx = vw * 0.10;
+        const sy = vh * 0.01;
+        const sw = vw * 0.80;
+        const sh = vh * 0.11;
+
+        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imgData.data;
+
+        // Count bright text pixels (white & gold/yellow sponsor texts)
+        let textPixelCount = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+
+          const isWhiteText = r > 210 && g > 210 && b > 200;
+          const isYellowText = r > 200 && g > 175 && b < 100;
+
+          if (isWhiteText || isYellowText) {
+            textPixelCount++;
+          }
+        }
+
+        // When text banner is present across 120x24 sample, count >= 25
+        if (textPixelCount >= 25) {
+          detectedStreak++;
+          absentStreak = 0;
+          if (detectedStreak >= 1) {
+            setHasAdBanner(true);
+          }
+        } else {
+          absentStreak++;
+          detectedStreak = 0;
+          if (absentStreak >= 3) {
+            setHasAdBanner(false);
+          }
+        }
+      } catch (err) {
+        // Ignore cross-origin error if any
+      }
+    }, 1000);
+
+    return () => {
+      clearInterval(scanInterval);
+    };
+  }, []);
+
   // 3. ACTIONS (Strictly defined before any useEffect)
   const showControlsHandler = useCallback(() => {
     setShowControls(true);
@@ -636,6 +713,14 @@ export default function VideoPlayer({
       onClick={attemptUnmute}
     >
       <video ref={videoRef} className="w-full h-full object-contain" poster={poster} playsInline />
+      
+      {/* Smart Auto-Conceal Mask - Only visible when sponsor text banner appears */}
+      <div
+        className={cn(
+          "absolute top-0 left-0 right-0 h-[10.5%] min-h-[42px] max-h-[58px] bg-gradient-to-b from-black/95 via-black/85 to-transparent z-25 pointer-events-none transition-all duration-500 backdrop-blur-[5px]",
+          hasAdBanner ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
+        )}
+      />
       
       {/* Floating Unmute Button if browser forced autoplay muted */}
       {autoplayMutedRef.current && isMuted && (
