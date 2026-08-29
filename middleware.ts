@@ -64,39 +64,34 @@ function isCacheableAsset(pathname: string): boolean {
 // -------------------------------------------------------------
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
-const RATE_LIMIT_WINDOW_MS = 10000; // 10 giây
-const MAX_REQUESTS_PER_WINDOW = 60; // Max 60 requests / 10s (~6 req/s)
+const RATE_LIMIT_WINDOW_MS = 10000; // 10 seconds
+const MAX_REQUESTS_PER_WINDOW = 150; // Max 150 requests / 10s (~15 req/s) - concurrency & NAT friendly
 
 function checkRateLimit(ip: string): boolean {
+    if (ip === 'unknown' || ip === '127.0.0.1' || ip === '::1') return true;
     const now = Date.now();
-    const windowStart = now - RATE_LIMIT_WINDOW_MS;
 
-    // Flush cache cũ để không bị memory leak trên quá trình chạy dài
+    // Flush old cache entries to keep memory low
     if (rateLimitMap.size > 5000) {
         const entriesToDelete: string[] = [];
         rateLimitMap.forEach((data, key) => {
             if (data.resetTime < now) entriesToDelete.push(key);
         });
         entriesToDelete.forEach(key => rateLimitMap.delete(key));
-        
-        // Nếu vẫn đầy sau khi xóa, clear trắng luôn để cứu memory
         if (rateLimitMap.size > 5000) rateLimitMap.clear();
     }
 
     const requestData = rateLimitMap.get(ip);
     
     if (!requestData || requestData.resetTime < now) {
-        // IP mới hoặc đã qua window cũ
         rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
         return true;
     }
 
     if (requestData.count >= MAX_REQUESTS_PER_WINDOW) {
-        // Block
         return false;
     }
 
-    // Tăng count
     requestData.count++;
     rateLimitMap.set(ip, requestData);
     return true;
@@ -105,7 +100,11 @@ function checkRateLimit(ip: string): boolean {
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const userAgent = request.headers.get('user-agent');
-    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    const ip =
+        request.headers.get('cf-connecting-ip') ||
+        request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+        request.headers.get('x-real-ip') ||
+        'unknown';
 
     // 1. Restrict HTTP Methods to GET, POST, HEAD, OPTIONS (Block PUT, DELETE, PATCH, TRACE, CONNECT)
     const ALLOWED_METHODS = ['GET', 'POST', 'HEAD', 'OPTIONS'];

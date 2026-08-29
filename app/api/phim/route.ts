@@ -1,14 +1,15 @@
 import { NextRequest } from "next/server";
 
-// Edge Runtime — responds 50-80ms faster than Node.js
+// Edge Runtime — responds 50-80ms faster than Node.js with zero cold-start latency
 export const runtime = "edge";
 
-// Rate limiting: in-memory store (resets on cold start, which is fine for edge)
+// Rate limiting: in-memory store per Edge worker node
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT = 60; // requests per window
+const RATE_LIMIT = 180; // Allow 180 requests per minute per IP (high-concurrency friendly for NAT/shared networks)
 const RATE_WINDOW = 60_000; // 1 minute
 
 function isRateLimited(ip: string): boolean {
+  if (ip === "unknown" || ip === "127.0.0.1" || ip === "::1") return false;
   const now = Date.now();
   const entry = rateLimitMap.get(ip);
 
@@ -21,17 +22,54 @@ function isRateLimited(ip: string): boolean {
   return entry.count > RATE_LIMIT;
 }
 
-// Server-side in-memory cache for high concurrency spikes
-const memoryCache = new Map<string, { data: string; timestamp: number }>();
-const MEMORY_CACHE_TTL = 300_000; // 5 minutes in-memory
+// Multi-tier In-Memory LRU Cache for Spikes
+interface CacheEntry {
+  data: string;
+  timestamp: number;
+  lastAccessed: number;
+}
+
+const memoryCache = new Map<string, CacheEntry>();
+const MEMORY_CACHE_TTL = 600_000; // 10 minutes in-memory
+const MAX_CACHE_ENTRIES = 1000; // High capacity for thousands of movie requests
+
+// Single-flight / In-Flight Request Deduplication:
+// If 1,000 users request the same movie at the same instant, only ONE fetch goes upstream.
+const inFlightRequests = new Map<string, Promise<string>>();
+
+function evictOldestEntry() {
+  let oldestKey: string | null = null;
+  let oldestTime = Infinity;
+  for (const [key, entry] of memoryCache.entries()) {
+    if (entry.lastAccessed < oldestTime) {
+      oldestTime = entry.lastAccessed;
+      oldestKey = key;
+    }
+  }
+  if (oldestKey) {
+    memoryCache.delete(oldestKey);
+  }
+}
 
 export async function GET(req: NextRequest) {
-  // Rate limiting
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  // Extract accurate client IP behind Cloudflare / Proxy
+  const ip =
+    req.headers.get("cf-connecting-ip") ||
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
+    "unknown";
+
   if (isRateLimited(ip)) {
     return new Response(
       JSON.stringify({ error: "Too many requests. Please slow down." }),
-      { status: 429, headers: { "Content-Type": "application/json", "Retry-After": "60" } }
+      {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json",
+          "Retry-After": "30",
+          "Cache-Control": "no-store",
+        },
+      }
     );
   }
 
@@ -66,57 +104,92 @@ export async function GET(req: NextRequest) {
   const now = Date.now();
   const cached = memoryCache.get(cacheKey);
 
+  // 1. Return from In-Memory Cache if fresh
   if (cached && now - cached.timestamp < MEMORY_CACHE_TTL) {
+    cached.lastAccessed = now;
     return new Response(cached.data, {
       headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=86400",
-        "X-Cache": "HIT",
-        Vary: "Accept",
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+        "X-Cache": "HIT-MEMORY",
+        Vary: "Accept-Encoding",
       },
     });
   }
 
+  // 2. In-Flight Request Deduplication (Prevents Thundering Herd Problem)
   try {
-    const res = await fetch(parsedUrl.toString(), {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        Accept: "application/json",
-      },
-    });
+    let pendingFetch = inFlightRequests.get(cacheKey);
 
-    if (!res.ok) {
-      return new Response(
-        JSON.stringify({ error: "Upstream error" }),
-        {
-          status: res.status,
-          headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+    if (!pendingFetch) {
+      pendingFetch = (async () => {
+        const res = await fetch(parsedUrl.toString(), {
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            Accept: "application/json",
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error(`Upstream returned ${res.status}`);
         }
-      );
+
+        const data = await res.json();
+        return JSON.stringify(data);
+      })()
+        .catch((err) => {
+          inFlightRequests.delete(cacheKey);
+          throw err;
+        })
+        .finally(() => {
+          inFlightRequests.delete(cacheKey);
+        });
+
+      inFlightRequests.set(cacheKey, pendingFetch);
     }
 
-    const data = await res.json();
-    const jsonString = JSON.stringify(data);
+    const jsonString = await pendingFetch;
 
-    // Keep memory cache size bounded (< 200 items)
-    if (memoryCache.size > 200) {
-      const firstKey = memoryCache.keys().next().value;
-      if (firstKey) memoryCache.delete(firstKey);
+    // Cache the result
+    if (memoryCache.size >= MAX_CACHE_ENTRIES) {
+      evictOldestEntry();
     }
-    memoryCache.set(cacheKey, { data: jsonString, timestamp: now });
+    memoryCache.set(cacheKey, {
+      data: jsonString,
+      timestamp: now,
+      lastAccessed: now,
+    });
 
     return new Response(jsonString, {
       headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=86400",
-        "X-Cache": "MISS",
-        Vary: "Accept",
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+        "X-Cache": "MISS-UPSTREAM",
+        Vary: "Accept-Encoding",
       },
     });
-  } catch {
+  } catch (error: any) {
+    // If upstream failed but we have stale cache, serve stale cache as graceful fallback!
+    if (cached) {
+      return new Response(cached.data, {
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "Cache-Control": "public, max-age=60",
+          "X-Cache": "STALE-FALLBACK",
+        },
+      });
+    }
+
     return new Response(
-      JSON.stringify({ error: "Fetch failed" }),
-      { status: 502, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } }
+      JSON.stringify({ error: "Failed to fetch upstream media data" }),
+      {
+        status: 502,
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+        },
+      }
     );
   }
 }

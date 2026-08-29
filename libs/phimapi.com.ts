@@ -34,7 +34,7 @@ export default class PhimApi {
     const url = `${this.apiUrl}/phim/${slug}`;
     const response = await fetch(url, {
       headers: this.fetchHeaders(),
-      cache: 'no-store',
+      next: { revalidate: 600 }, // Cache 10 phút — phục vụ hàng nghìn user tức thì
     });
     if (!response.ok) throw new Error(`API error: ${response.status}`);
     const data = await response.json();
