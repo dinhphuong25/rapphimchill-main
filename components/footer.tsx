@@ -12,7 +12,7 @@ export default function Footer() {
             <p className="text-[11px] sm:text-xs text-gray-300 truncate sm:whitespace-normal">
               Được quản lý và phát triển bởi{" "}
               <a
-                href="https://www.facebook.com/dinhphuongkim.vn/"
+                href="https://www.facebook.com/dinhphuong205/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary font-semibold hover:underline hover:text-primary/80 transition-colors"
