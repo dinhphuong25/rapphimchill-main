@@ -55,18 +55,18 @@ export default function Header({}: HeaderProps) {
         )}
       >
         <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 flex items-center justify-end h-full">
-          {/* Right: Search Input Trigger Button */}
+          {/* Right: Search Input Trigger Button with Prominent Glowing Border */}
           <button
             onClick={() => setShowSearchOverlay(true)}
-            className="flex items-center justify-between w-40 sm:w-60 md:w-80 h-10 sm:h-11 px-3.5 sm:px-4 rounded-full bg-[#141414]/90 backdrop-blur-md hover:bg-white/10 border border-white/10 hover:border-brand-green/40 text-white/60 hover:text-white transition-all duration-300 text-xs sm:text-sm group shadow-inner"
+            className="relative flex items-center justify-between w-44 sm:w-64 md:w-80 h-10 sm:h-11 px-4 rounded-full bg-[#0d1612]/95 hover:bg-[#121e18] border-2 border-brand-green/65 hover:border-brand-green text-white shadow-[0_0_22px_rgba(34,197,94,0.32)] hover:shadow-[0_0_35px_rgba(34,197,94,0.6)] transition-all duration-300 text-xs sm:text-sm group active:scale-95 shrink-0"
           >
             <div className="flex items-center gap-2.5 truncate">
-              <Search className="w-4 h-4 text-white/50 group-hover:text-brand-green transition-colors shrink-0" />
-              <span className="truncate text-white/50 group-hover:text-white/80 font-medium">
+              <Search className="w-4 h-4 text-brand-green group-hover:scale-110 transition-transform drop-shadow-[0_0_8px_rgba(34,197,94,0.8)] shrink-0" />
+              <span className="truncate text-white/85 group-hover:text-white font-medium">
                 Tìm kiếm phim...
               </span>
             </div>
-            <kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/10 border border-white/10 text-[10px] text-white/60 font-mono font-bold uppercase shadow-inner group-hover:text-brand-green transition-colors shrink-0">
+            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-green/15 border border-brand-green/40 text-[10px] text-brand-green font-mono font-black uppercase shadow-[0_0_8px_rgba(34,197,94,0.2)] group-hover:bg-brand-green group-hover:text-cinema-bg transition-all shrink-0">
               <span className="text-[10px]">Ctrl</span>K
             </kbd>
           </button>
