@@ -16,22 +16,22 @@ export default function Icon() {
           justifyContent: 'center',
           background: '#04070d',
           borderRadius: '24px',
-          border: '2px solid rgba(34, 197, 94, 0.4)',
+          border: '2px solid rgba(74, 222, 128, 0.5)',
         }}
       >
         <svg
-          width="60"
-          height="60"
+          width="62"
+          height="62"
           viewBox="0 0 100 100"
           fill="none"
         >
           {/* Left Column of H */}
-          <rect x="18" y="15" width="16" height="70" rx="7" fill="#22c55e" />
+          <rect x="16" y="14" width="18" height="72" rx="9" fill="#22c55e" />
           {/* Right Column of H */}
-          <rect x="66" y="15" width="16" height="70" rx="7" fill="#22c55e" />
-          {/* Center Play Arrow Bar */}
-          <path d="M 32 38 L 64 50 L 32 62 Z" fill="#4ade80" />
-          <polygon points="40,43 56,50 40,57" fill="#ffffff" />
+          <rect x="66" y="14" width="18" height="72" rx="9" fill="#22c55e" />
+          {/* Dynamic Play Crossbar */}
+          <rect x="24" y="42" width="52" height="16" rx="8" fill="#22c55e" />
+          <polygon points="44,38 60,50 44,62" fill="#ffffff" />
         </svg>
       </div>
     ),
