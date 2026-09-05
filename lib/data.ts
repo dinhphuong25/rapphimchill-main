@@ -56,7 +56,7 @@ export const getCachedFeaturedMovie = unstable_cache(
   { revalidate: 3600, tags: ["featured-movie"] }
 );
 
-/** New updates cached 5 minutes */
+/** New updates cached 60 seconds for instant fresh movies */
 export const getCachedNewUpdates = unstable_cache(
   async () => {
     try {
@@ -66,8 +66,8 @@ export const getCachedNewUpdates = unstable_cache(
       return [];
     }
   },
-  ["new-updates"],
-  { revalidate: 300, tags: ["new-updates"] }
+  ["new-updates-v4"],
+  { revalidate: 60, tags: ["new-updates"] }
 );
 
 /** Topic movies cached 1h */

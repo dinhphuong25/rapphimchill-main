@@ -35,9 +35,9 @@ export default function HomeClient({
     lastUpdated,
     isRefreshing,
     refresh: refreshMovies,
-  } = useNewUpdates();
+  } = useNewUpdates(initialMovies, featuredMovie || (featuredMovies && featuredMovies[0]));
 
-  const { topicsData } = useTopicsWithMovies(topics);
+  const { topicsData } = useTopicsWithMovies(topics, initialTopicsWithMovies);
 
   const displayMovies = useMemo(() => {
     const raw = clientMovies && clientMovies.length > 0 ? clientMovies : (initialMovies || []);

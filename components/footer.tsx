@@ -32,6 +32,11 @@ export default function Footer() {
           Tuyên bố miễn trừ trách nhiệm: Trang web chỉ tổng hợp và nhúng video từ các nguồn mở công cộng trên Internet. Chúng tôi không lưu trữ hoặc tải lên bất kỳ tập tin video nào trên máy chủ của mình.
         </p>
 
+        {/* Copyright Line */}
+        <p className="text-[11px] font-medium text-white/45">
+          © 2025 - 2026 HI PHIM. All rights reserved.
+        </p>
+
         {/* Developer Credit */}
         <p className="text-xs text-white/70">
           Được quản lý và phát triển bởi{" "}
@@ -43,11 +48,6 @@ export default function Footer() {
           >
             Kim Đình Phương
           </a>
-        </p>
-
-        {/* Copyright Line */}
-        <p className="text-[11px] font-medium text-white/45">
-          © 2025 - 2026 HI PHIM. All rights reserved.
         </p>
 
       </div>

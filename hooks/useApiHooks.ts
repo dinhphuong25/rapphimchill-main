@@ -84,12 +84,12 @@ async function fetchTopicMovies(slug: string, limit: number = 12): Promise<any[]
     }, 120000);
 }
 
-export function useNewUpdates() {
-    const [movies, setMovies] = useState<any[]>([]);
-    const [heroMovie, setHeroMovie] = useState<any | null>(null);
-    const [loading, setLoading] = useState(true);
+export function useNewUpdates(initialMovies: any[] = [], initialHeroMovie: any = null) {
+    const [movies, setMovies] = useState<any[]>(() => initialMovies || []);
+    const [heroMovie, setHeroMovie] = useState<any | null>(() => initialHeroMovie || null);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<Error | null>(null);
-    const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+    const [lastUpdated, setLastUpdated] = useState<Date | null>(() => new Date());
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     const isMounted = useRef(true);
@@ -103,8 +103,6 @@ export function useNewUpdates() {
         try {
             if (isRefresh) {
                 setIsRefreshing(true);
-            } else {
-                setLoading(true);
             }
 
             // Fetch cả phim featured và phim mới cập nhật song song
@@ -114,9 +112,12 @@ export function useNewUpdates() {
             ]);
 
             if (isMounted.current) {
-                setMovies(newMovies);
-                // Ưu tiên phim featured làm hero, fallback về phim mới nhất
-                setHeroMovie(featuredMovie || newMovies[0] || null);
+                if (Array.isArray(newMovies) && newMovies.length > 0) {
+                    setMovies(newMovies);
+                }
+                if (featuredMovie || (newMovies && newMovies[0])) {
+                    setHeroMovie(featuredMovie || newMovies[0]);
+                }
                 setLastUpdated(new Date());
                 setError(null);
             }
@@ -139,23 +140,26 @@ export function useNewUpdates() {
         fetchData(true);
     }, [fetchData]);
 
-    // Initial fetch
+    // Initial fetch only if initialMovies was empty
     useEffect(() => {
         isMounted.current = true;
-        fetchData();
+        if (!initialMovies || initialMovies.length === 0) {
+            fetchData();
+        }
 
         return () => {
             isMounted.current = false;
         };
-    }, [fetchData]);
+    }, [fetchData, initialMovies?.length]);
 
-    // Auto-refresh with optimized interval
+    // Auto-refresh every 60s (1 minute) to continuously fetch newly added episodes / movies
     useEffect(() => {
         const interval = setInterval(() => {
             if (document.visibilityState === "visible" && !fetchInProgress.current) {
+                apiCache.delete("new-updates-v2");
                 fetchData(true);
             }
-        }, REFRESH_INTERVAL);
+        }, 60000);
 
         return () => clearInterval(interval);
     }, [fetchData]);
@@ -165,7 +169,8 @@ export function useNewUpdates() {
         const handleVisibility = () => {
             if (document.visibilityState === "visible" && lastUpdated) {
                 const elapsed = Date.now() - lastUpdated.getTime();
-                if (elapsed > REFRESH_INTERVAL && !fetchInProgress.current) {
+                if (elapsed > 60000 && !fetchInProgress.current) {
+                    apiCache.delete("new-updates-v2");
                     fetchData(true);
                 }
             }
@@ -186,9 +191,9 @@ export function useNewUpdates() {
     }), [movies, heroMovie, loading, error, refresh, lastUpdated, isRefreshing]);
 }
 
-export function useTopicsWithMovies(topics: any[]) {
-    const [topicsData, setTopicsData] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+export function useTopicsWithMovies(topics: any[], initialTopicsWithMovies: any[] = []) {
+    const [topicsData, setTopicsData] = useState<any[]>(() => initialTopicsWithMovies || []);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<Error | null>(null);
     const isMounted = useRef(true);
     const fetchInProgress = useRef(false);
@@ -205,12 +210,10 @@ export function useTopicsWithMovies(topics: any[]) {
         fetchInProgress.current = true;
 
         try {
-            setLoading(true);
-
             const results = await Promise.all(
                 topics.map(async (topic) => {
                     try {
-                        const movies = await fetchTopicMovies(topic.slug, 6);
+                        const movies = await fetchTopicMovies(topic.slug, 12);
                         return { ...topic, movies };
                     } catch {
                         return { ...topic, movies: [] };
@@ -236,20 +239,22 @@ export function useTopicsWithMovies(topics: any[]) {
 
     useEffect(() => {
         isMounted.current = true;
-        fetchData();
+        if (!initialTopicsWithMovies || initialTopicsWithMovies.length === 0) {
+            fetchData();
+        }
 
         return () => {
             isMounted.current = false;
         };
-    }, [fetchData]);
+    }, [fetchData, initialTopicsWithMovies?.length]);
 
-    // Auto-refresh every 2 minutes for topics
+    // Auto-refresh topics every 2 minutes
     useEffect(() => {
         const interval = setInterval(() => {
             if (document.visibilityState === "visible" && !fetchInProgress.current) {
                 fetchData();
             }
-        }, 300000);
+        }, 120000);
 
         return () => clearInterval(interval);
     }, [fetchData]);

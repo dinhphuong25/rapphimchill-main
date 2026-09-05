@@ -100,10 +100,10 @@ export default class PhimApi {
   }
 
   async newAdding(index: number = 1): Promise<[MovieListItem[], Pagination]> {
-    const url = `${this.apiUrl}/danh-sach/phim-moi-cap-nhat-v2?page=${index}&limit=20`;
+    const url = `${this.apiUrl}/danh-sach/phim-moi-cap-nhat-v2?page=${index}&limit=24`;
     const response = await fetch(url, {
       headers: this.fetchHeaders(),
-      next: { revalidate: 120 }, // Cache 2 phút
+      next: { revalidate: 60 }, // Cache 60s để luôn cập nhật tập mới
     });
     if (!response.ok) throw new Error(`API error: ${response.status}`);
     const data = await response.json();

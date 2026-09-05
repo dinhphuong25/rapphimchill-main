@@ -6,7 +6,6 @@ import { HIDDEN_MOVIE_SLUGS } from "@/lib/hidden-movies";
 import { unstable_cache } from "next/cache";
 import { Suspense } from "react";
 import { LoadingWatch } from "@/components/ui/page-loaders";
-import Footer from "@/components/footer";
 import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
 import { getCachedCategories, getCachedCountries } from "@/lib/data";
@@ -133,8 +132,6 @@ async function WatchContent({ slug }: { slug: string }) {
         <div className="flex-1 w-full max-w-[1920px] mx-auto pb-16 px-3 sm:px-6 lg:px-8 xl:px-10 flex flex-col">
           <Description movie={movie} serverData={server} slug={slug} thumb_url={movie.thumb_url} />
         </div>
-
-        <Footer />
       </main>
     </div>
   );

@@ -24,24 +24,8 @@ interface MovieCardEditorialProps {
   priority?: boolean;
 }
 
-const shimmer = (w: number, h: number) => `
-<svg width="${w}" height="${h}" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-  <defs>
-    <linearGradient id="g">
-      <stop stop-color="#111827" offset="20%" />
-      <stop stop-color="#1f2937" offset="50%" />
-      <stop stop-color="#111827" offset="70%" />
-    </linearGradient>
-  </defs>
-  <rect width="${w}" height="${h}" fill="#111827" />
-  <rect id="r" width="${w}" height="${h}" fill="url(#g)" />
-  <animate xlink:href="#r" attributeName="x" from="-${w}" to="${w}" dur="1s" repeatCount="indefinite"  />
-</svg>`;
-
-const toBase64 = (str: string) =>
-  typeof window === "undefined"
-    ? Buffer.from(str).toString("base64")
-    : window.btoa(str);
+const STATIC_BLUR_DATA_URL =
+  "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 450'%3E%3Crect width='300' height='450' fill='%23111714'/%3E%3C/svg%3E";
 
 export const MovieCardEditorial = memo(function MovieCardEditorial({
   movie,
@@ -57,7 +41,7 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
   const isFav = isFavorite(movie.slug);
 
   return (
-    <div className="group relative flex flex-col h-full select-none">
+    <div className="group relative flex flex-col h-full select-none" style={{ contentVisibility: "auto", containIntrinsicSize: "200px 300px" }}>
       {/* Poster Image Container Wrapper */}
       <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-cinema-surface border border-white/10 group-hover:border-brand-green/50 transition-all duration-500 group-hover:-translate-y-2 group-hover:scale-[1.02] shadow-xl group-hover:shadow-[0_10px_30px_rgba(32,214,107,0.25)]">
         
@@ -71,7 +55,7 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
           fill
           priority={priority}
           placeholder="blur"
-          blurDataURL={`data:image/svg+xml;base64,${toBase64(shimmer(300, 450))}`}
+          blurDataURL={STATIC_BLUR_DATA_URL}
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
           quality={75}
           className="object-cover group-hover:scale-105 transition-transform duration-500"

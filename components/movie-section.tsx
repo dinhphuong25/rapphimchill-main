@@ -1,5 +1,4 @@
-"use client";
-
+import { memo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronRight, Play, Star } from "lucide-react";
@@ -16,7 +15,7 @@ interface MovieSectionProps {
   emptyMessage?: string;
 }
 
-export default function MovieSection({
+export const MovieSection = memo(function MovieSection({
   indexNumber = "01",
   title,
   movies = [],
@@ -29,7 +28,7 @@ export default function MovieSection({
   if (!filteredMovies || filteredMovies.length === 0) return null;
 
   return (
-    <section className="py-6 select-none">
+    <section className="py-6 select-none" style={{ contentVisibility: "auto", containIntrinsicSize: "auto 450px" }}>
       {/* Editorial Header */}
       <div className="flex items-center justify-between gap-4 mb-5">
         <div className="flex items-center gap-3 min-w-0">
@@ -138,4 +137,6 @@ export default function MovieSection({
       )}
     </section>
   );
-}
+});
+
+export default MovieSection;
