@@ -1,51 +1,100 @@
 "use client";
 
+import Link from "next/link";
+import Image from "next/image";
 import Script from "next/script";
+import { Heart } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="w-full mt-auto py-3.5 pb-20 sm:pb-3.5 md:py-5 border-t border-white/5 bg-cinema-bg/80 backdrop-blur-md">
-      <div className="container mx-auto px-3 sm:px-6 lg:px-8 max-w-7xl">
-        <div className="flex flex-row items-center justify-between gap-3 text-left">
-          {/* Left Info / Copyright */}
-          <div className="space-y-0.5 min-w-0 pr-2">
-            <p className="text-[11px] sm:text-xs text-gray-300 truncate sm:whitespace-normal">
-              Được quản lý và phát triển bởi{" "}
-              <a
-                href="https://www.facebook.com/dinhphuong205/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary font-semibold hover:underline hover:text-primary/80 transition-colors"
-              >
-                Kim Đình Phương
-              </a>
-            </p>
-            <p className="text-[10px] sm:text-[11px] text-gray-500 font-medium truncate sm:whitespace-normal">
-              © 2025 - 2026 Hi Phim. All rights reserved.
-            </p>
-          </div>
-
-          {/* Right DMCA Protection Badge */}
-          <div className="flex items-center justify-end shrink-0">
-            <a
-              href="https://www.dmca.com/Protection/Status.aspx?ID=5a1e0cc9-8158-46c6-97a7-ba374504dcb5"
-              title="DMCA.com Protection Status"
-              className="dmca-badge inline-block transition-all hover:scale-105 active:scale-95 duration-200"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <img
-                src="https://images.dmca.com/Badges/dmca-badge-w150-2x1-01.png?ID=5a1e0cc9-8158-46c6-97a7-ba374504dcb5"
-                alt="DMCA.com Protection Status"
-                className="h-6 sm:h-7.5 w-auto object-contain rounded shadow-sm hover:shadow-[0_0_12px_rgba(34,197,94,0.3)] transition-all"
-                loading="lazy"
-              />
-            </a>
-          </div>
+    <footer className="w-full mt-auto py-8 sm:py-10 border-t border-white/5 bg-[#060a08]/90 backdrop-blur-xl select-none">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col items-center text-center space-y-4">
+        
+        {/* Brand Logo & Slogan */}
+        <div className="flex items-center gap-2.5">
+          <Image
+            src="/favicon.svg"
+            alt="Hi Phim Logo"
+            width={28}
+            height={28}
+            className="w-7 h-7 object-contain"
+          />
+          <span className="text-base font-black text-white tracking-wide">
+            HI <span className="text-brand-green">PHIM</span>
+          </span>
+          <span className="text-white/20 hidden sm:inline">•</span>
+          <span className="text-xs font-semibold text-white/50 tracking-wider hidden sm:inline">
+            Xem Phim HD Chuẩn Điện Ảnh Miễn Phí
+          </span>
         </div>
+
+        {/* Quick Navigation Links */}
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-medium text-white/60">
+          <Link href="/" className="hover:text-brand-green transition-colors">
+            Trang Chủ
+          </Link>
+          <Link href="/?typeList=phim-bo" className="hover:text-brand-green transition-colors">
+            Phim Bộ
+          </Link>
+          <Link href="/?typeList=phim-le" className="hover:text-brand-green transition-colors">
+            Phim Lẻ
+          </Link>
+          <Link href="/?typeList=hoat-hinh" className="hover:text-brand-green transition-colors">
+            Hoạt Hình
+          </Link>
+          <Link href="/new-updates" className="hover:text-brand-green transition-colors">
+            Mới Cập Nhật
+          </Link>
+          <Link href="/favorites" className="hover:text-brand-green transition-colors">
+            Phim Yêu Thích
+          </Link>
+        </div>
+
+        {/* Disclaimer Note */}
+        <p className="text-[11px] text-white/40 max-w-2xl leading-relaxed">
+          Tuyên bố miễn trừ trách nhiệm: Trang web chỉ tổng hợp và nhúng video từ các nguồn mở công cộng trên Internet. Chúng tôi không lưu trữ hoặc tải lên bất kỳ tập tin video nào trên máy chủ của mình.
+        </p>
+
+        {/* Developer Credit */}
+        <p className="text-xs text-white/70">
+          Được quản lý và phát triển bởi{" "}
+          <a
+            href="https://www.facebook.com/dinhphuong205/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-brand-green font-bold hover:underline hover:text-brand-green-hover transition-colors"
+          >
+            Kim Đình Phương
+          </a>
+        </p>
+
+        {/* Copyright Line */}
+        <p className="text-[11px] font-medium text-white/45">
+          © 2025 - 2026 HI PHIM. All rights reserved.
+        </p>
+
+        {/* DMCA Badge Directly Below Copyright Line */}
+        <div className="pt-0.5 flex items-center justify-center">
+          <a
+            href="https://www.dmca.com/Protection/Status.aspx?ID=5a1e0cc9-8158-46c6-97a7-ba374504dcb5"
+            title="DMCA.com Protection Status"
+            className="dmca-badge inline-block transition-transform hover:scale-105 active:scale-95 duration-200 group"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img
+              src="https://images.dmca.com/Badges/dmca-badge-w150-2x1-01.png?ID=5a1e0cc9-8158-46c6-97a7-ba374504dcb5"
+              alt="DMCA.com Protection Status"
+              className="h-6 sm:h-7 w-auto object-contain rounded opacity-85 group-hover:opacity-100 shadow-sm hover:shadow-[0_0_15px_rgba(34,197,94,0.35)] transition-all"
+              loading="lazy"
+            />
+          </a>
+        </div>
+
       </div>
 
       <Script src="https://images.dmca.com/Badges/DMCABadgeHelper.min.js" strategy="lazyOnload" />
     </footer>
   );
 }
+
