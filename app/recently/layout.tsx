@@ -4,12 +4,12 @@ export const metadata: Metadata = {
   title: "Phim đã xem gần đây",
   description: "Xem lại danh sách phim bạn đã xem gần đây trên Hi Phim.",
   alternates: {
-    canonical: "https://rapphimchill.app/recently",
+    canonical: "https://hiphim.biz/recently",
   },
   openGraph: {
     title: "Phim đã xem gần đây | Hi Phim",
     description: "Xem lại danh sách phim bạn đã xem gần đây trên Hi Phim.",
-    url: "https://rapphimchill.app/recently",
+    url: "https://hiphim.biz/recently",
     type: "website",
   },
   twitter: {

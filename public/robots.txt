@@ -6,7 +6,7 @@ Disallow: /_next/
 Disallow: /admin/
 
 # Sitemaps
-Sitemap: https://rapphimchill.app/sitemap.xml
+Sitemap: https://hiphim.biz/sitemap.xml
 
 # Crawl delay (optional, helps with server load)
 Crawl-delay: 1

@@ -113,9 +113,9 @@ export function middleware(request: NextRequest) {
     }
 
     // Canonical host normalization: redirect www to apex so Google indexes one URL set only.
-    if (request.nextUrl.hostname === 'www.rapphimchill.app') {
+    if (request.nextUrl.hostname === 'www.hiphim.biz' || request.nextUrl.hostname === 'www.rapphimchill.app') {
         const canonicalUrl = request.nextUrl.clone();
-        canonicalUrl.hostname = 'rapphimchill.app';
+        canonicalUrl.hostname = request.nextUrl.hostname.includes('hiphim') ? 'hiphim.biz' : 'rapphimchill.app';
         return NextResponse.redirect(canonicalUrl, 308);
     }
 
@@ -156,6 +156,7 @@ export function middleware(request: NextRequest) {
                         const parsed = new URL(value, request.nextUrl.origin);
                         const isAllowedHost = 
                             parsed.hostname === request.nextUrl.hostname ||
+                            parsed.hostname === 'hiphim.biz' ||
                             parsed.hostname === 'rapphimchill.app' ||
                             parsed.hostname.endsWith('phimapi.com');
                         if (!isAllowedHost) {

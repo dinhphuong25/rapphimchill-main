@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
         description: movie.content?.substring(0, 200),
         images: [{ url: posterUrl, width: 300, height: 450, alt: movie.name }],
       },
-      alternates: { canonical: `https://rapphimchill.app/phim/${slug}` },
+      alternates: { canonical: `https://hiphim.biz/phim/${slug}` },
     };
   } catch {
     return { title: "Phim" };
@@ -214,11 +214,11 @@ async function PhimDetailContent({ slug }: { slug: string }) {
       </div>
 
       {/* SEO structured data */}
-      <MovieStructuredData movie={movie} url={`https://rapphimchill.app/phim/${slug}`} />
+      <MovieStructuredData movie={movie} url={`https://hiphim.biz/phim/${slug}`} />
       <BreadcrumbStructuredData
         items={[
-          { name: "Trang Chủ", url: "https://rapphimchill.app" },
-          { name: movie.name, url: `https://rapphimchill.app/phim/${slug}` },
+          { name: "Trang Chủ", url: "https://hiphim.biz" },
+          { name: movie.name, url: `https://hiphim.biz/phim/${slug}` },
         ]}
       />
     </main>

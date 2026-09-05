@@ -53,12 +53,12 @@ export const metadata: Metadata = {
     "phim vietsub",
     "phim thuyết minh",
   ],
-  metadataBase: new URL("https://rapphimchill.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://hiphim.biz"),
   openGraph: {
     title: "Hi Phim - Xem Phim Online HD Miễn Phí #1 Việt Nam",
     description:
-      "Kho 50,000+ phim HD mới nhất 2026. Phim bộ, phim lẻ, anime vietsub cập nhật hàng ngày. Xem miễn phí tại Hi Phim",
-    url: "https://rapphimchill.app",
+      "Kho 50,000+ phim bộ, phim lẻ chiếu rạp, anime vietsub mới nhất 2026. Tốc độ cao, chuẩn Full HD/4K, cập nhật liên tục hàng ngày.",
+    url: "https://hiphim.biz",
     siteName: "Hi Phim",
     type: "website",
     locale: "vi_VN",
@@ -94,7 +94,7 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-  alternates: { canonical: "https://rapphimchill.app" },
+  alternates: { canonical: "https://hiphim.biz" },
   verification: {
     google: "oOs1HYmXd-muliYGGR8v91joJyTEVTbr-mRtnIpXrPY",
     other: {
@@ -198,8 +198,8 @@ export default function RootLayout({
         <SecurityGuard />
 
         {/* Structured Data SEO */}
-        <WebsiteStructuredData url="https://rapphimchill.app" />
-        <OrganizationStructuredData url="https://rapphimchill.app" />
+        <WebsiteStructuredData url="https://hiphim.biz" />
+        <OrganizationStructuredData url="https://hiphim.biz" />
 
         <HydrationFix />
 

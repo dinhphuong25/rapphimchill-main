@@ -51,7 +51,7 @@ const LazyImage = memo(function LazyImage({
 
       {isInView && (
         <Image
-          src={hasError ? "/images/placeholder.webp" : imageSrc}
+          src={hasError ? "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 450'%3E%3Crect width='300' height='450' fill='%23111714'/%3E%3C/svg%3E" : imageSrc}
           alt={alt}
           fill
           quality={75}

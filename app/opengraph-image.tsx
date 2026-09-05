@@ -1,81 +1,184 @@
-import { ImageResponse } from 'next/og'
+import { ImageResponse } from "next/og";
 
-export const runtime = 'edge'
-export const alt = 'Hi Phim - Xem Phim Online HD Miễn Phí'
-export const size = { width: 1200, height: 630 }
-export const contentType = 'image/png'
+export const runtime = "edge";
+export const alt = "Hi Phim - Xem Phim Online HD Miễn Phí #1 Việt Nam";
+export const size = {
+  width: 1200,
+  height: 630,
+};
+export const contentType = "image/png";
 
-export default function Image() {
+export default async function Image() {
   return new ImageResponse(
     (
       <div
         style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: '#04070d',
-          border: '8px solid rgba(34, 197, 94, 0.3)',
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#050807",
+          backgroundImage:
+            "radial-gradient(circle at 50% 30%, rgba(32, 214, 107, 0.18) 0%, rgba(5, 8, 7, 0.95) 70%)",
+          fontFamily: "sans-serif",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
+        {/* Subtle decorative grid lines */}
         <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: '#0b131f',
-            borderRadius: '40px',
-            width: '180px',
-            height: '180px',
-            border: '3px solid #22c55e',
-            boxShadow: '0 0 60px rgba(34, 197, 94, 0.4)',
-            marginBottom: '36px',
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            opacity: 0.05,
+            backgroundImage:
+              "linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)",
+            backgroundSize: "40px 40px",
+          }}
+        />
+
+        {/* Top Tag */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            padding: "8px 24px",
+            borderRadius: "9999px",
+            backgroundColor: "rgba(32, 214, 107, 0.15)",
+            border: "1px solid rgba(32, 214, 107, 0.35)",
+            color: "#20D66B",
+            fontSize: "18px",
+            fontWeight: 800,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            marginBottom: "28px",
           }}
         >
-          <svg
-            width="120"
-            height="120"
-            viewBox="0 0 100 100"
-            fill="none"
-          >
-            <rect x="18" y="15" width="16" height="70" rx="7" fill="#22c55e" />
-            <rect x="66" y="15" width="16" height="70" rx="7" fill="#22c55e" />
-            <path d="M 32 38 L 64 50 L 32 62 Z" fill="#4ade80" />
-            <polygon points="40,43 56,50 40,57" fill="#ffffff" />
-          </svg>
+          🎬 KHO PHIM ONLINE CHẤT LƯỢNG CAO #1 VIỆT NAM
         </div>
-        <h1
+
+        {/* Brand Logo & Name */}
+        <div
           style={{
-            fontSize: '72px',
-            fontWeight: 900,
-            color: 'white',
-            letterSpacing: '-0.02em',
-            margin: 0,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: "20px",
           }}
         >
-          <span>HI</span>
-          <span style={{ color: '#22c55e' }}>PHIM</span>
-        </h1>
-        <p
+          <span
+            style={{
+              fontSize: "76px",
+              fontWeight: 900,
+              color: "#FFFFFF",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            HI
+          </span>
+          <span
+            style={{
+              fontSize: "76px",
+              fontWeight: 900,
+              color: "#20D66B",
+              marginLeft: "16px",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            PHIM
+          </span>
+        </div>
+
+        {/* Slogan */}
+        <div
           style={{
-            fontSize: '28px',
+            fontSize: "28px",
             fontWeight: 600,
-            color: '#94a3b8',
-            marginTop: '16px',
-            maxWidth: '800px',
-            textAlign: 'center',
+            color: "rgba(255, 255, 255, 0.75)",
+            textAlign: "center",
+            maxWidth: "850px",
             lineHeight: 1.4,
+            marginBottom: "36px",
           }}
         >
-          Xem Phim Online HD Miễn Phí Tốc Độ Cao
-        </p>
+          Xem Phim Bộ, Phim Lẻ, Chiếu Rạp & Anime Vietsub Miễn Phí Chuẩn Full HD / 4K
+        </div>
+
+        {/* Highlights Badges */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "16px",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              padding: "10px 22px",
+              borderRadius: "14px",
+              backgroundColor: "rgba(255, 255, 255, 0.06)",
+              border: "1px solid rgba(255, 255, 255, 0.12)",
+              color: "#FFFFFF",
+              fontSize: "18px",
+              fontWeight: 700,
+            }}
+          >
+            ⚡ Tốc Độ Cao 0.8s
+          </div>
+          <div
+            style={{
+              display: "flex",
+              padding: "10px 22px",
+              borderRadius: "14px",
+              backgroundColor: "rgba(255, 255, 255, 0.06)",
+              border: "1px solid rgba(255, 255, 255, 0.12)",
+              color: "#FFFFFF",
+              fontSize: "18px",
+              fontWeight: 700,
+            }}
+          >
+            ✨ 50,000+ Tập Phim
+          </div>
+          <div
+            style={{
+              display: "flex",
+              padding: "10px 22px",
+              borderRadius: "14px",
+              backgroundColor: "rgba(255, 255, 255, 0.06)",
+              border: "1px solid rgba(255, 255, 255, 0.12)",
+              color: "#FFFFFF",
+              fontSize: "18px",
+              fontWeight: 700,
+            }}
+          >
+            🍿 Không Quảng Cáo
+          </div>
+        </div>
+
+        {/* Footer domain */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: "24px",
+            fontSize: "16px",
+            fontWeight: 700,
+            color: "rgba(32, 214, 107, 0.8)",
+            letterSpacing: "0.05em",
+          }}
+        >
+          hiphim.biz
+        </div>
       </div>
     ),
-    { ...size }
-  )
+    {
+      ...size,
+    }
+  );
 }

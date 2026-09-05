@@ -4,7 +4,7 @@ import PhimApi from "@/libs/phimapi.com";
 export const revalidate = 3600; // Re-generate sitemap every hour
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = "https://rapphimchill.app";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://hiphim.biz";
   const api = new PhimApi();
 
   try {
