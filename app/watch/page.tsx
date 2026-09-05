@@ -40,10 +40,10 @@ export async function generateMetadata({ searchParams }: any) {
       : `https://phimimg.com/${movie.thumb_url}`;
 
     return {
-      title: `${movie.name} - Xem phim HD chất lượng cao | Rạp Phim Chill`,
+      title: `${movie.name} - Xem phim HD chất lượng cao | Hi Phim`,
       description: movie.content
         ? movie.content.substring(0, 160) + "..."
-        : `Xem phim ${movie.name} HD chất lượng cao miễn phí tại Rạp Phim Chill.`,
+        : `Xem phim ${movie.name} HD chất lượng cao miễn phí tại Hi Phim.`,
       openGraph: {
         title: `${movie.name} - Xem phim HD chất lượng cao`,
         url: watchUrl,

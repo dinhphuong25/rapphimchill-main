@@ -1,5 +1,5 @@
 /**
- * Centralized TypeScript types cho RẠP PHIM CHILL
+ * Centralized TypeScript types cho HI PHIM
  * Dựa trên PhimAPI response format
  */
 

@@ -14,24 +14,24 @@ export default function Icon() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, #20D66B 0%, #10B981 100%)',
+          background: '#04070d',
           borderRadius: '24px',
+          border: '2px solid rgba(34, 197, 94, 0.4)',
         }}
       >
         <svg
-          width="54"
-          height="54"
-          viewBox="0 0 24 24"
+          width="60"
+          height="60"
+          viewBox="0 0 100 100"
           fill="none"
-          stroke="#050807"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
         >
-          <path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z" fill="#050807"/>
-          <path d="m6.2 5.3 3.1 3.9" />
-          <path d="m12.4 3.4 3.1 4" />
-          <path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="#050807"/>
+          {/* Left Column of H */}
+          <rect x="18" y="15" width="16" height="70" rx="7" fill="#22c55e" />
+          {/* Right Column of H */}
+          <rect x="66" y="15" width="16" height="70" rx="7" fill="#22c55e" />
+          {/* Center Play Arrow Bar */}
+          <path d="M 32 38 L 64 50 L 32 62 Z" fill="#4ade80" />
+          <polygon points="40,43 56,50 40,57" fill="#ffffff" />
         </svg>
       </div>
     ),

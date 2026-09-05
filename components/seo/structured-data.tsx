@@ -89,7 +89,7 @@ export function MovieStructuredData({ movie, url }: MovieStructuredDataProps) {
       "embedUrl": url,
       "publisher": {
         "@type": "Organization",
-        "name": "Rạp Phim Chill",
+        "name": "Hi Phim",
         "logo": {
           "@type": "ImageObject",
           "url": "https://rapphimchill.app/favicon.png"
@@ -109,14 +109,14 @@ export function MovieStructuredData({ movie, url }: MovieStructuredDataProps) {
   );
 }
 
-export function WebsiteStructuredData({ url, name = "Rạp Phim Chill", description }: WebsiteStructuredDataProps) {
+export function WebsiteStructuredData({ url, name = "Hi Phim", description }: WebsiteStructuredDataProps) {
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": name,
-    "alternateName": ["Rap Phim Chill", "RapPhimChill", "rapphimchill.app"],
+    "alternateName": ["Hi Phim", "HiPhim", "hiphim.app"],
     "url": url,
-    "description": description || "Rạp Phim Chill - Trang xem phim online HD miễn phí hàng đầu Việt Nam. Kho 50,000+ phim bộ, phim lẻ, anime vietsub mới nhất 2026.",
+    "description": description || "Hi Phim - Trang xem phim online HD miễn phí hàng đầu Việt Nam. Kho 50,000+ phim bộ, phim lẻ, anime vietsub mới nhất 2026.",
     "inLanguage": "vi-VN",
     "potentialAction": {
       "@type": "SearchAction",
@@ -125,7 +125,7 @@ export function WebsiteStructuredData({ url, name = "Rạp Phim Chill", descript
     },
     "publisher": {
       "@type": "Organization",
-      "name": "Rạp Phim Chill",
+      "name": "Hi Phim",
       "url": url,
       "logo": {
         "@type": "ImageObject",
@@ -168,7 +168,7 @@ export function OrganizationStructuredData({ url }: { url: string }) {
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "name": "Rạp Phim Chill",
+    "name": "Hi Phim",
     "url": url,
     "logo": `${url}/favicon.png`,
     "description": "Website xem phim HD chất lượng cao miễn phí hàng đầu Việt Nam",

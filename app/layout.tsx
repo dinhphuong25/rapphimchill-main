@@ -27,15 +27,14 @@ const beVietnam = Be_Vietnam_Pro({
 
 export const metadata: Metadata = {
   title: {
-    default: "Rạp Phim Chill - Xem Phim Online HD Miễn Phí Mới Nhất 2026",
-    template: "%s | Rạp Phim Chill",
+    default: "Hi Phim - Xem Phim Online HD Miễn Phí Mới Nhất 2026",
+    template: "%s | Hi Phim",
   },
   description:
-    "Rạp Phim Chill (rapphimchill.app) - Trang xem phim online HD miễn phí tốc độ cao #1 Việt Nam. Kho 50,000+ phim bộ, phim lẻ, anime vietsub mới nhất 2026. Cập nhật hàng ngày, không quảng cáo.",
+    "Hi Phim - Trang xem phim online HD miễn phí tốc độ cao #1 Việt Nam. Kho 50,000+ phim bộ, phim lẻ, anime vietsub mới nhất 2026. Cập nhật hàng ngày, không quảng cáo.",
   keywords: [
-    "rạp phim chill",
-    "rap phim chill",
-    "rapphimchill",
+    "hi phim",
+    "hiphim",
     "xem phim online",
     "phim HD miễn phí",
     "phim mới nhất 2026",
@@ -56,11 +55,11 @@ export const metadata: Metadata = {
   ],
   metadataBase: new URL("https://rapphimchill.app"),
   openGraph: {
-    title: "Rạp Phim Chill - Xem Phim Online HD Miễn Phí #1 Việt Nam",
+    title: "Hi Phim - Xem Phim Online HD Miễn Phí #1 Việt Nam",
     description:
-      "Kho 50,000+ phim HD mới nhất 2026. Phim bộ, phim lẻ, anime vietsub cập nhật hàng ngày. Xem miễn phí tại rapphimchill.app",
+      "Kho 50,000+ phim HD mới nhất 2026. Phim bộ, phim lẻ, anime vietsub cập nhật hàng ngày. Xem miễn phí tại Hi Phim",
     url: "https://rapphimchill.app",
-    siteName: "Rạp Phim Chill",
+    siteName: "Hi Phim",
     type: "website",
     locale: "vi_VN",
     images: [
@@ -68,21 +67,21 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Rạp Phim Chill - Xem Phim Online HD Miễn Phí",
+        alt: "Hi Phim - Xem Phim Online HD Miễn Phí",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    site: "@rapphimchill",
-    title: "Rạp Phim Chill - Xem Phim Online HD Miễn Phí",
+    site: "@hiphim",
+    title: "Hi Phim - Xem Phim Online HD Miễn Phí",
     description: "Kho 50,000+ phim HD. Phim bộ, phim lẻ, anime vietsub mới nhất 2026.",
     images: ["/og-image.png"],
   },
-  applicationName: "Rạp Phim Chill",
+  applicationName: "Hi Phim",
   referrer: "origin-when-cross-origin",
-  creator: "Rạp Phim Chill Team",
-  publisher: "Rạp Phim Chill",
+  creator: "Hi Phim Team",
+  publisher: "Hi Phim",
   category: "Entertainment",
   robots: {
     index: true,
@@ -131,7 +130,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#22c55e" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="Rạp Phim Chill" />
+        <meta name="apple-mobile-web-app-title" content="Hi Phim" />
         <link rel="apple-touch-icon" href="/favicon.png" />
 
         {/* DNS Preconnect — giảm độ trễ kết nối */}

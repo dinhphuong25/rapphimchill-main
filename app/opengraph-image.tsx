@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og'
 
 export const runtime = 'edge'
-export const alt = 'Rạp Phim Chill'
+export const alt = 'Hi Phim - Xem Phim Online HD Miễn Phí'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -16,7 +16,8 @@ export default function Image() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#0a0a0a', // Dark background for OG image
+          background: '#04070d',
+          border: '8px solid rgba(34, 197, 94, 0.3)',
         }}
       >
         <div
@@ -24,46 +25,54 @@ export default function Image() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: '#dc2626',
-            borderRadius: '24px',
-            width: '160px',
-            height: '160px',
-            boxShadow: '0 10px 40px rgba(220,38,38,0.5)',
-            marginBottom: '40px',
+            background: '#0b131f',
+            borderRadius: '40px',
+            width: '180px',
+            height: '180px',
+            border: '3px solid #22c55e',
+            boxShadow: '0 0 60px rgba(34, 197, 94, 0.4)',
+            marginBottom: '36px',
           }}
         >
           <svg
-            width="80"
-            height="80"
-            viewBox="0 0 24 24"
-            fill="white"
-            style={{ marginLeft: '10px' }}
+            width="120"
+            height="120"
+            viewBox="0 0 100 100"
+            fill="none"
           >
-            <path d="M8 5v14l11-7z" />
+            <rect x="18" y="15" width="16" height="70" rx="7" fill="#22c55e" />
+            <rect x="66" y="15" width="16" height="70" rx="7" fill="#22c55e" />
+            <path d="M 32 38 L 64 50 L 32 62 Z" fill="#4ade80" />
+            <polygon points="40,43 56,50 40,57" fill="#ffffff" />
           </svg>
         </div>
         <h1
           style={{
-            fontSize: '64px',
-            fontWeight: 'bold',
+            fontSize: '72px',
+            fontWeight: 900,
             color: 'white',
             letterSpacing: '-0.02em',
             margin: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
           }}
         >
-          Rạp Phim Chill
+          <span>HI</span>
+          <span style={{ color: '#22c55e' }}>PHIM</span>
         </h1>
         <p
           style={{
-            fontSize: '32px',
-            color: '#a3a3a3',
-            marginTop: '20px',
+            fontSize: '28px',
+            fontWeight: 600,
+            color: '#94a3b8',
+            marginTop: '16px',
             maxWidth: '800px',
             textAlign: 'center',
             lineHeight: 1.4,
           }}
         >
-          Kho phim HD chất lượng cao miễn phí
+          Xem Phim Online HD Miễn Phí Tốc Độ Cao
         </p>
       </div>
     ),

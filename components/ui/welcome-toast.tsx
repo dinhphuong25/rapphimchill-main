@@ -38,7 +38,7 @@ export default function WelcomeToast() {
         {/* Content */}
         <div className="flex-1 flex flex-col justify-center py-1">
           <p className="text-white text-sm font-medium leading-snug">
-            Chào mừng đến với <span className="text-primary font-bold">Rạp Phim Chill</span>!
+            Chào mừng đến với <span className="text-primary font-bold">Hi Phim</span>!
           </p>
           <p className="text-white/60 text-xs">
             Chúc bạn xem phim thật vui vẻ 🍿

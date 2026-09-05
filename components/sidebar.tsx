@@ -127,18 +127,18 @@ export default function Sidebar({ isTheatreMode = false }: SidebarProps) {
       >
         {/* Sidebar Header / Logo */}
         <div className="h-16 px-4 flex items-center justify-between border-b border-white/8 shrink-0">
-          <Link href="/" className="flex items-center gap-3 overflow-hidden group py-1">
+          <Link href="/" className="flex items-center gap-2.5 overflow-hidden group py-1">
             <Image
               src="/favicon.svg"
-              alt="Rạp Phim Chill Logo"
-              width={36}
-              height={36}
-              className="w-9 h-9 object-contain"
+              alt="Hi Phim Logo"
+              width={34}
+              height={34}
+              className="w-8.5 h-8.5 object-contain transition-transform group-hover:scale-105"
               priority
             />
-            <div className="flex flex-col leading-none">
-              <span className="text-[13px] font-black text-white tracking-wider font-sans">RẠP PHIM</span>
-              <span className="text-[10px] font-black text-brand-green tracking-[0.3em] mt-0.5">CHILL</span>
+            <div className="flex items-center tracking-tight leading-none">
+              <span className="text-base font-black text-white font-sans tracking-wide">HI</span>
+              <span className="text-base font-black text-brand-green font-sans ml-1 tracking-wide">PHIM</span>
             </div>
           </Link>
 
@@ -232,7 +232,7 @@ export default function Sidebar({ isTheatreMode = false }: SidebarProps) {
         {/* Sidebar Footer */}
         <div className="p-3 border-t border-white/8 shrink-0 text-center">
           <div className={cn("text-[10px] text-white/30 truncate transition-opacity duration-200", "opacity-100")}>
-            © 2026 RẠP PHIM CHILL
+            © 2026 HI PHIM
           </div>
         </div>
       </aside>

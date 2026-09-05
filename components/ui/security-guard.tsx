@@ -57,7 +57,7 @@ export default function SecurityGuard() {
       try {
         console.clear();
         console.log(
-          "%c🎬 RẠP PHIM CHILL - THÔNG CÁO BẢN QUYỀN & SỞ HỮU TRÍ TUỆ",
+          "%c🎬 HI PHIM - THÔNG CÁO BẢN QUYỀN & SỞ HỮU TRÍ TUỆ",
           "color: #22c55e; font-size: 20px; font-weight: 900; padding: 8px; background: #000; border: 2px solid #22c55e; border-radius: 6px;"
         );
         console.log(

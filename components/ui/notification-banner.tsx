@@ -44,7 +44,7 @@ export default function NotificationBanner() {
   const showTestNotification = () => {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.ready.then((registration) => {
-        registration.showNotification("🎬 Rạp Phim Chill", {
+        registration.showNotification("🎬 Hi Phim", {
           body: "Bạn sẽ nhận được thông báo khi có phim mới cập nhật!",
           icon: "/icon-192x192.png",
           badge: "/icon-192x192.png",

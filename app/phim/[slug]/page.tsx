@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
     return {
       title: `${movie.name} - Xem phim HD`,
-      description: movie.content?.substring(0, 160) || `Xem phim ${movie.name} HD miễn phí tại Rạp Phim Chill`,
+      description: movie.content?.substring(0, 160) || `Xem phim ${movie.name} HD miễn phí tại Hi Phim`,
       openGraph: {
         title: movie.name,
         description: movie.content?.substring(0, 200),

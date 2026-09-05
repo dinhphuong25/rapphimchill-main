@@ -58,15 +58,15 @@ export async function generateMetadata({ searchParams }: HomeProps) {
 
   const titleText =
     (postTitle ? `${postTitle.name} | ` : "") +
-    "Rạp Phim Chill - Xem Phim Online HD Miễn Phí" +
+    "Hi Phim - Xem Phim Online HD Miễn Phí" +
     (index > 1 ? " - Trang " + index : "");
 
   return {
     title: titleText,
     description:
-      "Rạp Phim Chill - Trang xem phim online HD miễn phí hàng đầu. Kho 50,000+ phim bộ, phim lẻ, anime vietsub cập nhật mới nhất 2026. Tốc độ nhanh, không quảng cáo.",
+      "Hi Phim - Trang xem phim online HD miễn phí hàng đầu. Kho 50,000+ phim bộ, phim lẻ, anime vietsub cập nhật mới nhất 2026. Tốc độ nhanh, không quảng cáo.",
     keywords:
-      "rạp phim chill, rap phim chill, rapphimchill, xem phim online, phim HD miễn phí, phim mới nhất, phim bộ hay, anime vietsub, phim Hàn Quốc, phim hành động",
+      "hi phim, hiphim, xem phim online, phim HD miễn phí, phim mới nhất, phim bộ hay, anime vietsub, phim Hàn Quốc, phim hành động",
   };
 }
 

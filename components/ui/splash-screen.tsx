@@ -31,23 +31,23 @@ export function SplashScreen() {
           {/* Vòng xoay nội */}
           <div className="absolute inset-4 rounded-full border-2 border-white/5 border-b-primary animate-spin" style={{ animationDuration: "2s", animationDirection: "reverse" }}></div>
           
-          {/* Icon Rạp chiếu phim ở giữa */}
+          {/* Icon Hi Phim ở giữa */}
           <Image
             src="/favicon.svg"
-            alt="Rạp Phim Chill Logo"
-            width={32}
-            height={32}
-            className="w-8 h-8 object-contain"
+            alt="Hi Phim Logo"
+            width={36}
+            height={36}
+            className="w-9 h-9 object-contain"
             priority
           />
         </div>
         
         <div className="space-y-2">
           <h2 className="text-xl font-bold text-white tracking-wide">
-            Đang chuẩn bị rạp phim...
+            Đang kết nối Hi Phim...
           </h2>
           <p className="text-sm text-white/40">
-            Trải nghiệm điện ảnh sắp bắt đầu
+            Trải nghiệm điện ảnh đỉnh cao
           </p>
         </div>
       </div>

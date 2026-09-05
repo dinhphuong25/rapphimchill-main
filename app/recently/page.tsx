@@ -2,7 +2,7 @@ import { getCachedCategories, getCachedCountries } from "@/lib/data";
 import RecentlyWatchedClient from "./recently-client";
 
 export const metadata = {
-  title: "Lịch Sử Xem | Rạp Phim Chill",
+  title: "Lịch Sử Xem | Hi Phim",
   description: "Phim bạn đã xem gần đây",
 };
 

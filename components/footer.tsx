@@ -21,7 +21,7 @@ export default function Footer() {
               </a>
             </p>
             <p className="text-[10px] sm:text-[11px] text-gray-500 font-medium truncate sm:whitespace-normal">
-              © 2025 - 2026 Rạp Phim Chill. All rights reserved.
+              © 2025 - 2026 Hi Phim. All rights reserved.
             </p>
           </div>
 

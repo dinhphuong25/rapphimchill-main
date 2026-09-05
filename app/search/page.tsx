@@ -30,7 +30,7 @@ export async function generateMetadata({ searchParams }: SearchPageProps) {
   const postTitle = query ? `Kết quả cho "${query}"` : "Tìm kiếm Nâng cao";
 
   const titleText =
-    `${postTitle} | Rạp Phim Chill` + (index > 1 ? " - Trang " + index : "");
+    `${postTitle} | Hi Phim` + (index > 1 ? " - Trang " + index : "");
   return {
     title: titleText,
     description:

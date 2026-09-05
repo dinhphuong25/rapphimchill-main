@@ -16,9 +16,9 @@ export async function generateMetadata({ searchParams }: NewUpdatesProps) {
   const index = Number(params.index) || 1;
 
   return {
-    title: `Mới Cập Nhật | Rạp Phim Chill${index > 1 ? " - Trang " + index : ""}`,
-    description: "Khám phá những bộ phim mới nhất được cập nhật trên Rạp Phim Chill.",
-    keywords: "phim mới, phim cập nhật, phim ảnh, phim hd",
+    title: `Mới Cập Nhật | Hi Phim${index > 1 ? " - Trang " + index : ""}`,
+    description: "Khám phá những bộ phim mới nhất được cập nhật trên Hi Phim.",
+    keywords: "phim mới, phim cập nhật, phim ảnh, phim hd, hi phim, hiphim",
   };
 }
 

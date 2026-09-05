@@ -52,7 +52,7 @@ export function MovieSEODescription({ movie }: MovieSEODescriptionProps) {
       elements.push(`tập ${current}/${total}`);
     }
 
-    elements.push('miễn phí tại Rạp Phim Chill');
+    elements.push('miễn phí tại Hi Phim');
 
     return elements.join(' ');
   };
@@ -159,7 +159,7 @@ export function CategorySEOContent({
   movieCount,
   description
 }: CategorySEOContentProps) {
-  const defaultDescription = `Khám phá kho tàng phim ${categoryName} chất lượng HD tại Rạp Phim Chill. ${movieCount ? `Hơn ${movieCount} bộ phim` : 'Nhiều bộ phim'} ${categoryName} hay nhất được cập nhật liên tục, xem miễn phí với phụ đề Việt Nam.`;
+  const defaultDescription = `Khám phá kho tàng phim ${categoryName} chất lượng HD tại Hi Phim. ${movieCount ? `Hơn ${movieCount} bộ phim` : 'Nhiều bộ phim'} ${categoryName} hay nhất được cập nhật liên tục, xem miễn phí với phụ đề Việt Nam.`;
 
   return (
     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 p-6 rounded-lg mb-6">
@@ -199,11 +199,11 @@ export function MovieFAQ({ movie }: MovieFAQProps) {
   const faqs = [
     {
       question: `Phim ${movie.name} có phụ đề Việt Nam không?`,
-      answer: `Có, bạn có thể xem phim ${movie.name} với phụ đề Việt Nam chất lượng cao tại Rạp Phim Chill. Chúng tôi cung cấp nhiều tùy chọn ngôn ngữ cho trải nghiệm tốt nhất.`
+      answer: `Có, bạn có thể xem phim ${movie.name} với phụ đề Việt Nam chất lượng cao tại Hi Phim. Chúng tôi cung cấp nhiều tùy chọn ngôn ngữ cho trải nghiệm tốt nhất.`
     },
     {
       question: `Xem phim ${movie.name} ở đâu chất lượng tốt nhất?`,
-      answer: `Rạp Phim Chill cung cấp phim ${movie.name} với chất lượng HD, Full HD, và 4K. Bạn có thể xem hoàn toàn miễn phí mà không cần đăng ký tài khoản.`
+      answer: `Hi Phim cung cấp phim ${movie.name} với chất lượng HD, Full HD, và 4K. Bạn có thể xem hoàn toàn miễn phí mà không cần đăng ký tài khoản.`
     },
     {
       question: `Phim ${movie.name} thuộc thể loại gì?`,
@@ -233,12 +233,12 @@ export function HomepageSEOContent() {
   return (
     <div className="mt-12 prose dark:prose-invert max-w-none">
       <h2 className="text-2xl font-bold mb-4">
-        Rạp Phim Chill - Website Xem Phim Online Chất Lượng Cao Hàng Đầu {currentYear}
+        Hi Phim - Website Xem Phim Online Chất Lượng Cao Hàng Đầu {currentYear}
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div>
-          <h3 className="text-xl font-semibold mb-3">Tại sao chọn Rạp Phim Chill?</h3>
+          <h3 className="text-xl font-semibold mb-3">Tại sao chọn Hi Phim?</h3>
           <ul className="space-y-2 text-sm">
             <li>✅ Hơn 50,000+ bộ phim chất lượng HD, Full HD, 4K</li>
             <li>✅ Cập nhật phim mới nhất hàng ngày</li>
@@ -252,7 +252,7 @@ export function HomepageSEOContent() {
         <div>
           <h3 className="text-xl font-semibold mb-3">Thể loại phim đa dạng</h3>
           <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-            Rạp Phim Chill sở hữu kho phim đa dạng với đầy đủ các thể loại từ phim hành động,
+            Hi Phim sở hữu kho phim đa dạng với đầy đủ các thể loại từ phim hành động,
             tình cảm, kinh dị, hài hước, phim bộ Trung Quốc, Hàn Quốc, Thái Lan,
             anime Nhật Bản đến phim Hollywood bom tấn. Tất cả đều được cập nhật
             thường xuyên với chất lượng tốt nhất.

@@ -2,7 +2,7 @@ import { getCachedCategories, getCachedCountries } from "@/lib/data";
 import FavoritesClient from "./favorites-client";
 
 export const metadata = {
-  title: "Phim Yêu Thích | Rạp Phim Chill",
+  title: "Phim Yêu Thích | Hi Phim",
   description: "Danh sách phim yêu thích của bạn",
 };
 

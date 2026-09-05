@@ -31,7 +31,7 @@ const config: Config = {
           gold: "#D7C7A0",
         },
 
-        // RẠP PHIM CHILL BRAND ACCENT (#20D66B)
+        // HI PHIM BRAND ACCENT (#20D66B)
         brand: {
           green: "#20D66B",
           "green-hover": "#2AE376",
