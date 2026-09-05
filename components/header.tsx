@@ -12,17 +12,16 @@ interface HeaderProps {
   topics?: { slug: string; name: string }[];
 }
 
-export default function Header({
-  categories: propCategories = [],
-  countries: propCountries = [],
-}: HeaderProps) {
+export default function Header({}: HeaderProps) {
   useEffect(() => {
     preconnect("https://phimapi.com", { crossOrigin: "anonymous" });
     preconnect("https://img.phimapi.com", { crossOrigin: "anonymous" });
     preconnect("https://phimimg.com", { crossOrigin: "anonymous" });
   }, []);
+
   const [showSearchOverlay, setShowSearchOverlay] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+
   // Scroll handler
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 40);
@@ -51,36 +50,26 @@ export default function Header({
           "fixed top-0 right-0 z-[90] h-16 sm:h-20 flex items-center transition-all duration-500 select-none",
           "left-0 lg:left-[200px]", // Aligns next to Left Sidebar
           isScrolled
-            ? "bg-[#0a0f16]/90 backdrop-blur-2xl border-b border-white/5 shadow-2xl"
-            : "bg-gradient-to-b from-black/80 via-black/30 to-transparent"
+            ? "bg-[#0a0f16]/95 backdrop-blur-2xl border-b border-white/5 shadow-2xl"
+            : "bg-gradient-to-b from-black/90 via-black/40 to-transparent"
         )}
       >
-        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 flex items-center justify-between h-full gap-4">
-          
-          {/* Left: Mobile spacer or Quick Brand badge */}
-          <div className="flex items-center gap-2 pl-14 lg:pl-0">
-            <span className="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/5 text-[11px] font-medium text-white/50">
-              <span className="w-1.5 h-1.5 rounded-full bg-brand-green animate-pulse" />
-              <span>Kho 50,000+ Phim HD Miễn Phí</span>
-            </span>
-          </div>
-
-          {/* Right: Search & Quick Actions */}
-          <div className="flex items-center gap-3">
-            {/* Search Input Trigger Button */}
-            <button
-              onClick={() => setShowSearchOverlay(true)}
-              className="flex items-center justify-between w-40 sm:w-64 md:w-80 h-10 sm:h-11 px-3 sm:px-4 rounded-full bg-[#141414]/90 backdrop-blur-md hover:bg-white/10 border border-white/10 hover:border-brand-green/40 text-white/60 hover:text-white transition-all duration-300 text-xs sm:text-sm group shadow-inner"
-            >
-              <div className="flex items-center gap-2.5 truncate">
-                <Search className="w-4 h-4 text-white/50 group-hover:text-brand-green transition-colors shrink-0" />
-                <span className="truncate text-white/50 group-hover:text-white/80 font-medium">Tìm kiếm phim, diễn viên...</span>
-              </div>
-              <kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/10 border border-white/10 text-[10px] text-white/60 font-mono font-bold uppercase shadow-inner group-hover:text-brand-green transition-colors shrink-0">
-                <span className="text-[10px]">Ctrl</span>K
-              </kbd>
-            </button>
-          </div>
+        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 flex items-center justify-end h-full">
+          {/* Right: Search Input Trigger Button */}
+          <button
+            onClick={() => setShowSearchOverlay(true)}
+            className="flex items-center justify-between w-40 sm:w-60 md:w-80 h-10 sm:h-11 px-3.5 sm:px-4 rounded-full bg-[#141414]/90 backdrop-blur-md hover:bg-white/10 border border-white/10 hover:border-brand-green/40 text-white/60 hover:text-white transition-all duration-300 text-xs sm:text-sm group shadow-inner"
+          >
+            <div className="flex items-center gap-2.5 truncate">
+              <Search className="w-4 h-4 text-white/50 group-hover:text-brand-green transition-colors shrink-0" />
+              <span className="truncate text-white/50 group-hover:text-white/80 font-medium">
+                Tìm kiếm phim...
+              </span>
+            </div>
+            <kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/10 border border-white/10 text-[10px] text-white/60 font-mono font-bold uppercase shadow-inner group-hover:text-brand-green transition-colors shrink-0">
+              <span className="text-[10px]">Ctrl</span>K
+            </kbd>
+          </button>
         </div>
       </header>
 
@@ -92,3 +81,4 @@ export default function Header({
     </>
   );
 }
+
