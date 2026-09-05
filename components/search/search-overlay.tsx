@@ -127,10 +127,10 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
     <div className="fixed inset-0 z-[150] flex flex-col bg-cinema-bg/95 backdrop-blur-2xl animate-fade-in">
       {/* Search Header */}
       <div className="max-w-4xl mx-auto w-full px-4 pt-4 sm:pt-12">
-        <div className="flex items-center justify-between p-3 sm:p-4 rounded-2xl sm:rounded-3xl bg-[#0e1612]/95 border-2 border-brand-green/70 shadow-[0_0_30px_rgba(34,197,94,0.35)] relative">
-          <form onSubmit={handleSubmit} className="flex items-center gap-2 sm:gap-3.5 flex-1 mr-2 sm:mr-4">
-            <span className="font-mono text-xl sm:text-2xl font-bold text-brand-green select-none drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]">&gt;</span>
-            <Search className="w-5 h-5 sm:w-6 sm:h-6 text-brand-green shrink-0 drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
+        <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-white/12 relative">
+          <form onSubmit={handleSubmit} className="flex items-center gap-2 sm:gap-3 flex-1 mr-2 sm:mr-4">
+            <span className="font-mono text-xl sm:text-2xl font-bold text-brand-green select-none">&gt;</span>
+            <Search className="w-5 h-5 sm:w-6 sm:h-6 text-brand-green shrink-0" />
             <input
               ref={inputRef}
               type="text"
@@ -138,14 +138,14 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDownInput}
               placeholder="Tìm kiếm phim, đạo diễn, diễn viên..."
-              className="w-full bg-transparent text-base sm:text-xl font-bold text-white placeholder:text-white/40 focus:outline-none font-sans"
+              className="w-full bg-transparent text-base sm:text-2xl font-bold text-white placeholder:text-white/30 focus:outline-none font-sans"
             />
             {isLoading && <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 text-brand-green animate-spin shrink-0" />}
           </form>
           <button
             onClick={onClose}
             aria-label="Đóng tìm kiếm"
-            className="p-2 sm:p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white border border-white/15 transition-all shrink-0 active:scale-95"
+            className="p-2 sm:p-2.5 rounded-full bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 transition-all shrink-0 active:scale-95"
           >
             <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>

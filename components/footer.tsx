@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Script from "next/script";
 import { Heart } from "lucide-react";
 
 export default function Footer() {
@@ -51,27 +50,7 @@ export default function Footer() {
           © 2025 - 2026 HI PHIM. All rights reserved.
         </p>
 
-        {/* DMCA Badge Directly Below Copyright Line */}
-        <div className="pt-0.5 flex items-center justify-center">
-          <a
-            href="https://www.dmca.com/Protection/Status.aspx?ID=5a1e0cc9-8158-46c6-97a7-ba374504dcb5"
-            title="DMCA.com Protection Status"
-            className="dmca-badge inline-block transition-transform hover:scale-105 active:scale-95 duration-200 group"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <img
-              src="https://images.dmca.com/Badges/dmca-badge-w150-2x1-01.png?ID=5a1e0cc9-8158-46c6-97a7-ba374504dcb5"
-              alt="DMCA.com Protection Status"
-              className="h-6 sm:h-7 w-auto object-contain rounded opacity-85 group-hover:opacity-100 shadow-sm hover:shadow-[0_0_15px_rgba(34,197,94,0.35)] transition-all"
-              loading="lazy"
-            />
-          </a>
-        </div>
-
       </div>
-
-      <Script src="https://images.dmca.com/Badges/DMCABadgeHelper.min.js" strategy="lazyOnload" />
     </footer>
   );
 }
