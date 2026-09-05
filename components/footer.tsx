@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
 import Script from "next/script";
 import { Heart } from "lucide-react";
@@ -28,27 +27,6 @@ export default function Footer() {
           </span>
         </div>
 
-        {/* Quick Navigation Links */}
-        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-medium text-white/60">
-          <Link href="/" className="hover:text-brand-green transition-colors">
-            Trang Chủ
-          </Link>
-          <Link href="/?typeList=phim-bo" className="hover:text-brand-green transition-colors">
-            Phim Bộ
-          </Link>
-          <Link href="/?typeList=phim-le" className="hover:text-brand-green transition-colors">
-            Phim Lẻ
-          </Link>
-          <Link href="/?typeList=hoat-hinh" className="hover:text-brand-green transition-colors">
-            Hoạt Hình
-          </Link>
-          <Link href="/new-updates" className="hover:text-brand-green transition-colors">
-            Mới Cập Nhật
-          </Link>
-          <Link href="/favorites" className="hover:text-brand-green transition-colors">
-            Phim Yêu Thích
-          </Link>
-        </div>
 
         {/* Disclaimer Note */}
         <p className="text-[11px] text-white/40 max-w-2xl leading-relaxed">
