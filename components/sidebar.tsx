@@ -229,11 +229,11 @@ export default function Sidebar({
         </div>
 
         {/* Scrollable Navigation Body */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-5 scrollbar-thin scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-2.5 space-y-3.5 scrollbar-hide">
           
           {/* Main Nav Section */}
-          <div className="space-y-1">
-            <span className="px-3 text-[10px] font-bold text-white/40 uppercase tracking-widest block mb-2">
+          <div className="space-y-0.5">
+            <span className="px-2.5 text-[9px] font-bold text-white/35 uppercase tracking-widest block mb-1">
               MENU CHÍNH
             </span>
 
@@ -245,7 +245,7 @@ export default function Sidebar({
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 group overflow-hidden",
+                    "relative flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 group overflow-hidden",
                     active
                       ? "bg-gradient-to-r from-brand-green/20 via-brand-green/10 to-transparent text-brand-green font-bold shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
                       : "text-white/60 hover:text-white hover:bg-white/5"
@@ -253,7 +253,7 @@ export default function Sidebar({
                   aria-current={active ? "page" : undefined}
                 >
                   {active && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-brand-green rounded-r-full shadow-[0_0_12px_rgba(34,197,94,0.8)]" />
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-brand-green rounded-r-full shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
                   )}
                   <Icon className={cn("w-4 h-4 shrink-0 transition-transform group-hover:scale-110", active ? "text-brand-green" : "text-white/60 group-hover:text-white")} />
                   <span className="truncate">{item.label}</span>
@@ -262,11 +262,11 @@ export default function Sidebar({
             })}
           </div>
 
-          <div className="h-[1px] bg-white/5 mx-2" />
+          <div className="h-[1px] bg-white/5 mx-1.5" />
 
           {/* Discovery / Selection Boards Trigger */}
-          <div className="space-y-1">
-            <span className="px-3 text-[10px] font-bold text-white/40 uppercase tracking-widest block mb-2">
+          <div className="space-y-0.5">
+            <span className="px-2.5 text-[9px] font-bold text-white/35 uppercase tracking-widest block mb-1">
               KHÁM PHÁ
             </span>
 
@@ -274,16 +274,16 @@ export default function Sidebar({
             <button
               onClick={() => setActiveModal("categories")}
               className={cn(
-                "w-full relative flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 group text-left",
+                "w-full relative flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 group text-left",
                 currentCategory
                   ? "bg-gradient-to-r from-brand-green/20 via-brand-green/10 to-transparent text-brand-green font-bold shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
                   : "text-white/65 hover:text-white hover:bg-white/5"
               )}
             >
               {currentCategory && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-brand-green rounded-r-full shadow-[0_0_12px_rgba(34,197,94,0.8)]" />
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-brand-green rounded-r-full shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
               )}
-              <div className="flex items-center gap-3 truncate">
+              <div className="flex items-center gap-2.5 truncate">
                 <Layers className={cn("w-4 h-4 shrink-0 transition-transform group-hover:scale-110", currentCategory ? "text-brand-green" : "text-white/60 group-hover:text-white")} />
                 <div className="flex flex-col min-w-0">
                   <span className="truncate">Thể Loại</span>
@@ -295,7 +295,7 @@ export default function Sidebar({
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5 shrink-0 ml-1">
+              <div className="flex items-center gap-1 shrink-0 ml-1">
                 <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/5 text-white/50 group-hover:bg-brand-green/20 group-hover:text-brand-green font-mono">
                   {categories.length || "24"}
                 </span>
@@ -307,16 +307,16 @@ export default function Sidebar({
             <button
               onClick={() => setActiveModal("countries")}
               className={cn(
-                "w-full relative flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 group text-left",
+                "w-full relative flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 group text-left",
                 currentCountry
                   ? "bg-gradient-to-r from-brand-green/20 via-brand-green/10 to-transparent text-brand-green font-bold shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
                   : "text-white/65 hover:text-white hover:bg-white/5"
               )}
             >
               {currentCountry && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-brand-green rounded-r-full shadow-[0_0_12px_rgba(34,197,94,0.8)]" />
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-brand-green rounded-r-full shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
               )}
-              <div className="flex items-center gap-3 truncate">
+              <div className="flex items-center gap-2.5 truncate">
                 <Globe className={cn("w-4 h-4 shrink-0 transition-transform group-hover:scale-110", currentCountry ? "text-brand-green" : "text-white/60 group-hover:text-white")} />
                 <div className="flex flex-col min-w-0">
                   <span className="truncate">Quốc Gia</span>
@@ -328,7 +328,7 @@ export default function Sidebar({
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5 shrink-0 ml-1">
+              <div className="flex items-center gap-1 shrink-0 ml-1">
                 <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/5 text-white/50 group-hover:bg-brand-green/20 group-hover:text-brand-green font-mono">
                   {countries.length || "12+"}
                 </span>
@@ -337,11 +337,11 @@ export default function Sidebar({
             </button>
           </div>
 
-          <div className="h-[1px] bg-white/5 mx-2" />
+          <div className="h-[1px] bg-white/5 mx-1.5" />
 
           {/* Personal Group Section */}
-          <div className="space-y-1">
-            <span className="px-3 text-[10px] font-bold text-white/40 uppercase tracking-widest block mb-2">
+          <div className="space-y-0.5">
+            <span className="px-2.5 text-[9px] font-bold text-white/35 uppercase tracking-widest block mb-1">
               CÁ NHÂN
             </span>
 
@@ -353,7 +353,7 @@ export default function Sidebar({
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 group overflow-hidden",
+                    "relative flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 group overflow-hidden",
                     active
                       ? "bg-gradient-to-r from-brand-green/20 via-brand-green/10 to-transparent text-brand-green font-bold shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
                       : "text-white/60 hover:text-white hover:bg-white/5"
@@ -361,7 +361,7 @@ export default function Sidebar({
                   aria-current={active ? "page" : undefined}
                 >
                   {active && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-brand-green rounded-r-full shadow-[0_0_12px_rgba(34,197,94,0.8)]" />
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-brand-green rounded-r-full shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
                   )}
                   <Icon className={cn("w-4 h-4 shrink-0 transition-transform group-hover:scale-110", active ? "text-brand-green" : "text-white/60 group-hover:text-white")} />
                   <span className="truncate">{item.label}</span>
@@ -441,7 +441,7 @@ export default function Sidebar({
             </div>
 
             {/* Categories Interactive Grid */}
-            <div className="relative z-10 flex-1 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20">
+            <div className="relative z-10 flex-1 overflow-y-auto pr-1.5 custom-scrollbar">
               {filteredCategories.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-2.5 pb-2">
                   {filteredCategories.map((cat) => {
@@ -562,7 +562,7 @@ export default function Sidebar({
             </div>
 
             {/* Countries Interactive Grid */}
-            <div className="relative z-10 flex-1 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20 space-y-5">
+            <div className="relative z-10 flex-1 overflow-y-auto pr-1.5 custom-scrollbar space-y-5">
               {!countrySearchQuery.trim() && (
                 <div>
                   <span className="text-[11px] font-bold text-white/50 uppercase tracking-widest block mb-2.5 flex items-center gap-2">

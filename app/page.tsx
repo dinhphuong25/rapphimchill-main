@@ -12,7 +12,7 @@ const Footer = dynamic(() => import("@/components/footer"), { ssr: true });
 import {
   getCachedCategories,
   getCachedCountries,
-  getCachedFeaturedMovie,
+  getCachedFeaturedMovies,
   getCachedNewUpdates,
   getCachedTopicMovies,
 } from "@/lib/data";
@@ -88,19 +88,19 @@ export default async function Home({ searchParams }: HomeProps) {
 
   // Only fetch home page data when no filters active
   let initialMovies: any[] = [];
-  let featuredMovie: any = null;
+  let featuredMovies: any[] = [];
   let topicsWithMovies: any[] = [];
 
   if (!hasFilters) {
     // Parallel fetch — all cached separately
-    const [newUpdates, featured, ...topicMoviesList] = await Promise.all([
+    const [newUpdates, featuredList, ...topicMoviesList] = await Promise.all([
       getCachedNewUpdates(),
-      getCachedFeaturedMovie(),
+      getCachedFeaturedMovies(),
       ...TOPICS.map((t) => getCachedTopicMovies(t.slug, 12)),
     ]);
 
     initialMovies = newUpdates;
-    featuredMovie = featured;
+    featuredMovies = featuredList;
     topicsWithMovies = TOPICS.map((t, idx) => ({
       ...t,
       movies: topicMoviesList[idx] || [],
@@ -130,7 +130,7 @@ export default async function Home({ searchParams }: HomeProps) {
           initialMovies={initialMovies}
           initialTopicsWithMovies={topicsWithMovies}
           topics={TOPICS}
-          featuredMovie={featuredMovie}
+          featuredMovies={featuredMovies}
           categories={categories as any[]}
         />
       )}

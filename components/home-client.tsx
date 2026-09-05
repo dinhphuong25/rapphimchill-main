@@ -19,6 +19,7 @@ interface HomeClientProps {
   topics: any[];
   categories?: any[];
   featuredMovie?: any;
+  featuredMovies?: any[];
 }
 
 export default function HomeClient({
@@ -26,6 +27,7 @@ export default function HomeClient({
   initialTopicsWithMovies,
   topics,
   featuredMovie,
+  featuredMovies = [],
 }: HomeClientProps) {
   const {
     movies: clientMovies,
@@ -42,20 +44,20 @@ export default function HomeClient({
     return filterHiddenMovies(raw);
   }, [clientMovies, initialMovies]);
 
-  const displayHeroMovie = useMemo(() => {
-    return featuredMovie || heroMovie || (initialMovies && initialMovies[0]) || (displayMovies && displayMovies[0]);
-  }, [featuredMovie, heroMovie, initialMovies, displayMovies]);
-
   const heroMoviesList = useMemo(() => {
-    const primary = displayHeroMovie;
-    const list = [primary, ...displayMovies].filter(Boolean);
+    const list = [
+      ...(Array.isArray(featuredMovies) && featuredMovies.length > 0 ? featuredMovies : []),
+      featuredMovie,
+      heroMovie,
+      ...(displayMovies || []),
+    ].filter(Boolean);
     const seen = new Set<string>();
     return list.filter((m: any) => {
       if (!m?.slug || seen.has(m.slug)) return false;
       seen.add(m.slug);
       return true;
     });
-  }, [displayHeroMovie, displayMovies]);
+  }, [featuredMovies, featuredMovie, heroMovie, displayMovies]);
 
   const displayTopicsMap = useMemo(() => {
     const map: Record<string, any[]> = {};

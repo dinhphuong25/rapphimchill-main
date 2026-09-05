@@ -1,9 +1,24 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Play, Info, Star, Clock, Film, Heart } from "lucide-react";
+import {
+  Play,
+  Info,
+  Star,
+  Clock,
+  Flame,
+  Film,
+  Heart,
+  ChevronLeft,
+  ChevronRight,
+  Tv,
+  Users,
+  Clapperboard,
+  Sparkles,
+  Volume2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFavorites } from "@/hooks/useLocalStorage";
 
@@ -15,18 +30,25 @@ interface HeroMovie {
   poster_url?: string;
   content?: string;
   quality?: string;
+  lang?: string;
   year?: number;
   time?: string;
   category?: { name: string; slug: string }[];
   country?: { name: string; slug: string }[];
+  director?: string[] | string;
+  actor?: string[] | string;
   imdb?: { rating: number };
   tmdb?: { vote_average: number };
   episode_current?: string;
+  episode_total?: string;
+  view?: number;
 }
 
 interface HeroSectionProps {
   movies: HeroMovie[];
 }
+
+const AUTO_SLIDE_DURATION = 7000; // 7 seconds
 
 export default function HeroSection({ movies }: HeroSectionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -35,10 +57,10 @@ export default function HeroSection({ movies }: HeroSectionProps) {
   const { toggleFavorite, isFavorite } = useFavorites();
 
   const validMovies = useMemo(() => {
-    return (movies || []).filter((m) => m?.thumb_url || m?.poster_url).slice(0, 5);
+    return (movies || []).filter((m) => m?.thumb_url || m?.poster_url).slice(0, 7);
   }, [movies]);
 
-  const current = validMovies[currentIndex];
+  const current = validMovies[currentIndex] || validMovies[0];
 
   const goTo = useCallback(
     (index: number) => {
@@ -57,12 +79,29 @@ export default function HeroSection({ movies }: HeroSectionProps) {
     goTo((currentIndex + 1) % validMovies.length);
   }, [currentIndex, validMovies.length, goTo]);
 
-  // Auto-slide every 7 seconds
+  const prev = useCallback(() => {
+    if (validMovies.length <= 1) return;
+    goTo((currentIndex - 1 + validMovies.length) % validMovies.length);
+  }, [currentIndex, validMovies.length, goTo]);
+
+  // Auto-slide timer
   useEffect(() => {
     if (isPaused || validMovies.length <= 1) return;
-    const timer = setInterval(next, 7000);
+    const timer = setInterval(next, AUTO_SLIDE_DURATION);
     return () => clearInterval(timer);
   }, [next, isPaused, validMovies.length]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.key === "ArrowRight") next();
+      if (e.key === "ArrowLeft") prev();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [next, prev]);
 
   if (!current || !current.slug) return null;
 
@@ -71,6 +110,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
   const rating = Number(rawRating);
   const isValidRating = !isNaN(rating) && rating > 0;
 
+  // Clean HTML from content string
   const cleanContent = current.content
     ? current.content
         .replace(/<[^>]*>/g, "")
@@ -83,21 +123,39 @@ export default function HeroSection({ movies }: HeroSectionProps) {
         .trim()
     : "";
 
-  const countryName = current.country && current.country.length > 0 ? current.country[0].name : "";
+  const countryName =
+    current.country && current.country.length > 0
+      ? current.country.map((c) => c.name).join(", ")
+      : "";
+
+  const categories = Array.isArray(current.category) ? current.category : [];
+
+  // Parse actors & directors
+  const actorsList = Array.isArray(current.actor)
+    ? current.actor.filter(Boolean).slice(0, 3).join(", ")
+    : typeof current.actor === "string" && current.actor
+    ? current.actor
+    : "";
+
+  const directorName = Array.isArray(current.director)
+    ? current.director.filter(Boolean).join(", ")
+    : typeof current.director === "string" && current.director && current.director !== "Đang cập nhật"
+    ? current.director
+    : "";
 
   return (
     <section
       className="relative w-full overflow-hidden select-none bg-cinema-bg"
-      style={{ height: "clamp(540px, 84vh, 760px)" }}
+      style={{ minHeight: "clamp(580px, 86vh, 820px)" }}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
-      aria-label="Phim Nổi Bật"
+      aria-label="Phim Nổi Bật Theo Xu Hướng"
     >
-      {/* Background Image Fullscreen */}
+      {/* 1. Background Backdrop Image with Cross-fade Zoom */}
       <div
         className={cn(
-          "absolute inset-0 w-full h-full transition-all duration-700 ease-in-out",
-          isTransitioning ? "opacity-0 scale-105" : "opacity-100 scale-100"
+          "absolute inset-0 w-full h-full transition-all duration-1000 ease-out",
+          isTransitioning ? "opacity-0 scale-105 filter blur-sm" : "opacity-100 scale-100 filter blur-0"
         )}
       >
         <Image
@@ -109,106 +167,171 @@ export default function HeroSection({ movies }: HeroSectionProps) {
           fetchPriority="high"
           className="object-cover object-top"
           sizes="(max-width: 768px) 100vw, (max-width: 1440px) 100vw, 1920px"
-          quality={75}
+          quality={80}
         />
-        {/* Cinematic Gradient Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-r from-cinema-bg via-cinema-bg/80 to-transparent w-full md:w-[75%]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-cinema-bg via-cinema-bg/20 to-transparent opacity-100" />
-        <div className="absolute inset-0 bg-black/10" />
+
+        {/* Ambient Glow & Radial Vignettes */}
+        <div className="absolute -top-32 -left-32 w-96 h-96 bg-brand-green/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#050807] via-[#050807]/90 to-transparent w-full md:w-[78%] lg:w-[70%]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050807] via-[#050807]/30 to-transparent opacity-100" />
+        <div className="absolute inset-0 bg-black/20" />
       </div>
 
-      {/* Hero Main Editorial Grid Layout */}
-      <div className="relative z-20 h-full max-w-[1600px] mx-auto px-4 sm:px-8 flex items-center">
-        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center pt-16 lg:pt-8">
+      {/* 2. Main Editorial Content Container */}
+      <div className="relative z-20 h-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col justify-center pt-20 pb-16 min-h-[inherit]">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           
-          {/* Left Information Column */}
-          <div className="lg:col-span-8 xl:col-span-7 space-y-4 pr-0 lg:pr-24 relative z-40">
+          {/* Left Column: Movie Editorial & Rich Information */}
+          <div className="lg:col-span-8 xl:col-span-7 space-y-4 pr-0 lg:pr-10 relative z-30">
             
-            {/* Giant Slide Index Number + Subtitle */}
-            <div className="flex items-center gap-4">
-              <span className="text-5xl lg:text-7xl font-black text-white/10 tracking-tighter font-mono -ml-1">
-                {String(currentIndex + 1).padStart(2, "0")}
-              </span>
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] md:text-xs font-extrabold text-brand-green uppercase tracking-[0.2em] drop-shadow-[0_0_10px_rgba(32,214,107,0.4)]">
-                  PHIM NỔI BẬT HÔM NAY
-                </span>
-                <div className="h-0.5 w-16 bg-gradient-to-r from-brand-green to-transparent rounded-full" />
+            {/* Top Trending Ribbon Badge */}
+            <div className="flex items-center gap-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-green/15 border border-brand-green/35 text-brand-green text-xs font-black uppercase tracking-wider shadow-[0_0_15px_rgba(34,197,94,0.25)]">
+                <Flame className="w-3.5 h-3.5 fill-brand-green animate-pulse text-brand-green" />
+                <span>TOP #{String(currentIndex + 1).padStart(2, "0")} THỊNH HÀNH</span>
               </div>
+
+              {current.quality && (
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-white/10 text-white border border-white/15 font-mono shadow-sm">
+                  {current.quality}
+                </span>
+              )}
+
+              {current.lang && (
+                <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-white/5 text-white/80 border border-white/10">
+                  <Volume2 className="w-3 h-3 text-brand-green" />
+                  {current.lang}
+                </span>
+              )}
             </div>
 
-            {/* Movie Title */}
+            {/* Movie Title & Subtitle */}
             <div
               className={cn(
-                "transition-all duration-400",
-                isTransitioning ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"
+                "transition-all duration-400 space-y-1.5",
+                isTransitioning ? "opacity-0 translate-y-3" : "opacity-100 translate-y-0"
               )}
             >
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[40px] font-black text-white leading-[1.2] tracking-tight drop-shadow-lg">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white leading-[1.15] tracking-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
                 {current.name}
               </h1>
               {current.origin_name && current.origin_name !== current.name && (
-                <p className="text-xs sm:text-sm md:text-base text-white/70 mt-1.5 font-semibold tracking-wide drop-shadow-md">
+                <p className="text-sm sm:text-base md:text-lg text-white/70 font-semibold tracking-wide drop-shadow-md">
                   {current.origin_name}
                 </p>
               )}
             </div>
 
-            {/* Metadata Line */}
+            {/* Comprehensive Metadata Badges Strip */}
             <div
               className={cn(
-                "flex flex-wrap items-center gap-2.5 text-xs text-cinema-text-muted transition-all duration-400",
-                isTransitioning ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"
+                "flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-white/75 transition-all duration-400 font-medium",
+                isTransitioning ? "opacity-0 translate-y-3" : "opacity-100 translate-y-0"
               )}
             >
-              {[
-                current.year ? <span key="year" className="font-semibold text-white">{current.year}</span> : null,
-                current.time ? <span key="time">{current.time}</span> : null,
-                countryName ? <span key="country">{countryName}</span> : null,
-                isValidRating ? (
-                  <span key="rating" className="inline-flex items-center gap-1 font-bold text-cinema-gold">
-                    <Star className="w-3.5 h-3.5 fill-cinema-gold" />
-                    {rating.toFixed(1)}
-                  </span>
-                ) : null,
-              ]
-                .filter(Boolean)
-                .map((item, idx, arr) => (
-                  <span key={idx} className="flex items-center gap-2.5">
-                    {item}
-                    {idx < arr.length - 1 && <span className="text-white/30">•</span>}
-                  </span>
-                ))}
-              {current.quality && (
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/10 text-white border border-white/15 ml-1">
-                  {current.quality}
-                </span>
+              {isValidRating && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-yellow-500/15 border border-yellow-500/30 text-yellow-400 font-bold shadow-sm">
+                  <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                  <span>{rating.toFixed(1)}</span>
+                  <span className="text-[10px] text-yellow-500/70 font-normal">/10</span>
+                </div>
+              )}
+
+              {current.year && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-white font-semibold">
+                  <span>{current.year}</span>
+                </div>
+              )}
+
+              {current.time && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-white/80">
+                  <Clock className="w-3 h-3 text-brand-green" />
+                  <span>{current.time}</span>
+                </div>
+              )}
+
+              {countryName && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-white/80">
+                  <span>{countryName}</span>
+                </div>
+              )}
+
+              {current.episode_current && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-brand-green/10 border border-brand-green/25 text-brand-green font-semibold">
+                  <Tv className="w-3 h-3 text-brand-green" />
+                  <span>{current.episode_current}</span>
+                </div>
               )}
             </div>
 
-            {/* Description */}
+            {/* Interactive Category / Genre Pills */}
+            {categories.length > 0 && (
+              <div
+                className={cn(
+                  "flex flex-wrap items-center gap-1.5 pt-1 transition-all duration-400",
+                  isTransitioning ? "opacity-0 translate-y-3" : "opacity-100 translate-y-0"
+                )}
+              >
+                {categories.slice(0, 4).map((cat) => (
+                  <Link
+                    key={cat.slug}
+                    href={`/?category=${cat.slug}`}
+                    className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-brand-green/20 border border-white/10 hover:border-brand-green/40 text-white/70 hover:text-brand-green text-[11px] font-semibold transition-all"
+                  >
+                    {cat.name}
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {/* Cast & Director Details */}
+            {(directorName || actorsList) && (
+              <div
+                className={cn(
+                  "space-y-1 text-xs text-white/60 pt-1 transition-all duration-400 hidden sm:block",
+                  isTransitioning ? "opacity-0 translate-y-3" : "opacity-100 translate-y-0"
+                )}
+              >
+                {directorName && (
+                  <div className="flex items-center gap-2 truncate">
+                    <Clapperboard className="w-3.5 h-3.5 text-brand-green shrink-0" />
+                    <span className="text-white/40 font-medium">Đạo diễn:</span>
+                    <span className="text-white/85 font-semibold truncate">{directorName}</span>
+                  </div>
+                )}
+                {actorsList && (
+                  <div className="flex items-center gap-2 truncate">
+                    <Users className="w-3.5 h-3.5 text-brand-green shrink-0" />
+                    <span className="text-white/40 font-medium">Diễn viên:</span>
+                    <span className="text-white/85 font-semibold truncate">{actorsList}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Storyline Description */}
             {cleanContent && (
               <p
                 className={cn(
-                  "text-sm text-white/60 leading-relaxed line-clamp-3 max-w-2xl transition-all duration-400 font-medium drop-shadow-md",
-                  isTransitioning ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"
+                  "text-xs sm:text-sm text-white/65 leading-relaxed line-clamp-3 max-w-2xl transition-all duration-400 font-normal drop-shadow-md pt-1",
+                  isTransitioning ? "opacity-0 translate-y-3" : "opacity-100 translate-y-0"
                 )}
               >
                 {cleanContent}
               </p>
             )}
 
-            {/* CTA Action Buttons - Single Row on Mobile */}
+            {/* CTA Action Buttons Strip */}
             <div
               className={cn(
-                "flex flex-row items-center gap-2.5 sm:gap-4 pt-3 sm:pt-4 transition-all duration-400",
-                isTransitioning ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"
+                "flex flex-row items-center gap-3 sm:gap-4 pt-3 sm:pt-4 transition-all duration-400",
+                isTransitioning ? "opacity-0 translate-y-3" : "opacity-100 translate-y-0"
               )}
             >
               {/* Primary Watch Button */}
               <Link
                 href={`/watch?slug=${current.slug}`}
-                className="group flex items-center justify-center gap-2 sm:gap-3 px-5 sm:px-8 py-2.5 sm:py-3.5 bg-brand-green text-cinema-bg font-extrabold rounded-full hover:bg-brand-green-hover active:scale-95 transition-all shadow-[0_0_30px_rgba(32,214,107,0.3)] hover:shadow-[0_0_40px_rgba(32,214,107,0.5)] text-xs sm:text-sm uppercase tracking-wide shrink-0"
+                className="group flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3 sm:py-3.5 bg-brand-green text-cinema-bg font-extrabold rounded-full hover:bg-brand-green-hover active:scale-95 transition-all shadow-[0_0_30px_rgba(34,197,94,0.35)] hover:shadow-[0_0_45px_rgba(34,197,94,0.55)] text-xs sm:text-sm uppercase tracking-wide shrink-0"
               >
                 <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-cinema-bg group-hover:scale-110 transition-transform" />
                 <span>Xem Ngay</span>
@@ -217,13 +340,13 @@ export default function HeroSection({ movies }: HeroSectionProps) {
               {/* Info Button */}
               <Link
                 href={`/phim/${current.slug}`}
-                className="flex items-center justify-center gap-1.5 sm:gap-2.5 px-4 sm:px-7 py-2.5 sm:py-3.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-full border border-white/10 active:scale-95 transition-all text-xs sm:text-sm backdrop-blur-md uppercase tracking-wide shrink-0"
+                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 sm:py-3.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-full border border-white/15 active:scale-95 transition-all text-xs sm:text-sm backdrop-blur-md uppercase tracking-wide shrink-0"
               >
                 <Info className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span>Chi Tiết</span>
               </Link>
 
-              {/* Bookmark / Favorite Toggle */}
+              {/* Favorite Bookmark Button */}
               <button
                 onClick={() =>
                   toggleFavorite({
@@ -236,9 +359,9 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                 }
                 aria-label="Lưu phim yêu thích"
                 className={cn(
-                  "p-2.5 sm:p-3.5 rounded-full border transition-all active:scale-95 backdrop-blur-md shrink-0",
+                  "p-3 sm:p-3.5 rounded-full border transition-all active:scale-95 backdrop-blur-md shrink-0",
                   isFavorite(current.slug)
-                    ? "bg-brand-green/20 border-brand-green/50 text-brand-green shadow-[0_0_20px_rgba(32,214,107,0.2)]"
+                    ? "bg-brand-green/20 border-brand-green/50 text-brand-green shadow-[0_0_20px_rgba(34,197,94,0.25)]"
                     : "bg-white/10 hover:bg-white/20 border-white/10 text-white hover:text-white"
                 )}
               >
@@ -246,15 +369,15 @@ export default function HeroSection({ movies }: HeroSectionProps) {
               </button>
             </div>
 
-            {/* Mobile Slide Dots */}
-            <div className="flex lg:hidden items-center gap-1.5 pt-3">
+            {/* Mobile Navigation Dots */}
+            <div className="flex lg:hidden items-center gap-2 pt-4">
               {validMovies.map((_, idx) => (
                 <button
                   key={idx}
                   onClick={() => goTo(idx)}
                   className={cn(
                     "h-1.5 rounded-full transition-all duration-300",
-                    idx === currentIndex ? "w-6 bg-brand-green" : "w-1.5 bg-white/30"
+                    idx === currentIndex ? "w-8 bg-brand-green shadow-[0_0_8px_rgba(34,197,94,0.8)]" : "w-2 bg-white/25 hover:bg-white/50"
                   )}
                   aria-label={`Slide ${idx + 1}`}
                 />
@@ -262,46 +385,112 @@ export default function HeroSection({ movies }: HeroSectionProps) {
             </div>
           </div>
 
-          {/* Right Bottom Horizontal Thumbnail Selector List */}
-          <div className="hidden lg:flex absolute bottom-8 right-4 sm:right-8 z-30 flex-row items-end gap-2.5">
-            {validMovies.map((movie, idx) => {
-              const isActive = idx === currentIndex;
-              return (
+          {/* Right Column: Interactive Thumbnail Carousel (Desktop & Large screens) */}
+          <div className="hidden lg:flex lg:col-span-4 xl:col-span-5 flex-col items-end justify-end relative z-30 self-end pb-2">
+            
+            {/* Carousel Navigation Header */}
+            <div className="flex items-center justify-between w-full mb-3 px-1">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-brand-green" />
+                <span className="text-xs font-extrabold text-white/80 tracking-wider uppercase">
+                  Danh Sách Ghim Nổi Bật
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
                 <button
-                  key={movie.slug}
-                  onClick={() => goTo(idx)}
-                  className={cn(
-                    "relative overflow-hidden rounded-xl transition-all duration-500 group border-2 shadow-xl shrink-0",
-                    isActive
-                      ? "w-40 h-24 border-brand-green shadow-[0_0_20px_rgba(32,214,107,0.3)] scale-100"
-                      : "w-24 h-14 border-white/20 hover:border-white/50 opacity-60 hover:opacity-100 hover:scale-105 hover:-translate-y-1"
-                  )}
+                  onClick={prev}
+                  aria-label="Phim trước"
+                  className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white border border-white/10 transition-all active:scale-95"
                 >
-                  <Image
-                    src={movie.thumb_url || movie.poster_url || ""}
-                    alt={movie.name}
-                    fill
-                    quality={70}
-                    className={cn("object-cover transition-transform duration-700", isActive ? "scale-105" : "group-hover:scale-110")}
-                    sizes="(max-width: 768px) 100px, 200px"
-                  />
-                  {/* Overlay for inactive */}
-                  {!isActive && <div className="absolute inset-0 bg-black/40 group-hover:bg-transparent transition-colors duration-300" />}
-                  
-                  {/* Progress Line for active */}
-                  {isActive && (
-                    <>
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                      <div className="absolute bottom-2 left-2 right-2 flex flex-col items-start text-left">
-                        <span className="text-[9px] font-black text-brand-green uppercase tracking-widest drop-shadow-md">Đang Chiếu</span>
-                        <h4 className="text-xs font-bold text-white truncate w-full drop-shadow-md">{movie.name}</h4>
-                      </div>
-                      <div className="absolute bottom-0 left-0 h-1 bg-brand-green w-full" />
-                    </>
-                  )}
+                  <ChevronLeft className="w-4 h-4" />
                 </button>
-              );
-            })}
+                <button
+                  onClick={next}
+                  aria-label="Phim tiếp theo"
+                  className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white border border-white/10 transition-all active:scale-95"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Thumbnails Row */}
+            <div className="flex items-center gap-3 overflow-x-auto pb-1 max-w-full scrollbar-hide">
+              {validMovies.map((movie, idx) => {
+                const isActive = idx === currentIndex;
+                const thumb = movie.thumb_url || movie.poster_url || "";
+                return (
+                  <button
+                    key={movie.slug}
+                    onClick={() => goTo(idx)}
+                    className={cn(
+                      "relative rounded-2xl overflow-hidden transition-all duration-500 text-left group border shadow-2xl shrink-0 active:scale-95",
+                      isActive
+                        ? "w-48 h-28 border-brand-green/80 shadow-[0_0_25px_rgba(34,197,94,0.35)] scale-100 ring-2 ring-brand-green/30"
+                        : "w-28 h-20 border-white/10 hover:border-white/40 opacity-60 hover:opacity-100 hover:scale-105"
+                    )}
+                  >
+                    <Image
+                      src={thumb}
+                      alt={movie.name}
+                      fill
+                      quality={70}
+                      className={cn(
+                        "object-cover transition-transform duration-700",
+                        isActive ? "scale-105" : "group-hover:scale-110"
+                      )}
+                      sizes="(max-width: 768px) 120px, 240px"
+                    />
+
+                    {/* Inactive Dark Shade */}
+                    {!isActive && (
+                      <div className="absolute inset-0 bg-black/50 group-hover:bg-transparent transition-colors duration-300" />
+                    )}
+
+                    {/* Rank Badge */}
+                    <span
+                      className={cn(
+                        "absolute top-2 left-2 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold tracking-tight z-10 backdrop-blur-md shadow-sm",
+                        isActive
+                          ? "bg-brand-green text-cinema-bg font-black"
+                          : "bg-black/60 text-white/80 border border-white/10"
+                      )}
+                    >
+                      #{idx + 1}
+                    </span>
+
+                    {/* Active Overlay with Title & Progress Bar */}
+                    {isActive && (
+                      <>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent z-10" />
+                        <div className="absolute bottom-2 left-2.5 right-2.5 z-20 flex flex-col">
+                          <span className="text-[9px] font-black text-brand-green uppercase tracking-widest drop-shadow-md">
+                            ĐANG XEM
+                          </span>
+                          <h4 className="text-xs font-bold text-white truncate drop-shadow-md">
+                            {movie.name}
+                          </h4>
+                        </div>
+                        {/* Auto-Slide Progress Bar */}
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-20">
+                          <div
+                            key={currentIndex}
+                            className={cn(
+                              "h-full bg-brand-green",
+                              !isPaused && "animate-progress"
+                            )}
+                            style={{
+                              animationDuration: `${AUTO_SLIDE_DURATION}ms`,
+                              animationTimingFunction: "linear",
+                            }}
+                          />
+                        </div>
+                      </>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
         </div>
@@ -309,3 +498,4 @@ export default function HeroSection({ movies }: HeroSectionProps) {
     </section>
   );
 }
+

@@ -67,10 +67,10 @@
   input, textarea { user-select: text; }
 
   /* Custom scrollbar */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: var(--cinema-bg); }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.15);
+    background: rgba(255, 255, 255, 0.12);
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover { background: var(--brand-green); }
@@ -79,11 +79,11 @@
 @layer utilities {
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
   }
   .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
   .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-  .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.18); border-radius: 9999px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 9999px; }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--brand-green); }
 
   .scrollbar-hide {

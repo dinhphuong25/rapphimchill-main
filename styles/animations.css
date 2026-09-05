@@ -172,3 +172,16 @@
     background-position: 0% 50%;
   }
 }
+
+@keyframes progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.animate-progress {
+  animation: progress linear forwards;
+}

@@ -1,11 +1,19 @@
 import { unstable_cache } from "next/cache";
 import PhimApi from "@/libs/phimapi.com";
 
-const FEATURED_SLUG = "avatar-lua-va-tro-tan";
+export const TRENDING_FEATURED_SLUGS = [
+  "deadpool-va-wolverine",
+  "godzilla-x-kong-de-che-moi",
+  "quat-mo-trung-ma",
+  "arcane-lien-minh-huyen-thoai-phan-2",
+  "nu-hoang-nuoc-mat",
+  "avatar-lua-va-tro-tan",
+  "nguoi-nhen-khoi-dau-moi",
+];
 
 const api = new PhimApi();
 
-/** Categories cached 24h — gọi từ metadata & page component đều dùng chung 1 cache entry */
+/** Categories cached 24h */
 export const getCachedCategories = unstable_cache(
   () => api.listCategories(),
   ["categories"],
@@ -19,17 +27,32 @@ export const getCachedCountries = unstable_cache(
   { revalidate: 86400, tags: ["countries"] }
 );
 
-/** Featured movie cached 1h */
-export const getCachedFeaturedMovie = unstable_cache(
+/** Multiple Featured movies cached 1h with full detailed metadata */
+export const getCachedFeaturedMovies = unstable_cache(
   async () => {
     try {
-      const data = await api.get(FEATURED_SLUG);
-      return data.movie ?? null;
+      const results = await Promise.allSettled(
+        TRENDING_FEATURED_SLUGS.map((slug) => api.get(slug))
+      );
+      const movies = results
+        .filter((r): r is PromiseFulfilledResult<{ movie: any; server: any[] }> => r.status === "fulfilled" && Boolean(r.value?.movie))
+        .map((r) => r.value.movie);
+      return movies.length > 0 ? movies : [];
     } catch {
-      return null;
+      return [];
     }
   },
-  ["featured-movie", FEATURED_SLUG],
+  ["featured-movies-v3"],
+  { revalidate: 3600, tags: ["featured-movies"] }
+);
+
+/** Single featured movie fallback */
+export const getCachedFeaturedMovie = unstable_cache(
+  async () => {
+    const movies = await getCachedFeaturedMovies();
+    return movies[0] || null;
+  },
+  ["featured-movie-v3"],
   { revalidate: 3600, tags: ["featured-movie"] }
 );
 
