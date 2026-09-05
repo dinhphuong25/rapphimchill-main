@@ -110,7 +110,7 @@ export default function AdvancedSearchFilter({ categories, countries }: FilterPr
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full bg-zinc-800 border border-white/10 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary/50"
+                className="w-full bg-zinc-800 border border-white/10 text-white text-base sm:text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary/50"
               >
                 <option value="">Tất cả</option>
                 {categories.map((c) => (
@@ -125,7 +125,7 @@ export default function AdvancedSearchFilter({ categories, countries }: FilterPr
               <select
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
-                className="w-full bg-zinc-800 border border-white/10 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary/50"
+                className="w-full bg-zinc-800 border border-white/10 text-white text-base sm:text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary/50"
               >
                 <option value="">Tất cả</option>
                 {countries.map((c) => (
@@ -140,7 +140,7 @@ export default function AdvancedSearchFilter({ categories, countries }: FilterPr
               <select
                 value={year}
                 onChange={(e) => setYear(e.target.value)}
-                className="w-full bg-zinc-800 border border-white/10 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary/50"
+                className="w-full bg-zinc-800 border border-white/10 text-white text-base sm:text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary/50"
               >
                 <option value="">Tất cả</option>
                 {YEARS.map((y) => (

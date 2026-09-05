@@ -59,7 +59,7 @@ function NativeSelect({
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full appearance-none bg-white/5 border border-white/10 text-white text-sm rounded-lg px-3 py-2 pr-8 focus:outline-none focus:border-primary/60 focus:bg-white/10 transition-colors cursor-pointer"
+          className="w-full appearance-none bg-white/5 border border-white/10 text-white text-base sm:text-sm rounded-lg px-3 py-2 pr-8 focus:outline-none focus:border-primary/60 focus:bg-white/10 transition-colors cursor-pointer"
         >
           {options.map((opt) => (
             <option key={opt.value} value={opt.value} className="bg-zinc-900 text-white">

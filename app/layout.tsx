@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Be_Vietnam_Pro } from "next/font/google";
 import "./globals.css";
 import GTM from "@/components/ui/GTM";
@@ -24,6 +24,14 @@ const beVietnam = Be_Vietnam_Pro({
   fallback: ["system-ui", "-apple-system", "sans-serif"],
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#050807",
+};
 
 export const metadata: Metadata = {
   title: {

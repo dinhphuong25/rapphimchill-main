@@ -384,7 +384,7 @@ export default function Sidebar({
       {/* MODAL BẢNG CHỌN THỂ LOẠI (CATEGORY SELECTION BOARD) */}
       {/* ======================================================== */}
       {activeModal === "categories" && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/80 backdrop-blur-md"
@@ -392,7 +392,7 @@ export default function Sidebar({
           />
 
           {/* Modal Content Board */}
-          <div className="relative z-10 w-full max-w-4xl max-h-[85vh] bg-[#0c121d]/95 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 sm:p-7 flex flex-col shadow-[0_30px_90px_rgba(0,0,0,0.9)] overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="relative z-10 w-full max-w-4xl max-h-[85vh] sm:max-h-[80vh] bg-[#0c121d]/95 backdrop-blur-2xl border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-7 flex flex-col shadow-[0_30px_90px_rgba(0,0,0,0.9)] overflow-hidden animate-in fade-in duration-200">
             {/* Ambient Background Glow */}
             <div className="absolute -top-32 -right-32 w-72 h-72 bg-brand-green/15 rounded-full blur-[100px] pointer-events-none" />
 
@@ -428,14 +428,14 @@ export default function Sidebar({
             {/* Quick Filter Search Box */}
             <div className="relative z-10 my-4 shrink-0">
               <div className="relative">
-                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" />
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
                 <input
                   type="text"
                   value={categorySearchQuery}
                   onChange={(e) => setCategorySearchQuery(e.target.value)}
                   placeholder="Lọc nhanh thể loại (Hành động, Cổ trang, Kinh dị...)"
-                  className="w-full bg-[#141d2b]/80 border border-white/10 focus:border-brand-green/50 text-white placeholder-white/30 text-xs sm:text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none transition-all"
-                  autoFocus
+                  className="w-full bg-[#141d2b]/80 border border-white/10 focus:border-brand-green/50 text-white placeholder-white/30 text-base sm:text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none transition-all"
+                  autoComplete="off"
                 />
               </div>
             </div>
@@ -505,7 +505,7 @@ export default function Sidebar({
       {/* MODAL BẢNG CHỌN QUỐC GIA (COUNTRY SELECTION BOARD) */}
       {/* ======================================================== */}
       {activeModal === "countries" && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/80 backdrop-blur-md"
@@ -513,7 +513,7 @@ export default function Sidebar({
           />
 
           {/* Modal Content Board */}
-          <div className="relative z-10 w-full max-w-4xl max-h-[85vh] bg-[#0c121d]/95 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 sm:p-7 flex flex-col shadow-[0_30px_90px_rgba(0,0,0,0.9)] overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="relative z-10 w-full max-w-4xl max-h-[85vh] sm:max-h-[80vh] bg-[#0c121d]/95 backdrop-blur-2xl border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-7 flex flex-col shadow-[0_30px_90px_rgba(0,0,0,0.9)] overflow-hidden animate-in fade-in duration-200">
             {/* Ambient Background Glow */}
             <div className="absolute -top-32 -left-32 w-72 h-72 bg-brand-green/15 rounded-full blur-[100px] pointer-events-none" />
 
@@ -549,14 +549,14 @@ export default function Sidebar({
             {/* Quick Filter Search Box */}
             <div className="relative z-10 my-4 shrink-0">
               <div className="relative">
-                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" />
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
                 <input
                   type="text"
                   value={countrySearchQuery}
                   onChange={(e) => setCountrySearchQuery(e.target.value)}
                   placeholder="Lọc nhanh quốc gia (Hàn Quốc, Trung Quốc, Âu Mỹ...)"
-                  className="w-full bg-[#141d2b]/80 border border-white/10 focus:border-brand-green/50 text-white placeholder-white/30 text-xs sm:text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none transition-all"
-                  autoFocus
+                  className="w-full bg-[#141d2b]/80 border border-white/10 focus:border-brand-green/50 text-white placeholder-white/30 text-base sm:text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none transition-all"
+                  autoComplete="off"
                 />
               </div>
             </div>
