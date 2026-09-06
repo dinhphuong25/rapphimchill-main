@@ -121,16 +121,17 @@ export default function VideoPlayer({
   const [showSettings, setShowSettings] = useState(false);
   const settingsMenuRef = useRef<HTMLDivElement | null>(null);
   const waitingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastBufferedRef = useRef<number>(0);
 
-  // Auto Unmute Helper
+  // Auto Unmute Helper - only unmute if forced muted by autoplay
   const attemptUnmute = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    if (video.muted || autoplayMutedRef.current) {
+    if (autoplayMutedRef.current) {
       video.muted = false;
       const targetVolume = lastNonZeroVolumeRef.current > 0 ? lastNonZeroVolumeRef.current : 1;
-      video.volume = targetVolume;
+      try { video.volume = targetVolume; } catch (e) {}
       setVolume(targetVolume);
       setIsMuted(false);
       autoplayMutedRef.current = false;
@@ -402,28 +403,38 @@ export default function VideoPlayer({
     didSeekInitialTimeRef.current = false;
     lastProgressSecondRef.current = -1;
 
+    // Detect mobile and iOS Safari
+    const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+
+    // Strict inline video playback configuration for iOS Safari
+    video.setAttribute('playsinline', 'true');
+    video.setAttribute('webkit-playsinline', 'true');
+    video.setAttribute('x5-playsinline', 'true');
+    video.setAttribute('x5-video-player-type', 'h5-page');
+
     const initHls = () => {
       if (HLS.isSupported()) {
         const hls = new HLS({
           enableWorker: true,
           lowLatencyMode: false,
-          progressive: true,
+          progressive: !isMobile,
           startFragPrefetch: true,
           
-          backBufferLength: 30,
-          maxBufferLength: 120,
-          maxMaxBufferLength: 600,
-          maxBufferSize: 128 * 1024 * 1024,
+          backBufferLength: isMobile ? 15 : 30,
+          maxBufferLength: isMobile ? 45 : 120,
+          maxMaxBufferLength: isMobile ? 120 : 600,
+          maxBufferSize: isMobile ? 30 * 1000 * 1000 : 128 * 1024 * 1024,
           maxBufferHole: 0.5,
           highBufferWatchdogPeriod: 2,
           nudgeOffset: 0.2,
           nudgeMaxRetry: 5,
           
           startLevel: -1,
-          capLevelToPlayerSize: false,
+          capLevelToPlayerSize: isMobile,
           testBandwidth: true,
           
-          abrEwmaDefaultEstimate: 2_000_000,
+          abrEwmaDefaultEstimate: isMobile ? 1_500_000 : 2_000_000,
           abrBandWidthFactor: 0.85,
           abrBandWidthUpFactor: 0.7,
           abrEwmaFastLive: 3,
@@ -465,7 +476,7 @@ export default function VideoPlayer({
             const savedVol = typeof window !== 'undefined' ? Number(localStorage.getItem('cinema_volume') || 1) : 1;
             const targetVol = savedVol > 0 ? savedVol : 1;
 
-            video.volume = targetVol;
+            try { video.volume = targetVol; } catch (e) {}
             video.muted = isUserMuted;
 
             video.play().catch(() => {
@@ -516,24 +527,37 @@ export default function VideoPlayer({
           }
         });
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = videoUrl; 
+        video.src = videoUrl;
+        video.load();
+
         const handleLoadedMetadata = () => { 
           setIsLoading(false); 
           if (autoplay) {
             const isUserMuted = typeof window !== 'undefined' && localStorage.getItem('cinema_muted') === 'true';
             const savedVol = typeof window !== 'undefined' ? Number(localStorage.getItem('cinema_volume') || 1) : 1;
             const targetVol = savedVol > 0 ? savedVol : 1;
-            video.volume = targetVol;
-            video.muted = isUserMuted;
-            video.play().catch(() => {
-              if (!isUserMuted) {
+            try { video.volume = targetVol; } catch (e) {}
+
+            // iOS Safari strictly requires initial autoplay to be muted
+            if (isUserMuted || isIOS) {
+              video.muted = true;
+              autoplayMutedRef.current = !isUserMuted;
+              setIsMuted(true);
+              video.play().catch(() => setIsLoading(false));
+            } else {
+              video.muted = false;
+              video.play().catch(() => {
                 autoplayMutedRef.current = true;
                 video.muted = true;
                 setIsMuted(true);
-                video.play().catch(() => {});
-              }
-            });
+                video.play().catch(() => setIsLoading(false));
+              });
+            }
           }
+        };
+
+        const handleCanPlay = () => {
+          setIsLoading(false);
         };
 
         const handleNativeError = () => {
@@ -546,10 +570,12 @@ export default function VideoPlayer({
         };
 
         video.addEventListener('loadedmetadata', handleLoadedMetadata);
+        video.addEventListener('canplay', handleCanPlay);
         video.addEventListener('error', handleNativeError);
 
         return () => {
           video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+          video.removeEventListener('canplay', handleCanPlay);
           video.removeEventListener('error', handleNativeError);
         };
       }
@@ -574,7 +600,13 @@ export default function VideoPlayer({
       if (!isSeekingRef.current) {
         setCurrentTime(video.currentTime);
       }
-      if (video.buffered.length > 0) setBuffered(video.buffered.end(video.buffered.length - 1));
+      if (video.buffered.length > 0) {
+        const end = video.buffered.end(video.buffered.length - 1);
+        if (Math.abs(end - lastBufferedRef.current) >= 1) {
+          lastBufferedRef.current = end;
+          setBuffered(end);
+        }
+      }
       const currentSecond = Math.floor(video.currentTime);
       if (currentSecond !== lastProgressSecondRef.current) { 
         lastProgressSecondRef.current = currentSecond; 
@@ -605,18 +637,27 @@ export default function VideoPlayer({
         setIsLoading(true);
       }, 400);
 
-      // Stall guard: Nếu xoay vòng quá 6s thì thử khôi phục
+      // Stall guard: Nếu xoay vòng quá 5s thì thử khôi phục
       const stallTimeout = setTimeout(() => {
         if (video.paused) return;
-        console.warn("Video stalled for too long, attempting recovery...");
+        console.warn("Video stalled, attempting recovery...");
         if (hlsRef.current) {
           hlsRef.current.recoverMediaError();
           hlsRef.current.startLoad();
         } else {
-          setError("Kết nối chậm, vui lòng thử lại hoặc đổi server.");
-          setIsLoading(false);
+          // Native iOS stall recovery: unfreeze by nudging time or re-triggering play
+          try {
+            if (video.readyState >= 2) {
+              video.play().catch(() => {});
+            } else if (video.currentTime > 0) {
+              video.currentTime = video.currentTime + 0.15;
+              video.play().catch(() => {});
+            }
+          } catch (e) {
+            console.warn("Native iOS recovery failed:", e);
+          }
         }
-      }, 6000);
+      }, 5000);
       video.addEventListener('playing', () => {
         clearTimeout(stallTimeout);
         if (waitingTimerRef.current) {
@@ -759,9 +800,14 @@ export default function VideoPlayer({
       )} 
       onMouseMove={showControlsHandler} 
       onMouseLeave={() => isPlaying && setShowControls(false)}
-      onClick={attemptUnmute}
     >
-      <video ref={videoRef} className="w-full h-full object-contain" poster={poster} playsInline preload="auto" />
+      <video 
+        ref={videoRef} 
+        className="w-full h-full object-contain" 
+        poster={poster} 
+        playsInline 
+        preload="auto" 
+      />
       
       {/* Floating Unmute Button if browser forced autoplay muted */}
       {autoplayMutedRef.current && isMuted && (

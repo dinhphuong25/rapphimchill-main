@@ -108,14 +108,15 @@ async function WatchContent({ slug }: { slug: string }) {
 
   return (
     <div className="min-h-screen bg-cinema-bg text-white selection:bg-brand-green selection:text-cinema-bg">
-      {/* Dynamic Blurred Background */}
+      {/* Dynamic Blurred Background - Chỉ hiện trên desktop để tối ưu GPU mobile */}
       <div 
-        className="fixed inset-0 z-0 opacity-30 scale-110 pointer-events-none"
+        className="fixed inset-0 z-0 opacity-25 scale-105 pointer-events-none hidden sm:block will-change-transform"
         style={{
           backgroundImage: `url(${bgUrl})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          filter: 'blur(100px)'
+          filter: 'blur(60px)',
+          transform: 'translateZ(0)',
         }}
       />
       <div className="fixed inset-0 z-0 bg-gradient-to-b from-cinema-bg/80 via-cinema-bg/95 to-cinema-bg pointer-events-none" />

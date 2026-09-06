@@ -61,6 +61,7 @@ export default function Description({ movie, serverData }: any) {
   const { updateProgress } = useContinueWatching();
   const { addToHistory } = useWatchHistory();
   const prefetchedNextRef = useRef<string | null>(null);
+  const lastSavedProgressRef = useRef<number>(0);
 
   if (!movie || !movie.slug) return null;
 
@@ -202,22 +203,26 @@ export default function Description({ movie, serverData }: any) {
     // Episode is considered completed when watched >= 90% or within last 20 seconds of a video with duration >= 30s
     if (duration >= 30 && (currentTime >= duration * 0.9 || currentTime >= duration - 20)) {
       markEpisodeCompleted(server, episode);
-    } else if (currentTime > 5) {
-      localStorage.setItem(key, String(Math.floor(currentTime)));
+    } else {
+      const nowInt = Math.floor(currentTime);
+      if (nowInt > 5 && Math.abs(nowInt - lastSavedProgressRef.current) >= 5) {
+        lastSavedProgressRef.current = nowInt;
+        localStorage.setItem(key, String(nowInt));
+        
+        // Update master continue watching list throttled to every 5s
+        updateProgress({
+          slug: movie.slug,
+          name: movie.name,
+          poster_url: movie.poster_url,
+          thumb_url: movie.thumb_url,
+          serverIndex: server,
+          episodeIndex: episode,
+          episodeName: serverData?.[server]?.server_data?.[episode]?.name || "",
+          currentTime: nowInt,
+          duration: Math.floor(duration),
+        });
+      }
     }
-    
-    // Update master continue watching list
-    updateProgress({
-      slug: movie.slug,
-      name: movie.name,
-      poster_url: movie.poster_url,
-      thumb_url: movie.thumb_url,
-      serverIndex: server,
-      episodeIndex: episode,
-      episodeName: serverData?.[server]?.server_data?.[episode]?.name || "",
-      currentTime: Math.floor(currentTime),
-      duration: Math.floor(duration),
-    });
 
     // Background Prefetch next episode at 70% duration
     if (duration > 0 && currentTime > duration * 0.7 && serverData && currentEpisodeIndex) {
@@ -373,8 +378,8 @@ export default function Description({ movie, serverData }: any) {
           
           {/* Video Player Container with Dynamic OLED Backlight Glow */}
           <div className={cn("relative group/player w-full transition-all duration-500", isTheaterMode && "z-[85]")}>
-            {/* Ambient backlight glow */}
-            <div className="absolute -inset-3 bg-gradient-to-r from-brand-green/25 via-brand-green/10 to-emerald-600/20 rounded-[32px] blur-3xl opacity-70 group-hover/player:opacity-100 transition-opacity pointer-events-none" />
+            {/* Ambient backlight glow - desktop only to prevent mobile GPU lag */}
+            <div className="absolute -inset-3 bg-gradient-to-r from-brand-green/25 via-brand-green/10 to-emerald-600/20 rounded-[32px] blur-3xl opacity-70 group-hover/player:opacity-100 transition-opacity pointer-events-none hidden sm:block will-change-transform" />
 
             <Card className="border border-white/10 overflow-hidden shadow-[0_0_90px_rgba(0,0,0,0.95)] w-full aspect-video rounded-2xl lg:rounded-3xl bg-black relative z-10">
               <CardContent className="p-0 h-full w-full">
