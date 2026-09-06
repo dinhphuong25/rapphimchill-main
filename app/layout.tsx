@@ -146,12 +146,26 @@ export default function RootLayout({
 
         {/* DNS Preconnect — giảm độ trễ kết nối */}
         <link rel="preconnect" href="https://phimimg.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://phimapi.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://phimimg.com" />
         <link rel="dns-prefetch" href="https://img.ophim.live" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://player.phimapi.com" />
+        <link rel="dns-prefetch" href="https://phimapi.com" />
+        <link rel="dns-prefetch" href="https://s1.phim1280.tv" />
+        <link rel="dns-prefetch" href="https://s2.phim1280.tv" />
+        <link rel="dns-prefetch" href="https://s3.phim1280.tv" />
+        <link rel="dns-prefetch" href="https://s4.phim1280.tv" />
+        <link rel="dns-prefetch" href="https://opstream.com" />
+        <link rel="dns-prefetch" href="https://vip.opstream16.com" />
+        <link rel="dns-prefetch" href="https://vip.opstream15.com" />
+        <link rel="dns-prefetch" href="https://vip.opstream14.com" />
+        <link rel="dns-prefetch" href="https://vip.opstream13.com" />
+        <link rel="dns-prefetch" href="https://vip.opstream12.com" />
+        <link rel="dns-prefetch" href="https://vip.opstream11.com" />
+        <link rel="dns-prefetch" href="https://vip.opstream10.com" />
+        <link rel="dns-prefetch" href="https://vip.opstream9.com" />
 
         {/* Facebook App ID */}
         <meta property="fb:app_id" content={process.env.NEXT_PUBLIC_FB_APP_ID || "10000000000000"} />

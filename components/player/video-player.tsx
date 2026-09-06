@@ -17,6 +17,8 @@ import {
   SkipBack,
   ChevronsRight,
   ChevronsLeft,
+  Settings,
+  Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -116,6 +118,9 @@ export default function VideoPlayer({
     text?: string;
     id: number;
   } | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const settingsMenuRef = useRef<HTMLDivElement | null>(null);
+  const waitingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Auto Unmute Helper
   const attemptUnmute = useCallback(() => {
@@ -149,6 +154,18 @@ export default function VideoPlayer({
     };
   }, [attemptUnmute]);
 
+  // Close settings menu on outside click
+  useEffect(() => {
+    if (!showSettings) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (settingsMenuRef.current && !settingsMenuRef.current.contains(e.target as Node)) {
+        setShowSettings(false);
+      }
+    };
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, [showSettings]);
+
   // Load saved volume preferences on mount
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -171,10 +188,10 @@ export default function VideoPlayer({
   const showControlsHandler = useCallback(() => {
     setShowControls(true);
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-    if (videoRef.current && !videoRef.current.paused && countdown === null) {
+    if (videoRef.current && !videoRef.current.paused && countdown === null && !showSettings) {
       controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 3000);
     }
-  }, [countdown]);
+  }, [countdown, showSettings]);
 
   const togglePlay = useCallback(async () => {
     if (!videoRef.current) return;
@@ -390,32 +407,39 @@ export default function VideoPlayer({
         const hls = new HLS({
           enableWorker: true,
           lowLatencyMode: false,
+          progressive: true,
+          startFragPrefetch: true,
           
-          backBufferLength: 120,
-          maxBufferLength: 40,
+          backBufferLength: 30,
+          maxBufferLength: 120,
           maxMaxBufferLength: 600,
-          maxBufferSize: 80 * 1000 * 1000,
+          maxBufferSize: 128 * 1024 * 1024,
+          maxBufferHole: 0.5,
+          highBufferWatchdogPeriod: 2,
+          nudgeOffset: 0.2,
+          nudgeMaxRetry: 5,
           
           startLevel: -1,
           capLevelToPlayerSize: false,
           testBandwidth: true,
           
-          abrEwmaDefaultEstimate: 5_000_000,
-          abrBandWidthFactor: 0.95,
-          abrBandWidthUpFactor: 0.8,
+          abrEwmaDefaultEstimate: 2_000_000,
+          abrBandWidthFactor: 0.85,
+          abrBandWidthUpFactor: 0.7,
           abrEwmaFastLive: 3,
           abrEwmaSlowLive: 9,
           
           manifestLoadingMaxRetry: 6,
-          manifestLoadingRetryDelay: 1000,
+          manifestLoadingRetryDelay: 500,
           levelLoadingMaxRetry: 6,
-          levelLoadingRetryDelay: 1000,
-          fragLoadingMaxRetry: 10,
-          fragLoadingRetryDelay: 1000,
+          levelLoadingRetryDelay: 500,
+          fragLoadingMaxRetry: 8,
+          fragLoadingRetryDelay: 500,
+          fragLoadingMaxRetryTimeout: 64_000,
           
-          manifestLoadingTimeOut: 20_000,
-          levelLoadingTimeOut: 20_000,
-          fragLoadingTimeOut: 20_000,
+          manifestLoadingTimeOut: 12_000,
+          levelLoadingTimeOut: 12_000,
+          fragLoadingTimeOut: 15_000,
           
           xhrSetup: (xhr) => {
             xhr.withCredentials = false;
@@ -459,6 +483,11 @@ export default function VideoPlayer({
         });
 
         hls.on(HLS.Events.ERROR, (e, data) => {
+          if (data.details === HLS.ErrorDetails.BUFFER_STALLED_ERROR) {
+            // Buffer stalled - kickstart load
+            if (hlsRef.current) hlsRef.current.startLoad();
+            return;
+          }
           if (data.fatal) {
             switch (data.type) {
               case HLS.ErrorTypes.NETWORK_ERROR:
@@ -467,7 +496,7 @@ export default function VideoPlayer({
                   console.warn(`HLS Network error, retrying (${retryCountRef.current}/5)...`);
                   setTimeout(() => {
                     if (hlsRef.current) hlsRef.current.startLoad();
-                  }, 1000 * retryCountRef.current);
+                  }, 800 * retryCountRef.current);
                 } else {
                   setError("Lỗi kết nối máy chủ. Vui lòng chuyển sang máy chủ dự phòng.");
                   if (onSwitchToEmbedRef.current) {
@@ -570,15 +599,32 @@ export default function VideoPlayer({
       }
     };
     const onWaiting = () => {
-      setIsLoading(true);
-      // Stall guard: Nếu xoay vòng quá 8s thì thử load lại hoặc báo lỗi
+      if (waitingTimerRef.current) clearTimeout(waitingTimerRef.current);
+      // Debounce loading spinner by 400ms to avoid flashing spinner on tiny micro-stalls
+      waitingTimerRef.current = setTimeout(() => {
+        setIsLoading(true);
+      }, 400);
+
+      // Stall guard: Nếu xoay vòng quá 6s thì thử khôi phục
       const stallTimeout = setTimeout(() => {
         if (video.paused) return;
         console.warn("Video stalled for too long, attempting recovery...");
-        if (hlsRef.current) hlsRef.current.recoverMediaError();
-        else { setError("Kết nối chậm, vui lòng thử lại hoặc đổi server."); setIsLoading(false); }
-      }, 8000);
-      video.addEventListener('playing', () => clearTimeout(stallTimeout), { once: true });
+        if (hlsRef.current) {
+          hlsRef.current.recoverMediaError();
+          hlsRef.current.startLoad();
+        } else {
+          setError("Kết nối chậm, vui lòng thử lại hoặc đổi server.");
+          setIsLoading(false);
+        }
+      }, 6000);
+      video.addEventListener('playing', () => {
+        clearTimeout(stallTimeout);
+        if (waitingTimerRef.current) {
+          clearTimeout(waitingTimerRef.current);
+          waitingTimerRef.current = null;
+        }
+        setIsLoading(false);
+      }, { once: true });
     };
 
     const onErrorEvent = () => {
@@ -594,7 +640,14 @@ export default function VideoPlayer({
       onErrorRef.current?.(err);
     };
 
-    const hideLoading = () => setIsLoading(false);
+    const hideLoading = () => {
+      if (waitingTimerRef.current) {
+        clearTimeout(waitingTimerRef.current);
+        waitingTimerRef.current = null;
+      }
+      setIsLoading(false);
+    };
+
     video.addEventListener('canplay', hideLoading);
     video.addEventListener('canplaythrough', hideLoading);
     video.addEventListener('timeupdate', onTimeUpdate);
@@ -607,6 +660,10 @@ export default function VideoPlayer({
     video.addEventListener('error', onErrorEvent);
     
     return () => {
+      if (waitingTimerRef.current) {
+        clearTimeout(waitingTimerRef.current);
+        waitingTimerRef.current = null;
+      }
       video.removeEventListener('canplay', hideLoading);
       video.removeEventListener('canplaythrough', hideLoading);
       video.removeEventListener('playing', hideLoading);
@@ -704,7 +761,7 @@ export default function VideoPlayer({
       onMouseLeave={() => isPlaying && setShowControls(false)}
       onClick={attemptUnmute}
     >
-      <video ref={videoRef} className="w-full h-full object-contain" poster={poster} playsInline />
+      <video ref={videoRef} className="w-full h-full object-contain" poster={poster} playsInline preload="auto" />
       
       {/* Floating Unmute Button if browser forced autoplay muted */}
       {autoplayMutedRef.current && isMuted && (
@@ -846,8 +903,126 @@ export default function VideoPlayer({
               {formatTime(seekTime !== null ? seekTime : currentTime)} / {formatTime(duration)}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="text-white hover:bg-white/10 cursor-pointer">{isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}</Button>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Playback Speed Quick Cycle Button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                const rates = [0.75, 1, 1.25, 1.5, 2];
+                const nextIdx = (rates.indexOf(playbackRate) + 1) % rates.length;
+                handlePlaybackRateChange(rates[nextIdx]);
+              }}
+              className="text-white/90 hover:text-white hover:bg-white/15 text-[11px] sm:text-xs font-bold px-2 py-1 rounded-lg border border-white/10 transition-colors cursor-pointer"
+              title="Tốc độ phát"
+            >
+              {playbackRate}x
+            </button>
+
+            {/* Quality & Settings Menu */}
+            <div className="relative" ref={settingsMenuRef}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowSettings(prev => !prev);
+                }}
+                className={cn(
+                  "text-white hover:bg-white/10 transition-colors cursor-pointer w-8 h-8 sm:w-9 sm:h-9",
+                  showSettings && "bg-white/20 text-brand-green"
+                )}
+                title="Cài đặt chất lượng & tốc độ"
+              >
+                <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
+              </Button>
+
+              {/* Settings Floating Panel */}
+              {showSettings && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute bottom-11 right-0 w-60 sm:w-64 bg-[#0d1117]/95 backdrop-blur-2xl border border-white/15 rounded-2xl p-3 shadow-[0_10px_40px_rgba(0,0,0,0.85)] z-50 text-white animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-2.5"
+                >
+                  {/* Quality Selection */}
+                  <div className="flex flex-col gap-1">
+                    <div className="text-[10px] sm:text-[11px] font-bold text-white/50 uppercase tracking-wider px-1">
+                      Chất lượng video
+                    </div>
+                    <div className="flex flex-col gap-0.5 max-h-36 overflow-y-auto pr-0.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleQualityChange(-1);
+                          setShowSettings(false);
+                        }}
+                        className={cn(
+                          "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-left cursor-pointer",
+                          quality === -1
+                            ? "bg-brand-green/20 text-brand-green font-bold"
+                            : "hover:bg-white/10 text-white/80"
+                        )}
+                      >
+                        <span>Tự động (Tối ưu tốc độ)</span>
+                        {quality === -1 && <Check className="w-3.5 h-3.5 text-brand-green" />}
+                      </button>
+                      {qualities.map((q) => (
+                        <button
+                          key={q.level}
+                          type="button"
+                          onClick={() => {
+                            handleQualityChange(q.level);
+                            setShowSettings(false);
+                          }}
+                          className={cn(
+                            "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-left cursor-pointer",
+                            quality === q.level
+                              ? "bg-brand-green/20 text-brand-green font-bold"
+                              : "hover:bg-white/10 text-white/80"
+                          )}
+                        >
+                          <span>{q.height}p {q.height >= 1080 ? "Full HD" : q.height >= 720 ? "HD" : ""}</span>
+                          {quality === q.level && <Check className="w-3.5 h-3.5 text-brand-green" />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="h-[1px] bg-white/10" />
+
+                  {/* Playback Speed */}
+                  <div className="flex flex-col gap-1">
+                    <div className="text-[10px] sm:text-[11px] font-bold text-white/50 uppercase tracking-wider px-1">
+                      Tốc độ phát
+                    </div>
+                    <div className="grid grid-cols-5 gap-1">
+                      {[0.75, 1, 1.25, 1.5, 2].map((rate) => (
+                        <button
+                          key={rate}
+                          type="button"
+                          onClick={() => {
+                            handlePlaybackRateChange(rate);
+                            setShowSettings(false);
+                          }}
+                          className={cn(
+                            "py-1 rounded-md text-xs font-bold transition-colors cursor-pointer text-center",
+                            playbackRate === rate
+                              ? "bg-brand-green text-cinema-bg"
+                              : "bg-white/5 hover:bg-white/15 text-white/80"
+                          )}
+                        >
+                          {rate}x
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="text-white hover:bg-white/10 cursor-pointer w-8 h-8 sm:w-9 sm:h-9">
+              {isFullscreen ? <Minimize className="w-4 h-4 sm:w-5 sm:h-5" /> : <Maximize className="w-4 h-4 sm:w-5 sm:h-5" />}
+            </Button>
           </div>
         </div>
       </div>
