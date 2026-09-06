@@ -141,6 +141,65 @@ export function middleware(request: NextRequest) {
         return new NextResponse('Forbidden', { status: 403 });
     }
 
+    // -------------------------------------------------------------
+    // 2. AUTOMATIC & ON-DEMAND MAINTENANCE MODE
+    // -------------------------------------------------------------
+    const bypassToken = request.nextUrl.searchParams.get('bypass');
+    const bypassCookie = request.cookies.get('hiphim_maintenance_bypass')?.value;
+    const maintenanceCookie = request.cookies.get('hiphim_maintenance_active')?.value;
+    const secretToken = process.env.SYSTEM_MAINTENANCE_TOKEN || "hiphim_secret_2026";
+    
+    // Check if bypass token in query or cookie is valid
+    const hasValidBypass = 
+        bypassToken === secretToken || 
+        bypassCookie === secretToken;
+
+    // Check if maintenance is currently active:
+    // 1. Env variable MAINTENANCE_MODE = 'true'
+    // 2. Cookie hiphim_maintenance_active = 'true'
+    // 3. In-memory global state flag
+    const isMaintenanceActive = 
+        process.env.MAINTENANCE_MODE === 'true' || 
+        process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true' ||
+        maintenanceCookie === 'true' ||
+        (globalThis as any).__HIPHIM_MAINTENANCE__?.enabled === true;
+
+    // Paths exempt from maintenance redirection:
+    const isExemptPath = 
+        pathname === '/maintenance' ||
+        pathname.startsWith('/api/system/') ||
+        pathname.startsWith('/api/cron/') ||
+        pathname.startsWith('/_next/') ||
+        pathname === '/favicon.ico';
+
+    if (isMaintenanceActive && !hasValidBypass && !isExemptPath) {
+        // Rewrite to /maintenance with HTTP 503 Service Unavailable (SEO Safe)
+        const maintenanceUrl = new URL('/maintenance', request.url);
+        return NextResponse.rewrite(maintenanceUrl, {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: {
+                'Retry-After': '3600',
+                'Cache-Control': 'no-store, max-age=0',
+            }
+        });
+    }
+
+    // If valid bypass token was passed in query, set cookie and redirect to clean URL
+    if (bypassToken === secretToken) {
+        const cleanUrl = request.nextUrl.clone();
+        cleanUrl.searchParams.delete('bypass');
+        const response = NextResponse.redirect(cleanUrl);
+        response.cookies.set('hiphim_maintenance_bypass', secretToken, {
+            path: '/',
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 86400 * 7, // 7 days bypass
+        });
+        return response;
+    }
+
     // 2. Open Redirect Mitigation: Sanitize suspicious redirect parameters (Exclude /api/ routes which proxy internal/external APIs)
     const url = request.nextUrl.clone();
     let hasModifiedParams = false;
