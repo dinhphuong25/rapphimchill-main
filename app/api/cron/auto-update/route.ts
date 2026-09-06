@@ -15,10 +15,15 @@ async function handleAutoUpdate(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const token = searchParams.get("token") || searchParams.get("secret") || req.headers.get("authorization")?.replace("Bearer ", "");
 
+  const authHeader = req.headers.get("authorization");
+  const bearerToken = authHeader?.replace(/^Bearer\s+/i, "");
+  const cronSecret = process.env.CRON_SECRET;
+  const isAuthorizedCronSecret = Boolean(cronSecret && (bearerToken === cronSecret || token === cronSecret));
+
   // Vercel Cron header support
   const isVercelCron = req.headers.get("x-vercel-cron") === "1";
 
-  if (!isVercelCron && !verifyMaintenanceToken(token)) {
+  if (!isVercelCron && !isAuthorizedCronSecret && !verifyMaintenanceToken(token)) {
     return NextResponse.json(
       { success: false, error: "Unauthorized. Valid token required." },
       { status: 401 }
