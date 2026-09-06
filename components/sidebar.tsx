@@ -99,40 +99,22 @@ export default function Sidebar({
     setCountrySearchQuery("");
   }, [pathname, searchParams]);
 
-  // Listen for Escape key to close modal or mobile drawer
+  // Listen for Escape key to close modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setActiveModal(null);
-        setIsMobileOpen(false);
       }
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
-
-  // Auto-close mobile drawer when viewport expands to desktop
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setIsMobileOpen(false);
-      }
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  // Lock body scroll when mobile drawer or modal is active
-  useEffect(() => {
-    if (isMobileOpen || activeModal) {
+    if (activeModal) {
+      window.addEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
     }
     return () => {
+      window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "unset";
     };
-  }, [isMobileOpen, activeModal]);
+  }, [activeModal]);
 
   const currentCategory = searchParams.get("category");
   const currentCountry = searchParams.get("country");
@@ -196,29 +178,27 @@ export default function Sidebar({
       <button
         onClick={() => setIsMobileOpen(true)}
         aria-label="Mở Menu"
-        className="lg:hidden fixed top-4 left-4 z-[110] w-10 h-10 flex items-center justify-center rounded-full bg-[#141414]/95 border border-white/10 text-white/80 hover:text-white shadow-lg transition-transform active:scale-90"
+        className="lg:hidden fixed top-4 left-4 z-[110] w-10 h-10 flex items-center justify-center rounded-full bg-[#141414]/90 border border-white/10 text-white/80 hover:text-white backdrop-blur-xl shadow-lg transition-transform active:scale-95"
       >
         <Menu className="w-5 h-5" />
       </button>
 
-      {/* Mobile Backdrop Overlay - High Performance GPU Opacity Transition */}
-      <div
-        className={cn(
-          "lg:hidden fixed inset-0 z-[120] bg-black/75 transition-opacity duration-300 ease-out",
-          isMobileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        )}
-        onClick={() => setIsMobileOpen(false)}
-        aria-hidden="true"
-      />
+      {/* Mobile Backdrop Overlay */}
+      {isMobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm animate-fade-in"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
 
-      {/* Desktop & Mobile Sidebar Container - GPU Transform Only (Zero Reflow) */}
+      {/* Desktop & Mobile Sidebar Container */}
       <aside
         className={cn(
-          "fixed top-0 left-0 bottom-0 z-[130] lg:z-[100] bg-cinema-sub border-r border-white/10 text-cinema-text flex flex-col select-none",
-          "w-[270px] sm:w-[280px] lg:w-[200px]",
-          "transition-transform duration-300 ease-out will-change-transform transform-gpu",
-          // Mobile open/close state
-          isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          "fixed top-0 left-0 bottom-0 z-[100] bg-cinema-sub border-r border-white/10 text-cinema-text flex flex-col transition-all duration-300 ease-out select-none",
+          // Mobile state
+          isMobileOpen ? "translate-x-0 w-[270px] sm:w-[280px] z-[130]" : "-translate-x-full lg:translate-x-0",
+          // Desktop sizing
+          "lg:w-[200px]"
         )}
       >
         {/* Sidebar Header / Logo */}
