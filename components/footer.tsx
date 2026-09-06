@@ -12,18 +12,24 @@ export default function Footer({}: FooterProps = {}) {
     <footer className="w-full mt-auto py-3.5 sm:py-4 border-t border-white/[0.06] bg-[#050807]/90 backdrop-blur-xl select-none">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-2.5 md:gap-6">
         
-        {/* Bên Trái: Logo & Tên thương hiệu Hi PHIM */}
-        <div className="flex items-center gap-2">
-          <Image
-            src="/favicon.svg"
-            alt="Hi Phim Logo"
-            width={22}
-            height={22}
-            className="w-5 h-5 object-contain"
-          />
-          <span className="text-sm font-black text-white tracking-wide">
-            Hi <span className="text-brand-green">PHIM</span>
-          </span>
+        {/* Bên Trái: Ở trên là Logo & Tên thương hiệu, Ở dưới là dòng phi lợi nhuận */}
+        <div className="flex flex-col items-center md:items-start text-center md:text-left gap-1">
+          <div className="flex items-center gap-2">
+            <Image
+              src="/favicon.svg"
+              alt="Hi Phim Logo"
+              width={20}
+              height={20}
+              className="w-5 h-5 object-contain"
+            />
+            <span className="text-sm font-black text-white tracking-wide">
+              Hi <span className="text-brand-green">PHIM</span>
+            </span>
+          </div>
+
+          <p className="text-[11px] text-white/40">
+            Nền tảng xem phim miễn phí phi lợi nhuận.
+          </p>
         </div>
 
         {/* Bên Phải: Ở trên là Copyright, Ở dưới là Người quản lý & phát triển */}
