@@ -166,8 +166,8 @@ async function PhimDetailContent({ slug }: { slug: string }) {
                 <div className="flex flex-wrap justify-center md:justify-start gap-1.5 mb-5">
                   {movie.category.map((cat: any) => (
                     <Link
-                      key={cat.id}
-                      href={`/?category=${cat.id}`}
+                      key={cat.id || cat.slug}
+                      href={`/?category=${cat.slug || cat.id}`}
                       className="px-2.5 py-1 bg-white/[0.06] hover:bg-brand-green hover:text-black border border-white/10 hover:border-brand-green/50 text-white/80 rounded-lg text-[11px] font-semibold transition-all"
                     >
                       {cat.name}

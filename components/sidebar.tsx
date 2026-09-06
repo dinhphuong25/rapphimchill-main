@@ -186,7 +186,7 @@ export default function Sidebar({
       {/* Mobile Backdrop Overlay */}
       {isMobileOpen && (
         <div
-          className="lg:hidden fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm animate-fade-in"
+          className="lg:hidden fixed inset-0 z-[120] bg-black/70 animate-fade-in"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
@@ -194,11 +194,10 @@ export default function Sidebar({
       {/* Desktop & Mobile Sidebar Container */}
       <aside
         className={cn(
-          "fixed top-0 left-0 bottom-0 z-[100] bg-cinema-sub border-r border-white/10 text-cinema-text flex flex-col transition-all duration-300 ease-out select-none",
+          "fixed top-0 left-0 bottom-0 bg-cinema-sub border-r border-white/10 text-cinema-text flex flex-col transition-transform duration-300 ease-out select-none will-change-transform",
+          "w-[280px] lg:w-[200px]",
           // Mobile state
-          isMobileOpen ? "translate-x-0 w-[270px] sm:w-[280px] z-[130]" : "-translate-x-full lg:translate-x-0",
-          // Desktop sizing
-          "lg:w-[200px]"
+          isMobileOpen ? "translate-x-0 z-[130]" : "-translate-x-full lg:translate-x-0 z-[100]"
         )}
       >
         {/* Sidebar Header / Logo */}

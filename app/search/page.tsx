@@ -52,24 +52,30 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     getCachedCountries(),
   ]);
   
-  let movies, pageInfo;
+  let movies: any[] = [], pageInfo: any = null;
 
-  if (query) {
-    [movies, pageInfo] = await api.search(query, index);
-  } else if (category || country || typeList || year) {
-    [movies, pageInfo] = await api.getFilteredList({
-      typeList: typeList || "phim-bo",
-      page: index,
-      category,
-      country,
-      year: year ? parseInt(year) : undefined,
-      sortField: sortField || "modified.time",
-      sortType: sortType || "desc",
-      limit: 20
-    });
-  } else {
-    // Default fallback
-    [movies, pageInfo] = await api.newAdding(index);
+  try {
+    if (query) {
+      [movies, pageInfo] = await api.search(query, index);
+    } else if (category || country || typeList || year) {
+      [movies, pageInfo] = await api.getFilteredList({
+        typeList: typeList || "phim-bo",
+        page: index,
+        category,
+        country,
+        year: year ? parseInt(year) : undefined,
+        sortField: sortField || "modified.time",
+        sortType: sortType || "desc",
+        limit: 20
+      });
+    } else {
+      // Default fallback
+      [movies, pageInfo] = await api.newAdding(index);
+    }
+  } catch (err) {
+    console.error("Search API fetch error:", err);
+    movies = [];
+    pageInfo = null;
   }
 
   return (

@@ -456,7 +456,7 @@ export default function VideoPlayer({
         });
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = videoUrl; 
-        video.addEventListener('loadedmetadata', () => { 
+        const handleLoadedMetadata = () => { 
           setIsLoading(false); 
           if (autoplay) {
             const isUserMuted = typeof window !== 'undefined' && localStorage.getItem('cinema_muted') === 'true';
@@ -473,15 +473,32 @@ export default function VideoPlayer({
               }
             });
           }
-        });
+        };
+
+        const handleNativeError = () => {
+          setIsLoading(false);
+          setError("Không thể phát video từ nguồn này. Đang chuyển sang máy chủ dự phòng...");
+          if (onSwitchToEmbed) {
+            setTimeout(() => onSwitchToEmbed(), 1500);
+          }
+        };
+
+        video.addEventListener('loadedmetadata', handleLoadedMetadata);
+        video.addEventListener('error', handleNativeError);
+
+        return () => {
+          video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+          video.removeEventListener('error', handleNativeError);
+        };
       }
     };
-    initHls();
+    const cleanupNative = initHls();
     return () => { 
       if (hlsRef.current) hlsRef.current.destroy(); 
+      if (cleanupNative) cleanupNative();
       video.src = ''; 
     };
-  }, [videoUrl, autoplay]);
+  }, [videoUrl, autoplay, onSwitchToEmbed]);
 
   // Event Listeners for State
   useEffect(() => {

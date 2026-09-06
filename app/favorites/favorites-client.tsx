@@ -4,20 +4,18 @@ import { useEffect, useState } from "react";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import Sidebar from "@/components/sidebar";
-import { getFavoriteMovies } from "@/lib/user-experience";
+import { useFavorites } from "@/hooks/useLocalStorage";
 import MovieCardEditorial from "@/components/movie/movie-card-editorial";
 import { Heart, Film } from "lucide-react";
 import Link from "next/link";
 
 export default function FavoritesClient({ categories, countries }: any) {
-  const [movies, setMovies] = useState<any[]>([]);
+  const { favorites, hydrated } = useFavorites();
+  const movies = favorites;
 
-  useEffect(() => {
-    setMovies(getFavoriteMovies());
-    const onStorageChange = () => setMovies(getFavoriteMovies());
-    window.addEventListener("storage", onStorageChange);
-    return () => window.removeEventListener("storage", onStorageChange);
-  }, []);
+  if (!hydrated) {
+    return <main className="min-h-screen bg-cinema-bg text-cinema-text lg:pl-[200px] transition-all duration-300"></main>;
+  }
 
   return (
     <main className="min-h-screen bg-cinema-bg text-cinema-text lg:pl-[200px] transition-all duration-300">

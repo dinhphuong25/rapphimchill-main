@@ -19,9 +19,8 @@ import {
   Info,
   Layers
 } from "lucide-react";
-import { getFavoriteMovies, toggleFavoriteMovie } from "@/lib/user-experience";
 import { useContinueWatching } from "@/hooks/useContinueWatching";
-import { useWatchHistory } from "@/hooks/useLocalStorage";
+import { useWatchHistory, useFavorites } from "@/hooks/useLocalStorage";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -48,7 +47,8 @@ const EmbedPlayer = dynamic(() => import("../player/embed-player"), {
 
 export default function Description({ movie, serverData }: any) {
   const [showTrailer, setShowTrailer] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const { toggleFavorite, isFavorite } = useFavorites();
+  const isFav = isFavorite(movie.slug);
   const [isTheaterMode, setIsTheaterMode] = useState(false);
   const [currentEpisodeUrl, setCurrentEpisodeUrl] = useState("");
   const [resumeTime, setResumeTime] = useState(0);
@@ -115,27 +115,20 @@ export default function Description({ movie, serverData }: any) {
     setCurrentEpisodeIndex({ server: serverIndex, episode: episodeIndex });
   };
 
-  useEffect(() => {
-    const favorites = getFavoriteMovies();
-    setIsFavorite(favorites.some((item) => item.slug === movie.slug));
-  }, [movie.slug]);
-
   const handleToggleFavorite = useCallback(() => {
     const movieEntry = {
       slug: movie.slug,
       name: movie.name,
+      thumb_url: movie.thumb_url || movie.poster_url || "",
       poster_url: movie.poster_url,
       year: movie.year,
       quality: movie.quality,
-      timestamp: Date.now(),
     };
 
-    toggleFavoriteMovie(movieEntry);
-    const favorites = getFavoriteMovies();
-    const nextState = favorites.some((item) => item.slug === movie.slug);
-    setIsFavorite(nextState);
+    toggleFavorite(movieEntry);
+    const nextState = !isFavorite(movie.slug);
     toast.success(nextState ? "Đã thêm vào danh sách yêu thích!" : "Đã xóa khỏi danh sách yêu thích!");
-  }, [movie]);
+  }, [movie, toggleFavorite, isFavorite]);
 
   // Save movie to recently watched
   useEffect(() => {
@@ -458,13 +451,13 @@ export default function Description({ movie, serverData }: any) {
                 size="sm"
                 className={cn(
                   "rounded-xl border transition-all font-bold text-xs",
-                  isFavorite
+                  isFav
                     ? "bg-rose-600/20 text-rose-400 border-rose-500/40 shadow-[0_0_15px_rgba(225,29,72,0.3)]"
                     : "bg-white/5 hover:bg-white/10 text-white border-white/10"
                 )}
               >
-                <Heart className={cn("w-4 h-4 mr-1.5", isFavorite && "fill-rose-500")} />
-                <span className="hidden sm:inline">{isFavorite ? "Đã thích" : "Yêu thích"}</span>
+                <Heart className={cn("w-4 h-4 mr-1.5", isFav && "fill-rose-500")} />
+                <span className="hidden sm:inline">{isFav ? "Đã thích" : "Yêu thích"}</span>
               </Button>
 
               {/* Report Issue */}
