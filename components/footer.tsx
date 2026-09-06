@@ -18,7 +18,7 @@ export default function Footer() {
             className="w-7 h-7 object-contain"
           />
           <span className="text-base font-black text-white tracking-wide">
-            HI <span className="text-brand-green">PHIM</span>
+            Hi <span className="text-brand-green">PHIM</span>
           </span>
           <span className="text-white/20 hidden sm:inline">•</span>
           <span className="text-xs font-semibold text-white/50 tracking-wider hidden sm:inline">
@@ -34,7 +34,7 @@ export default function Footer() {
 
         {/* Copyright Line */}
         <p className="text-[11px] font-medium text-white/45">
-          © 2025 - 2026 HI PHIM. All rights reserved.
+          © 2025 - 2026 Hi PHIM. All rights reserved.
         </p>
 
         {/* Developer Credit */}
