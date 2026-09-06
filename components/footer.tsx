@@ -32,12 +32,19 @@ export default function Footer({}: FooterProps = {}) {
           </p>
         </div>
 
-        {/* Bên Phải: Ở trên là Copyright, Ở dưới là Người phát triển */}
+        {/* Bên Phải: Bản quyền, Miễn trừ trách nhiệm & Người phát triển */}
         <div className="flex flex-col items-end text-right gap-0.5 sm:gap-1 shrink-0">
+          {/* Dòng 1: Copyright & Mọi bản quyền được bảo lưu */}
           <p className="text-[9.5px] sm:text-[11px] font-medium text-white/45 leading-tight">
-            © 2025 - 2026 <span className="text-white/70 font-semibold">Hi PHIM</span>
+            © 2025 - 2026 <span className="text-white/70 font-semibold">Hi PHIM</span>. Mọi bản quyền được bảo lưu.
           </p>
 
+          {/* Dòng 2: Miễn trừ trách nhiệm pháp lý */}
+          <p className="text-[9px] sm:text-[10.5px] text-white/40 leading-tight">
+            Miễn trừ trách nhiệm pháp lý: Không lưu trữ video trên máy chủ.
+          </p>
+
+          {/* Dòng 3: Người phát triển */}
           <p className="text-[9.5px] sm:text-[11px] text-white/60 leading-tight">
             Phát triển bởi{" "}
             <a
