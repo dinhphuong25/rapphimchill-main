@@ -520,43 +520,6 @@ export default function Description({ movie, serverData }: any) {
                 </div>
               </div>
 
-              {/* Metadata Horizontal Ribbon - 3 Columns inside card */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 p-5 rounded-2xl bg-white/[0.02] border border-white/[0.05] shadow-inner">
-                {/* Director */}
-                <div className="space-y-1.5 border-b md:border-b-0 md:border-r border-white/10 pb-3 md:pb-0 md:pr-4">
-                  <p className="text-[11px] text-brand-green uppercase tracking-widest font-extrabold flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-brand-green shadow-[0_0_8px_rgba(34,197,94,0.6)]" /> Đạo diễn
-                  </p>
-                  <p className="text-xs sm:text-sm text-white/90 font-semibold leading-normal">
-                    {movie.director?.length ? movie.director.join(", ") : "Đang cập nhật"}
-                  </p>
-                </div>
-
-                {/* Cast */}
-                <div className="space-y-1.5 border-b md:border-b-0 md:border-r border-white/10 pb-3 md:pb-0 md:pr-4">
-                  <p className="text-[11px] text-brand-green uppercase tracking-widest font-extrabold flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-brand-green shadow-[0_0_8px_rgba(34,197,94,0.6)]" /> Diễn viên
-                  </p>
-                  <p className="text-xs sm:text-sm text-white/80 font-medium leading-relaxed line-clamp-3">
-                    {movie.actor?.length ? movie.actor.join(", ") : "Đang cập nhật"}
-                  </p>
-                </div>
-
-                {/* Categories */}
-                <div className="space-y-2">
-                  <p className="text-[11px] text-brand-green uppercase tracking-widest font-extrabold flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-brand-green shadow-[0_0_8px_rgba(34,197,94,0.6)]" /> Thể loại
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {movie.category?.map((cat: any, i: number) => (
-                      <span key={i} className="text-xs bg-brand-green/15 text-brand-green px-2.5 py-1 rounded-lg border border-brand-green/30 font-bold">
-                        {cat.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
               {/* Synopsis / Nội dung phim */}
               <div className="space-y-3.5 pt-2">
                 <h3 className="text-base sm:text-lg font-extrabold text-white flex items-center gap-2.5">
