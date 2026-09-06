@@ -228,7 +228,7 @@ export default function Sidebar({
         </div>
 
         {/* Scrollable Navigation Body */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 lg:p-2.5 space-y-4 lg:space-y-3.5 scrollbar-hide">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 lg:p-2.5 pb-6 lg:pb-4 space-y-4 lg:space-y-3.5 scrollbar-hide">
           
           {/* Main Nav Section */}
           <div className="space-y-1 lg:space-y-0.5">
@@ -369,13 +369,6 @@ export default function Sidebar({
             })}
           </div>
 
-        </div>
-
-        {/* Sidebar Footer */}
-        <div className="p-3 lg:p-2.5 border-t border-white/8 shrink-0 text-center bg-black/20 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <div className="text-xs lg:text-[10px] text-white/40 truncate">
-            © 2026 Hi PHIM
-          </div>
         </div>
       </aside>
 
