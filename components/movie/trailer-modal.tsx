@@ -2,12 +2,10 @@
 
 import { useState } from "react";
 import { Video, X } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface TrailerModalProps {
   movieName: string;
   trailerUrl?: string;
-  className?: string;
 }
 
 function getYoutubeEmbedUrl(trailerUrl: string | undefined, movieName: string): string {
@@ -27,7 +25,7 @@ function getYoutubeEmbedUrl(trailerUrl: string | undefined, movieName: string): 
   return `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(movieName + " official trailer")}&autoplay=1`;
 }
 
-export default function TrailerButtonWithModal({ movieName, trailerUrl, className }: TrailerModalProps) {
+export default function TrailerButtonWithModal({ movieName, trailerUrl }: TrailerModalProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const embedUrl = getYoutubeEmbedUrl(trailerUrl, movieName);
@@ -37,13 +35,10 @@ export default function TrailerButtonWithModal({ movieName, trailerUrl, classNam
       <button
         onClick={() => setIsOpen(true)}
         type="button"
-        className={cn(
-          "w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-6 py-3 sm:py-3.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-base rounded-xl transition-all border border-white/15 backdrop-blur-md hover:border-brand-green/40 shadow-sm hover:scale-105 active:scale-95 cursor-pointer truncate",
-          className
-        )}
+        className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-white/10 hover:bg-white/20 text-white font-bold text-sm sm:text-base rounded-xl transition-all border border-white/15 backdrop-blur-md hover:border-brand-green/40 shadow-sm hover:scale-105 active:scale-95 cursor-pointer"
       >
-        <Video className="w-4 h-4 sm:w-5 sm:h-5 text-brand-green shrink-0" />
-        <span className="truncate">Xem Trailer</span>
+        <Video className="w-5 h-5 text-brand-green" />
+        <span>Xem Trailer</span>
       </button>
 
       {isOpen && (

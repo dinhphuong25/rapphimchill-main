@@ -64,8 +64,8 @@ export default function MovieRecommendations({
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <div className="w-1.5 h-5 bg-gradient-to-b from-brand-green to-emerald-400 rounded-full shadow-[0_0_10px_rgba(32,214,107,0.5)]" />
-        <h3 className="text-base sm:text-lg md:text-xl font-extrabold text-white tracking-tight">Phim Cùng Thể Loại</h3>
+        <div className="w-1 h-6 bg-gradient-to-b from-orange-500 to-red-500 rounded-full" />
+        <h3 className="text-lg md:text-xl font-bold text-white">Phim tương tự</h3>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">

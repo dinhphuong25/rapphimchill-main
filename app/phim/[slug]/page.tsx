@@ -9,6 +9,8 @@ import { MovieStructuredData, BreadcrumbStructuredData } from "@/components/seo/
 import { Suspense } from "react";
 import Sidebar from "@/components/sidebar";
 import { getCachedCategories, getCachedCountries } from "@/lib/data";
+import MovieRecommendations from "@/components/movie/movie-recommendations";
+
 import TrailerButtonWithModal from "@/components/movie/trailer-modal";
 
 const getMovie = async (slug: string) => {
@@ -90,7 +92,7 @@ async function PhimDetailContent({ slug }: { slug: string }) {
       <Sidebar categories={categories as any[]} countries={countries as any[]} />
 
       {/* Main Container */}
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 pt-16 sm:pt-10 pb-8 sm:pb-10 space-y-8">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-10 space-y-8">
         
         {/* Prominent Featured Hero Card */}
         <div className="relative rounded-3xl overflow-hidden border border-brand-green/20 bg-gradient-to-br from-[#1b2029] via-[#13161c] to-[#0e1014] shadow-[0_20px_60px_rgba(0,0,0,0.8),0_0_40px_rgba(32,214,107,0.08)]">
@@ -100,18 +102,17 @@ async function PhimDetailContent({ slug }: { slug: string }) {
           <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-brand-green/10 rounded-full blur-[100px] pointer-events-none" />
 
           {/* Hero Card Content */}
-          <div className="relative z-10 p-5 sm:p-8 lg:p-10 flex flex-col md:flex-row gap-5 sm:gap-8 lg:gap-10 items-center md:items-start">
+          <div className="relative z-10 p-5 sm:p-8 lg:p-10 flex flex-col md:flex-row gap-6 sm:gap-8 lg:gap-10 items-center md:items-start">
             
             {/* Poster Image with Glowing Ring */}
-            <div className="relative w-44 sm:w-52 md:w-64 shrink-0 aspect-[2/3] rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.9),0_0_30px_rgba(32,214,107,0.2)] ring-2 ring-brand-green/40 group">
+            <div className="relative w-40 sm:w-52 md:w-64 shrink-0 aspect-[2/3] rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.9),0_0_30px_rgba(32,214,107,0.2)] ring-2 ring-brand-green/40 group">
               <Image
                 src={posterUrl}
                 alt={movie.name}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-500"
-                sizes="(max-width: 768px) 176px, 280px"
+                sizes="(max-width: 768px) 160px, 280px"
                 unoptimized={true}
-                priority
               />
               {movie.quality && (
                 <span className="absolute top-3 left-3 px-3 py-1 bg-gradient-to-r from-brand-green to-emerald-400 text-black font-black text-xs uppercase tracking-wider rounded-lg shadow-[0_0_15px_rgba(32,214,107,0.6)]">
@@ -123,6 +124,7 @@ async function PhimDetailContent({ slug }: { slug: string }) {
             {/* Movie Info Details */}
             <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left w-full">
               
+
               {/* Title */}
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight mb-2 tracking-tight">
                 {movie.name}
@@ -130,7 +132,7 @@ async function PhimDetailContent({ slug }: { slug: string }) {
 
               {/* Subtitle */}
               {movie.origin_name && (
-                <p className="text-white/60 text-sm sm:text-base font-medium mb-3.5 sm:mb-4">
+                <p className="text-white/60 text-sm sm:text-base font-medium mb-4">
                   {movie.origin_name}
                 </p>
               )}
@@ -161,7 +163,7 @@ async function PhimDetailContent({ slug }: { slug: string }) {
 
               {/* Category Chips */}
               {movie.category?.length > 0 && (
-                <div className="flex flex-wrap justify-center md:justify-start gap-1.5 mb-4 sm:mb-5">
+                <div className="flex flex-wrap justify-center md:justify-start gap-1.5 mb-5">
                   {movie.category.map((cat: any) => (
                     <Link
                       key={cat.id}
@@ -176,7 +178,7 @@ async function PhimDetailContent({ slug }: { slug: string }) {
 
               {/* Synopsis Preview */}
               {movie.content && (
-                <p className="text-white/75 text-sm sm:text-base leading-relaxed mb-6 line-clamp-4 max-w-2xl font-normal text-center md:text-left">
+                <p className="text-white/75 text-sm sm:text-base leading-relaxed mb-6 line-clamp-4 max-w-2xl font-normal text-justify">
                   {movie.content
                     .replace(/<[^>]*>/g, "")
                     .replace(/&quot;/g, '"')
@@ -189,14 +191,14 @@ async function PhimDetailContent({ slug }: { slug: string }) {
               )}
 
               {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5 w-full sm:w-auto sm:flex items-center justify-center md:justify-start mt-2">
+              <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-3.5 w-full sm:w-auto mt-2">
                 {episodes?.[0]?.server_data?.[0] && (
                   <Link
                     href={`/watch?slug=${slug}`}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-8 py-3.5 bg-brand-green hover:bg-[#1bc660] text-black font-extrabold text-sm sm:text-base rounded-xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(32,214,107,0.4)] hover:shadow-[0_0_30px_rgba(32,214,107,0.6)] truncate"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-8 py-3.5 bg-brand-green hover:bg-[#1bc660] text-black font-extrabold text-base rounded-xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(32,214,107,0.4)] hover:shadow-[0_0_30px_rgba(32,214,107,0.6)]"
                   >
-                    <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-black text-black shrink-0" />
-                    <span className="text-black font-extrabold truncate">Xem Phim Ngay</span>
+                    <Play className="w-5 h-5 fill-black text-black" />
+                    <span className="text-black font-extrabold">Xem Phim Ngay</span>
                   </Link>
                 )}
                 
