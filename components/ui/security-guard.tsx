@@ -4,13 +4,22 @@ import { useEffect } from "react";
 
 export default function SecurityGuard() {
   useEffect(() => {
-    // 1. Chặn click chuột phải (Context Menu)
+    const isInputOrAdmin = (e: Event) => {
+      const target = e.target as HTMLElement | null;
+      const isInput = target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || Boolean(target?.isContentEditable);
+      const isAdmin = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
+      return isInput || isAdmin;
+    };
+
+    // 1. Chặn click chuột phải (Context Menu) - Cho phép trong input và trang Admin
     const handleContextMenu = (e: MouseEvent) => {
+      if (isInputOrAdmin(e)) return;
       e.preventDefault();
     };
 
-    // Chặn Copy / Cut
+    // Chặn Copy / Cut - Cho phép trong input và trang Admin
     const handleCopy = (e: ClipboardEvent) => {
+      if (isInputOrAdmin(e)) return;
       e.preventDefault();
     };
 

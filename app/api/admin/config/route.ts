@@ -51,6 +51,8 @@ export async function POST(req: NextRequest) {
       revalidatePath("/favorites");
       revalidateTag("featured-movies", { expire: 0 });
       revalidateTag("featured-movie", { expire: 0 });
+      revalidateTag("categories", { expire: 0 });
+      revalidateTag("countries", { expire: 0 });
     } catch (e) {
       console.warn("Revalidate path warning:", e);
     }
