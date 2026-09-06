@@ -425,7 +425,7 @@ export default function Sidebar({
                   value={categorySearchQuery}
                   onChange={(e) => setCategorySearchQuery(e.target.value)}
                   placeholder="Lọc nhanh thể loại (Hành động, Cổ trang, Kinh dị...)"
-                  className="w-full bg-[#141d2b]/90 border border-white/10 focus:border-brand-green/50 text-white placeholder-white/30 text-[16px] sm:text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none transition-all"
+                  className="w-full bg-white/[0.06] border border-white/10 focus:border-white/25 text-white placeholder-white/30 text-[16px] sm:text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none transition-all"
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
@@ -548,7 +548,7 @@ export default function Sidebar({
                   value={countrySearchQuery}
                   onChange={(e) => setCountrySearchQuery(e.target.value)}
                   placeholder="Lọc nhanh quốc gia (Hàn Quốc, Trung Quốc, Âu Mỹ...)"
-                  className="w-full bg-[#141d2b]/90 border border-white/10 focus:border-brand-green/50 text-white placeholder-white/30 text-[16px] sm:text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none transition-all"
+                  className="w-full bg-white/[0.06] border border-white/10 focus:border-white/25 text-white placeholder-white/30 text-[16px] sm:text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none transition-all"
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
