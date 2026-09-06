@@ -80,10 +80,24 @@ export default function VideoPlayer({
   const autoplayMutedRef = useRef<boolean>(false);
   const lastNonZeroVolumeRef = useRef<number>(1);
 
+  // Callback Refs to keep useEffect pure and prevent unwanted reload loops
+  const onSwitchToEmbedRef = useRef(onSwitchToEmbed);
+  onSwitchToEmbedRef.current = onSwitchToEmbed;
+  const onProgressRef = useRef(onProgress);
+  onProgressRef.current = onProgress;
+  const onNextEpisodeRef = useRef(onNextEpisode);
+  onNextEpisodeRef.current = onNextEpisode;
+  const onEndedRef = useRef(onEnded);
+  onEndedRef.current = onEnded;
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
+
   // 2. STATES
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
+  const [seekTime, setSeekTime] = useState<number | null>(null);
+  const isSeekingRef = useRef<boolean>(false);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
@@ -193,7 +207,10 @@ export default function VideoPlayer({
 
   const skip = useCallback((seconds: number) => {
     if (videoRef.current) {
-      videoRef.current.currentTime += seconds;
+      const maxDuration = videoRef.current.duration || 999999;
+      const newTime = Math.max(0, Math.min(maxDuration, videoRef.current.currentTime + seconds));
+      videoRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
       showControlsHandler();
     }
   }, [showControlsHandler]);
@@ -216,12 +233,24 @@ export default function VideoPlayer({
     }
   }, []);
 
-  const handleSeek = useCallback((value: number[]) => {
+  const handleSeekChange = useCallback((value: number[]) => {
+    isSeekingRef.current = true;
+    setSeekTime(value[0]);
+    showControlsHandler();
+  }, [showControlsHandler]);
+
+  const handleSeekCommit = useCallback((value: number[]) => {
+    const targetTime = value[0];
     if (videoRef.current) {
-      videoRef.current.currentTime = value[0];
-      setCurrentTime(value[0]);
+      videoRef.current.currentTime = targetTime;
     }
-  }, []);
+    setCurrentTime(targetTime);
+    setSeekTime(null);
+    setTimeout(() => {
+      isSeekingRef.current = false;
+    }, 250);
+    showControlsHandler();
+  }, [showControlsHandler]);
 
   const toggleMute = useCallback(() => {
     if (videoRef.current) {
@@ -329,14 +358,14 @@ export default function VideoPlayer({
         case 'Digit1': case 'Digit2': case 'Digit3': case 'Digit4': case 'Digit5':
         case 'Digit6': case 'Digit7': case 'Digit8': case 'Digit9': case 'Digit0':
           const percent = e.code === 'Digit0' ? 0 : parseInt(e.code.replace('Digit', '')) * 10;
-          if (videoRef.current.duration) { handleSeek([(percent / 100) * videoRef.current.duration]); showFeedback('seek', `${percent}%`); }
+          if (videoRef.current.duration) { handleSeekCommit([(percent / 100) * videoRef.current.duration]); showFeedback('seek', `${percent}%`); }
           break;
       }
       showControlsHandler();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [togglePlay, skip, handleVolumeChange, handleSeek, toggleMute, toggleFullscreen, showControlsHandler]);
+  }, [togglePlay, skip, handleVolumeChange, handleSeekCommit, toggleMute, toggleFullscreen, showControlsHandler]);
 
   // Clear shortcut feedback automatically
   useEffect(() => {
@@ -350,8 +379,11 @@ export default function VideoPlayer({
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !videoUrl) return;
-    setError(null); setIsLoading(true);
+    setError(null); 
+    setIsLoading(true);
     retryCountRef.current = 0;
+    didSeekInitialTimeRef.current = false;
+    lastProgressSecondRef.current = -1;
 
     const initHls = () => {
       if (HLS.isSupported()) {
@@ -438,8 +470,8 @@ export default function VideoPlayer({
                   }, 1000 * retryCountRef.current);
                 } else {
                   setError("Lỗi kết nối máy chủ. Vui lòng chuyển sang máy chủ dự phòng.");
-                  if (onSwitchToEmbed) {
-                    setTimeout(() => onSwitchToEmbed(), 2000);
+                  if (onSwitchToEmbedRef.current) {
+                    setTimeout(() => onSwitchToEmbedRef.current?.(), 2000);
                   }
                 }
                 break;
@@ -476,10 +508,11 @@ export default function VideoPlayer({
         };
 
         const handleNativeError = () => {
+          if (!video.src && !video.currentSrc) return;
           setIsLoading(false);
           setError("Không thể phát video từ nguồn này. Đang chuyển sang máy chủ dự phòng...");
-          if (onSwitchToEmbed) {
-            setTimeout(() => onSwitchToEmbed(), 1500);
+          if (onSwitchToEmbedRef.current) {
+            setTimeout(() => onSwitchToEmbedRef.current?.(), 1500);
           }
         };
 
@@ -494,32 +527,47 @@ export default function VideoPlayer({
     };
     const cleanupNative = initHls();
     return () => { 
-      if (hlsRef.current) hlsRef.current.destroy(); 
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
       if (cleanupNative) cleanupNative();
-      video.src = ''; 
+      video.removeAttribute('src');
+      video.load();
     };
-  }, [videoUrl, autoplay, onSwitchToEmbed]);
+  }, [videoUrl, autoplay]);
 
   // Event Listeners for State
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
     const onTimeUpdate = () => {
-      setCurrentTime(video.currentTime);
+      if (!isSeekingRef.current) {
+        setCurrentTime(video.currentTime);
+      }
       if (video.buffered.length > 0) setBuffered(video.buffered.end(video.buffered.length - 1));
       const currentSecond = Math.floor(video.currentTime);
-      if (currentSecond !== lastProgressSecondRef.current) { lastProgressSecondRef.current = currentSecond; onProgress?.(video.currentTime, video.duration || 0); }
+      if (currentSecond !== lastProgressSecondRef.current) { 
+        lastProgressSecondRef.current = currentSecond; 
+        onProgressRef.current?.(video.currentTime, video.duration || 0); 
+      }
     };
     const onEndedEvent = () => {
-      if (hasNextEpisode && onNextEpisode) {
+      if (hasNextEpisode && onNextEpisodeRef.current) {
         setCountdown(5);
         countdownIntervalRef.current = setInterval(() => {
           setCountdown(p => {
-            if (p === null || p <= 1) { if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current); onNextEpisode(); return null; }
+            if (p === null || p <= 1) { 
+              if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current); 
+              onNextEpisodeRef.current?.(); 
+              return null; 
+            }
             return p - 1;
           });
         }, 1000);
-      } else onEnded?.();
+      } else {
+        onEndedRef.current?.();
+      }
     };
     const onWaiting = () => {
       setIsLoading(true);
@@ -534,6 +582,7 @@ export default function VideoPlayer({
     };
 
     const onErrorEvent = () => {
+      if (!video.currentSrc && !video.src) return;
       const err = video.error;
       if (!err) return;
       console.error("Native video error:", err);
@@ -542,6 +591,7 @@ export default function VideoPlayer({
       } else {
         setError("Đã có lỗi xảy ra khi phát video.");
       }
+      onErrorRef.current?.(err);
     };
 
     const hideLoading = () => setIsLoading(false);
@@ -566,7 +616,7 @@ export default function VideoPlayer({
       video.removeEventListener('error', onErrorEvent);
       if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
     };
-  }, [hasNextEpisode, onNextEpisode, onEnded, onProgress]);
+  }, [hasNextEpisode]);
 
   // Initial Seek
   useEffect(() => {
@@ -745,24 +795,45 @@ export default function VideoPlayer({
             </svg>
           </div>
           <p className="text-white/90 text-sm md:text-base font-semibold mb-6 max-w-md">{error}</p>
-          {onSwitchToEmbed && (
-            <Button onClick={onSwitchToEmbed} className="bg-primary text-black font-bold">
-              Phát bằng Máy chủ Dự phòng
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={() => {
+                setError(null);
+                setIsLoading(true);
+                if (hlsRef.current) {
+                  hlsRef.current.loadSource(videoUrl);
+                  hlsRef.current.startLoad();
+                } else if (videoRef.current) {
+                  videoRef.current.src = videoUrl;
+                  videoRef.current.load();
+                }
+              }}
+              variant="outline"
+              className="text-white border-white/20 hover:bg-white/10 font-bold"
+            >
+              Thử lại
             </Button>
-          )}
+            {onSwitchToEmbed && (
+              <Button onClick={() => onSwitchToEmbedRef.current?.()} className="bg-primary text-black font-bold">
+                Phát bằng Máy chủ Dự phòng
+              </Button>
+            )}
+          </div>
         </div>
       )}
-
-      {/* Back button removed per user request */}
-
-
-
-
 
       {/* Bottom controls bar */}
       <div className={cn("absolute bottom-0 left-0 right-0 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/50 to-transparent transition-opacity duration-300 z-50 pointer-events-none", showControls ? "opacity-100" : "opacity-0")}>
         <div className="px-4 pb-0 pointer-events-auto">
-          <Slider value={[currentTime]} min={0} max={duration || 100} onValueChange={handleSeek} className="py-4 cursor-pointer" />
+          <Slider 
+            value={[seekTime !== null ? seekTime : currentTime]} 
+            min={0} 
+            max={duration > 0 ? duration : 100} 
+            step={1}
+            onValueChange={handleSeekChange} 
+            onValueCommit={handleSeekCommit} 
+            className="py-4 cursor-pointer" 
+          />
         </div>
         <div className="px-4 pb-4 flex items-center justify-between gap-4 pointer-events-auto">
           <div className="flex items-center gap-4">
@@ -771,7 +842,9 @@ export default function VideoPlayer({
               <Button variant="ghost" size="icon" onClick={toggleMute} className="text-white hover:bg-white/10 cursor-pointer">{isMuted || volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}</Button>
               <Slider value={[isMuted ? 0 : volume]} min={0} max={1} step={0.01} onValueChange={handleVolumeChange} className="w-20 cursor-pointer" />
             </div>
-            <div className="text-white text-xs tabular-nums font-bold">{formatTime(currentTime)} / {formatTime(duration)}</div>
+            <div className="text-white text-xs tabular-nums font-bold">
+              {formatTime(seekTime !== null ? seekTime : currentTime)} / {formatTime(duration)}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="text-white hover:bg-white/10 cursor-pointer">{isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}</Button>

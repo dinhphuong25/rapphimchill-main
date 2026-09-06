@@ -311,6 +311,20 @@ export default function Description({ movie, serverData }: any) {
     return false;
   };
 
+  const handleSwitchToEmbed = useCallback(() => {
+    setPlayerMode('embed');
+    if (currentEpisodeIndex && serverData) {
+      const currentEpisode = serverData[currentEpisodeIndex.server]?.server_data?.[currentEpisodeIndex.episode];
+      if (currentEpisode?.link_embed) setCurrentEpisodeUrl(currentEpisode.link_embed);
+    }
+  }, [currentEpisodeIndex, serverData]);
+
+  const handleEnded = useCallback(() => {
+    if (currentEpisodeIndex) {
+      markEpisodeCompleted(currentEpisodeIndex.server, currentEpisodeIndex.episode);
+    }
+  }, [currentEpisodeIndex, markEpisodeCompleted]);
+
   const currentEpName =
     currentEpisodeIndex &&
     serverData?.[currentEpisodeIndex.server]?.server_data?.[currentEpisodeIndex.episode]?.name
@@ -373,20 +387,10 @@ export default function Description({ movie, serverData }: any) {
                     movieName={movie.name}
                     movieSlug={movie.slug}
                     onProgress={handleProgress}
-                    onSwitchToEmbed={() => {
-                      setPlayerMode('embed');
-                      if (currentEpisodeIndex && serverData) {
-                        const currentEpisode = serverData[currentEpisodeIndex.server]?.server_data?.[currentEpisodeIndex.episode];
-                        if (currentEpisode?.link_embed) setCurrentEpisodeUrl(currentEpisode.link_embed);
-                      }
-                    }}
+                    onSwitchToEmbed={handleSwitchToEmbed}
                     hasNextEpisode={hasNextEpisode()}
                     onNextEpisode={handleNextEpisode}
-                    onEnded={() => {
-                      if (currentEpisodeIndex) {
-                        markEpisodeCompleted(currentEpisodeIndex.server, currentEpisodeIndex.episode);
-                      }
-                    }}
+                    onEnded={handleEnded}
                   />
                 ) : (
                   <EmbedPlayer videoUrl={currentEpisodeUrl} />
