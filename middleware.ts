@@ -3,6 +3,7 @@
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { verifySessionToken } from '@/lib/admin-token';
 
 // Blocked user agents (common scraper bots)
 const BLOCKED_USER_AGENTS = [
@@ -97,7 +98,7 @@ function checkRateLimit(ip: string): boolean {
     return true;
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const userAgent = request.headers.get('user-agent');
     const ip =
@@ -142,7 +143,34 @@ export function middleware(request: NextRequest) {
     }
 
     // -------------------------------------------------------------
-    // 2. AUTOMATIC & ON-DEMAND MAINTENANCE MODE
+    // 2. ADMIN PANEL AUTHENTICATION GUARD
+    // -------------------------------------------------------------
+    if (pathname.startsWith('/admin')) {
+        // Public login page
+        if (pathname === '/admin/login') {
+            const adminSessionCookie = request.cookies.get('hiphim_admin_session')?.value;
+            if (adminSessionCookie) {
+                const isValid = await verifySessionToken(adminSessionCookie);
+                if (isValid) {
+                    return NextResponse.redirect(new URL('/admin', request.url));
+                }
+            }
+            return NextResponse.next();
+        }
+
+        // All other /admin routes require valid authenticated session
+        const adminSessionCookie = request.cookies.get('hiphim_admin_session')?.value;
+        const isValid = await verifySessionToken(adminSessionCookie);
+
+        if (!isValid) {
+            const loginUrl = new URL('/admin/login', request.url);
+            loginUrl.searchParams.set('redirect', pathname);
+            return NextResponse.redirect(loginUrl);
+        }
+    }
+
+    // -------------------------------------------------------------
+    // 3. AUTOMATIC & ON-DEMAND MAINTENANCE MODE
     // -------------------------------------------------------------
     const bypassToken = request.nextUrl.searchParams.get('bypass');
     const bypassCookie = request.cookies.get('hiphim_maintenance_bypass')?.value;
@@ -167,6 +195,8 @@ export function middleware(request: NextRequest) {
     // Paths exempt from maintenance redirection:
     const isExemptPath = 
         pathname === '/maintenance' ||
+        pathname.startsWith('/admin') ||
+        pathname.startsWith('/api/admin') ||
         pathname.startsWith('/api/system/') ||
         pathname.startsWith('/api/cron/') ||
         pathname.startsWith('/_next/') ||

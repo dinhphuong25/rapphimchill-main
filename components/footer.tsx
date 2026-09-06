@@ -3,7 +3,11 @@
 import Image from "next/image";
 import { Heart } from "lucide-react";
 
-export default function Footer() {
+interface FooterProps {
+  customFooterText?: string;
+}
+
+export default function Footer({ customFooterText }: FooterProps = {}) {
   return (
     <footer className="w-full mt-auto py-8 sm:py-10 border-t border-white/5 bg-[#060a08]/90 backdrop-blur-xl select-none">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col items-center text-center space-y-4">
@@ -31,6 +35,13 @@ export default function Footer() {
         <p className="text-[11px] text-white/40 max-w-2xl leading-relaxed">
           Tuyên bố miễn trừ trách nhiệm: Trang web chỉ tổng hợp và nhúng video từ các nguồn mở công cộng trên Internet. Chúng tôi không lưu trữ hoặc tải lên bất kỳ tập tin video nào trên máy chủ của mình.
         </p>
+
+        {/* Custom Admin Footer Text */}
+        {customFooterText && (
+          <p className="text-xs text-brand-green/80 font-medium max-w-xl">
+            {customFooterText}
+          </p>
+        )}
 
         {/* Copyright Line */}
         <p className="text-[11px] font-medium text-white/45">

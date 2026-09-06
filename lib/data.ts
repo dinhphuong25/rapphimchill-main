@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 import PhimApi from "@/libs/phimapi.com";
+import { getSiteConfig } from "@/lib/site-config";
 
 export const TRENDING_FEATURED_SLUGS = [
   "deadpool-va-wolverine",
@@ -31,8 +32,18 @@ export const getCachedCountries = unstable_cache(
 export const getCachedFeaturedMovies = unstable_cache(
   async () => {
     try {
+      let slugs = TRENDING_FEATURED_SLUGS;
+      try {
+        const config = getSiteConfig();
+        if (config.featuredSlugs && config.featuredSlugs.length > 0) {
+          slugs = config.featuredSlugs;
+        }
+      } catch (err) {
+        console.warn("Could not load featuredSlugs from config:", err);
+      }
+
       const results = await Promise.allSettled(
-        TRENDING_FEATURED_SLUGS.map((slug) => api.get(slug))
+        slugs.map((slug) => api.get(slug))
       );
       const movies = results
         .filter((r): r is PromiseFulfilledResult<{ movie: any; server: any[] }> => r.status === "fulfilled" && Boolean(r.value?.movie))
@@ -42,7 +53,7 @@ export const getCachedFeaturedMovies = unstable_cache(
       return [];
     }
   },
-  ["featured-movies-v3"],
+  ["featured-movies-v4"],
   { revalidate: 3600, tags: ["featured-movies"] }
 );
 

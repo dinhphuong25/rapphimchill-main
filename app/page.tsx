@@ -16,6 +16,7 @@ import {
   getCachedNewUpdates,
   getCachedTopicMovies,
 } from "@/lib/data";
+import { getSiteConfig } from "@/lib/site-config";
 
 type HomeProps = {
   searchParams: Promise<{
@@ -107,6 +108,8 @@ export default async function Home({ searchParams }: HomeProps) {
     }));
   }
 
+  const siteConfig = getSiteConfig();
+
   return (
     <main className="min-h-screen bg-cinema-bg text-cinema-text lg:pl-[200px] transition-all duration-300">
       <Sidebar categories={categories as any[]} countries={countries as any[]} />
@@ -135,7 +138,7 @@ export default async function Home({ searchParams }: HomeProps) {
         />
       )}
 
-      <Footer />
+      <Footer customFooterText={siteConfig.customFooterText} />
       <ScrollToTop />
     </main>
   );

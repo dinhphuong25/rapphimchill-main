@@ -13,6 +13,8 @@ import PipWrapper from "@/components/player/pip-wrapper";
 import NotificationBanner from "@/components/ui/notification-banner";
 import SpeculationRules from "@/components/seo/speculation-rules";
 import { Toaster } from "sonner";
+import AnnouncementBanner from "@/components/announcement-banner";
+import { getSiteConfig } from "@/lib/site-config";
 
 // Be Vietnam Pro — font hỗ trợ tiếng Việt tốt nhất, sans-serif hiện đại
 const beVietnam = Be_Vietnam_Pro({
@@ -123,6 +125,7 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const siteConfig = getSiteConfig();
   return (
     <html lang="vi" suppressHydrationWarning className="dark">
       <head>
@@ -210,6 +213,9 @@ export default function RootLayout({
         <OrganizationStructuredData url="https://hiphim.biz" />
 
         <HydrationFix />
+
+        {/* Global Admin Announcement Banner */}
+        <AnnouncementBanner initialAnnouncement={siteConfig.announcement} />
 
         {/* Main App — không còn MUI Provider */}
         <LoadingProvider>{children}</LoadingProvider>
