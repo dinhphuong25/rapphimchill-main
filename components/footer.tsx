@@ -9,12 +9,13 @@ interface FooterProps {
 
 export default function Footer({ customFooterText }: FooterProps = {}) {
   return (
-    <footer className="w-full mt-auto py-3 sm:py-3.5 border-t border-white/[0.06] bg-[#050807]/90 backdrop-blur-xl select-none">
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-2.5 md:gap-6">
+    <footer className="w-full mt-auto py-3.5 sm:py-4 border-t border-white/[0.06] bg-[#050807]/90 backdrop-blur-xl select-none">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col md:flex-row items-center md:items-center justify-between gap-3 md:gap-6">
         
-        {/* Bên Trái: Logo, Thương hiệu & Tuyên bố nguồn mở */}
-        <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 text-center sm:text-left">
-          <div className="flex items-center gap-2 shrink-0">
+        {/* Bên Trái: Ở trên là Hi Phim logo + thương hiệu, Ở dưới là mô tả */}
+        <div className="flex flex-col items-center md:items-start text-center md:text-left gap-1">
+          {/* Ở trên: Hi PHIM */}
+          <div className="flex items-center gap-2">
             <Image
               src="/favicon.svg"
               alt="Hi Phim Logo"
@@ -25,31 +26,28 @@ export default function Footer({ customFooterText }: FooterProps = {}) {
             <span className="text-sm font-black text-white tracking-wide">
               Hi <span className="text-brand-green">PHIM</span>
             </span>
+            <span className="text-white/20 text-[11px] hidden sm:inline">•</span>
+            <span className="text-[11px] text-white/50 font-medium hidden sm:inline">
+              Xem Phim HD Chuẩn Điện Ảnh Miễn Phí
+            </span>
           </div>
 
-          <span className="text-white/20 hidden sm:inline">•</span>
-
+          {/* Ở dưới: Mô tả */}
           <p className="text-[11px] text-white/40 max-w-xl leading-relaxed">
-            Tổng hợp & nhúng video từ các nguồn mở Internet. Không lưu trữ tập tin trên máy chủ.
+            {customFooterText || "Trang web tổng hợp và nhúng video từ các nguồn mở trên Internet. Chúng tôi không lưu trữ tập tin video trên máy chủ."}
           </p>
         </div>
 
-        {/* Bên Phải: Bản quyền & Nhà phát triển */}
-        <div className="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-3 text-center sm:text-right shrink-0">
-          {customFooterText && (
-            <span className="text-[11px] text-brand-green/80 font-medium hidden xl:inline">
-              {customFooterText}
-            </span>
-          )}
-
-          <p className="text-[11px] font-medium text-white/40">
-            © 2025 - 2026 <span className="text-white/60">Hi PHIM</span>. All rights reserved.
+        {/* Bên Phải: Ở trên là Copyright, Ở dưới là Người quản lý & phát triển */}
+        <div className="flex flex-col items-center md:items-end text-center md:text-right gap-1 shrink-0">
+          {/* Ở trên: Copyright */}
+          <p className="text-[11px] font-medium text-white/45">
+            © 2025 - 2026 <span className="text-white/70 font-semibold">Hi PHIM</span>. All rights reserved.
           </p>
 
-          <span className="text-white/20 hidden sm:inline">•</span>
-
+          {/* Ở dưới: Người quản lý & phát triển */}
           <p className="text-[11px] text-white/60">
-            Phát triển bởi{" "}
+            Được quản lý và phát triển bởi{" "}
             <a
               href="https://www.facebook.com/dinhphuong205/"
               target="_blank"
