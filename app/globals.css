@@ -126,6 +126,27 @@
     overscroll-behavior: contain;
   }
 
+  /* Mobile performance: paint containment for fixed UI layers */
+  .contain-paint {
+    contain: paint;
+  }
+
+  /* Hardware-accelerated color transitions only */
+  .transition-colors-gpu {
+    transition-property: color, background-color, border-color;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+
+  /* Reduce motion for users who prefer it or for performance */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
   /* Editorial Glassmorphism */
   .editorial-glass {
     background: rgba(11, 16, 14, 0.88);

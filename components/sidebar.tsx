@@ -213,9 +213,10 @@ export default function Sidebar({
       {/* ======================================================== */}
       <nav
         aria-label="Điều hướng chính"
-        className="lg:hidden fixed left-3.5 right-3.5 sm:left-auto sm:right-auto sm:w-[400px] bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-[110] max-w-[420px] mx-auto pointer-events-auto transform-gpu translate-z-0 will-change-transform select-none"
+        className="lg:hidden fixed left-3.5 right-3.5 sm:left-auto sm:right-auto sm:w-[400px] bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-[110] max-w-[420px] mx-auto pointer-events-auto select-none"
+        style={{ contain: "layout style", isolation: "isolate" }}
       >
-        <div className="h-14 px-1.5 rounded-full bg-cinema-sub/95 backdrop-blur-2xl border border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.85)] flex items-center justify-around">
+        <div className="h-14 px-1.5 rounded-full bg-[#0B100E] border border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.7)] flex items-center justify-around">
           {/* Tab 1: Trang Chủ */}
           {(() => {
             const active =
@@ -225,23 +226,24 @@ export default function Sidebar({
               !currentCategory &&
               !currentYear;
             return (
-              <button
+              <Link
+                href="/"
+                prefetch={true}
                 onClick={() => {
                   setIsMobileOpen(false);
                   setActiveModal(null);
-                  router.push("/");
                 }}
                 className={cn(
-                  "flex-1 h-10 mx-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all duration-200 active:scale-95 select-none",
+                  "flex-1 h-10 mx-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none",
                   active
-                    ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold shadow-[0_0_12px_rgba(32,214,107,0.2)]"
-                    : "border border-transparent text-white/60 hover:text-white"
+                    ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold"
+                    : "border border-transparent text-white/60"
                 )}
                 aria-label="Trang Chủ"
               >
-                <Home className={cn("w-4.5 h-4.5 transition-transform", active && "scale-105")} />
+                <Home className={cn("w-[18px] h-[18px]", active && "scale-105")} />
                 <span className="text-[10px] font-bold tracking-tight whitespace-nowrap">Trang Chủ</span>
-              </button>
+              </Link>
             );
           })()}
 
@@ -249,23 +251,24 @@ export default function Sidebar({
           {(() => {
             const active = pathname === "/" && currentTypeList === "phim-chieu-rap";
             return (
-              <button
+              <Link
+                href="/?typeList=phim-chieu-rap"
+                prefetch={true}
                 onClick={() => {
                   setIsMobileOpen(false);
                   setActiveModal(null);
-                  router.push("/?typeList=phim-chieu-rap");
                 }}
                 className={cn(
-                  "flex-1 h-10 mx-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all duration-200 active:scale-95 select-none",
+                  "flex-1 h-10 mx-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none",
                   active
-                    ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold shadow-[0_0_12px_rgba(32,214,107,0.2)]"
-                    : "border border-transparent text-white/60 hover:text-white"
+                    ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold"
+                    : "border border-transparent text-white/60"
                 )}
                 aria-label="Chiếu Rạp"
               >
-                <Clapperboard className={cn("w-4.5 h-4.5 transition-transform", active && "scale-105")} />
+                <Clapperboard className={cn("w-[18px] h-[18px]", active && "scale-105")} />
                 <span className="text-[10px] font-bold tracking-tight whitespace-nowrap">Chiếu Rạp</span>
-              </button>
+              </Link>
             );
           })()}
 
@@ -273,23 +276,24 @@ export default function Sidebar({
           {(() => {
             const active = pathname === "/recently";
             return (
-              <button
+              <Link
+                href="/recently"
+                prefetch={true}
                 onClick={() => {
                   setIsMobileOpen(false);
                   setActiveModal(null);
-                  router.push("/recently");
                 }}
                 className={cn(
-                  "flex-1 h-10 mx-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all duration-200 active:scale-95 select-none",
+                  "flex-1 h-10 mx-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none",
                   active
-                    ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold shadow-[0_0_12px_rgba(32,214,107,0.2)]"
-                    : "border border-transparent text-white/60 hover:text-white"
+                    ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold"
+                    : "border border-transparent text-white/60"
                 )}
                 aria-label="Lịch Sử Xem"
               >
-                <History className={cn("w-4.5 h-4.5 transition-transform", active && "scale-105")} />
+                <History className={cn("w-[18px] h-[18px]", active && "scale-105")} />
                 <span className="text-[10px] font-bold tracking-tight whitespace-nowrap">Lịch Sử</span>
-              </button>
+              </Link>
             );
           })()}
 
@@ -297,23 +301,24 @@ export default function Sidebar({
           {(() => {
             const active = pathname === "/favorites";
             return (
-              <button
+              <Link
+                href="/favorites"
+                prefetch={true}
                 onClick={() => {
                   setIsMobileOpen(false);
                   setActiveModal(null);
-                  router.push("/favorites");
                 }}
                 className={cn(
-                  "flex-1 h-10 mx-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all duration-200 active:scale-95 select-none",
+                  "flex-1 h-10 mx-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none",
                   active
-                    ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold shadow-[0_0_12px_rgba(32,214,107,0.2)]"
-                    : "border border-transparent text-white/60 hover:text-white"
+                    ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold"
+                    : "border border-transparent text-white/60"
                 )}
                 aria-label="Phim Yêu Thích"
               >
-                <Heart className={cn("w-4.5 h-4.5 transition-transform", active && "scale-105 fill-brand-green")} />
+                <Heart className={cn("w-[18px] h-[18px]", active && "scale-105", active && "fill-brand-green")} />
                 <span className="text-[10px] font-bold tracking-tight whitespace-nowrap">Yêu Thích</span>
-              </button>
+              </Link>
             );
           })()}
 
@@ -332,15 +337,15 @@ export default function Sidebar({
                   setIsMobileOpen(true);
                 }}
                 className={cn(
-                  "relative flex-1 h-10 mx-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all duration-200 active:scale-95 select-none",
+                  "relative flex-1 h-10 mx-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none",
                   active
-                    ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold shadow-[0_0_12px_rgba(32,214,107,0.2)]"
-                    : "border border-transparent text-white/60 hover:text-white"
+                    ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold"
+                    : "border border-transparent text-white/60"
                 )}
                 aria-label="Danh Mục"
               >
                 <div className="relative">
-                  <Layers className={cn("w-4.5 h-4.5 transition-transform", active && "scale-105")} />
+                  <Layers className={cn("w-[18px] h-[18px]", active && "scale-105")} />
                   {(currentCategory || currentCountry || currentYear) && (
                     <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-brand-green rounded-full" />
                   )}
@@ -355,7 +360,7 @@ export default function Sidebar({
       {/* Mobile Backdrop Overlay */}
       {isMobileOpen && (
         <div
-          className="lg:hidden fixed inset-0 z-[120] bg-black/70 backdrop-blur-sm animate-fade-in"
+          className="lg:hidden fixed inset-0 z-[120] bg-black/75"
           onClick={() => setIsMobileOpen(false)}
         />
       )}

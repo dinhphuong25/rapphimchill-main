@@ -9,7 +9,7 @@ interface FooterProps {
 
 export default function Footer({}: FooterProps = {}) {
   return (
-    <footer className="w-full mt-auto py-3.5 sm:py-4 mb-20 lg:mb-0 border-t border-white/[0.08] bg-[#050807]/95 backdrop-blur-xl select-none">
+    <footer className="w-full mt-auto py-3.5 sm:py-4 mb-20 lg:mb-0 border-t border-white/[0.08] bg-[#050807] select-none">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 sm:gap-6">
         
         {/* Bên Trái (Desktop only): Logo & Slogan */}
