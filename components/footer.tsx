@@ -22,8 +22,9 @@ export default function Footer({}: FooterProps = {}) {
               height={20}
               className="w-5 h-5 object-contain shrink-0"
             />
-            <span className="text-sm sm:text-base font-black text-white tracking-wide truncate">
-              Hi <span className="text-brand-green">PHIM</span>
+            <span className="text-sm sm:text-base font-black text-white tracking-wide truncate flex items-center">
+              Hi <span className="text-brand-green ml-1">PHIM</span>
+              <span className="text-[8px] sm:text-[9px] font-black text-brand-green self-start -mt-0.5 ml-0.5 select-none">®</span>
             </span>
           </div>
 
@@ -39,9 +40,9 @@ export default function Footer({}: FooterProps = {}) {
             © 2025 Hi PHIM. Mọi bản quyền được bảo lưu và miễn trừ trách nhiệm pháp lý.
           </p>
 
-          {/* Dòng 2: Người phát triển */}
+          {/* Dòng 2: Người sáng lập & phát triển */}
           <p className="text-[11px] sm:text-[12px] text-white/70 leading-normal">
-            Phát triển bởi{" "}
+            Được thành lập và phát triển bởi{" "}
             <a
               href="https://www.facebook.com/dinhphuong205/"
               target="_blank"

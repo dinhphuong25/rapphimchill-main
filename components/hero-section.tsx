@@ -208,15 +208,15 @@ export default function HeroSection({ movies }: HeroSectionProps) {
             {/* Movie Title & Subtitle */}
             <div
               className={cn(
-                "transition-all duration-400 space-y-1.5",
+                "transition-all duration-400 space-y-0.5 sm:space-y-1",
                 isTransitioning ? "opacity-0 translate-y-3" : "opacity-100 translate-y-0"
               )}
             >
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white leading-[1.15] tracking-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
+              <h1 className="text-lg sm:text-xl md:text-2xl lg:text-[24px] xl:text-[28px] font-black text-white leading-snug tracking-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] line-clamp-1">
                 {current.name}
               </h1>
               {current.origin_name && current.origin_name !== current.name && (
-                <p className="text-sm sm:text-base md:text-lg text-white/70 font-semibold tracking-wide drop-shadow-md">
+                <p className="text-xs sm:text-[13px] md:text-sm text-white/60 font-medium tracking-wide drop-shadow-md italic line-clamp-1">
                   {current.origin_name}
                 </p>
               )}
@@ -389,10 +389,10 @@ export default function HeroSection({ movies }: HeroSectionProps) {
           <div className="hidden lg:flex lg:col-span-4 xl:col-span-5 flex-col items-end justify-end relative z-30 self-end pb-2">
             
             {/* Carousel Navigation Header */}
-            <div className="flex items-center justify-between w-full mb-3 px-1">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-brand-green" />
-                <span className="text-xs font-extrabold text-white/80 tracking-wider uppercase">
+            <div className="flex items-center justify-between w-full mb-2.5 px-1">
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-brand-green shrink-0" />
+                <span className="text-[11px] font-bold text-white/75 tracking-wider uppercase select-none">
                   Danh Sách Ghim Nổi Bật
                 </span>
               </div>
@@ -400,16 +400,16 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                 <button
                   onClick={prev}
                   aria-label="Phim trước"
-                  className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white border border-white/10 transition-all active:scale-95"
+                  className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white border border-white/10 transition-all active:scale-95 cursor-pointer"
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={next}
                   aria-label="Phim tiếp theo"
-                  className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white border border-white/10 transition-all active:scale-95"
+                  className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white border border-white/10 transition-all active:scale-95 cursor-pointer"
                 >
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
