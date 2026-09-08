@@ -24,7 +24,7 @@ export async function generateMetadata({ searchParams }: any) {
     const movie = data?.movie;
     if (!movie?.name) return { title: "Xem phim" };
     const watchUrl = `https://hiphim.biz/watch?slug=${slug}`;
-    const canonicalUrl = `https://hiphim.biz/phim/${slug}`;
+    const canonicalUrl = watchUrl;
     
     const posterUrl = movie.poster_url?.startsWith("http") 
       ? movie.poster_url 

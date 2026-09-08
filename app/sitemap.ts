@@ -70,9 +70,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     }));
 
-    // Movie detail pages — each movie gets indexed
+    // Movie watch pages — each movie gets indexed directly
     const movieRoutes: MetadataRoute.Sitemap = allMovies.map((movie: any) => ({
-      url: `${baseUrl}/phim/${movie.slug}`,
+      url: `${baseUrl}/watch?slug=${movie.slug}`,
       lastModified: movie.modified_time ? new Date(movie.modified_time) : new Date(),
       changeFrequency: "weekly" as const,
       priority: 0.7,

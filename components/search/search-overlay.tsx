@@ -101,7 +101,7 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedIndex >= 0 && results[selectedIndex]) {
-      router.push(`/phim/${results[selectedIndex].slug}`);
+      router.push(`/watch?slug=${results[selectedIndex].slug}`);
       onClose();
     } else if (query.trim()) {
       router.push(`/search?query=${encodeURIComponent(query.trim())}`);
@@ -197,7 +197,7 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
             {results.map((movie, idx) => (
               <Link
                 key={movie.slug}
-                href={`/phim/${movie.slug}`}
+                href={`/watch?slug=${movie.slug}`}
                 onClick={onClose}
                 className={cn(
                   "flex items-center gap-3 sm:gap-4 p-2.5 sm:p-3 rounded-xl border transition-all duration-200 group",

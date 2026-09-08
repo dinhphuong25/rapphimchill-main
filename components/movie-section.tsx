@@ -69,7 +69,7 @@ export const MovieSection = memo(function MovieSection({
           {/* Big Featured Left Card (Spans 2 cols) */}
           <div className="col-span-2 sm:col-span-2 lg:col-span-2 group relative flex flex-col h-full select-none">
             <Link
-              href={`/phim/${filteredMovies[0].slug}`}
+              href={`/watch?slug=${filteredMovies[0].slug}`}
               className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-cinema-surface border border-brand-green/30 group-hover:border-brand-green/60 transition-[transform,border-color,box-shadow] duration-300 group-hover:-translate-y-2 group-hover:scale-[1.02] shadow-xl group-hover:shadow-[0_10px_30px_rgba(32,214,107,0.25)] block transform-gpu"
             >
               <Image
@@ -87,7 +87,7 @@ export const MovieSection = memo(function MovieSection({
               </span>
 
               {/* Hover Play Button */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40 backdrop-blur-[2px]">
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40">
                 <div className="w-14 h-14 rounded-full bg-brand-green flex items-center justify-center text-cinema-bg shadow-xl shadow-brand-green/30 scale-90 group-hover:scale-100 transition-transform">
                   <Play className="w-6 h-6 fill-cinema-bg ml-1" />
                 </div>
@@ -96,7 +96,7 @@ export const MovieSection = memo(function MovieSection({
 
             <div className="mt-3 flex flex-col px-1">
               <Link
-                href={`/phim/${filteredMovies[0].slug}`}
+                href={`/watch?slug=${filteredMovies[0].slug}`}
                 className="text-sm sm:text-base font-bold text-white hover:text-brand-green transition-colors line-clamp-1"
               >
                 {filteredMovies[0].name}

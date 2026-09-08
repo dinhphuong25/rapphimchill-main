@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import Link from "next/link";
 import Image from "next/image";
@@ -55,11 +55,7 @@ export default async function PhimDetailPage({ params }: { params: Promise<{ slu
 
   if (HIDDEN_MOVIE_SLUGS.includes(slug)) notFound();
 
-  return (
-    <Suspense fallback={<LoadingMovieDetail />}>
-      <PhimDetailContent slug={slug} />
-    </Suspense>
-  );
+  redirect(`/watch?slug=${slug}`);
 }
 
 async function PhimDetailContent({ slug }: { slug: string }) {

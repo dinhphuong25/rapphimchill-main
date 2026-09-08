@@ -38,7 +38,7 @@ export default function WatchHeader({
               if (window.history.length > 1) {
                 router.back();
               } else {
-                router.push(`/phim/${movieSlug}`);
+                router.push("/");
               }
             }}
             variant="ghost"
@@ -62,12 +62,11 @@ export default function WatchHeader({
               <span className="hidden md:inline">Trang chủ</span>
             </Link>
             <span className="text-white/30 shrink-0">/</span>
-            <Link
-              href={`/phim/${movieSlug}`}
-              className="text-white/80 hover:text-brand-green font-semibold truncate max-w-[140px] sm:max-w-[260px] md:max-w-[360px]"
+            <span
+              className="text-white/90 font-semibold truncate max-w-[140px] sm:max-w-[260px] md:max-w-[360px]"
             >
               {movieName}
-            </Link>
+            </span>
             {currentEpName && (
               <>
                 <span className="text-white/30 shrink-0">/</span>

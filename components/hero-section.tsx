@@ -337,15 +337,6 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                 <span>Xem Ngay</span>
               </Link>
 
-              {/* Info Button */}
-              <Link
-                href={`/phim/${current.slug}`}
-                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 sm:py-3.5 bg-white/15 hover:bg-white/25 text-white font-bold rounded-full border border-white/15 active:scale-95 transition-colors text-xs sm:text-sm uppercase tracking-wide shrink-0"
-              >
-                <Info className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span>Chi Tiết</span>
-              </Link>
-
               {/* Favorite Bookmark Button */}
               <button
                 onClick={() =>

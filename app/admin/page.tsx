@@ -586,10 +586,10 @@ export default function AdminDashboardPage() {
                       </span>
                       <span className="font-mono text-xs text-white truncate font-bold">{slug}</span>
                       <Link
-                        href={`/phim/${slug}`}
+                        href={`/watch?slug=${slug}`}
                         target="_blank"
                         className="text-white/30 hover:text-brand-green transition-colors"
-                        title="Xem trang phim"
+                        title="Xem phim"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                       </Link>

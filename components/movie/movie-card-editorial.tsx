@@ -46,7 +46,7 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
       <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-cinema-surface border border-white/10 group-hover:border-brand-green/50 transition-[transform,border-color,box-shadow] duration-300 group-hover:-translate-y-2 group-hover:scale-[1.02] shadow-xl group-hover:shadow-[0_10px_30px_rgba(32,214,107,0.25)] transform-gpu">
         
         <Link
-          href={`/phim/${movie.slug}`}
+          href={`/watch?slug=${movie.slug}`}
           className="absolute inset-0 z-0 block"
         >
         <Image
@@ -122,7 +122,7 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
       {/* Info Under Poster */}
       <div className="mt-2.5 flex flex-col">
         <Link
-          href={`/phim/${movie.slug}`}
+          href={`/watch?slug=${movie.slug}`}
           className="text-xs font-bold text-cinema-text hover:text-brand-green transition-colors line-clamp-1 flex items-center justify-between group/title"
         >
           <span className="truncate">{movie.name}</span>
