@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Header from "@/components/header";
-import Footer from "@/components/footer";
 import Sidebar from "@/components/sidebar";
 import Link from "next/link";
 import Image from "next/image";
@@ -176,7 +175,6 @@ export default function RecentlyWatchedClient({ categories, countries }: any) {
           </div>
         )}
       </div>
-      <Footer />
       <style jsx global>{`
         @keyframes fadeSlideUp {
           from {

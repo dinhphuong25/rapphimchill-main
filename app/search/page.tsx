@@ -4,7 +4,6 @@ import AdvancedSearchFilter from "@/components/movie/advanced-search-filter";
 import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
 import Pagination from "@/components/pagination";
-import Footer from "@/components/footer";
 import ScrollToTop from "@/components/ui/scroll-to-top";
 import { Search, Film } from "lucide-react";
 import Link from "next/link";
@@ -153,8 +152,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           </div>
         )}
       </div>
-
-      <Footer />
       <ScrollToTop />
     </main>
   );

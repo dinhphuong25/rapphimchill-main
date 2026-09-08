@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Header from "@/components/header";
-import Footer from "@/components/footer";
 import Sidebar from "@/components/sidebar";
 import { useFavorites } from "@/hooks/useLocalStorage";
 import { useLoading } from "@/components/ui/loading-context";
@@ -166,7 +165,6 @@ export default function FavoritesClient({ categories, countries }: any) {
           </div>
         )}
       </div>
-      <Footer />
       <style jsx global>{`
         @keyframes fadeSlideUp {
           from {

@@ -146,7 +146,7 @@ export default async function Home({ searchParams }: HomeProps) {
         />
       )}
 
-      <Footer customFooterText={siteConfig.customFooterText} />
+      {!hasFilters && <Footer customFooterText={siteConfig.customFooterText} />}
       <ScrollToTop />
     </main>
   );

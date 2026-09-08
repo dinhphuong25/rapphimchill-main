@@ -1,6 +1,5 @@
 import PhimApi from "@/libs/phimapi.com";
 import Header from "@/components/header";
-import Footer from "@/components/footer";
 import MovieListClient from "@/components/movie/movie-list-client";
 import Sidebar from "@/components/sidebar";
 import ScrollToTop from "@/components/ui/scroll-to-top";
@@ -42,7 +41,6 @@ export default async function NewUpdatesPage({ searchParams }: NewUpdatesProps) 
       <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 pt-24 pb-20">
         <MovieListClient index={index} />
       </div>
-      <Footer />
       <ScrollToTop />
     </main>
   );
