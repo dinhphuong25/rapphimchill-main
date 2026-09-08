@@ -28,7 +28,7 @@ export const MovieSection = memo(function MovieSection({
   if (!filteredMovies || filteredMovies.length === 0) return null;
 
   return (
-    <section className="py-6 select-none" style={{ contentVisibility: "auto", containIntrinsicSize: "auto 450px" }}>
+    <section className="py-2 select-none" style={{ contentVisibility: "auto", containIntrinsicSize: "auto 450px" }}>
       {/* Editorial Header */}
       <div className="flex items-center justify-between gap-4 mb-5">
         <div className="flex items-center gap-3 min-w-0">

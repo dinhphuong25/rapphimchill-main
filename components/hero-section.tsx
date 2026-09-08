@@ -146,7 +146,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
   return (
     <section
       className="relative w-full overflow-hidden select-none bg-cinema-bg"
-      style={{ minHeight: "clamp(580px, 86vh, 820px)" }}
+      style={{ minHeight: "clamp(450px, 60vh, 560px)" }}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       aria-label="Phim Nổi Bật Theo Xu Hướng"
@@ -178,7 +178,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
       </div>
 
       {/* 2. Main Editorial Content Container */}
-      <div className="relative z-20 h-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col justify-center pt-20 pb-16 min-h-[inherit]">
+      <div className="relative z-20 h-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col justify-center pt-16 sm:pt-20 pb-4 sm:pb-6 min-h-[inherit]">
         <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           
           {/* Left Column: Movie Editorial & Rich Information */}

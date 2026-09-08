@@ -71,20 +71,20 @@ export default function HomeClient({
   }, [initialTopicsWithMovies, topicsData]);
 
   return (
-    <div className="space-y-10 pb-16">
+    <div className="pb-16">
       {/* Hero Section (Asymmetric Editorial Layout) */}
       {heroMoviesList.length > 0 && (
         <HeroSection movies={heroMoviesList} />
       )}
 
       {/* Main Content Area */}
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 space-y-12">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 space-y-8 sm:space-y-10 mt-1 sm:mt-2">
         {/* Continue Watching Section */}
         <ContinueWatching />
 
         {/* Section 01: Phim Mới Cập Nhật */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between px-1">
+        <div>
+          <div className="flex items-center justify-between px-1 mb-1">
             <LiveStatus lastUpdated={lastUpdated} isRefreshing={isRefreshing} onRefresh={refreshMovies} />
           </div>
           <MovieSection
