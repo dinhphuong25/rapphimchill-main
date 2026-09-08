@@ -66,29 +66,29 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
 
         {/* Quality Badge Top Left (font-mono aitmpl style) */}
         {movie.quality && (
-          <span className="absolute top-2.5 left-2.5 z-10 px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider uppercase bg-cinema-bg/85 backdrop-blur-md text-white border border-white/15 shadow-sm">
+          <span className="absolute top-2.5 left-2.5 z-10 px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider uppercase bg-black/80 text-white border border-white/15 shadow-sm">
             {movie.quality}
           </span>
         )}
 
         {/* Rating Badge Top Right (font-mono aitmpl style) */}
         {isValidRating && (
-          <span className="absolute top-2.5 right-2.5 z-10 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cinema-bg/85 backdrop-blur-md text-cinema-gold border border-white/15 flex items-center gap-1 shadow-sm">
+          <span className="absolute top-2.5 right-2.5 z-10 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-black/80 text-cinema-gold border border-white/15 flex items-center gap-1 shadow-sm">
             <Star className="w-3 h-3 fill-cinema-gold" />
             {rating.toFixed(1)}
           </span>
         )}
 
         {/* Center Hover Play Button */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40 backdrop-blur-[2px]">
-          <div className="w-12 h-12 rounded-full bg-brand-green flex items-center justify-center text-cinema-bg shadow-xl shadow-brand-green/30 scale-90 group-hover:scale-100 transition-transform">
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40">
+          <div className="w-12 h-12 rounded-full bg-brand-green flex items-center justify-center text-cinema-bg shadow-lg scale-90 group-hover:scale-100 transition-transform duration-200">
             <Play className="w-5 h-5 fill-cinema-bg ml-0.5" />
           </div>
         </div>
 
         {/* Current Episode Badge Bottom Left */}
         {movie.episode_current && movie.episode_current !== "Full" && (
-          <span className="absolute bottom-2.5 left-2.5 z-10 text-[10px] font-mono font-semibold text-white/80 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded border border-white/10 truncate max-w-[80%]">
+          <span className="absolute bottom-2.5 left-2.5 z-10 text-[10px] font-mono font-semibold text-white/80 bg-black/80 px-2 py-0.5 rounded border border-white/10 truncate max-w-[80%]">
             {movie.episode_current}
           </span>
         )}
@@ -109,10 +109,10 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
           }}
           aria-label="Yêu thích"
           className={cn(
-            "absolute bottom-2.5 right-2.5 z-20 p-2 rounded-full backdrop-blur-md border transition-all active:scale-90 opacity-0 group-hover:opacity-100",
+            "absolute bottom-2.5 right-2.5 z-20 p-2 rounded-full border transition-colors active:scale-90 opacity-0 group-hover:opacity-100",
             isFav
               ? "bg-brand-green/20 border-brand-green text-brand-green opacity-100"
-              : "bg-black/50 border-white/15 text-white/70 hover:text-white"
+              : "bg-black/60 border-white/15 text-white/70 hover:text-white"
           )}
         >
           <Heart className={cn("w-3.5 h-3.5", isFav && "fill-brand-green")} />

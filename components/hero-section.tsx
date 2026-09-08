@@ -170,8 +170,8 @@ export default function HeroSection({ movies }: HeroSectionProps) {
           quality={80}
         />
 
-        {/* Ambient Glow & Radial Vignettes */}
-        <div className="absolute -top-32 -left-32 w-96 h-96 bg-brand-green/10 rounded-full blur-[120px] pointer-events-none" />
+        {/* Ambient Glow — desktop only, too heavy for mobile GPU */}
+        <div className="hidden lg:block absolute -top-32 -left-32 w-96 h-96 bg-brand-green/10 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#050807] via-[#050807]/90 to-transparent w-full md:w-[78%] lg:w-[70%]" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#050807] via-[#050807]/30 to-transparent opacity-100" />
         <div className="absolute inset-0 bg-black/20" />
@@ -340,7 +340,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
               {/* Info Button */}
               <Link
                 href={`/phim/${current.slug}`}
-                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 sm:py-3.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-full border border-white/15 active:scale-95 transition-all text-xs sm:text-sm backdrop-blur-md uppercase tracking-wide shrink-0"
+                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 sm:py-3.5 bg-white/15 hover:bg-white/25 text-white font-bold rounded-full border border-white/15 active:scale-95 transition-colors text-xs sm:text-sm uppercase tracking-wide shrink-0"
               >
                 <Info className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span>Chi Tiết</span>
@@ -359,7 +359,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                 }
                 aria-label="Lưu phim yêu thích"
                 className={cn(
-                  "p-3 sm:p-3.5 rounded-full border transition-all active:scale-95 backdrop-blur-md shrink-0",
+                  "p-3 sm:p-3.5 rounded-full border transition-colors active:scale-95 shrink-0",
                   isFavorite(current.slug)
                     ? "bg-brand-green/20 border-brand-green/50 text-brand-green shadow-[0_0_20px_rgba(34,197,94,0.25)]"
                     : "bg-white/10 hover:bg-white/20 border-white/10 text-white hover:text-white"
@@ -424,9 +424,9 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                     key={movie.slug}
                     onClick={() => goTo(idx)}
                     className={cn(
-                      "relative rounded-2xl overflow-hidden transition-all duration-500 text-left group border shadow-2xl shrink-0 active:scale-95",
+                      "relative rounded-2xl overflow-hidden transition-[width,height,opacity,border-color] duration-300 text-left group border shadow-lg shrink-0 active:scale-95",
                       isActive
-                        ? "w-48 h-28 border-brand-green/80 shadow-[0_0_25px_rgba(34,197,94,0.35)] scale-100 ring-2 ring-brand-green/30"
+                        ? "w-48 h-28 border-brand-green/80 shadow-[0_0_20px_rgba(34,197,94,0.3)] scale-100 ring-2 ring-brand-green/30"
                         : "w-28 h-20 border-white/10 hover:border-white/40 opacity-60 hover:opacity-100 hover:scale-105"
                     )}
                   >
@@ -436,7 +436,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                       fill
                       quality={70}
                       className={cn(
-                        "object-cover transition-transform duration-700",
+                        "object-cover transition-transform duration-500",
                         isActive ? "scale-105" : "group-hover:scale-110"
                       )}
                       sizes="(max-width: 768px) 120px, 240px"
@@ -444,16 +444,16 @@ export default function HeroSection({ movies }: HeroSectionProps) {
 
                     {/* Inactive Dark Shade */}
                     {!isActive && (
-                      <div className="absolute inset-0 bg-black/50 group-hover:bg-transparent transition-colors duration-300" />
+                      <div className="absolute inset-0 bg-black/50 group-hover:bg-transparent transition-colors duration-200" />
                     )}
 
-                    {/* Rank Badge */}
+                    {/* Rank Badge — solid bg, no backdrop-blur */}
                     <span
                       className={cn(
-                        "absolute top-2 left-2 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold tracking-tight z-10 backdrop-blur-md shadow-sm",
+                        "absolute top-2 left-2 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold tracking-tight z-10 shadow-sm",
                         isActive
                           ? "bg-brand-green text-cinema-bg font-black"
-                          : "bg-black/60 text-white/80 border border-white/10"
+                          : "bg-black/80 text-white/80 border border-white/10"
                       )}
                     >
                       #{idx + 1}

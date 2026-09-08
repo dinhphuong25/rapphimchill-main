@@ -99,7 +99,7 @@ export default function AnnouncementBanner({ initialAnnouncement }: Announcement
   return (
     <aside
       aria-label="Thông báo hệ thống"
-      className={`relative z-[95] w-full border-b backdrop-blur-xl px-4 py-2.5 sm:py-2 transition-all duration-300 shadow-lg ${typeConfig.bg}`}
+      className={`relative z-[95] w-full border-b px-4 py-2.5 sm:py-2 transition-colors duration-300 shadow-lg ${typeConfig.bg}`}
     >
       <div className="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-2 sm:gap-4">
         {/* Left / Center: Icon + Badge + Text */}
