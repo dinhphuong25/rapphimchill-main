@@ -79,7 +79,7 @@ export default function VideoPlayer({
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastProgressSecondRef = useRef<number>(-1);
   const didSeekInitialTimeRef = useRef<boolean>(false);
-  const autoplayMutedRef = useRef<boolean>(typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+  const autoplayMutedRef = useRef<boolean>(false);
   const lastNonZeroVolumeRef = useRef<number>(1);
 
   // Callback Refs to keep useEffect pure and prevent unwanted reload loops
@@ -102,12 +102,7 @@ export default function VideoPlayer({
   const isSeekingRef = useRef<boolean>(false);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
-  const [isMuted, setIsMuted] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile) return true;
-    return localStorage.getItem('cinema_muted') === 'true';
-  });
+  const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -133,34 +128,37 @@ export default function VideoPlayer({
     (globalThis as any).isMaskVisible = false;
   }
 
-  // Auto Unmute Helper - only unmute if forced muted by autoplay
+  // Auto Unmute Helper - immediately unmute and restore audio whenever called
   const attemptUnmute = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    if (autoplayMutedRef.current) {
+    if (video.muted || isMuted || autoplayMutedRef.current) {
       video.muted = false;
       const targetVolume = lastNonZeroVolumeRef.current > 0 ? lastNonZeroVolumeRef.current : 1;
       try { video.volume = targetVolume; } catch (e) {}
       setVolume(targetVolume);
       setIsMuted(false);
       autoplayMutedRef.current = false;
+      try { localStorage.setItem('cinema_muted', 'false'); } catch (e) {}
     }
-  }, []);
+  }, [isMuted]);
 
-  // Global first user interaction listener to unmute cleanly
+  // Global user interaction listener to unmute cleanly on first gesture if restricted
   useEffect(() => {
     const onUserInteraction = () => {
       attemptUnmute();
     };
 
-    window.addEventListener('click', onUserInteraction, { capture: true, once: true });
-    window.addEventListener('pointerdown', onUserInteraction, { capture: true, once: true });
-    window.addEventListener('keydown', onUserInteraction, { capture: true, once: true });
+    window.addEventListener('click', onUserInteraction, { capture: true });
+    window.addEventListener('pointerdown', onUserInteraction, { capture: true });
+    window.addEventListener('touchstart', onUserInteraction, { capture: true });
+    window.addEventListener('keydown', onUserInteraction, { capture: true });
 
     return () => {
       window.removeEventListener('click', onUserInteraction, { capture: true });
       window.removeEventListener('pointerdown', onUserInteraction, { capture: true });
+      window.removeEventListener('touchstart', onUserInteraction, { capture: true });
       window.removeEventListener('keydown', onUserInteraction, { capture: true });
     };
   }, [attemptUnmute]);
@@ -177,21 +175,21 @@ export default function VideoPlayer({
     return () => window.removeEventListener('click', handleClickOutside);
   }, [showSettings]);
 
-  // Load saved volume preferences on mount
+  // Load saved volume preferences on mount - ensure sound is ALWAYS enabled when opening
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const savedVol = localStorage.getItem('cinema_volume');
-    const savedMuted = localStorage.getItem('cinema_muted') === 'true';
     const volNum = savedVol !== null ? Number(savedVol) : 1;
-    const initialVol = !isNaN(volNum) && volNum >= 0 && volNum <= 1 ? volNum : 1;
+    const initialVol = !isNaN(volNum) && volNum > 0 && volNum <= 1 ? volNum : 1;
     
-    if (initialVol > 0) lastNonZeroVolumeRef.current = initialVol;
-    setVolume(savedMuted ? 0 : initialVol);
-    setIsMuted(savedMuted);
+    lastNonZeroVolumeRef.current = initialVol;
+    setVolume(initialVol);
+    setIsMuted(false);
+    try { localStorage.setItem('cinema_muted', 'false'); } catch (e) {}
 
     if (videoRef.current) {
       videoRef.current.volume = initialVol;
-      videoRef.current.muted = savedMuted;
+      videoRef.current.muted = false;
     }
   }, []);
 
@@ -214,6 +212,10 @@ export default function VideoPlayer({
         if (hlsRef.current) {
           hlsRef.current.startLoad();
         }
+        // Always play unmuted with full sound on user action
+        videoRef.current.muted = false;
+        setIsMuted(false);
+        autoplayMutedRef.current = false;
         await videoRef.current.play();
       } else {
         videoRef.current.pause();
@@ -289,7 +291,6 @@ export default function VideoPlayer({
       const nextMuted = !videoRef.current.muted;
       videoRef.current.muted = nextMuted;
       setIsMuted(nextMuted);
-      localStorage.setItem('cinema_muted', String(nextMuted));
       if (nextMuted) {
         if (videoRef.current.volume > 0) {
           lastNonZeroVolumeRef.current = videoRef.current.volume;
@@ -432,10 +433,16 @@ export default function VideoPlayer({
     const loadWatchdog = setTimeout(() => {
       setIsLoading(false);
       if (video && video.paused && autoplay) {
-        video.muted = true;
-        setIsMuted(true);
-        autoplayMutedRef.current = true;
-        video.play().catch(() => {});
+        // Try unmuted playback first
+        video.muted = false;
+        setIsMuted(false);
+        autoplayMutedRef.current = false;
+        video.play().catch(() => {
+          video.muted = true;
+          setIsMuted(true);
+          autoplayMutedRef.current = true;
+          video.play().catch(() => {});
+        });
       }
     }, 2500);
 
@@ -472,23 +479,31 @@ export default function VideoPlayer({
         video.load();
 
         if (autoplay) {
-          const isUserMuted = typeof window !== 'undefined' && localStorage.getItem('cinema_muted') === 'true';
           const savedVol = typeof window !== 'undefined' ? Number(localStorage.getItem('cinema_volume') || 1) : 1;
           const targetVol = savedVol > 0 ? savedVol : 1;
           try { video.volume = targetVol; } catch (e) {}
 
-          // iOS Safari strictly requires initial autoplay to be muted
-          video.muted = true;
-          setIsMuted(true);
-          autoplayMutedRef.current = !isUserMuted;
+          // Always try unmuted playback first so sound is on
+          video.muted = false;
+          setIsMuted(false);
+          autoplayMutedRef.current = false;
 
           const p = video.play();
           if (p !== undefined) {
-            p.then(() => setIsLoading(false))
-             .catch((err) => {
-               console.warn("Native autoplay muted rejected:", err);
-               setIsLoading(false);
-             });
+            p.then(() => {
+              setIsLoading(false);
+              video.muted = false;
+              setIsMuted(false);
+              autoplayMutedRef.current = false;
+            }).catch((err) => {
+              console.warn("Native unmuted autoplay blocked by policy, falling back to muted autoplay until touch:", err);
+              video.muted = true;
+              setIsMuted(true);
+              autoplayMutedRef.current = true;
+              video.play()
+                .then(() => setIsLoading(false))
+                .catch(() => setIsLoading(false));
+            });
           }
         }
 
@@ -549,25 +564,27 @@ export default function VideoPlayer({
         const startHlsPlayback = () => {
           setIsLoading(false);
           if (autoplay && video.paused) {
-            const isUserMuted = typeof window !== 'undefined' && localStorage.getItem('cinema_muted') === 'true';
             const savedVol = typeof window !== 'undefined' ? Number(localStorage.getItem('cinema_volume') || 1) : 1;
             const targetVol = savedVol > 0 ? savedVol : 1;
 
             try { video.volume = targetVol; } catch (e) {}
 
-            if (isMobile || isUserMuted) {
-              video.muted = true;
-              setIsMuted(true);
-              autoplayMutedRef.current = !isUserMuted;
-            } else {
-              video.muted = false;
-            }
+            // Always try unmuted playback first so sound is on
+            video.muted = false;
+            setIsMuted(false);
+            autoplayMutedRef.current = false;
 
             const playPromise = video.play();
             if (playPromise !== undefined) {
               playPromise
-                .then(() => setIsLoading(false))
-                .catch(() => {
+                .then(() => {
+                  setIsLoading(false);
+                  video.muted = false;
+                  setIsMuted(false);
+                  autoplayMutedRef.current = false;
+                })
+                .catch((err) => {
+                  console.warn("HLS unmuted autoplay blocked by policy, falling back to muted autoplay until touch:", err);
                   video.muted = true;
                   setIsMuted(true);
                   autoplayMutedRef.current = true;
@@ -662,35 +679,31 @@ export default function VideoPlayer({
         video.load();
 
         if (autoplay) {
-          const isUserMuted = typeof window !== 'undefined' && localStorage.getItem('cinema_muted') === 'true';
           const savedVol = typeof window !== 'undefined' ? Number(localStorage.getItem('cinema_volume') || 1) : 1;
           const targetVol = savedVol > 0 ? savedVol : 1;
           try { video.volume = targetVol; } catch (e) {}
 
-          if (isMobile || isUserMuted) {
-            video.muted = true;
-            setIsMuted(true);
-            autoplayMutedRef.current = !isUserMuted;
-          } else {
-            video.muted = false;
-          }
+          // Always try unmuted playback first so sound is on
+          video.muted = false;
+          setIsMuted(false);
+          autoplayMutedRef.current = false;
 
           const startPlay = () => {
             const p = video.play();
             if (p !== undefined) {
               p.then(() => {
                 setIsLoading(false);
+                video.muted = false;
+                setIsMuted(false);
+                autoplayMutedRef.current = false;
               }).catch((err) => {
-                console.warn("Native unmuted autoplay rejected, playing muted:", err);
+                console.warn("Fallback native unmuted autoplay blocked, fallback to muted:", err);
                 video.muted = true;
                 setIsMuted(true);
                 autoplayMutedRef.current = true;
                 video.play()
                   .then(() => setIsLoading(false))
-                  .catch((err2) => {
-                    console.warn("Muted native play also rejected:", err2);
-                    setIsLoading(false);
-                  });
+                  .catch(() => setIsLoading(false));
               });
             }
           };
