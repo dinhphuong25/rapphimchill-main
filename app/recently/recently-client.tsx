@@ -6,7 +6,7 @@ import Footer from "@/components/footer";
 import Sidebar from "@/components/sidebar";
 import Link from "next/link";
 import Image from "next/image";
-import { Play, Trash2, Clock, History, Film } from "lucide-react";
+import { Play, Trash2, Clock, Film } from "lucide-react";
 import { useLoading } from "@/components/ui/loading-context";
 import { useWatchHistory } from "@/hooks/useLocalStorage";
 
@@ -132,34 +132,20 @@ export default function RecentlyWatchedClient({ categories, countries }: any) {
       <Sidebar categories={categories} countries={countries} />
       <Header categories={categories} countries={countries} />
 
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 pt-24 pb-16">
-        <div className="flex items-center justify-between mb-8 sm:mb-12">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-brand-green/20 border border-brand-green/30 flex items-center justify-center">
-              <History className="w-5 h-5 text-brand-green" />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-3xl font-black text-white uppercase tracking-wider">
-                Lịch Sử Xem
-              </h1>
-              <p className="text-cinema-text-muted text-xs sm:text-sm mt-1 font-medium">
-                {movies.length > 0
-                  ? `${movies.length} phim đã xem gần đây`
-                  : "Lịch sử xem phim của bạn"}
-              </p>
-            </div>
-          </div>
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 pt-16 sm:pt-20 pb-16">
+        <h1 className="sr-only">Lịch Sử Xem</h1>
 
-          {movies.length > 0 && (
+        {movies.length > 0 && (
+          <div className="flex justify-end mb-3 sm:mb-4">
             <button
               onClick={handleClearAll}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-white/40 hover:text-red-400 border border-white/10 hover:border-red-400/30 rounded-lg transition-all hover:bg-red-400/10 font-bold"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-white/40 hover:text-red-400 border border-white/10 hover:border-red-400/30 rounded-lg transition-colors hover:bg-red-400/10 font-bold"
             >
               <Trash2 className="w-3.5 h-3.5" />
               Xóa lịch sử
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {movies.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-5">

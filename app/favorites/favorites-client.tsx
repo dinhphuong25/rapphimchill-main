@@ -6,7 +6,7 @@ import Footer from "@/components/footer";
 import Sidebar from "@/components/sidebar";
 import { useFavorites } from "@/hooks/useLocalStorage";
 import MovieCardEditorial from "@/components/movie/movie-card-editorial";
-import { Heart, Film } from "lucide-react";
+import { Film } from "lucide-react";
 import Link from "next/link";
 
 export default function FavoritesClient({ categories, countries }: any) {
@@ -22,18 +22,8 @@ export default function FavoritesClient({ categories, countries }: any) {
       <Sidebar categories={categories} countries={countries} />
       <Header categories={categories} countries={countries} />
 
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 pt-24 pb-16">
-        <div className="flex items-center gap-3 mb-8 sm:mb-12">
-          <div className="w-10 h-10 rounded-xl bg-brand-green/20 border border-brand-green/30 flex items-center justify-center">
-            <Heart className="w-5 h-5 text-brand-green fill-brand-green" />
-          </div>
-          <div>
-            <h1 className="text-xl sm:text-3xl font-black text-white uppercase tracking-wider">Phim Yêu Thích</h1>
-            <p className="text-cinema-text-muted text-xs sm:text-sm mt-1 font-medium">
-              {movies.length > 0 ? `${movies.length} phim đã lưu` : "Bộ sưu tập phim của bạn"}
-            </p>
-          </div>
-        </div>
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 pt-16 sm:pt-20 pb-16">
+        <h1 className="sr-only">Phim Yêu Thích</h1>
 
         {movies.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-5">
