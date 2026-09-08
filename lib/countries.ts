@@ -106,3 +106,52 @@ export function sortCountriesByPopularity(rawCountries: { name: string; slug: st
 
   return [...popularList, ...remainingList];
 }
+
+export const COUNTRY_NAMES_MAP: Record<string, string> = {
+  "trung-quoc": "Trung Quốc",
+  "han-quoc": "Hàn Quốc",
+  "au-my": "Âu Mỹ",
+  "my": "Mỹ",
+  "nhat-ban": "Nhật Bản",
+  "thai-lan": "Thái Lan",
+  "viet-nam": "Việt Nam",
+  "hong-kong": "Hồng Kông",
+  "an-do": "Ấn Độ",
+  "dai-loan": "Đài Loan",
+  "phap": "Pháp",
+  "anh": "Anh",
+  "duc": "Đức",
+  "y": "Ý",
+  "tay-ban-nha": "Tây Ban Nha",
+  "tây-ban-nha": "Tây Ban Nha",
+  "canada": "Canada",
+  "uc": "Úc",
+  "ha-lan": "Hà Lan",
+  "bi": "Bỉ",
+  "thuy-dien": "Thụy Điển",
+  "thuy-si": "Thụy Sĩ",
+  "na-uy": "Na Uy",
+  "dan-mach": "Đan Mạch",
+  "nga": "Nga",
+  "mexico": "Mexico",
+  "brazil": "Brazil",
+  "philippines": "Philippines",
+  "malaysia": "Malaysia",
+  "indonesia": "Indonesia",
+  "tho-nhi-ky": "Thổ Nhĩ Kỳ",
+};
+
+export function getCountryDisplayName(slug?: string | null, countriesList?: { slug: string; name: string }[]): string {
+  if (!slug) return "";
+  if (countriesList && countriesList.length > 0) {
+    const found = countriesList.find((c) => c.slug === slug);
+    if (found?.name) return found.name;
+  }
+  if (COUNTRY_NAMES_MAP[slug]) {
+    return COUNTRY_NAMES_MAP[slug];
+  }
+  return slug
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}

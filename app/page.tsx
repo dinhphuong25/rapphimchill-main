@@ -132,6 +132,8 @@ export default async function Home({ searchParams }: HomeProps) {
             index={index}
             category={category}
             topic={topic}
+            categories={categories as any[]}
+            countries={countries as any[]}
           />
         </div>
       ) : (

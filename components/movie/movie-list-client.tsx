@@ -7,6 +7,8 @@ import { filterHiddenMovies } from "@/lib/hidden-movies";
 import { MovieGridSkeleton } from "@/components/movie/movie-skeleton";
 import dynamic from "next/dynamic";
 import { apiCache } from "@/lib/api-cache";
+import { getCategoryDisplayName } from "@/lib/categories";
+import { getCountryDisplayName } from "@/lib/countries";
 
 const InfiniteMovieGrid = dynamic(
   () => import("@/components/movie/infinite-movie-grid"),
@@ -17,6 +19,8 @@ interface MovieListClientProps {
   index?: number;
   category?: string;
   topic?: string;
+  categories?: { slug: string; name: string }[];
+  countries?: { slug: string; name: string }[];
 }
 
 // Topic name mapping
@@ -35,6 +39,8 @@ const MovieListClient = ({
   index = 1,
   category,
   topic,
+  categories = [],
+  countries = [],
 }: MovieListClientProps) => {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -138,12 +144,21 @@ const MovieListClient = ({
     const typeList = searchParams.get("typeList");
     const filterYear = searchParams.get("year");
     const filterCountry = searchParams.get("country");
-    if (typeList) return TOPIC_NAMES[typeList] || "Kết quả lọc";
-    if (topic) return TOPIC_NAMES[topic] || topic;
-    if (category) return category;
-    if (filterYear) return `Phim Năm ${filterYear}`;
-    if (filterCountry) return `Phim ${filterCountry}`;
-    return "Danh sách phim";
+    const filterCategory = searchParams.get("category") || category;
+
+    const catName = getCategoryDisplayName(filterCategory, categories);
+    const countryName = getCountryDisplayName(filterCountry, countries);
+
+    const parts: string[] = [];
+    if (typeList) parts.push(TOPIC_NAMES[typeList] || "Kết quả lọc");
+    else if (topic) parts.push(TOPIC_NAMES[topic] || topic);
+    else if (catName) parts.push(catName);
+
+    if (countryName) parts.push(countryName);
+    if (filterYear) parts.push(`Năm ${filterYear}`);
+
+    if (parts.length > 0) return parts.join(" - ");
+    return "Danh Sách Phim";
   };
 
   if (loading) {
@@ -217,7 +232,7 @@ const MovieListClient = ({
             )}
             {filterCountry && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-brand-green/15 border border-brand-green/30 text-xs font-semibold text-brand-green">
-                <span>Quốc gia: {filterCountry}</span>
+                <span>Quốc gia: {getCountryDisplayName(filterCountry, countries)}</span>
                 <button
                   onClick={() => {
                     const p = new URLSearchParams(searchParams.toString());
@@ -234,7 +249,7 @@ const MovieListClient = ({
             )}
             {filterCategory && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-brand-green/15 border border-brand-green/30 text-xs font-semibold text-brand-green">
-                <span>Thể loại: {filterCategory}</span>
+                <span>Thể loại: {getCategoryDisplayName(filterCategory, categories)}</span>
                 <button
                   onClick={() => {
                     const p = new URLSearchParams(searchParams.toString());

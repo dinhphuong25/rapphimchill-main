@@ -168,3 +168,67 @@ export function sortCategoriesByPopularity(rawCategories: { name: string; slug: 
 
   return [...popularList, ...remainingList];
 }
+
+export const CATEGORY_NAMES_MAP: Record<string, string> = {
+  "hanh-dong": "Hành Động",
+  "co-trang": "Cổ Trang",
+  "chien-tranh": "Chiến Tranh",
+  "bi-an": "Bí Ẩn",
+  "kinh-di": "Kinh Dị",
+  "hai-huoc": "Hài Hước",
+  "tinh-cam": "Tình Cảm",
+  "tam-ly": "Tâm Lý",
+  "khoa-hoc": "Khoa Học",
+  "khoa-hoc-vien-tuong": "Viễn Tưởng",
+  "vien-tuong": "Viễn Tưởng",
+  "phieu-luu": "Phiêu Lưu",
+  "am-nhac": "Âm Nhạc",
+  "gia-dinh": "Gia Đình",
+  "hoc-duong": "Học Đường",
+  "vo-thuat": "Võ Thuật",
+  "hinh-su": "Hình Sự",
+  "than-thoai": "Thần Thoại",
+  "the-thao": "Thể Thao",
+  "tai-lieu": "Tài Liệu",
+  "lich-su": "Lịch Sử",
+  "mien-tay": "Miền Tây",
+  "phim-18": "Phim 18+",
+  "phim-18-plus": "Phim 18+",
+  "18-plus": "Phim 18+",
+  "phim-ngan": "Phim Ngắn",
+  "kinh-dien": "Kinh Điển",
+  "chinh-kich": "Chính Kịch",
+  "tre-em": "Trẻ Em",
+  "hoat-hinh": "Hoạt Hình",
+  "anime": "Anime",
+  "kich-tinh": "Kịch Tính",
+  "gay-can": "Gay Cấn",
+  "trinh-tham": "Trinh Thám",
+  "huyen-huyen": "Huyền Huyễn",
+  "tien-hiep": "Tiên Hiệp",
+  "kiem-hiep": "Kiếm Hiệp",
+  "tv-shows": "TV Shows",
+  "show": "TV Shows",
+  "am-thuc": "Ẩm Thực",
+  "y-khoa": "Y Khoa",
+  "sitcom": "Sitcom",
+  "chieu-rap": "Chiếu Rạp",
+  "phim-chieu-rap": "Phim Chiếu Rạp",
+  "phim-bo": "Phim Bộ",
+  "phim-le": "Phim Lẻ",
+};
+
+export function getCategoryDisplayName(slug?: string | null, categoriesList?: { slug: string; name: string }[]): string {
+  if (!slug) return "";
+  if (categoriesList && categoriesList.length > 0) {
+    const found = categoriesList.find((c) => c.slug === slug);
+    if (found?.name) return found.name;
+  }
+  if (CATEGORY_NAMES_MAP[slug]) {
+    return CATEGORY_NAMES_MAP[slug];
+  }
+  return slug
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
