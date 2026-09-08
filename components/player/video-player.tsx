@@ -133,16 +133,14 @@ export default function VideoPlayer({
     const video = videoRef.current;
     if (!video) return;
 
-    if (video.muted || isMuted || autoplayMutedRef.current) {
-      video.muted = false;
-      const targetVolume = lastNonZeroVolumeRef.current > 0 ? lastNonZeroVolumeRef.current : 1;
-      try { video.volume = targetVolume; } catch (e) {}
-      setVolume(targetVolume);
-      setIsMuted(false);
-      autoplayMutedRef.current = false;
-      try { localStorage.setItem('cinema_muted', 'false'); } catch (e) {}
-    }
-  }, [isMuted]);
+    video.muted = false;
+    const targetVolume = lastNonZeroVolumeRef.current > 0 ? lastNonZeroVolumeRef.current : 1;
+    try { video.volume = targetVolume; } catch (e) {}
+    setVolume(targetVolume);
+    setIsMuted(false);
+    autoplayMutedRef.current = false;
+    try { localStorage.setItem('cinema_muted', 'false'); } catch (e) {}
+  }, []);
 
   // Global user interaction listener to unmute cleanly on first gesture if restricted
   useEffect(() => {
@@ -153,12 +151,16 @@ export default function VideoPlayer({
     window.addEventListener('click', onUserInteraction, { capture: true });
     window.addEventListener('pointerdown', onUserInteraction, { capture: true });
     window.addEventListener('touchstart', onUserInteraction, { capture: true });
+    window.addEventListener('touchend', onUserInteraction, { capture: true });
+    window.addEventListener('scroll', onUserInteraction, { capture: true });
     window.addEventListener('keydown', onUserInteraction, { capture: true });
 
     return () => {
       window.removeEventListener('click', onUserInteraction, { capture: true });
       window.removeEventListener('pointerdown', onUserInteraction, { capture: true });
       window.removeEventListener('touchstart', onUserInteraction, { capture: true });
+      window.removeEventListener('touchend', onUserInteraction, { capture: true });
+      window.removeEventListener('scroll', onUserInteraction, { capture: true });
       window.removeEventListener('keydown', onUserInteraction, { capture: true });
     };
   }, [attemptUnmute]);
@@ -224,8 +226,6 @@ export default function VideoPlayer({
       console.warn("Play/Pause error:", err);
       if (err.name === 'NotAllowedError') {
         videoRef.current.muted = true;
-        setIsMuted(true);
-        autoplayMutedRef.current = true;
         try {
           await videoRef.current.play();
         } catch (e) {
@@ -439,8 +439,6 @@ export default function VideoPlayer({
         autoplayMutedRef.current = false;
         video.play().catch(() => {
           video.muted = true;
-          setIsMuted(true);
-          autoplayMutedRef.current = true;
           video.play().catch(() => {});
         });
       }
@@ -498,8 +496,6 @@ export default function VideoPlayer({
             }).catch((err) => {
               console.warn("Native unmuted autoplay blocked by policy, falling back to muted autoplay until touch:", err);
               video.muted = true;
-              setIsMuted(true);
-              autoplayMutedRef.current = true;
               video.play()
                 .then(() => setIsLoading(false))
                 .catch(() => setIsLoading(false));
@@ -586,8 +582,6 @@ export default function VideoPlayer({
                 .catch((err) => {
                   console.warn("HLS unmuted autoplay blocked by policy, falling back to muted autoplay until touch:", err);
                   video.muted = true;
-                  setIsMuted(true);
-                  autoplayMutedRef.current = true;
                   video.play().then(() => setIsLoading(false)).catch(() => setIsLoading(false));
                 });
             }
@@ -699,8 +693,6 @@ export default function VideoPlayer({
               }).catch((err) => {
                 console.warn("Fallback native unmuted autoplay blocked, fallback to muted:", err);
                 video.muted = true;
-                setIsMuted(true);
-                autoplayMutedRef.current = true;
                 video.play()
                   .then(() => setIsLoading(false))
                   .catch(() => setIsLoading(false));
@@ -962,6 +954,8 @@ export default function VideoPlayer({
       )} 
       onMouseMove={showControlsHandler} 
       onMouseLeave={() => isPlaying && setShowControls(false)}
+      onTouchStart={attemptUnmute}
+      onPointerDown={attemptUnmute}
     >
       <video 
         ref={videoRef} 
@@ -973,21 +967,7 @@ export default function VideoPlayer({
         muted={isMuted}
       />
       
-      {/* Floating Unmute Button if browser forced autoplay muted */}
-      {autoplayMutedRef.current && isMuted && (
-        <div className="absolute top-4 left-4 z-50 animate-bounce">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              attemptUnmute();
-            }}
-            className="flex items-center gap-2 bg-brand-green hover:bg-brand-green-hover text-cinema-bg font-extrabold text-xs px-3.5 py-2 rounded-full shadow-[0_0_20px_rgba(34,197,94,0.5)] cursor-pointer transition-transform hover:scale-105 active:scale-95"
-          >
-            <Volume2 className="w-4 h-4" />
-            <span>Bấm để bật âm thanh</span>
-          </button>
-        </div>
-      )}
+
 
       <div className="absolute inset-0 flex z-10">
         <div className="w-[35%] h-full z-20 cursor-pointer" onClick={(e) => handleSmartClick(e, 'left')} />
