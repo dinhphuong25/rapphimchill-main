@@ -62,7 +62,7 @@ export default function Header({}: HeaderProps) {
             />
             <div className="flex items-center tracking-tight leading-none">
               <span className="text-base font-black text-white font-sans tracking-wide">Hi</span>
-              <span className="text-base font-black text-brand-green font-sans ml-1 tracking-wide">PHIM</span>
+              <span className="text-base font-black text-brand-green font-sans ml-1 tracking-wide">Phim</span>
               <span className="text-[8px] font-black text-brand-green self-start -mt-0.5 ml-0.5 select-none">®</span>
             </div>
           </Link>

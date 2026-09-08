@@ -382,7 +382,7 @@ export default function Sidebar({
             />
             <div className="flex items-center tracking-tight leading-none">
               <span className="text-base lg:text-lg font-black text-white font-sans tracking-wide">Hi</span>
-              <span className="text-base lg:text-lg font-black text-brand-green font-sans ml-1 tracking-wide">PHIM</span>
+              <span className="text-base lg:text-lg font-black text-brand-green font-sans ml-1 tracking-wide">Phim</span>
               <span className="text-[8px] lg:text-[9.5px] font-black text-brand-green self-start -mt-0.5 ml-0.5 select-none">®</span>
             </div>
           </Link>

@@ -56,7 +56,7 @@ export default function AdminLoginPage() {
               H
             </div>
             <span className="font-extrabold text-2xl tracking-tight text-white">
-              Hi <span className="text-brand-green">PHIM</span>
+              Hi <span className="text-brand-green">Phim</span>
             </span>
           </Link>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-white/5 border border-white/10 text-white/70">

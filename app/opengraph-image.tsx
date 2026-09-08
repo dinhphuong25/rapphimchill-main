@@ -80,7 +80,7 @@ export default async function Image() {
               letterSpacing: "-0.02em",
             }}
           >
-            HI
+            Hi
           </span>
           <span
             style={{
@@ -91,7 +91,7 @@ export default async function Image() {
               letterSpacing: "-0.02em",
             }}
           >
-            PHIM
+            Phim
           </span>
         </div>
 

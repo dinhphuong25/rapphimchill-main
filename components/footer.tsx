@@ -23,7 +23,7 @@ export default function Footer({}: FooterProps = {}) {
               className="w-5 h-5 object-contain shrink-0"
             />
             <span className="text-sm sm:text-base font-black text-white tracking-wide truncate flex items-center">
-              Hi <span className="text-brand-green ml-1">PHIM</span>
+              Hi <span className="text-brand-green ml-1">Phim</span>
               <span className="text-[8px] sm:text-[9px] font-black text-brand-green self-start -mt-0.5 ml-0.5 select-none">®</span>
             </span>
           </div>
@@ -37,7 +37,7 @@ export default function Footer({}: FooterProps = {}) {
         <div className="flex flex-col items-center text-center sm:items-end sm:text-right gap-1 w-full sm:w-auto sm:shrink-0">
           {/* Dòng 1: Copyright, Bản quyền & Miễn trừ trách nhiệm */}
           <p className="text-[11px] sm:text-[12px] font-medium text-white/60 leading-normal">
-            © 2025 Hi PHIM. Mọi bản quyền được bảo lưu và miễn trừ trách nhiệm pháp lý.
+            © 2025 Hi Phim. Mọi bản quyền được bảo lưu và miễn trừ trách nhiệm pháp lý.
           </p>
 
           {/* Dòng 2: Người sáng lập & phát triển */}

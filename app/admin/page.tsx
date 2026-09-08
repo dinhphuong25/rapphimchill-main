@@ -253,7 +253,7 @@ export default function AdminDashboardPage() {
               H
             </div>
             <span className="font-black text-lg tracking-tight text-white">
-              Hi <span className="text-brand-green">PHIM</span>
+              Hi <span className="text-brand-green">Phim</span>
             </span>
           </Link>
           <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-brand-green/20 text-brand-green border border-brand-green/30">

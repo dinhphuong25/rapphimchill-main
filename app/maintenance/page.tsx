@@ -94,7 +94,7 @@ export default function MaintenancePage() {
             H
           </div>
           <span className="font-extrabold text-xl tracking-tight text-white">
-            Hi <span className="text-brand-green">PHIM</span>
+            Hi <span className="text-brand-green">Phim</span>
           </span>
         </div>
 
