@@ -9,22 +9,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { 
-  Heart, 
-  Play,
-  RotateCcw, 
-  AlertTriangle, 
-  SkipForward, 
-  SkipBack, 
-  Film, 
-  Info,
-  Layers
+  Play
 } from "lucide-react";
 import { useContinueWatching } from "@/hooks/useContinueWatching";
-import { useWatchHistory, useFavorites } from "@/hooks/useLocalStorage";
+import { useWatchHistory } from "@/hooks/useLocalStorage";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Link from "next/link";
 import MovieRecommendations from "./movie-recommendations";
+import PlayerErrorBoundary from "../player/player-error-boundary";
 
 const VideoPlayer = dynamic(() => import("../player/video-player"), {
   ssr: false,
@@ -47,15 +40,16 @@ const EmbedPlayer = dynamic(() => import("../player/embed-player"), {
 
 export default function Description({ movie, serverData }: any) {
   const [showTrailer, setShowTrailer] = useState(false);
-  const { toggleFavorite, isFavorite } = useFavorites();
-  const isFav = isFavorite(movie.slug);
   const [isTheaterMode, setIsTheaterMode] = useState(false);
-  const [currentEpisodeUrl, setCurrentEpisodeUrl] = useState("");
+  const defaultEpisode = serverData?.[0]?.server_data?.[0];
+  const [currentEpisodeUrl, setCurrentEpisodeUrl] = useState<string>(
+    () => defaultEpisode?.link_m3u8 || defaultEpisode?.link_embed || ""
+  );
   const [resumeTime, setResumeTime] = useState(0);
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState<{
     server: number;
     episode: number;
-  } | null>(null);
+  }>({ server: 0, episode: 0 });
   const [playerMode, setPlayerMode] = useState<'m3u8' | 'embed'>('m3u8');
   const [completedEpisodes, setCompletedEpisodes] = useState<Record<number, boolean>>({});
   const { updateProgress } = useContinueWatching();
@@ -115,21 +109,6 @@ export default function Description({ movie, serverData }: any) {
     setCurrentEpisodeUrl(link);
     setCurrentEpisodeIndex({ server: serverIndex, episode: episodeIndex });
   };
-
-  const handleToggleFavorite = useCallback(() => {
-    const movieEntry = {
-      slug: movie.slug,
-      name: movie.name,
-      thumb_url: movie.thumb_url || movie.poster_url || "",
-      poster_url: movie.poster_url,
-      year: movie.year,
-      quality: movie.quality,
-    };
-
-    toggleFavorite(movieEntry);
-    const nextState = !isFavorite(movie.slug);
-    toast.success(nextState ? "Đã thêm vào danh sách yêu thích!" : "Đã xóa khỏi danh sách yêu thích!");
-  }, [movie, toggleFavorite, isFavorite]);
 
   // Save movie to recently watched
   useEffect(() => {
@@ -384,103 +363,48 @@ export default function Description({ movie, serverData }: any) {
             <Card className="border border-white/10 overflow-hidden shadow-[0_0_90px_rgba(0,0,0,0.95)] w-full aspect-video rounded-2xl lg:rounded-3xl bg-black relative z-10">
               <CardContent className="p-0 h-full w-full">
                 {playerMode === 'm3u8' ? (
-                  <VideoPlayer
-                    videoUrl={currentEpisodeUrl}
-                    autoplay={true}
-                    poster={movie.thumb_url || movie.poster_url}
-                    initialTime={resumeTime}
-                    movieName={movie.name}
-                    movieSlug={movie.slug}
-                    onProgress={handleProgress}
-                    onSwitchToEmbed={handleSwitchToEmbed}
-                    hasNextEpisode={hasNextEpisode()}
-                    onNextEpisode={handleNextEpisode}
-                    onEnded={handleEnded}
-                  />
+                  <PlayerErrorBoundary
+                    onReset={() => {
+                      setPlayerMode('m3u8');
+                      const ep = serverData?.[currentEpisodeIndex?.server || 0]?.server_data?.[currentEpisodeIndex?.episode || 0];
+                      if (ep?.link_m3u8) setCurrentEpisodeUrl(ep.link_m3u8);
+                    }}
+                    onSwitchToEmbed={() => {
+                      setPlayerMode('embed');
+                      const ep = serverData?.[currentEpisodeIndex?.server || 0]?.server_data?.[currentEpisodeIndex?.episode || 0];
+                      if (ep?.link_embed) setCurrentEpisodeUrl(ep.link_embed);
+                    }}
+                  >
+                    <VideoPlayer
+                      key={`player-${currentEpisodeIndex?.server}-${currentEpisodeIndex?.episode}-${currentEpisodeUrl}`}
+                      videoUrl={currentEpisodeUrl}
+                      autoplay={true}
+                      poster={movie.thumb_url || movie.poster_url}
+                      initialTime={resumeTime}
+                      movieName={movie.name}
+                      movieSlug={movie.slug}
+                      onProgress={handleProgress}
+                      onSwitchToEmbed={handleSwitchToEmbed}
+                      hasNextEpisode={hasNextEpisode()}
+                      onNextEpisode={handleNextEpisode}
+                      onEnded={handleEnded}
+                    />
+                  </PlayerErrorBoundary>
                 ) : (
-                  <EmbedPlayer videoUrl={currentEpisodeUrl} />
+                  <EmbedPlayer
+                    videoUrl={
+                      (currentEpisodeIndex && serverData?.[currentEpisodeIndex.server]?.server_data?.[currentEpisodeIndex.episode]?.link_embed) ||
+                      (currentEpisodeUrl.includes('.m3u8')
+                        ? `https://player.phimapi.com/player/?url=${encodeURIComponent(currentEpisodeUrl)}`
+                        : currentEpisodeUrl)
+                    }
+                  />
                 )}
               </CardContent>
             </Card>
           </div>
 
-          {/* Quick Cinema Action Toolbar */}
-          <div className="w-full flex flex-wrap items-center justify-between gap-3 bg-[#0a0a0a]/80 backdrop-blur-2xl border border-white/[0.08] rounded-2xl p-3.5 sm:p-4 shadow-2xl relative overflow-hidden">
-            {/* Subtle glow */}
-            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-            
-            <div className="flex items-center gap-2 flex-wrap relative z-10">
-              {/* Prev Episode */}
-              <Button
-                onClick={handlePrevEpisode}
-                disabled={!hasPrevEpisode()}
-                variant="outline"
-                size="sm"
-                className="bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl border-white/10 disabled:opacity-30"
-              >
-                <SkipBack className="w-4 h-4 mr-1.5" />
-                <span className="hidden sm:inline">Tập trước (P)</span>
-                <span className="sm:hidden">Trước</span>
-              </Button>
 
-              {/* Next Episode */}
-              <Button
-                onClick={handleNextEpisode}
-                disabled={!hasNextEpisode()}
-                size="sm"
-                className="bg-brand-green hover:bg-brand-green-hover text-cinema-bg font-extrabold rounded-xl shadow-[0_0_18px_rgba(34,197,94,0.35)] disabled:opacity-30"
-              >
-                <span>Tập tiếp (N)</span>
-                <SkipForward className="w-4 h-4 ml-1.5" />
-              </Button>
-
-              {/* Replay */}
-              {resumeTime > 10 && (
-                <Button
-                  onClick={() => {
-                    const video = document.querySelector('video');
-                    if (video) { video.currentTime = 0; video.play().catch(() => {}); }
-                    setResumeTime(0);
-                  }}
-                  variant="outline"
-                  size="sm"
-                  className="bg-white/5 hover:bg-white/10 text-white/80 rounded-xl border-white/10 text-xs font-semibold"
-                >
-                  <RotateCcw className="w-4 h-4 mr-1.5" />
-                  <span className="hidden sm:inline">Xem lại</span>
-                </Button>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2 ml-auto">
-              {/* Favorite Button */}
-              <Button
-                onClick={handleToggleFavorite}
-                variant="outline"
-                size="sm"
-                className={cn(
-                  "rounded-xl border transition-all font-bold text-xs",
-                  isFav
-                    ? "bg-rose-600/20 text-rose-400 border-rose-500/40 shadow-[0_0_15px_rgba(225,29,72,0.3)]"
-                    : "bg-white/5 hover:bg-white/10 text-white border-white/10"
-                )}
-              >
-                <Heart className={cn("w-4 h-4 mr-1.5", isFav && "fill-rose-500")} />
-                <span className="hidden sm:inline">{isFav ? "Đã thích" : "Yêu thích"}</span>
-              </Button>
-
-              {/* Report Issue */}
-              <Button
-                onClick={() => toast.info("Đã ghi nhận thông báo lỗi. Cảm ơn bạn!")}
-                variant="ghost"
-                size="sm"
-                className="text-white/40 hover:text-white/80 rounded-xl hover:bg-white/5 px-2.5"
-                title="Báo lỗi video"
-              >
-                <AlertTriangle className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
 
           {/* Mobile Server Selector & Episode List (Directly after player & toolbar on mobile/tablet) */}
           <div className="w-full lg:hidden">

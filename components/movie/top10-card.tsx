@@ -31,7 +31,7 @@ export const Top10Card = memo(function Top10Card({ movie, rank }: Top10CardProps
       {/* Overlapping Poster Image */}
       <Link
         href={`/phim/${movie.slug}`}
-        className="relative z-10 w-full aspect-[2/3] rounded-xl overflow-hidden bg-cinema-surface border border-white/10 group-hover:border-brand-green/50 transition-all duration-500 group-hover:-translate-y-2 group-hover:scale-[1.02] shadow-xl group-hover:shadow-[0_10px_30px_rgba(32,214,107,0.25)] ml-8"
+        className="relative z-10 w-full aspect-[2/3] rounded-xl overflow-hidden bg-cinema-surface border border-white/10 group-hover:border-brand-green/50 transition-[transform,border-color,box-shadow] duration-300 group-hover:-translate-y-2 group-hover:scale-[1.02] shadow-xl group-hover:shadow-[0_10px_30px_rgba(32,214,107,0.25)] ml-8 transform-gpu"
       >
         <Image
           src={imageUrl}
@@ -39,7 +39,7 @@ export const Top10Card = memo(function Top10Card({ movie, rank }: Top10CardProps
           fill
           sizes="(max-width: 640px) 45vw, 20vw"
           quality={75}
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
+          className="object-cover group-hover:scale-105 transition-transform duration-300"
         />
 
         <div className="absolute inset-0 bg-gradient-to-t from-cinema-bg via-transparent to-transparent opacity-80" />

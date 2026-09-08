@@ -79,7 +79,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-cinema-bg text-cinema-text lg:pl-[200px] transition-all duration-300">
+    <main className="min-h-screen bg-cinema-bg text-cinema-text lg:pl-[225px] transition-all duration-300">
       <Sidebar categories={categories as any[]} countries={countries as any[]} />
       <Header
         topics={topics}
@@ -147,7 +147,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         {/* Pagination */}
         {movies && movies.length > 0 && (
           <div className="mt-16 flex justify-center">
-            <div className="bg-cinema-surface/50 backdrop-blur-sm rounded-2xl p-4 border border-white/10 shadow-xl">
+            <div className="bg-cinema-surface rounded-2xl p-4 border border-white/10 shadow-none">
               <Pagination />
             </div>
           </div>

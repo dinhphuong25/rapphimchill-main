@@ -9,6 +9,7 @@ const withPWA = withPWAInit({
 });
 
 const nextConfig: NextConfig = {
+  devIndicators: false,
   productionBrowserSourceMaps: false,
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
@@ -31,7 +32,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "img.phimapi.com", pathname: "/**" },
     ],
     formats: ["image/avif", "image/webp"],
-    qualities: [50, 70, 75, 85],
+    qualities: [50, 70, 75, 80, 85],
     minimumCacheTTL: 31536000,
     dangerouslyAllowSVG: false,
     contentDispositionType: "attachment",

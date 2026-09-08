@@ -122,6 +122,11 @@ export default function VideoPlayer({
   const settingsMenuRef = useRef<HTMLDivElement | null>(null);
   const waitingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastBufferedRef = useRef<number>(0);
+  // Safeguard against any external scripts or stale references
+  const isMaskVisible = false;
+  if (typeof globalThis !== 'undefined' && !(globalThis as any).isMaskVisible) {
+    (globalThis as any).isMaskVisible = false;
+  }
 
   // Auto Unmute Helper - only unmute if forced muted by autoplay
   const attemptUnmute = useCallback(() => {
@@ -509,10 +514,7 @@ export default function VideoPlayer({
                     if (hlsRef.current) hlsRef.current.startLoad();
                   }, 800 * retryCountRef.current);
                 } else {
-                  setError("Lỗi kết nối máy chủ. Vui lòng chuyển sang máy chủ dự phòng.");
-                  if (onSwitchToEmbedRef.current) {
-                    setTimeout(() => onSwitchToEmbedRef.current?.(), 2000);
-                  }
+                  setError("Không thể kết nối máy chủ mặc định. Bạn có thể bấm Thử lại hoặc chuyển sang Máy chủ Dự phòng.");
                 }
                 break;
               case HLS.ErrorTypes.MEDIA_ERROR:
@@ -563,10 +565,7 @@ export default function VideoPlayer({
         const handleNativeError = () => {
           if (!video.src && !video.currentSrc) return;
           setIsLoading(false);
-          setError("Không thể phát video từ nguồn này. Đang chuyển sang máy chủ dự phòng...");
-          if (onSwitchToEmbedRef.current) {
-            setTimeout(() => onSwitchToEmbedRef.current?.(), 1500);
-          }
+          setError("Không thể phát video từ nguồn mặc định. Bạn có thể bấm Thử lại hoặc chuyển sang Máy chủ Dự phòng.");
         };
 
         video.addEventListener('loadedmetadata', handleLoadedMetadata);
@@ -950,122 +949,6 @@ export default function VideoPlayer({
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2">
-            {/* Playback Speed Quick Cycle Button */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                const rates = [0.75, 1, 1.25, 1.5, 2];
-                const nextIdx = (rates.indexOf(playbackRate) + 1) % rates.length;
-                handlePlaybackRateChange(rates[nextIdx]);
-              }}
-              className="text-white/90 hover:text-white hover:bg-white/15 text-[11px] sm:text-xs font-bold px-2 py-1 rounded-lg border border-white/10 transition-colors cursor-pointer"
-              title="Tốc độ phát"
-            >
-              {playbackRate}x
-            </button>
-
-            {/* Quality & Settings Menu */}
-            <div className="relative" ref={settingsMenuRef}>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowSettings(prev => !prev);
-                }}
-                className={cn(
-                  "text-white hover:bg-white/10 transition-colors cursor-pointer w-8 h-8 sm:w-9 sm:h-9",
-                  showSettings && "bg-white/20 text-brand-green"
-                )}
-                title="Cài đặt chất lượng & tốc độ"
-              >
-                <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
-              </Button>
-
-              {/* Settings Floating Panel */}
-              {showSettings && (
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  className="absolute bottom-11 right-0 w-60 sm:w-64 bg-[#0d1117]/95 backdrop-blur-2xl border border-white/15 rounded-2xl p-3 shadow-[0_10px_40px_rgba(0,0,0,0.85)] z-50 text-white animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-2.5"
-                >
-                  {/* Quality Selection */}
-                  <div className="flex flex-col gap-1">
-                    <div className="text-[10px] sm:text-[11px] font-bold text-white/50 uppercase tracking-wider px-1">
-                      Chất lượng video
-                    </div>
-                    <div className="flex flex-col gap-0.5 max-h-36 overflow-y-auto pr-0.5">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleQualityChange(-1);
-                          setShowSettings(false);
-                        }}
-                        className={cn(
-                          "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-left cursor-pointer",
-                          quality === -1
-                            ? "bg-brand-green/20 text-brand-green font-bold"
-                            : "hover:bg-white/10 text-white/80"
-                        )}
-                      >
-                        <span>Tự động (Tối ưu tốc độ)</span>
-                        {quality === -1 && <Check className="w-3.5 h-3.5 text-brand-green" />}
-                      </button>
-                      {qualities.map((q) => (
-                        <button
-                          key={q.level}
-                          type="button"
-                          onClick={() => {
-                            handleQualityChange(q.level);
-                            setShowSettings(false);
-                          }}
-                          className={cn(
-                            "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-left cursor-pointer",
-                            quality === q.level
-                              ? "bg-brand-green/20 text-brand-green font-bold"
-                              : "hover:bg-white/10 text-white/80"
-                          )}
-                        >
-                          <span>{q.height}p {q.height >= 1080 ? "Full HD" : q.height >= 720 ? "HD" : ""}</span>
-                          {quality === q.level && <Check className="w-3.5 h-3.5 text-brand-green" />}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Divider */}
-                  <div className="h-[1px] bg-white/10" />
-
-                  {/* Playback Speed */}
-                  <div className="flex flex-col gap-1">
-                    <div className="text-[10px] sm:text-[11px] font-bold text-white/50 uppercase tracking-wider px-1">
-                      Tốc độ phát
-                    </div>
-                    <div className="grid grid-cols-5 gap-1">
-                      {[0.75, 1, 1.25, 1.5, 2].map((rate) => (
-                        <button
-                          key={rate}
-                          type="button"
-                          onClick={() => {
-                            handlePlaybackRateChange(rate);
-                            setShowSettings(false);
-                          }}
-                          className={cn(
-                            "py-1 rounded-md text-xs font-bold transition-colors cursor-pointer text-center",
-                            playbackRate === rate
-                              ? "bg-brand-green text-cinema-bg"
-                              : "bg-white/5 hover:bg-white/15 text-white/80"
-                          )}
-                        >
-                          {rate}x
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
             <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="text-white hover:bg-white/10 cursor-pointer w-8 h-8 sm:w-9 sm:h-9">
               {isFullscreen ? <Minimize className="w-4 h-4 sm:w-5 sm:h-5" /> : <Maximize className="w-4 h-4 sm:w-5 sm:h-5" />}
             </Button>

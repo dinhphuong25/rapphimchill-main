@@ -32,7 +32,7 @@ export default async function NewUpdatesPage({ searchParams }: NewUpdatesProps) 
   const countries = await api.listCountries();
 
   return (
-    <main className="min-h-screen bg-cinema-bg text-cinema-text lg:pl-[200px] transition-all duration-300">
+    <main className="min-h-screen bg-cinema-bg text-cinema-text lg:pl-[225px] transition-all duration-300">
       <Sidebar categories={categories as any[]} countries={countries as any[]} />
       <Header
         categories={categories}

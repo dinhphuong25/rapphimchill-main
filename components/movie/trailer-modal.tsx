@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import { Video, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface TrailerModalProps {
   movieName: string;
   trailerUrl?: string;
+  compact?: boolean;
+  className?: string;
 }
 
 function getYoutubeEmbedUrl(trailerUrl: string | undefined, movieName: string): string {
@@ -25,7 +28,7 @@ function getYoutubeEmbedUrl(trailerUrl: string | undefined, movieName: string): 
   return `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(movieName + " official trailer")}&autoplay=1`;
 }
 
-export default function TrailerButtonWithModal({ movieName, trailerUrl }: TrailerModalProps) {
+export default function TrailerButtonWithModal({ movieName, trailerUrl, compact, className }: TrailerModalProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const embedUrl = getYoutubeEmbedUrl(trailerUrl, movieName);
@@ -35,10 +38,16 @@ export default function TrailerButtonWithModal({ movieName, trailerUrl }: Traile
       <button
         onClick={() => setIsOpen(true)}
         type="button"
-        className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-white/10 hover:bg-white/20 text-white font-bold text-sm sm:text-base rounded-xl transition-all border border-white/15 backdrop-blur-md hover:border-brand-green/40 shadow-sm hover:scale-105 active:scale-95 cursor-pointer"
+        className={cn(
+          "flex items-center justify-center gap-2 transition-all border border-white/15 hover:border-brand-green/40 active:scale-95 cursor-pointer font-bold text-white bg-white/10 hover:bg-white/20",
+          compact
+            ? "h-10 sm:h-11 px-3 sm:px-6 text-xs sm:text-sm rounded-xl select-none"
+            : "w-full sm:w-auto px-6 py-3.5 text-sm sm:text-base rounded-xl backdrop-blur-md shadow-sm",
+          className
+        )}
       >
-        <Video className="w-5 h-5 text-brand-green" />
-        <span>Xem Trailer</span>
+        <Video className={cn(compact ? "w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-4.5 lg:h-4.5 shrink-0" : "w-5 h-5", "text-brand-green")} />
+        <span className="whitespace-nowrap">{compact ? "Trailer" : "Xem Trailer"}</span>
       </button>
 
       {isOpen && (

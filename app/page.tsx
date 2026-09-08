@@ -45,6 +45,8 @@ export async function generateMetadata({ searchParams }: HomeProps) {
   const category = params.category;
   const topic = params.topic;
   const typeList = params.typeList;
+  const country = params.country;
+  const year = params.year;
 
   let postTitle: { name: string } | undefined;
 
@@ -55,6 +57,10 @@ export async function generateMetadata({ searchParams }: HomeProps) {
   } else if (category) {
     const categories = await getCachedCategories();
     postTitle = (categories as any[]).find((c: any) => c.slug === category);
+  } else if (year) {
+    postTitle = { name: `Phim Năm ${year}` };
+  } else if (country) {
+    postTitle = { name: `Phim ${country}` };
   }
 
   const titleText =
@@ -111,7 +117,7 @@ export default async function Home({ searchParams }: HomeProps) {
   const siteConfig = getSiteConfig();
 
   return (
-    <main className="min-h-screen bg-cinema-bg text-cinema-text lg:pl-[200px] transition-all duration-300">
+    <main className="min-h-screen bg-cinema-bg text-cinema-text lg:pl-[225px] transition-all duration-300">
       <Sidebar categories={categories as any[]} countries={countries as any[]} />
 
       <Header
@@ -121,7 +127,7 @@ export default async function Home({ searchParams }: HomeProps) {
       />
 
       {hasFilters ? (
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 pb-20 pt-24">
+        <div className="max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-12 xl:px-16 pb-20 pt-16 sm:pt-24">
           <MovieListClient
             index={index}
             category={category}

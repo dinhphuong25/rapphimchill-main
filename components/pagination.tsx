@@ -60,6 +60,10 @@ export default React.memo(function PaginationComponent() {
       if (year) url += `&year=${year}`;
     } else if (category) {
       url = `https://phimapi.com/v1/api/the-loai/${category}?page=${index}`;
+    } else if (country) {
+      url = `https://phimapi.com/v1/api/quoc-gia/${country}?page=${index}`;
+    } else if (year) {
+      url = `https://phimapi.com/v1/api/nam-phat-hanh/${year}?page=${index}`;
     } else if (topic) {
       url = `https://phimapi.com/v1/api/danh-sach/${topic}?page=${index}`;
     } else {

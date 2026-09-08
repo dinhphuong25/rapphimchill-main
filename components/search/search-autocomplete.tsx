@@ -208,13 +208,12 @@ function SearchPanel({ open, onClose, categories = [] }: SearchPanelProps) {
         onClick={(e) => e.stopPropagation()}
         style={{ maxHeight: "calc(100vh - 2rem)", overflow: "auto" }}
       >
-        {/* Glassmorphism Search Box */}
+        {/* Clean Search Box */}
         <div
-          className="relative rounded-2xl overflow-hidden shadow-2xl"
+          className="relative rounded-2xl overflow-hidden shadow-none"
           style={{
-            background: "linear-gradient(135deg, rgba(20,20,30,0.95) 0%, rgba(10,10,15,0.98) 100%)",
+            background: "#050807",
             border: "1px solid rgba(255,255,255,0.08)",
-            boxShadow: "0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(251,191,36,0.1)",
           }}
         >
           {/* Top accent line */}
@@ -223,7 +222,7 @@ function SearchPanel({ open, onClose, categories = [] }: SearchPanelProps) {
           {/* Input Row */}
           <form onSubmit={handleSubmit} className="flex items-center px-4 sm:px-6 py-3 sm:py-4 gap-3 sm:gap-4 border-b border-white/5">
             {/* Search Icon */}
-            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-[#f59e0b] flex-shrink-0 drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-[#f59e0b] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
 

@@ -58,6 +58,11 @@ export default function InfiniteMovieGrid({
           `https://phimapi.com/v1/api/the-loai/${filterCategory}?page=${pageNum}&limit=${limit}`
         )}`;
       }
+      if (filterYear) {
+        return `/api/phim?url=${encodeURIComponent(
+          `https://phimapi.com/v1/api/nam-phat-hanh/${filterYear}?page=${pageNum}&limit=${limit}`
+        )}`;
+      }
       return `/api/phim?url=${encodeURIComponent(
         `https://phimapi.com/danh-sach/phim-moi-cap-nhat?page=${pageNum}`
       )}`;
@@ -119,7 +124,7 @@ export default function InfiniteMovieGrid({
         {movies.map((movie, idx) => (
           <div
             key={`${movie.slug}-${idx}`}
-            style={{ animationDelay: `${(idx % 10) * 0.02}s` }}
+            className="transform-gpu"
           >
             <MovieCardEditorial movie={movie} />
           </div>

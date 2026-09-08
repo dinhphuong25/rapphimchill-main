@@ -154,8 +154,8 @@ export default function HeroSection({ movies }: HeroSectionProps) {
       {/* 1. Background Backdrop Image with Cross-fade Zoom */}
       <div
         className={cn(
-          "absolute inset-0 w-full h-full transition-all duration-1000 ease-out",
-          isTransitioning ? "opacity-0 scale-105 filter blur-sm" : "opacity-100 scale-100 filter blur-0"
+          "absolute inset-0 w-full h-full transition-[opacity,transform] duration-700 ease-out transform-gpu will-change-transform will-change-opacity",
+          isTransitioning ? "opacity-0 scale-105" : "opacity-100 scale-100"
         )}
       >
         <Image

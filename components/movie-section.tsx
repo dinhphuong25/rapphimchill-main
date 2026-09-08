@@ -53,9 +53,9 @@ export const MovieSection = memo(function MovieSection({
       {/* Variant 1: Top 10 Magazine Layout (Auto-Scrolling Marquee) */}
       {variant === "top10" && (
         <div className="flex items-center overflow-hidden pb-4 group/marquee relative w-full mask-edges">
-          <div className="flex items-center gap-4 w-max animate-marquee hover:[animation-play-state:paused]">
+          <div className="flex items-center gap-4 w-max animate-marquee hover:[animation-play-state:paused] transform-gpu will-change-transform">
             {[...filteredMovies.slice(0, 10), ...filteredMovies.slice(0, 10)].map((movie, idx) => (
-              <div key={`${movie.slug}-${idx}`} className="w-[180px] sm:w-[210px] shrink-0">
+              <div key={`${movie.slug}-${idx}`} className="w-[180px] sm:w-[210px] shrink-0 transform-gpu">
                 <Top10Card movie={movie} rank={(idx % 10) + 1} />
               </div>
             ))}
@@ -70,14 +70,14 @@ export const MovieSection = memo(function MovieSection({
           <div className="col-span-2 sm:col-span-2 lg:col-span-2 group relative flex flex-col h-full select-none">
             <Link
               href={`/phim/${filteredMovies[0].slug}`}
-              className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-cinema-surface border border-brand-green/30 group-hover:border-brand-green/60 transition-all duration-500 group-hover:-translate-y-2 group-hover:scale-[1.02] shadow-xl group-hover:shadow-[0_10px_30px_rgba(32,214,107,0.25)] block"
+              className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-cinema-surface border border-brand-green/30 group-hover:border-brand-green/60 transition-[transform,border-color,box-shadow] duration-300 group-hover:-translate-y-2 group-hover:scale-[1.02] shadow-xl group-hover:shadow-[0_10px_30px_rgba(32,214,107,0.25)] block transform-gpu"
             >
               <Image
                 src={filteredMovies[0].thumb_url || filteredMovies[0].poster_url || ""}
                 alt={filteredMovies[0].name}
                 fill
                 quality={75}
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
                 sizes="(max-width: 1024px) 100vw, 33vw"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-cinema-bg via-transparent to-transparent opacity-80 group-hover:opacity-40 transition-opacity" />

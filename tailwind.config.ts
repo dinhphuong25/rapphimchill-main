@@ -9,6 +9,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      screens: {
+        xs: "400px",
+      },
       fontFamily: {
         sans: ["var(--font-be-vietnam)", "var(--font-inter)", "system-ui", "-apple-system", "sans-serif"],
         display: ["var(--font-be-vietnam)", "system-ui", "sans-serif"],

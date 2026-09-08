@@ -9,21 +9,35 @@ export default function ScrollToTop() {
   const [bottomOffset, setBottomOffset] = useState<number | null>(null);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setVisible(window.scrollY > 300);
+    let ticking = false;
+    let footerEl: HTMLElement | null = null;
 
-      // Check footer position to avoid overlapping on mobile/desktop
-      const footer = document.querySelector("footer");
-      if (footer) {
-        const footerRect = footer.getBoundingClientRect();
-        const windowHeight = window.innerHeight;
-        if (footerRect.top < windowHeight) {
-          // Footer is in viewport, stay 16px above footer's top edge
-          const overlap = windowHeight - footerRect.top;
-          setBottomOffset(overlap + 16);
-        } else {
-          setBottomOffset(null);
+    const checkPosition = () => {
+      const isScrolled = window.scrollY > 300;
+      setVisible(isScrolled);
+
+      if (isScrolled) {
+        if (!footerEl) {
+          footerEl = document.querySelector("footer");
         }
+        if (footerEl) {
+          const footerRect = footerEl.getBoundingClientRect();
+          const windowHeight = window.innerHeight;
+          if (footerRect.top < windowHeight) {
+            const overlap = windowHeight - footerRect.top;
+            setBottomOffset(overlap + 16);
+          } else {
+            setBottomOffset(null);
+          }
+        }
+      }
+      ticking = false;
+    };
+
+    const handleScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(checkPosition);
+        ticking = true;
       }
     };
 
@@ -50,8 +64,8 @@ export default function ScrollToTop() {
       style={bottomOffset !== null ? { bottom: `${bottomOffset}px` } : undefined}
       className={cn(
         "fixed right-5 sm:right-6 z-40 p-3 rounded-full",
-        bottomOffset === null ? "bottom-6 md:bottom-10" : "",
-        "bg-primary text-black font-bold shadow-lg shadow-primary/20",
+        bottomOffset === null ? "bottom-20 lg:bottom-10" : "",
+        "bg-primary text-black font-bold shadow-lg shadow-primary/20 transform-gpu",
         "hover:bg-primary/90 hover:scale-110 active:scale-95 transition-all duration-150 cursor-pointer"
       )}
     >

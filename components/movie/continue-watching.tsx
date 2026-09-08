@@ -24,7 +24,7 @@ export default function ContinueWatching() {
         Tiếp tục xem
       </h2>
       
-      <div className="flex gap-4 overflow-x-auto hide-horizontal-scroll pb-4 snap-x snap-mandatory">
+      <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 snap-x snap-mandatory">
           {items.map((item) => {
             if (!item || !item.slug) return null;
             const percent = item.duration > 0 ? (item.currentTime / item.duration) * 100 : 0;

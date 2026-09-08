@@ -10,14 +10,10 @@ import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
 import { getCachedCategories, getCachedCountries } from "@/lib/data";
 
-const getMovieData = unstable_cache(
-  async (slug: string) => {
-    const api = new PhimApi();
-    return api.get(slug);
-  },
-  ["watch-movie-data"],
-  { revalidate: 3600 }
-);
+async function getMovieData(slug: string) {
+  const api = new PhimApi();
+  return api.get(slug);
+}
 
 export async function generateMetadata({ searchParams }: any) {
   const { slug } = await searchParams;

@@ -124,11 +124,11 @@ export default function RecentlyWatchedClient({ categories, countries }: any) {
   };
 
   if (!hydrated) {
-    return <main className="min-h-screen bg-cinema-bg text-cinema-text lg:pl-[200px] transition-all duration-300"></main>;
+    return <main className="min-h-screen bg-cinema-bg text-cinema-text lg:pl-[225px] transition-all duration-300"></main>;
   }
 
   return (
-    <main className="min-h-screen bg-cinema-bg text-cinema-text lg:pl-[200px] transition-all duration-300">
+    <main className="min-h-screen bg-cinema-bg text-cinema-text lg:pl-[225px] transition-all duration-300">
       <Sidebar categories={categories} countries={countries} />
       <Header categories={categories} countries={countries} />
 

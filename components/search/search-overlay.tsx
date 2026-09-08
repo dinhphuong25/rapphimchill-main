@@ -124,7 +124,7 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[150] flex flex-col bg-cinema-bg/95 backdrop-blur-2xl animate-fade-in">
+    <div className="fixed inset-0 z-[150] flex flex-col bg-[#050807] transform-gpu overscroll-contain shadow-none">
       {/* Search Header */}
       <div className="max-w-4xl mx-auto w-full px-4 pt-4 sm:pt-12">
         <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-white/12 relative">
@@ -161,7 +161,7 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
       </div>
 
       {/* Results / Suggestions Container */}
-      <div className="max-w-4xl mx-auto w-full px-4 py-6 flex-1 overflow-y-auto custom-scrollbar">
+      <div className="max-w-4xl mx-auto w-full px-4 py-6 flex-1 overflow-y-auto custom-scrollbar overscroll-contain -webkit-overflow-scrolling-touch">
         {query.trim().length === 0 ? (
           /* Trending searches */
           <div className="space-y-6">

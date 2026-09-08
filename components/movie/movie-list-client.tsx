@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
+import { X } from "lucide-react";
 import LiveStatus from "@/components/live-status";
 import { filterHiddenMovies } from "@/lib/hidden-movies";
 import { MovieGridSkeleton } from "@/components/movie/movie-skeleton";
@@ -36,6 +37,7 @@ const MovieListClient = ({
   topic,
 }: MovieListClientProps) => {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [movies, setMovies] = useState<any[]>([]);
   const [pageInfo, setPageInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -86,6 +88,8 @@ const MovieListClient = ({
         url = `https://phimapi.com/v1/api/the-loai/${cat}?page=${index}&limit=${limit}`;
       } else if (filterCountry) {
         url = `https://phimapi.com/v1/api/quoc-gia/${filterCountry}?page=${index}&limit=${limit}`;
+      } else if (filterYear) {
+        url = `https://phimapi.com/v1/api/nam-phat-hanh/${filterYear}?page=${index}&limit=${limit}`;
       } else if (topic) {
         url = `https://phimapi.com/v1/api/danh-sach/${topic}?page=${index}&limit=${limit}`;
       } else {
@@ -132,9 +136,13 @@ const MovieListClient = ({
 
   const getPageTitle = () => {
     const typeList = searchParams.get("typeList");
+    const filterYear = searchParams.get("year");
+    const filterCountry = searchParams.get("country");
     if (typeList) return TOPIC_NAMES[typeList] || "Kết quả lọc";
     if (topic) return TOPIC_NAMES[topic] || topic;
     if (category) return category;
+    if (filterYear) return `Phim Năm ${filterYear}`;
+    if (filterCountry) return `Phim ${filterCountry}`;
     return "Danh sách phim";
   };
 
@@ -163,28 +171,98 @@ const MovieListClient = ({
     );
   }
 
+  const filterYear = searchParams.get("year");
+  const filterCountry = searchParams.get("country");
+  const filterCategory = searchParams.get("category");
+
   return (
-    <div className="pt-4 sm:pt-8 px-1 sm:px-0">
+    <div className="pt-2 sm:pt-6 px-1 sm:px-0">
       {/* Page Header */}
-      <div className="flex items-center justify-between mb-4 sm:mb-8 px-1">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="w-1 h-6 sm:h-8 bg-primary rounded-full" />
-          <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-white">
-            {getPageTitle()}
-          </h1>
+      <div className="mb-4 sm:mb-8 px-1">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-1 h-6 sm:h-8 bg-brand-green rounded-full shrink-0" />
+            <h1 className="text-lg sm:text-2xl md:text-3xl font-extrabold text-white tracking-tight truncate">
+              {getPageTitle()}
+            </h1>
+          </div>
+          <div className="hidden sm:block shrink-0">
+            <LiveStatus
+              lastUpdated={lastUpdated}
+              isRefreshing={isRefreshing}
+              onRefresh={handleRefresh}
+            />
+          </div>
         </div>
-        <div className="hidden sm:block">
-          <LiveStatus
-            lastUpdated={lastUpdated}
-            isRefreshing={isRefreshing}
-            onRefresh={handleRefresh}
-          />
-        </div>
+
+        {/* Active Filters Bar on Mobile & Desktop */}
+        {(filterYear || filterCountry || filterCategory) && (
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-2 sm:mt-3">
+            {filterYear && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-brand-green/15 border border-brand-green/30 text-xs font-semibold text-brand-green">
+                <span>Năm {filterYear}</span>
+                <button
+                  onClick={() => {
+                    const p = new URLSearchParams(searchParams.toString());
+                    p.delete("year");
+                    const qs = p.toString();
+                    router.push(qs ? `/?${qs}` : "/");
+                  }}
+                  className="hover:bg-brand-green/20 rounded p-0.5 transition-colors"
+                  aria-label="Xóa lọc năm"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {filterCountry && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-brand-green/15 border border-brand-green/30 text-xs font-semibold text-brand-green">
+                <span>Quốc gia: {filterCountry}</span>
+                <button
+                  onClick={() => {
+                    const p = new URLSearchParams(searchParams.toString());
+                    p.delete("country");
+                    const qs = p.toString();
+                    router.push(qs ? `/?${qs}` : "/");
+                  }}
+                  className="hover:bg-brand-green/20 rounded p-0.5 transition-colors"
+                  aria-label="Xóa lọc quốc gia"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {filterCategory && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-brand-green/15 border border-brand-green/30 text-xs font-semibold text-brand-green">
+                <span>Thể loại: {filterCategory}</span>
+                <button
+                  onClick={() => {
+                    const p = new URLSearchParams(searchParams.toString());
+                    p.delete("category");
+                    const qs = p.toString();
+                    router.push(qs ? `/?${qs}` : "/");
+                  }}
+                  className="hover:bg-brand-green/20 rounded p-0.5 transition-colors"
+                  aria-label="Xóa lọc thể loại"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            <button
+              onClick={() => router.push("/")}
+              className="text-[11px] text-white/50 hover:text-white underline underline-offset-2 ml-1"
+            >
+              Xóa tất cả
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Infinite scroll grid — replaces paginated grid */}
       <Suspense fallback={<MovieGridSkeleton count={10} />}>
         <InfiniteMovieGrid
+          key={searchParams.toString()}
           initialMovies={movies}
           topic={topic}
           category={category}

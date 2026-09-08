@@ -41,9 +41,9 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
   const isFav = isFavorite(movie.slug);
 
   return (
-    <div className="group relative flex flex-col h-full select-none" style={{ contentVisibility: "auto", containIntrinsicSize: "200px 300px" }}>
+    <div className="group relative flex flex-col h-full select-none transform-gpu" style={{ contentVisibility: "auto", containIntrinsicSize: "200px 300px" }}>
       {/* Poster Image Container Wrapper */}
-      <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-cinema-surface border border-white/10 group-hover:border-brand-green/50 transition-all duration-500 group-hover:-translate-y-2 group-hover:scale-[1.02] shadow-xl group-hover:shadow-[0_10px_30px_rgba(32,214,107,0.25)]">
+      <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-cinema-surface border border-white/10 group-hover:border-brand-green/50 transition-[transform,border-color,box-shadow] duration-300 group-hover:-translate-y-2 group-hover:scale-[1.02] shadow-xl group-hover:shadow-[0_10px_30px_rgba(32,214,107,0.25)] transform-gpu">
         
         <Link
           href={`/phim/${movie.slug}`}
@@ -58,7 +58,7 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
           blurDataURL={STATIC_BLUR_DATA_URL}
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
           quality={75}
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
+          className="object-cover group-hover:scale-105 transition-transform duration-300"
         />
 
         {/* Poster Gradient Mask */}

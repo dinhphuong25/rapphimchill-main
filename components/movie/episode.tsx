@@ -56,13 +56,14 @@ export default function Episode({
     setMounted(true);
   }, []);
 
-  const handleServerChange = (index: number) => {
-    const firstEpisode = serverData[index]?.server_data?.[0];
-    if (firstEpisode) {
-      if (playerMode === "m3u8" && firstEpisode.link_m3u8) {
-        onSelectEpisode(firstEpisode.link_m3u8, index, 0);
-      } else if (playerMode === "embed" && firstEpisode.link_embed) {
-        onSelectEpisode(firstEpisode.link_embed, index, 0);
+  const handleServerChange = (index: number, mode: "m3u8" | "embed" = playerMode) => {
+    const epIndex = currentServerIndex === index ? currentEpisodeIndex : 0;
+    const targetEpisode = serverData[index]?.server_data?.[epIndex] || serverData[index]?.server_data?.[0];
+    if (targetEpisode) {
+      if (mode === "m3u8" && targetEpisode.link_m3u8) {
+        onSelectEpisode(targetEpisode.link_m3u8, index, epIndex);
+      } else if (mode === "embed" && targetEpisode.link_embed) {
+        onSelectEpisode(targetEpisode.link_embed, index, epIndex);
       }
     }
     onServerChange(index);
@@ -136,12 +137,12 @@ export default function Episode({
                 key={`${index}-m3u8`}
                 onClick={() => {
                   onPlayerModeChange("m3u8");
-                  if (currentServerIndex !== index) handleServerChange(index);
+                  handleServerChange(index, "m3u8");
                 }}
                 className={cn(
-                  "w-full py-2.5 px-2 flex flex-col items-center justify-center gap-0.5 rounded-xl transition-all border",
+                  "w-full py-2.5 px-2 flex flex-col items-center justify-center gap-0.5 rounded-xl transition-all border cursor-pointer",
                   currentServerIndex === index && playerMode === "m3u8"
-                    ? "bg-brand-green/10 text-brand-green border-brand-green/30"
+                    ? "bg-brand-green/10 text-brand-green border-brand-green/30 shadow-sm"
                     : "bg-[#222222] text-white/50 border-transparent hover:bg-[#2a2a2a] hover:text-white/80"
                 )}
               >
@@ -163,12 +164,12 @@ export default function Episode({
                 key={`${index}-embed`}
                 onClick={() => {
                   onPlayerModeChange("embed");
-                  if (currentServerIndex !== index) handleServerChange(index);
+                  handleServerChange(index, "embed");
                 }}
                 className={cn(
-                  "w-full py-2.5 px-2 flex flex-col items-center justify-center gap-0.5 rounded-xl transition-all border",
+                  "w-full py-2.5 px-2 flex flex-col items-center justify-center gap-0.5 rounded-xl transition-all border cursor-pointer",
                   currentServerIndex === index && playerMode === "embed"
-                    ? "bg-brand-green/10 text-brand-green border-brand-green/30"
+                    ? "bg-brand-green/10 text-brand-green border-brand-green/30 shadow-sm"
                     : "bg-[#222222] text-white/50 border-transparent hover:bg-[#2a2a2a] hover:text-white/80"
                 )}
               >
