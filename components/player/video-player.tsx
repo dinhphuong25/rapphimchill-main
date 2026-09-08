@@ -79,7 +79,7 @@ export default function VideoPlayer({
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastProgressSecondRef = useRef<number>(-1);
   const didSeekInitialTimeRef = useRef<boolean>(false);
-  const autoplayMutedRef = useRef<boolean>(false);
+  const autoplayMutedRef = useRef<boolean>(typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
   const lastNonZeroVolumeRef = useRef<number>(1);
 
   // Callback Refs to keep useEffect pure and prevent unwanted reload loops
@@ -102,7 +102,12 @@ export default function VideoPlayer({
   const isSeekingRef = useRef<boolean>(false);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) return true;
+    return localStorage.getItem('cinema_muted') === 'true';
+  });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -205,6 +210,7 @@ export default function VideoPlayer({
 
     try {
       if (videoRef.current.paused) {
+        setIsLoading(false);
         if (hlsRef.current) {
           hlsRef.current.startLoad();
         }
@@ -218,9 +224,12 @@ export default function VideoPlayer({
         videoRef.current.muted = true;
         setIsMuted(true);
         autoplayMutedRef.current = true;
-        videoRef.current.play().catch(() => {
+        try {
+          await videoRef.current.play();
+        } catch (e) {
+          setIsLoading(false);
           setError("Click để phát video");
-        });
+        }
       } else if (err.name === 'AbortError') {
         console.warn("Play request was interrupted");
       }
@@ -410,52 +419,123 @@ export default function VideoPlayer({
 
     // Detect mobile and iOS Safari
     const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    const isIOS = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
 
     // Strict inline video playback configuration for iOS Safari
     video.setAttribute('playsinline', 'true');
     video.setAttribute('webkit-playsinline', 'true');
     video.setAttribute('x5-playsinline', 'true');
     video.setAttribute('x5-video-player-type', 'h5-page');
+    video.playsInline = true;
+
+    // Safety watchdog: ensure loading spinner is NEVER stuck forever
+    const loadWatchdog = setTimeout(() => {
+      setIsLoading(false);
+      if (video && video.paused && autoplay) {
+        video.muted = true;
+        setIsMuted(true);
+        autoplayMutedRef.current = true;
+        video.play().catch(() => {});
+      }
+    }, 2500);
 
     const initHls = () => {
-      if (HLS.isSupported()) {
+      // 1. Prefer Native HLS for Apple iOS devices (iPhone, iPad)
+      // Apple's AVPlayer handles HLS natively with hardware acceleration, avoiding MSE/ManagedMediaSource stalls
+      const useNativeHls = isIOS && video.canPlayType('application/vnd.apple.mpegurl');
+
+      if (useNativeHls) {
+        const handleReady = () => { 
+          setIsLoading(false); 
+        };
+
+        const handleNativeError = () => { 
+          if (!video.src && !video.currentSrc) return;
+          console.warn("Native HLS error on video element:", video.error);
+          setIsLoading(false);
+          if (onSwitchToEmbedRef.current) {
+            console.warn("Auto-switching to embed server after native HLS error");
+            onSwitchToEmbedRef.current();
+          } else {
+            setError("Không thể phát video từ nguồn mặc định. Bạn có thể bấm Thử lại hoặc chuyển sang Máy chủ Dự phòng.");
+          }
+        };
+
+        video.addEventListener('loadedmetadata', handleReady);
+        video.addEventListener('loadeddata', handleReady);
+        video.addEventListener('canplay', handleReady);
+        video.addEventListener('canplaythrough', handleReady);
+        video.addEventListener('playing', handleReady);
+        video.addEventListener('error', handleNativeError);
+
+        video.src = videoUrl;
+        video.load();
+
+        if (autoplay) {
+          const isUserMuted = typeof window !== 'undefined' && localStorage.getItem('cinema_muted') === 'true';
+          const savedVol = typeof window !== 'undefined' ? Number(localStorage.getItem('cinema_volume') || 1) : 1;
+          const targetVol = savedVol > 0 ? savedVol : 1;
+          try { video.volume = targetVol; } catch (e) {}
+
+          // iOS Safari strictly requires initial autoplay to be muted
+          video.muted = true;
+          setIsMuted(true);
+          autoplayMutedRef.current = !isUserMuted;
+
+          const p = video.play();
+          if (p !== undefined) {
+            p.then(() => setIsLoading(false))
+             .catch((err) => {
+               console.warn("Native autoplay muted rejected:", err);
+               setIsLoading(false);
+             });
+          }
+        }
+
+        return () => {
+          video.removeEventListener('loadedmetadata', handleReady);
+          video.removeEventListener('loadeddata', handleReady);
+          video.removeEventListener('canplay', handleReady);
+          video.removeEventListener('canplaythrough', handleReady);
+          video.removeEventListener('playing', handleReady);
+          video.removeEventListener('error', handleNativeError);
+        };
+      } else if (HLS.isSupported()) {
         const hls = new HLS({
           enableWorker: true,
           lowLatencyMode: false,
           progressive: !isMobile,
           startFragPrefetch: true,
+          autoStartLoad: true,
           
           backBufferLength: isMobile ? 15 : 30,
-          maxBufferLength: isMobile ? 45 : 120,
-          maxMaxBufferLength: isMobile ? 120 : 600,
-          maxBufferSize: isMobile ? 30 * 1000 * 1000 : 128 * 1024 * 1024,
+          maxBufferLength: isMobile ? 30 : 60,
+          maxMaxBufferLength: isMobile ? 60 : 120,
+          maxBufferSize: isMobile ? 20 * 1000 * 1000 : 64 * 1024 * 1024,
           maxBufferHole: 0.5,
           highBufferWatchdogPeriod: 2,
-          nudgeOffset: 0.2,
+          nudgeOffset: 0.1,
           nudgeMaxRetry: 5,
           
           startLevel: -1,
           capLevelToPlayerSize: isMobile,
           testBandwidth: true,
           
-          abrEwmaDefaultEstimate: isMobile ? 1_500_000 : 2_000_000,
+          abrEwmaDefaultEstimate: isMobile ? 1_500_000 : 2_500_000,
           abrBandWidthFactor: 0.85,
           abrBandWidthUpFactor: 0.7,
-          abrEwmaFastLive: 3,
-          abrEwmaSlowLive: 9,
           
-          manifestLoadingMaxRetry: 6,
+          manifestLoadingMaxRetry: 4,
           manifestLoadingRetryDelay: 500,
-          levelLoadingMaxRetry: 6,
+          levelLoadingMaxRetry: 4,
           levelLoadingRetryDelay: 500,
-          fragLoadingMaxRetry: 8,
+          fragLoadingMaxRetry: 6,
           fragLoadingRetryDelay: 500,
-          fragLoadingMaxRetryTimeout: 64_000,
+          fragLoadingMaxRetryTimeout: 30_000,
           
-          manifestLoadingTimeOut: 12_000,
-          levelLoadingTimeOut: 12_000,
-          fragLoadingTimeOut: 15_000,
+          manifestLoadingTimeOut: 10_000,
+          levelLoadingTimeOut: 10_000,
+          fragLoadingTimeOut: 12_000,
           
           xhrSetup: (xhr) => {
             xhr.withCredentials = false;
@@ -466,55 +546,76 @@ export default function VideoPlayer({
         hls.loadSource(videoUrl);
         hls.attachMedia(video);
 
-        hls.on(HLS.Events.MANIFEST_PARSED, (e, data) => {
+        const startHlsPlayback = () => {
           setIsLoading(false);
-          retryCountRef.current = 0;
-          
-          const availableQualities = data.levels
-            .map((l, index) => ({ height: l.height || 0, level: index, bitrate: l.bitrate }))
-            .filter(q => q.height > 0)
-            .sort((a, b) => b.height - a.height);
-          setQualities(availableQualities);
-          
-          if (autoplay) {
+          if (autoplay && video.paused) {
             const isUserMuted = typeof window !== 'undefined' && localStorage.getItem('cinema_muted') === 'true';
             const savedVol = typeof window !== 'undefined' ? Number(localStorage.getItem('cinema_volume') || 1) : 1;
             const targetVol = savedVol > 0 ? savedVol : 1;
 
             try { video.volume = targetVol; } catch (e) {}
-            video.muted = isUserMuted;
 
-            video.play().catch(() => {
-              // If unmuted autoplay is blocked by browser policy
-              if (!isUserMuted) {
-                autoplayMutedRef.current = true;
-                video.muted = true;
-                setIsMuted(true);
-                video.play().catch(() => setIsLoading(false));
-              } else {
-                setIsLoading(false);
-              }
-            });
+            if (isMobile || isUserMuted) {
+              video.muted = true;
+              setIsMuted(true);
+              autoplayMutedRef.current = !isUserMuted;
+            } else {
+              video.muted = false;
+            }
+
+            const playPromise = video.play();
+            if (playPromise !== undefined) {
+              playPromise
+                .then(() => setIsLoading(false))
+                .catch(() => {
+                  video.muted = true;
+                  setIsMuted(true);
+                  autoplayMutedRef.current = true;
+                  video.play().then(() => setIsLoading(false)).catch(() => setIsLoading(false));
+                });
+            }
           }
+        };
+
+        hls.on(HLS.Events.MANIFEST_PARSED, (e, data) => {
+          retryCountRef.current = 0;
+          const availableQualities = data.levels
+            .map((l, index) => ({ height: l.height || 0, level: index, bitrate: l.bitrate }))
+            .filter(q => q.height > 0)
+            .sort((a, b) => b.height - a.height);
+          setQualities(availableQualities);
+          startHlsPlayback();
+        });
+
+        hls.on(HLS.Events.FRAG_LOADED, () => {
+          setIsLoading(false);
+        });
+
+        hls.on(HLS.Events.LEVEL_LOADED, () => {
+          setIsLoading(false);
         });
 
         hls.on(HLS.Events.ERROR, (e, data) => {
           if (data.details === HLS.ErrorDetails.BUFFER_STALLED_ERROR) {
-            // Buffer stalled - kickstart load
             if (hlsRef.current) hlsRef.current.startLoad();
             return;
           }
           if (data.fatal) {
             switch (data.type) {
               case HLS.ErrorTypes.NETWORK_ERROR:
-                if (retryCountRef.current < 5) {
+                if (retryCountRef.current < 2) {
                   retryCountRef.current += 1;
-                  console.warn(`HLS Network error, retrying (${retryCountRef.current}/5)...`);
+                  console.warn(`HLS Network error, retrying (${retryCountRef.current}/2)...`);
                   setTimeout(() => {
                     if (hlsRef.current) hlsRef.current.startLoad();
-                  }, 800 * retryCountRef.current);
+                  }, 600 * retryCountRef.current);
                 } else {
-                  setError("Không thể kết nối máy chủ mặc định. Bạn có thể bấm Thử lại hoặc chuyển sang Máy chủ Dự phòng.");
+                  if (onSwitchToEmbedRef.current) {
+                    console.warn("Auto-switching to embed server after HLS network errors");
+                    onSwitchToEmbedRef.current();
+                  } else {
+                    setError("Không thể kết nối máy chủ mặc định. Bạn có thể bấm Thử lại hoặc chuyển sang Máy chủ Dự phòng.");
+                  }
                 }
                 break;
               case HLS.ErrorTypes.MEDIA_ERROR:
@@ -523,64 +624,94 @@ export default function VideoPlayer({
                 break;
               default:
                 hls.destroy();
-                setError("Không thể phát video từ máy chủ này.");
+                if (onSwitchToEmbedRef.current) {
+                  onSwitchToEmbedRef.current();
+                } else {
+                  setError("Không thể phát video từ máy chủ này.");
+                }
                 break;
             }
           }
         });
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = videoUrl;
-        video.load();
-
-        const handleLoadedMetadata = () => { 
+        // Fallback Native HLS for Safari without MSE
+        const handleReady = () => { 
           setIsLoading(false); 
-          if (autoplay) {
-            const isUserMuted = typeof window !== 'undefined' && localStorage.getItem('cinema_muted') === 'true';
-            const savedVol = typeof window !== 'undefined' ? Number(localStorage.getItem('cinema_volume') || 1) : 1;
-            const targetVol = savedVol > 0 ? savedVol : 1;
-            try { video.volume = targetVol; } catch (e) {}
+        };
 
-            // iOS Safari strictly requires initial autoplay to be muted
-            if (isUserMuted || isIOS) {
-              video.muted = true;
-              autoplayMutedRef.current = !isUserMuted;
-              setIsMuted(true);
-              video.play().catch(() => setIsLoading(false));
-            } else {
-              video.muted = false;
-              video.play().catch(() => {
-                autoplayMutedRef.current = true;
-                video.muted = true;
-                setIsMuted(true);
-                video.play().catch(() => setIsLoading(false));
-              });
-            }
+        const handleNativeError = () => { 
+          if (!video.src && !video.currentSrc) return;
+          console.warn("Native HLS error on video element:", video.error);
+          setIsLoading(false);
+          if (onSwitchToEmbedRef.current) {
+            console.warn("Auto-switching to embed server after native HLS error");
+            onSwitchToEmbedRef.current();
+          } else {
+            setError("Không thể phát video từ nguồn mặc định. Bạn có thể bấm Thử lại hoặc chuyển sang Máy chủ Dự phòng.");
           }
         };
 
-        const handleCanPlay = () => {
-          setIsLoading(false);
-        };
-
-        const handleNativeError = () => {
-          if (!video.src && !video.currentSrc) return;
-          setIsLoading(false);
-          setError("Không thể phát video từ nguồn mặc định. Bạn có thể bấm Thử lại hoặc chuyển sang Máy chủ Dự phòng.");
-        };
-
-        video.addEventListener('loadedmetadata', handleLoadedMetadata);
-        video.addEventListener('canplay', handleCanPlay);
+        video.addEventListener('loadedmetadata', handleReady);
+        video.addEventListener('loadeddata', handleReady);
+        video.addEventListener('canplay', handleReady);
+        video.addEventListener('canplaythrough', handleReady);
+        video.addEventListener('playing', handleReady);
         video.addEventListener('error', handleNativeError);
 
+        video.src = videoUrl;
+        video.load();
+
+        if (autoplay) {
+          const isUserMuted = typeof window !== 'undefined' && localStorage.getItem('cinema_muted') === 'true';
+          const savedVol = typeof window !== 'undefined' ? Number(localStorage.getItem('cinema_volume') || 1) : 1;
+          const targetVol = savedVol > 0 ? savedVol : 1;
+          try { video.volume = targetVol; } catch (e) {}
+
+          if (isMobile || isUserMuted) {
+            video.muted = true;
+            setIsMuted(true);
+            autoplayMutedRef.current = !isUserMuted;
+          } else {
+            video.muted = false;
+          }
+
+          const startPlay = () => {
+            const p = video.play();
+            if (p !== undefined) {
+              p.then(() => {
+                setIsLoading(false);
+              }).catch((err) => {
+                console.warn("Native unmuted autoplay rejected, playing muted:", err);
+                video.muted = true;
+                setIsMuted(true);
+                autoplayMutedRef.current = true;
+                video.play()
+                  .then(() => setIsLoading(false))
+                  .catch((err2) => {
+                    console.warn("Muted native play also rejected:", err2);
+                    setIsLoading(false);
+                  });
+              });
+            }
+          };
+
+          startPlay();
+        }
+
         return () => {
-          video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-          video.removeEventListener('canplay', handleCanPlay);
+          video.removeEventListener('loadedmetadata', handleReady);
+          video.removeEventListener('loadeddata', handleReady);
+          video.removeEventListener('canplay', handleReady);
+          video.removeEventListener('canplaythrough', handleReady);
+          video.removeEventListener('playing', handleReady);
           video.removeEventListener('error', handleNativeError);
         };
       }
     };
+
     const cleanupNative = initHls();
     return () => { 
+      clearTimeout(loadWatchdog);
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
@@ -629,14 +760,26 @@ export default function VideoPlayer({
         onEndedRef.current?.();
       }
     };
-    const onWaiting = () => {
-      if (waitingTimerRef.current) clearTimeout(waitingTimerRef.current);
-      // Debounce loading spinner by 400ms to avoid flashing spinner on tiny micro-stalls
-      waitingTimerRef.current = setTimeout(() => {
-        setIsLoading(true);
-      }, 400);
+    const hideLoading = () => {
+      if (waitingTimerRef.current) {
+        clearTimeout(waitingTimerRef.current);
+        waitingTimerRef.current = null;
+      }
+      setIsLoading(false);
+    };
 
-      // Stall guard: Nếu xoay vòng quá 5s thì thử khôi phục
+    const onWaiting = () => {
+      // If paused, NEVER show waiting/loading spinner!
+      if (video.paused) return;
+
+      if (waitingTimerRef.current) clearTimeout(waitingTimerRef.current);
+      waitingTimerRef.current = setTimeout(() => {
+        if (!video.paused) {
+          setIsLoading(true);
+        }
+      }, 500);
+
+      // Stall guard: Nếu xoay vòng quá 4s thì thử khôi phục
       const stallTimeout = setTimeout(() => {
         if (video.paused) return;
         console.warn("Video stalled, attempting recovery...");
@@ -656,15 +799,16 @@ export default function VideoPlayer({
             console.warn("Native iOS recovery failed:", e);
           }
         }
-      }, 5000);
-      video.addEventListener('playing', () => {
+      }, 4000);
+
+      const clearWaiting = () => {
         clearTimeout(stallTimeout);
-        if (waitingTimerRef.current) {
-          clearTimeout(waitingTimerRef.current);
-          waitingTimerRef.current = null;
-        }
-        setIsLoading(false);
-      }, { once: true });
+        hideLoading();
+      };
+
+      video.addEventListener('playing', clearWaiting, { once: true });
+      video.addEventListener('canplay', clearWaiting, { once: true });
+      video.addEventListener('pause', clearWaiting, { once: true });
     };
 
     const onErrorEvent = () => {
@@ -680,23 +824,22 @@ export default function VideoPlayer({
       onErrorRef.current?.(err);
     };
 
-    const hideLoading = () => {
-      if (waitingTimerRef.current) {
-        clearTimeout(waitingTimerRef.current);
-        waitingTimerRef.current = null;
-      }
-      setIsLoading(false);
-    };
-
     video.addEventListener('canplay', hideLoading);
     video.addEventListener('canplaythrough', hideLoading);
+    video.addEventListener('loadeddata', hideLoading);
+    video.addEventListener('playing', hideLoading);
     video.addEventListener('timeupdate', onTimeUpdate);
     video.addEventListener('ended', onEndedEvent);
-    video.addEventListener('play', () => setIsPlaying(true));
-    video.addEventListener('pause', () => setIsPlaying(false));
+    video.addEventListener('play', () => {
+      setIsPlaying(true);
+      hideLoading();
+    });
+    video.addEventListener('pause', () => {
+      setIsPlaying(false);
+      hideLoading();
+    });
     video.addEventListener('durationchange', () => setDuration(video.duration));
     video.addEventListener('waiting', onWaiting);
-    video.addEventListener('playing', hideLoading);
     video.addEventListener('error', onErrorEvent);
     
     return () => {
@@ -706,6 +849,7 @@ export default function VideoPlayer({
       }
       video.removeEventListener('canplay', hideLoading);
       video.removeEventListener('canplaythrough', hideLoading);
+      video.removeEventListener('loadeddata', hideLoading);
       video.removeEventListener('playing', hideLoading);
       video.removeEventListener('timeupdate', onTimeUpdate); 
       video.removeEventListener('ended', onEndedEvent);
@@ -773,15 +917,21 @@ export default function VideoPlayer({
       return;
     }
 
+    // If video is currently paused, clicking anywhere starts playback immediately!
+    if (videoRef.current?.paused) {
+      togglePlay();
+      showControlsHandler();
+      return;
+    }
+
     if (!showControls) {
       showControlsHandler();
       return;
     }
 
-    // If controls are currently visible, tapping center toggles play/pause
+    // If controls are currently visible and video is playing, tapping center pauses
     if (side === 'center') {
-      const willPlay = videoRef.current?.paused;
-      setShortcutFeedback({ icon: willPlay ? 'play' : 'pause', id: Date.now() });
+      setShortcutFeedback({ icon: 'pause', id: Date.now() });
       togglePlay();
     } else {
       setShowControls(false);
@@ -806,6 +956,8 @@ export default function VideoPlayer({
         poster={poster} 
         playsInline 
         preload="auto" 
+        autoPlay={autoplay}
+        muted={isMuted}
       />
       
       {/* Floating Unmute Button if browser forced autoplay muted */}
@@ -857,7 +1009,7 @@ export default function VideoPlayer({
       <div 
         className={cn(
           "absolute inset-0 flex items-center justify-center z-40 pointer-events-none transition-opacity duration-300",
-          showControls && !isLoading && countdown === null && !error ? "opacity-100" : "opacity-0"
+          (!isPlaying || showControls) && countdown === null && !error ? "opacity-100" : "opacity-0"
         )}
       >
         <button
@@ -865,7 +1017,10 @@ export default function VideoPlayer({
             e.stopPropagation();
             togglePlay();
           }}
-          className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shadow-2xl pointer-events-auto transition-transform active:scale-90 cursor-pointer"
+          className={cn(
+            "w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shadow-2xl transition-transform active:scale-90 cursor-pointer",
+            (!isPlaying || showControls) && countdown === null && !error ? "pointer-events-auto" : "pointer-events-none"
+          )}
           aria-label={isPlaying ? "Tạm dừng" : "Phát"}
         >
           {isPlaying ? (
@@ -876,7 +1031,18 @@ export default function VideoPlayer({
         </button>
       </div>
 
-      {isLoading && <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 z-20 pointer-events-none"><Loader2 className="w-12 h-12 text-primary animate-spin mb-4" /><p className="text-white/80 text-sm font-bold">Đang tải video...</p></div>}
+      {isLoading && isPlaying && (
+        <div 
+          onClick={(e) => {
+            e.stopPropagation();
+            togglePlay();
+          }}
+          className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 z-30 cursor-pointer pointer-events-auto"
+        >
+          <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+          <p className="text-white/80 text-sm font-bold">Đang tải video...</p>
+        </div>
+      )}
 
       {countdown !== null && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-[60] backdrop-blur-md">
