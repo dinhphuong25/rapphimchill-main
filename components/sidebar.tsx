@@ -185,22 +185,65 @@ export default function Sidebar({
     return YEARS_LIST.filter((y) => String(y).includes(yearSearchQuery.trim()));
   }, [YEARS_LIST, yearSearchQuery]);
 
-  const handleSelectCategory = (slug: string) => {
-    setActiveModal(null);
-    setIsMobileOpen(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const [isSelecting, setIsSelecting] = useState(false);
+
+  const closeModal = (e?: React.SyntheticEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (isClosing) return;
+    setIsClosing(true);
+    setTimeout(() => {
+      setActiveModal(null);
+      setIsClosing(false);
+    }, 120);
+  };
+
+  const handleSelectCategory = (slug: string, e?: React.SyntheticEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (isSelecting) return;
+    setIsSelecting(true);
     router.push(`/?category=${slug}`);
+    setTimeout(() => {
+      setActiveModal(null);
+      setIsMobileOpen(false);
+      setIsSelecting(false);
+    }, 180);
   };
 
-  const handleSelectCountry = (slug: string) => {
-    setActiveModal(null);
-    setIsMobileOpen(false);
+  const handleSelectCountry = (slug: string, e?: React.SyntheticEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (isSelecting) return;
+    setIsSelecting(true);
     router.push(`/?country=${slug}`);
+    setTimeout(() => {
+      setActiveModal(null);
+      setIsMobileOpen(false);
+      setIsSelecting(false);
+    }, 180);
   };
 
-  const handleSelectYear = (year: number | string) => {
-    setActiveModal(null);
-    setIsMobileOpen(false);
+  const handleSelectYear = (year: number | string, e?: React.SyntheticEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (isSelecting) return;
+    setIsSelecting(true);
     router.push(`/?year=${year}`);
+    setTimeout(() => {
+      setActiveModal(null);
+      setIsMobileOpen(false);
+      setIsSelecting(false);
+    }, 180);
   };
 
   // If in Theatre Mode during video watching, auto-hide sidebar
@@ -332,7 +375,10 @@ export default function Sidebar({
               (Boolean(currentTypeList) && currentTypeList !== "phim-chieu-rap");
             return (
               <button
-                onClick={() => {
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   setActiveModal(null);
                   setIsMobileOpen(true);
                 }}
@@ -361,7 +407,15 @@ export default function Sidebar({
       {isMobileOpen && (
         <div
           className="lg:hidden fixed inset-0 z-[120] bg-black/75"
-          onClick={() => setIsMobileOpen(false)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsMobileOpen(false);
+          }}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
         />
       )}
 
@@ -394,7 +448,12 @@ export default function Sidebar({
 
           {/* Close Button — Mobile */}
           <button
-            onClick={() => setIsMobileOpen(false)}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsMobileOpen(false);
+            }}
             aria-label="Đóng Menu"
             className="lg:hidden p-2 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-colors"
           >
@@ -447,7 +506,12 @@ export default function Sidebar({
 
             {/* Thể Loại (Categories Modal Trigger) */}
             <button
-              onClick={() => setActiveModal("categories")}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setActiveModal("categories");
+              }}
               className={cn(
                 "w-full relative flex items-center justify-between px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-colors duration-150 group text-left",
                 currentCategory
@@ -480,7 +544,12 @@ export default function Sidebar({
 
             {/* Quốc Gia (Countries Modal Trigger) */}
             <button
-              onClick={() => setActiveModal("countries")}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setActiveModal("countries");
+              }}
               className={cn(
                 "w-full relative flex items-center justify-between px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-colors duration-150 group text-left",
                 currentCountry
@@ -513,7 +582,12 @@ export default function Sidebar({
 
             {/* Năm Phát Hành (Years Modal Trigger) */}
             <button
-              onClick={() => setActiveModal("years")}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setActiveModal("years");
+              }}
               className={cn(
                 "w-full relative flex items-center justify-between px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-colors duration-150 group text-left",
                 currentYear
@@ -586,15 +660,31 @@ export default function Sidebar({
       {/* MODAL BẢNG CHỌN THỂ LOẠI (CATEGORY SELECTION BOARD) */}
       {/* ======================================================== */}
       {activeModal === "categories" && (
-        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-6 animate-in fade-in duration-200">
+        <div
+          className={cn(
+            "fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-6 transition-opacity duration-150 select-none",
+            isClosing ? "opacity-0 pointer-events-none" : "opacity-100 animate-in fade-in duration-200"
+          )}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/80"
-            onClick={() => setActiveModal(null)}
+            className="fixed inset-0 bg-black/80 cursor-pointer"
+            onClick={closeModal}
+            onTouchEnd={closeModal}
           />
 
           {/* Modal Content Board (Bottom Sheet on Mobile, Centered on Desktop) */}
-          <div className="relative z-10 w-full sm:max-w-4xl max-h-[85dvh] sm:max-h-[82vh] bg-[#0c121d] border-t sm:border border-white/10 rounded-t-[24px] sm:rounded-3xl p-3.5 sm:p-7 flex flex-col shadow-none overflow-hidden animate-in slide-in-from-bottom-3 sm:zoom-in-95 duration-200 transform-gpu">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className={cn(
+              "relative z-10 w-full sm:max-w-4xl max-h-[85dvh] sm:max-h-[82vh] bg-[#0c121d] border-t sm:border border-white/10 rounded-t-[24px] sm:rounded-3xl p-3.5 sm:p-7 flex flex-col shadow-none overflow-hidden transform-gpu",
+              isClosing ? "scale-95 opacity-0 duration-150" : "animate-in slide-in-from-bottom-3 sm:zoom-in-95 duration-200"
+            )}
+          >
             {/* Mobile Sheet Handle Bar */}
             <div className="sm:hidden w-10 h-1 bg-white/20 rounded-full mx-auto mb-2.5 shrink-0" />
 
@@ -614,7 +704,8 @@ export default function Sidebar({
 
               {/* Close Button */}
               <button
-                onClick={() => setActiveModal(null)}
+                type="button"
+                onClick={closeModal}
                 className="p-2 rounded-xl bg-white/10 hover:bg-white/15 text-white/80 hover:text-white border border-white/10 transition-all shrink-0 active:scale-95"
                 aria-label="Đóng bảng"
               >
@@ -650,11 +741,12 @@ export default function Sidebar({
                     return (
                       <button
                         key={cat.slug}
-                        onClick={() => handleSelectCategory(cat.slug)}
+                        type="button"
+                        onClick={(e) => handleSelectCategory(cat.slug, e)}
                         className={cn(
                           "relative flex items-center justify-between p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border text-left transition-all duration-200 group active:scale-95 min-w-0 shadow-none",
                           active
-                            ? "bg-brand-green/20 border-brand-green/50 text-brand-green"
+                            ? "bg-brand-green/20 border-brand-green/50 text-brand-green font-bold"
                             : "bg-white/[0.03] hover:bg-white/[0.08] border-white/5 hover:border-brand-green/30 text-white/80 hover:text-white"
                         )}
                       >
@@ -689,8 +781,11 @@ export default function Sidebar({
             <div className="relative z-10 pt-2.5 mt-2 border-t border-white/10 flex items-center justify-between text-xs text-white/40 shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
               <span className="truncate mr-2">Bấm vào thể loại để lọc phim ngay</span>
               <button
-                onClick={() => {
-                  setActiveModal(null);
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  closeModal();
                   router.push("/");
                 }}
                 className="text-brand-green hover:underline font-semibold shrink-0"
@@ -706,15 +801,31 @@ export default function Sidebar({
       {/* MODAL BẢNG CHỌN QUỐC GIA (COUNTRY SELECTION BOARD) */}
       {/* ======================================================== */}
       {activeModal === "countries" && (
-        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-6 animate-in fade-in duration-200">
+        <div
+          className={cn(
+            "fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-6 transition-opacity duration-150 select-none",
+            isClosing ? "opacity-0 pointer-events-none" : "opacity-100 animate-in fade-in duration-200"
+          )}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/80"
-            onClick={() => setActiveModal(null)}
+            className="fixed inset-0 bg-black/80 cursor-pointer"
+            onClick={closeModal}
+            onTouchEnd={closeModal}
           />
 
           {/* Modal Content Board (Bottom Sheet on Mobile, Centered on Desktop) */}
-          <div className="relative z-10 w-full sm:max-w-4xl max-h-[85dvh] sm:max-h-[82vh] bg-[#0c121d] border-t sm:border border-white/10 rounded-t-[24px] sm:rounded-3xl p-3.5 sm:p-7 flex flex-col shadow-none overflow-hidden animate-in slide-in-from-bottom-3 sm:zoom-in-95 duration-200 transform-gpu">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className={cn(
+              "relative z-10 w-full sm:max-w-4xl max-h-[85dvh] sm:max-h-[82vh] bg-[#0c121d] border-t sm:border border-white/10 rounded-t-[24px] sm:rounded-3xl p-3.5 sm:p-7 flex flex-col shadow-none overflow-hidden transform-gpu",
+              isClosing ? "scale-95 opacity-0 duration-150" : "animate-in slide-in-from-bottom-3 sm:zoom-in-95 duration-200"
+            )}
+          >
             {/* Mobile Sheet Handle Bar */}
             <div className="sm:hidden w-10 h-1 bg-white/20 rounded-full mx-auto mb-2.5 shrink-0" />
 
@@ -734,7 +845,8 @@ export default function Sidebar({
 
               {/* Close Button */}
               <button
-                onClick={() => setActiveModal(null)}
+                type="button"
+                onClick={closeModal}
                 className="p-2 rounded-xl bg-white/10 hover:bg-white/15 text-white/80 hover:text-white border border-white/10 transition-all shrink-0 active:scale-95"
                 aria-label="Đóng bảng"
               >
@@ -776,11 +888,12 @@ export default function Sidebar({
                       return (
                         <button
                           key={c.slug}
-                          onClick={() => handleSelectCountry(c.slug)}
+                          type="button"
+                          onClick={(e) => handleSelectCountry(c.slug, e)}
                           className={cn(
                             "relative p-3 sm:p-3.5 rounded-xl sm:rounded-2xl border text-center transition-all duration-200 group flex flex-col items-center justify-center gap-1.5 sm:gap-2 active:scale-95 min-w-0 shadow-none",
                             active
-                              ? "bg-brand-green/20 border-brand-green/50 text-brand-green"
+                              ? "bg-brand-green/20 border-brand-green/50 text-brand-green font-bold"
                               : "bg-white/[0.04] hover:bg-white/[0.08] border-white/5 hover:border-brand-green/30 text-white/80 hover:text-white"
                           )}
                         >
@@ -817,11 +930,12 @@ export default function Sidebar({
                       return (
                         <button
                           key={c.slug}
-                          onClick={() => handleSelectCountry(c.slug)}
+                          type="button"
+                          onClick={(e) => handleSelectCountry(c.slug, e)}
                           className={cn(
                             "relative flex items-center justify-between p-2.5 sm:p-3 rounded-xl border text-left transition-all duration-200 group active:scale-95 min-w-0 shadow-none",
                             active
-                              ? "bg-brand-green/20 border-brand-green/50 text-brand-green"
+                              ? "bg-brand-green/20 border-brand-green/50 text-brand-green font-bold"
                               : "bg-white/[0.02] hover:bg-white/[0.06] border-white/5 hover:border-brand-green/30 text-white/75 hover:text-white"
                           )}
                         >
@@ -858,8 +972,11 @@ export default function Sidebar({
             <div className="relative z-10 pt-2.5 mt-2 border-t border-white/10 flex items-center justify-between text-xs text-white/40 shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
               <span className="truncate mr-2">Bấm vào quốc gia để lọc phim ngay</span>
               <button
-                onClick={() => {
-                  setActiveModal(null);
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  closeModal();
                   router.push("/");
                 }}
                 className="text-brand-green hover:underline font-semibold shrink-0"
@@ -874,15 +991,31 @@ export default function Sidebar({
       {/* MODAL BẢNG CHỌN NĂM PHÁT HÀNH (YEAR SELECTION BOARD) */}
       {/* ======================================================== */}
       {activeModal === "years" && (
-        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-6 animate-in fade-in duration-200">
+        <div
+          className={cn(
+            "fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-6 transition-opacity duration-150 select-none",
+            isClosing ? "opacity-0 pointer-events-none" : "opacity-100 animate-in fade-in duration-200"
+          )}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/80"
-            onClick={() => setActiveModal(null)}
+            className="fixed inset-0 bg-black/80 cursor-pointer"
+            onClick={closeModal}
+            onTouchEnd={closeModal}
           />
 
           {/* Modal Content Board (Bottom Sheet on Mobile, Centered on Desktop) */}
-          <div className="relative z-10 w-full sm:max-w-4xl max-h-[85dvh] sm:max-h-[82vh] bg-[#0c121d] border-t sm:border border-white/10 rounded-t-[24px] sm:rounded-3xl p-3.5 sm:p-7 flex flex-col shadow-none overflow-hidden animate-in slide-in-from-bottom-3 sm:zoom-in-95 duration-200 transform-gpu">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className={cn(
+              "relative z-10 w-full sm:max-w-4xl max-h-[85dvh] sm:max-h-[82vh] bg-[#0c121d] border-t sm:border border-white/10 rounded-t-[24px] sm:rounded-3xl p-3.5 sm:p-7 flex flex-col shadow-none overflow-hidden transform-gpu",
+              isClosing ? "scale-95 opacity-0 duration-150" : "animate-in slide-in-from-bottom-3 sm:zoom-in-95 duration-200"
+            )}
+          >
             {/* Mobile Sheet Handle Bar */}
             <div className="sm:hidden w-10 h-1 bg-white/20 rounded-full mx-auto mb-2.5 shrink-0" />
 
@@ -902,7 +1035,8 @@ export default function Sidebar({
 
               {/* Close Button */}
               <button
-                onClick={() => setActiveModal(null)}
+                type="button"
+                onClick={closeModal}
                 className="p-2 rounded-xl bg-white/10 hover:bg-white/15 text-white/80 hover:text-white border border-white/10 transition-all shrink-0 active:scale-95"
                 aria-label="Đóng bảng"
               >
@@ -928,7 +1062,12 @@ export default function Sidebar({
                 />
                 {yearSearchQuery && (
                   <button
-                    onClick={() => setYearSearchQuery("")}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setYearSearchQuery("");
+                    }}
                     aria-label="Xóa tìm kiếm"
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-white/40 hover:text-white rounded-md"
                   >
@@ -952,7 +1091,8 @@ export default function Sidebar({
                       return (
                         <button
                           key={y}
-                          onClick={() => handleSelectYear(y)}
+                          type="button"
+                          onClick={(e) => handleSelectYear(y, e)}
                           className={cn(
                             "relative py-2 sm:py-2.5 px-1.5 sm:px-2 rounded-xl sm:rounded-2xl border text-center transition-all duration-200 group flex flex-col items-center justify-center gap-0.5 active:scale-95 min-w-0 shadow-none",
                             active
@@ -1001,7 +1141,8 @@ export default function Sidebar({
                       return (
                         <button
                           key={y}
-                          onClick={() => handleSelectYear(y)}
+                          type="button"
+                          onClick={(e) => handleSelectYear(y, e)}
                           className={cn(
                             "relative flex items-center justify-center py-2 sm:py-2.5 px-1 rounded-xl border text-center transition-all duration-200 group active:scale-95 min-w-0 font-medium shadow-none",
                             active
@@ -1031,8 +1172,11 @@ export default function Sidebar({
             <div className="relative z-10 pt-2.5 sm:pt-3 mt-1.5 sm:mt-2 border-t border-white/10 flex items-center justify-between text-xs text-white/40 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
               <span className="truncate mr-2 text-[11px] sm:text-xs">Bấm vào năm để lọc phim ngay</span>
               <button
-                onClick={() => {
-                  setActiveModal(null);
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  closeModal();
                   router.push("/");
                 }}
                 className="text-brand-green hover:underline font-semibold shrink-0 text-xs"

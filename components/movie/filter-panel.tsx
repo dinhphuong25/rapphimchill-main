@@ -152,10 +152,20 @@ const FilterPanel = ({ categories = [], countries = [] }: FilterPanelProps) => {
           {/* Backdrop */}
           <div
             className="fixed inset-0 z-[59]"
-            onClick={() => setIsOpen(false)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsOpen(false);
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsOpen(false);
+            }}
           />
 
           <div
+            onClick={(e) => e.stopPropagation()}
             className="absolute right-0 top-full mt-2 z-[60] w-[340px] max-w-[calc(100vw-32px)] rounded-2xl border border-white/10 shadow-2xl shadow-black/60 overflow-hidden"
             style={{ background: "rgba(12,12,14,0.97)", backdropFilter: "blur(20px)" }}
           >
