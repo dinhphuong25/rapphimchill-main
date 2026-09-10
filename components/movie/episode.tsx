@@ -255,7 +255,7 @@ export default function Episode({
           )}
 
           {/* Grid of Episodes */}
-          <div className="w-full max-h-[350px] lg:max-h-none overflow-y-auto scrollbar-hide">
+          <div className="w-full max-h-[60vh] lg:max-h-none overflow-y-scroll lg:overflow-visible scrollbar-hide overscroll-contain">
             {displayedEpisodes.length > 0 ? (
               <div className="grid grid-cols-4 gap-2 w-full">
                 {displayedEpisodes.map((episode) => {
