@@ -103,7 +103,7 @@ async function WatchContent({ slug }: { slug: string }) {
   const bgUrl = movie.poster_url?.startsWith("http") ? movie.poster_url : `https://phimimg.com/${movie.poster_url}`;
 
   return (
-    <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-cinema-bg text-white selection:bg-brand-green selection:text-cinema-bg">
+    <div className="min-h-screen bg-cinema-bg text-white selection:bg-brand-green selection:text-cinema-bg">
       {/* Dynamic Blurred Background - Chỉ hiện trên desktop để tối ưu GPU mobile */}
       <div 
         className="fixed inset-0 z-0 opacity-25 scale-105 pointer-events-none hidden sm:block will-change-transform"
@@ -118,7 +118,7 @@ async function WatchContent({ slug }: { slug: string }) {
       <div className="fixed inset-0 z-0 bg-gradient-to-b from-cinema-bg/80 via-cinema-bg/95 to-cinema-bg pointer-events-none" />
 
       {/* Main Cinema Page Layout - Full-width Standalone Cinema View */}
-      <main className="relative z-10 min-h-screen lg:min-h-0 lg:h-full flex flex-col w-full lg:overflow-hidden">
+      <main className="relative z-10 min-h-screen flex flex-col w-full">
         <MovieStructuredData
           movie={movie}
           url={`https://hiphim.biz/watch?slug=${slug}`}
@@ -126,7 +126,7 @@ async function WatchContent({ slug }: { slug: string }) {
         <BreadcrumbStructuredData items={structuredBreadcrumbItems} />
 
         {/* Main Watch Container */}
-        <div className="flex-1 lg:min-h-0 w-full max-w-[1920px] mx-auto pb-16 lg:pb-3 px-3 sm:px-6 lg:px-8 xl:px-10 flex flex-col">
+        <div className="flex-1 w-full max-w-[1920px] mx-auto pb-16 px-3 sm:px-6 lg:px-8 xl:px-10 flex flex-col">
           <Description movie={movie} serverData={server} slug={slug} thumb_url={movie.thumb_url} />
         </div>
       </main>

@@ -373,7 +373,7 @@ export default function Description({ movie, serverData }: any) {
       : "";
 
   return (
-    <div className="w-full flex flex-col gap-5 sm:gap-6 z-10 relative lg:h-full lg:min-h-0">
+    <div className="w-full flex flex-col gap-5 sm:gap-6 z-10 relative">
       
       {/* Standalone Cinema Header */}
       <WatchHeader
@@ -398,10 +398,10 @@ export default function Description({ movie, serverData }: any) {
       )}
 
       {/* 2-Column Cinema Layout */}
-      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start w-full max-w-[1600px] mx-auto pt-2 lg:flex-1 lg:min-h-0">
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start w-full max-w-[1600px] mx-auto pt-2">
         
-        {/* Left Primary Stage: Video Player & Movie Details */}
-        <div className="flex-1 w-full min-w-0 flex flex-col gap-6">
+        {/* Left Primary Stage: Video Player — sticky on desktop */}
+        <div className="flex-1 w-full min-w-0 flex flex-col gap-6 lg:sticky lg:top-[60px]">
           
           {/* Video Player Container with Dynamic OLED Backlight Glow */}
           <div className={cn("relative group/player w-full transition-all duration-500", isTheaterMode && "z-[85]")}>
@@ -473,7 +473,7 @@ export default function Description({ movie, serverData }: any) {
         </div>
 
         {/* Desktop Right Sidebar Episode List */}
-        <div className="hidden lg:flex w-full lg:w-[380px] 2xl:w-[420px] shrink-0 flex-col gap-4 lg:h-full lg:min-h-0 lg:overflow-y-scroll">
+        <div className="hidden lg:flex w-full lg:w-[380px] 2xl:w-[420px] shrink-0 flex-col gap-4">
           <Episode
             serverData={serverData}
             currentServerIndex={currentEpisodeIndex?.server || 0}
