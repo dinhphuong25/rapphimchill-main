@@ -61,10 +61,9 @@ export default function Episode({
   // Automatically sync range tab when currentEpisodeIndex changes (hotkeys, next episode, or direct click)
   useEffect(() => {
     const requiredRange = Math.floor(currentEpisodeIndex / ITEMS_PER_RANGE);
-    if (requiredRange !== activeRangeIndex) {
-      setActiveRangeIndex(requiredRange);
-    }
-  }, [currentEpisodeIndex, activeRangeIndex]);
+    setActiveRangeIndex(requiredRange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentEpisodeIndex]);
 
   const handleServerChange = (index: number, mode: "m3u8" | "embed" = playerMode) => {
     const epIndex = currentServerIndex === index ? currentEpisodeIndex : 0;
