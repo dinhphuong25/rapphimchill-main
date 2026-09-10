@@ -151,26 +151,33 @@ export interface PlayerState {
 export interface WatchHistoryItem {
   slug: string;
   name: string;
+  origin_name?: string;
   thumb_url: string;
   poster_url?: string;
   year?: number;
   quality?: string;
+  episode_current?: string;
   currentTime: number;
   duration: number;
   episodeName?: string;
   episodeSlug?: string;
   serverIndex?: number;
+  tmdb?: { vote_average?: number };
+  imdb?: { rating?: number };
   watchedAt: number; // timestamp
 }
 
 export interface FavoriteItem {
   slug: string;
   name: string;
+  origin_name?: string;
   thumb_url: string;
   poster_url?: string;
   year?: number;
   quality?: string;
   episode_current?: string;
+  tmdb?: { vote_average?: number };
+  imdb?: { rating?: number };
   addedAt: number; // timestamp
 }
 

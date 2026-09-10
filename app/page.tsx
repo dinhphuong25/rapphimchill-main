@@ -1,7 +1,6 @@
 // ISR: trang chủ được cache tĩnh 60s, TTFB cực nhanh sau lần đầu
 export const revalidate = 60;
 
-import Header from "@/components/header";
 import MovieListClient from "@/components/movie/movie-list-client";
 import HomeClient from "@/components/home-client";
 import dynamic from "next/dynamic";
@@ -77,7 +76,6 @@ export async function generateMetadata({ searchParams }: HomeProps) {
   };
 }
 
-import Sidebar from "@/components/sidebar";
 
 export default async function Home({ searchParams }: HomeProps) {
   const params = await searchParams;
@@ -117,15 +115,7 @@ export default async function Home({ searchParams }: HomeProps) {
   const siteConfig = getSiteConfig();
 
   return (
-    <main className="min-h-screen bg-cinema-bg text-cinema-text lg:pl-[225px] transition-all duration-300">
-      <Sidebar categories={categories as any[]} countries={countries as any[]} />
-
-      <Header
-        categories={categories as any[]}
-        countries={countries as any[]}
-        topics={TOPICS}
-      />
-
+    <>
       {hasFilters ? (
         <div className="max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-12 xl:px-16 pb-20 pt-16 sm:pt-24">
           <MovieListClient
@@ -148,6 +138,6 @@ export default async function Home({ searchParams }: HomeProps) {
 
       {!hasFilters && <Footer customFooterText={siteConfig.customFooterText} />}
       <ScrollToTop />
-    </main>
+    </>
   );
 }

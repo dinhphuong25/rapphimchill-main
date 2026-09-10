@@ -81,8 +81,17 @@ export default function VideoPlayer({
   const didSeekInitialTimeRef = useRef<boolean>(false);
   const autoplayMutedRef = useRef<boolean>(false);
   const lastNonZeroVolumeRef = useRef<number>(1);
+  const hasUserInteractedRef = useRef<boolean>(false);
+  const lastTimeUpdateRef = useRef<number>(0);
+  const lastTapRef = useRef<{ time: number; side: 'left' | 'right' | 'center' }>({ time: 0, side: 'center' });
+  const singleTapTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const prevVideoUrlRef = useRef<string>("");
 
   // Callback Refs to keep useEffect pure and prevent unwanted reload loops
+  const initialTimeRef = useRef(initialTime);
+  initialTimeRef.current = initialTime;
+  const autoplayRef = useRef(autoplay);
+  autoplayRef.current = autoplay;
   const onSwitchToEmbedRef = useRef(onSwitchToEmbed);
   onSwitchToEmbedRef.current = onSwitchToEmbed;
   const onProgressRef = useRef(onProgress);
@@ -132,6 +141,7 @@ export default function VideoPlayer({
   const attemptUnmute = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
+    if (!video.muted && !autoplayMutedRef.current) return;
 
     video.muted = false;
     const targetVolume = lastNonZeroVolumeRef.current > 0 ? lastNonZeroVolumeRef.current : 1;
@@ -144,25 +154,27 @@ export default function VideoPlayer({
 
   // Global user interaction listener to unmute cleanly on first gesture if restricted
   useEffect(() => {
+    const cleanupListeners = () => {
+      window.removeEventListener('click', onUserInteraction, { capture: true });
+      window.removeEventListener('pointerdown', onUserInteraction, { capture: true });
+      window.removeEventListener('touchstart', onUserInteraction, { capture: true });
+      window.removeEventListener('touchend', onUserInteraction, { capture: true });
+      window.removeEventListener('keydown', onUserInteraction, { capture: true });
+    };
+
     const onUserInteraction = () => {
+      hasUserInteractedRef.current = true;
       attemptUnmute();
+      cleanupListeners();
     };
 
     window.addEventListener('click', onUserInteraction, { capture: true });
     window.addEventListener('pointerdown', onUserInteraction, { capture: true });
     window.addEventListener('touchstart', onUserInteraction, { capture: true });
     window.addEventListener('touchend', onUserInteraction, { capture: true });
-    window.addEventListener('scroll', onUserInteraction, { capture: true });
     window.addEventListener('keydown', onUserInteraction, { capture: true });
 
-    return () => {
-      window.removeEventListener('click', onUserInteraction, { capture: true });
-      window.removeEventListener('pointerdown', onUserInteraction, { capture: true });
-      window.removeEventListener('touchstart', onUserInteraction, { capture: true });
-      window.removeEventListener('touchend', onUserInteraction, { capture: true });
-      window.removeEventListener('scroll', onUserInteraction, { capture: true });
-      window.removeEventListener('keydown', onUserInteraction, { capture: true });
-    };
+    return cleanupListeners;
   }, [attemptUnmute]);
 
   // Close settings menu on outside click
@@ -429,20 +441,94 @@ export default function VideoPlayer({
     video.setAttribute('x5-video-player-type', 'h5-page');
     video.playsInline = true;
 
-    // Safety watchdog: ensure loading spinner is NEVER stuck forever
-    const loadWatchdog = setTimeout(() => {
+    // Helper for fast, non-blocking playback start
+    const playWithAutoplayFallback = () => {
       setIsLoading(false);
-      if (video && video.paused && autoplay) {
-        // Try unmuted playback first
+      if (!autoplayRef.current || !video) return;
+
+      const savedVol = typeof window !== 'undefined' ? Number(localStorage.getItem('cinema_volume') || 1) : 1;
+      const targetVol = savedVol > 0 ? savedVol : 1;
+      try { video.volume = targetVol; } catch (e) {}
+
+      const userAlreadyInteracted = (typeof navigator !== 'undefined' && (navigator as any).userActivation?.hasBeenActive) || hasUserInteractedRef.current;
+
+      if (userAlreadyInteracted) {
         video.muted = false;
         setIsMuted(false);
         autoplayMutedRef.current = false;
-        video.play().catch(() => {
-          video.muted = true;
-          video.play().catch(() => {});
-        });
+        const p = video.play();
+        if (p !== undefined) {
+          p.then(() => {
+            setIsLoading(false);
+          }).catch((err) => {
+            console.warn("Play blocked despite interaction, falling back to muted autoplay:", err);
+            video.muted = true;
+            setIsMuted(true);
+            autoplayMutedRef.current = true;
+            video.play().then(() => setIsLoading(false)).catch(() => setIsLoading(false));
+          });
+        }
+      } else {
+        // Attempt unmuted first; if rejected by policy, instantly fallback to muted so frames render immediately (<300ms)
+        video.muted = false;
+        const p = video.play();
+        if (p !== undefined) {
+          p.then(() => {
+            setIsLoading(false);
+            video.muted = false;
+            setIsMuted(false);
+            autoplayMutedRef.current = false;
+          }).catch(() => {
+            video.muted = true;
+            setIsMuted(true);
+            autoplayMutedRef.current = true;
+            video.play().then(() => setIsLoading(false)).catch(() => setIsLoading(false));
+          });
+        }
       }
-    }, 2500);
+    };
+
+    const targetStartPosition = initialTimeRef.current > 0 ? initialTimeRef.current : -1;
+
+    // Seamless in-place source switch when changing episode/server (preserves decoder & avoids black flash)
+    if (prevVideoUrlRef.current && prevVideoUrlRef.current !== videoUrl) {
+      prevVideoUrlRef.current = videoUrl;
+      setError(null);
+      setIsLoading(true);
+      retryCountRef.current = 0;
+      didSeekInitialTimeRef.current = false;
+      lastProgressSecondRef.current = -1;
+
+      if (hlsRef.current) {
+        try {
+          hlsRef.current.stopLoad();
+          hlsRef.current.config.startPosition = targetStartPosition;
+          hlsRef.current.loadSource(videoUrl);
+          hlsRef.current.startLoad(targetStartPosition);
+          playWithAutoplayFallback();
+          return;
+        } catch (err) {
+          console.warn("Seamless HLS switch fallback to reinit:", err);
+        }
+      } else if (isIOS && video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = videoUrl;
+        if (targetStartPosition > 0) {
+          const onMeta = () => {
+            try { video.currentTime = targetStartPosition; } catch (e) {}
+          };
+          video.addEventListener('loadedmetadata', onMeta, { once: true });
+        }
+        playWithAutoplayFallback();
+        return;
+      }
+    }
+
+    prevVideoUrlRef.current = videoUrl;
+
+    // Safety watchdog: ensure loading spinner is NEVER stuck forever
+    const loadWatchdog = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
 
     const initHls = () => {
       // 1. Prefer Native HLS for Apple iOS devices (iPhone, iPad)
@@ -452,6 +538,13 @@ export default function VideoPlayer({
       if (useNativeHls) {
         const handleReady = () => { 
           setIsLoading(false); 
+        };
+
+        const handleMetadata = () => {
+          setIsLoading(false);
+          if (targetStartPosition > 0 && Math.abs(video.currentTime - targetStartPosition) > 1) {
+            try { video.currentTime = targetStartPosition; } catch (e) {}
+          }
         };
 
         const handleNativeError = () => { 
@@ -466,45 +559,20 @@ export default function VideoPlayer({
           }
         };
 
-        video.addEventListener('loadedmetadata', handleReady);
+        video.addEventListener('loadedmetadata', handleMetadata);
         video.addEventListener('loadeddata', handleReady);
         video.addEventListener('canplay', handleReady);
         video.addEventListener('canplaythrough', handleReady);
         video.addEventListener('playing', handleReady);
         video.addEventListener('error', handleNativeError);
 
+        video.preload = "auto";
         video.src = videoUrl;
-        video.load();
 
-        if (autoplay) {
-          const savedVol = typeof window !== 'undefined' ? Number(localStorage.getItem('cinema_volume') || 1) : 1;
-          const targetVol = savedVol > 0 ? savedVol : 1;
-          try { video.volume = targetVol; } catch (e) {}
-
-          // Always try unmuted playback first so sound is on
-          video.muted = false;
-          setIsMuted(false);
-          autoplayMutedRef.current = false;
-
-          const p = video.play();
-          if (p !== undefined) {
-            p.then(() => {
-              setIsLoading(false);
-              video.muted = false;
-              setIsMuted(false);
-              autoplayMutedRef.current = false;
-            }).catch((err) => {
-              console.warn("Native unmuted autoplay blocked by policy, falling back to muted autoplay until touch:", err);
-              video.muted = true;
-              video.play()
-                .then(() => setIsLoading(false))
-                .catch(() => setIsLoading(false));
-            });
-          }
-        }
+        playWithAutoplayFallback();
 
         return () => {
-          video.removeEventListener('loadedmetadata', handleReady);
+          video.removeEventListener('loadedmetadata', handleMetadata);
           video.removeEventListener('loadeddata', handleReady);
           video.removeEventListener('canplay', handleReady);
           video.removeEventListener('canplaythrough', handleReady);
@@ -515,38 +583,39 @@ export default function VideoPlayer({
         const hls = new HLS({
           enableWorker: true,
           lowLatencyMode: false,
-          progressive: !isMobile,
+          progressive: true,
           startFragPrefetch: true,
           autoStartLoad: true,
+          startPosition: targetStartPosition,
           
-          backBufferLength: isMobile ? 15 : 30,
+          backBufferLength: isMobile ? 10 : 30,
           maxBufferLength: isMobile ? 30 : 60,
           maxMaxBufferLength: isMobile ? 60 : 120,
-          maxBufferSize: isMobile ? 20 * 1000 * 1000 : 64 * 1024 * 1024,
-          maxBufferHole: 0.5,
+          maxBufferSize: isMobile ? 30 * 1024 * 1024 : 100 * 1024 * 1024,
+          maxBufferHole: 0.1,
           highBufferWatchdogPeriod: 2,
           nudgeOffset: 0.1,
-          nudgeMaxRetry: 5,
+          nudgeMaxRetry: 10,
           
           startLevel: -1,
           capLevelToPlayerSize: isMobile,
-          testBandwidth: true,
+          testBandwidth: false,
           
-          abrEwmaDefaultEstimate: isMobile ? 1_500_000 : 2_500_000,
-          abrBandWidthFactor: 0.85,
-          abrBandWidthUpFactor: 0.7,
+          abrEwmaDefaultEstimate: isMobile ? 2_000_000 : 3_500_000,
+          abrBandWidthFactor: 0.9,
+          abrBandWidthUpFactor: 0.75,
           
           manifestLoadingMaxRetry: 4,
-          manifestLoadingRetryDelay: 500,
+          manifestLoadingRetryDelay: 300,
           levelLoadingMaxRetry: 4,
-          levelLoadingRetryDelay: 500,
-          fragLoadingMaxRetry: 6,
-          fragLoadingRetryDelay: 500,
-          fragLoadingMaxRetryTimeout: 30_000,
+          levelLoadingRetryDelay: 300,
+          fragLoadingMaxRetry: 8,
+          fragLoadingRetryDelay: 300,
+          fragLoadingMaxRetryTimeout: 20_000,
           
-          manifestLoadingTimeOut: 10_000,
-          levelLoadingTimeOut: 10_000,
-          fragLoadingTimeOut: 12_000,
+          manifestLoadingTimeOut: 8_000,
+          levelLoadingTimeOut: 8_000,
+          fragLoadingTimeOut: 10_000,
           
           xhrSetup: (xhr) => {
             xhr.withCredentials = false;
@@ -557,37 +626,6 @@ export default function VideoPlayer({
         hls.loadSource(videoUrl);
         hls.attachMedia(video);
 
-        const startHlsPlayback = () => {
-          setIsLoading(false);
-          if (autoplay && video.paused) {
-            const savedVol = typeof window !== 'undefined' ? Number(localStorage.getItem('cinema_volume') || 1) : 1;
-            const targetVol = savedVol > 0 ? savedVol : 1;
-
-            try { video.volume = targetVol; } catch (e) {}
-
-            // Always try unmuted playback first so sound is on
-            video.muted = false;
-            setIsMuted(false);
-            autoplayMutedRef.current = false;
-
-            const playPromise = video.play();
-            if (playPromise !== undefined) {
-              playPromise
-                .then(() => {
-                  setIsLoading(false);
-                  video.muted = false;
-                  setIsMuted(false);
-                  autoplayMutedRef.current = false;
-                })
-                .catch((err) => {
-                  console.warn("HLS unmuted autoplay blocked by policy, falling back to muted autoplay until touch:", err);
-                  video.muted = true;
-                  video.play().then(() => setIsLoading(false)).catch(() => setIsLoading(false));
-                });
-            }
-          }
-        };
-
         hls.on(HLS.Events.MANIFEST_PARSED, (e, data) => {
           retryCountRef.current = 0;
           const availableQualities = data.levels
@@ -595,7 +633,7 @@ export default function VideoPlayer({
             .filter(q => q.height > 0)
             .sort((a, b) => b.height - a.height);
           setQualities(availableQualities);
-          startHlsPlayback();
+          playWithAutoplayFallback();
         });
 
         hls.on(HLS.Events.FRAG_LOADED, () => {
@@ -619,7 +657,7 @@ export default function VideoPlayer({
                   console.warn(`HLS Network error, retrying (${retryCountRef.current}/2)...`);
                   setTimeout(() => {
                     if (hlsRef.current) hlsRef.current.startLoad();
-                  }, 600 * retryCountRef.current);
+                  }, 400 * retryCountRef.current);
                 } else {
                   if (onSwitchToEmbedRef.current) {
                     console.warn("Auto-switching to embed server after HLS network errors");
@@ -650,6 +688,13 @@ export default function VideoPlayer({
           setIsLoading(false); 
         };
 
+        const handleMetadata = () => {
+          setIsLoading(false);
+          if (targetStartPosition > 0 && Math.abs(video.currentTime - targetStartPosition) > 1) {
+            try { video.currentTime = targetStartPosition; } catch (e) {}
+          }
+        };
+
         const handleNativeError = () => { 
           if (!video.src && !video.currentSrc) return;
           console.warn("Native HLS error on video element:", video.error);
@@ -662,49 +707,20 @@ export default function VideoPlayer({
           }
         };
 
-        video.addEventListener('loadedmetadata', handleReady);
+        video.addEventListener('loadedmetadata', handleMetadata);
         video.addEventListener('loadeddata', handleReady);
         video.addEventListener('canplay', handleReady);
         video.addEventListener('canplaythrough', handleReady);
         video.addEventListener('playing', handleReady);
         video.addEventListener('error', handleNativeError);
 
+        video.preload = "auto";
         video.src = videoUrl;
-        video.load();
 
-        if (autoplay) {
-          const savedVol = typeof window !== 'undefined' ? Number(localStorage.getItem('cinema_volume') || 1) : 1;
-          const targetVol = savedVol > 0 ? savedVol : 1;
-          try { video.volume = targetVol; } catch (e) {}
-
-          // Always try unmuted playback first so sound is on
-          video.muted = false;
-          setIsMuted(false);
-          autoplayMutedRef.current = false;
-
-          const startPlay = () => {
-            const p = video.play();
-            if (p !== undefined) {
-              p.then(() => {
-                setIsLoading(false);
-                video.muted = false;
-                setIsMuted(false);
-                autoplayMutedRef.current = false;
-              }).catch((err) => {
-                console.warn("Fallback native unmuted autoplay blocked, fallback to muted:", err);
-                video.muted = true;
-                video.play()
-                  .then(() => setIsLoading(false))
-                  .catch(() => setIsLoading(false));
-              });
-            }
-          };
-
-          startPlay();
-        }
+        playWithAutoplayFallback();
 
         return () => {
-          video.removeEventListener('loadedmetadata', handleReady);
+          video.removeEventListener('loadedmetadata', handleMetadata);
           video.removeEventListener('loadeddata', handleReady);
           video.removeEventListener('canplay', handleReady);
           video.removeEventListener('canplaythrough', handleReady);
@@ -717,23 +733,36 @@ export default function VideoPlayer({
     const cleanupNative = initHls();
     return () => { 
       clearTimeout(loadWatchdog);
+      if (cleanupNative) cleanupNative();
+    };
+  }, [videoUrl]);
+
+  // Full resource cleanup only when VideoPlayer unmounts from page
+  useEffect(() => {
+    return () => {
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
-      if (cleanupNative) cleanupNative();
-      video.removeAttribute('src');
-      video.load();
+      const v = videoRef.current;
+      if (v) {
+        v.removeAttribute('src');
+        v.load();
+      }
     };
-  }, [videoUrl, autoplay]);
+  }, []);
 
   // Event Listeners for State
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
     const onTimeUpdate = () => {
-      if (!isSeekingRef.current) {
-        setCurrentTime(video.currentTime);
+      const cur = video.currentTime;
+      const now = performance.now();
+      // Throttle UI currentTime state updates to ~250ms to save CPU & avoid frame drops on mobile
+      if (!isSeekingRef.current && (now - lastTimeUpdateRef.current >= 250 || video.ended)) {
+        lastTimeUpdateRef.current = now;
+        setCurrentTime(cur);
       }
       if (video.buffered.length > 0) {
         const end = video.buffered.end(video.buffered.length - 1);
@@ -742,10 +771,10 @@ export default function VideoPlayer({
           setBuffered(end);
         }
       }
-      const currentSecond = Math.floor(video.currentTime);
+      const currentSecond = Math.floor(cur);
       if (currentSecond !== lastProgressSecondRef.current) { 
         lastProgressSecondRef.current = currentSecond; 
-        onProgressRef.current?.(video.currentTime, video.duration || 0); 
+        onProgressRef.current?.(cur, video.duration || 0); 
       }
     };
     const onEndedEvent = () => {
@@ -829,20 +858,27 @@ export default function VideoPlayer({
       onErrorRef.current?.(err);
     };
 
+    const onPlayEvent = () => {
+      setIsPlaying(true);
+      hideLoading();
+    };
+    const onPauseEvent = () => {
+      setIsPlaying(false);
+      hideLoading();
+      if (waitingTimerRef.current) {
+        clearTimeout(waitingTimerRef.current);
+        waitingTimerRef.current = null;
+      }
+    };
+
     video.addEventListener('canplay', hideLoading);
     video.addEventListener('canplaythrough', hideLoading);
     video.addEventListener('loadeddata', hideLoading);
     video.addEventListener('playing', hideLoading);
     video.addEventListener('timeupdate', onTimeUpdate);
     video.addEventListener('ended', onEndedEvent);
-    video.addEventListener('play', () => {
-      setIsPlaying(true);
-      hideLoading();
-    });
-    video.addEventListener('pause', () => {
-      setIsPlaying(false);
-      hideLoading();
-    });
+    video.addEventListener('play', onPlayEvent);
+    video.addEventListener('pause', onPauseEvent);
     video.addEventListener('durationchange', () => setDuration(video.duration));
     video.addEventListener('waiting', onWaiting);
     video.addEventListener('error', onErrorEvent);
@@ -852,6 +888,8 @@ export default function VideoPlayer({
         clearTimeout(waitingTimerRef.current);
         waitingTimerRef.current = null;
       }
+      video.removeEventListener('play', onPlayEvent);
+      video.removeEventListener('pause', onPauseEvent);
       video.removeEventListener('canplay', hideLoading);
       video.removeEventListener('canplaythrough', hideLoading);
       video.removeEventListener('loadeddata', hideLoading);
@@ -864,13 +902,22 @@ export default function VideoPlayer({
     };
   }, [hasNextEpisode]);
 
-  // Initial Seek
+  // Initial Seek Fail-safe (Hls.js config handles startPosition natively, this is a fallback for non-HLS or edge cases)
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || initialTime <= 0) return;
-    const seek = () => { if (didSeekInitialTimeRef.current || !video.duration) return; video.currentTime = Math.min(initialTime, video.duration - 1); didSeekInitialTimeRef.current = true; };
-    video.addEventListener('loadedmetadata', seek);
-    setTimeout(seek, 1000);
+    if (!video || initialTime <= 0 || didSeekInitialTimeRef.current) return;
+    const seek = () => {
+      if (didSeekInitialTimeRef.current || !video.duration) return;
+      if (Math.abs(video.currentTime - initialTime) > 2) {
+        try { video.currentTime = Math.min(initialTime, video.duration - 1); } catch (e) {}
+      }
+      didSeekInitialTimeRef.current = true;
+    };
+    if (video.readyState >= 1) {
+      seek();
+    } else {
+      video.addEventListener('loadedmetadata', seek, { once: true });
+    }
     return () => video.removeEventListener('loadedmetadata', seek);
   }, [initialTime]);
 
@@ -914,34 +961,65 @@ export default function VideoPlayer({
     e.stopPropagation();
     attemptUnmute();
 
-    // Use e.detail for double tap detection
-    if (e.detail >= 2) {
-      if (side === 'left') { skip(-10); setSkipAnimation({ side: 'left', id: Date.now() }); }
-      else if (side === 'right') { skip(10); setSkipAnimation({ side: 'right', id: Date.now() }); }
-      else toggleFullscreen();
+    const now = Date.now();
+    const isDoubleTap = now - lastTapRef.current.time < 350 && lastTapRef.current.side === side;
+    lastTapRef.current = { time: now, side };
+
+    if (isDoubleTap) {
+      if (singleTapTimerRef.current) {
+        clearTimeout(singleTapTimerRef.current);
+        singleTapTimerRef.current = null;
+      }
+      if (side === 'left') {
+        skip(-10);
+        setSkipAnimation({ side: 'left', id: Date.now() });
+      } else if (side === 'right') {
+        skip(10);
+        setSkipAnimation({ side: 'right', id: Date.now() });
+      } else {
+        toggleFullscreen();
+      }
       return;
     }
 
-    // If video is currently paused, clicking anywhere starts playback immediately!
-    if (videoRef.current?.paused) {
-      togglePlay();
-      showControlsHandler();
-      return;
-    }
+    // Single tap with small delay so double tap doesn't flicker controls
+    if (singleTapTimerRef.current) clearTimeout(singleTapTimerRef.current);
+    singleTapTimerRef.current = setTimeout(() => {
+      singleTapTimerRef.current = null;
 
-    if (!showControls) {
-      showControlsHandler();
-      return;
-    }
+      // On mobile / touch screens, a single tap toggles controls visibility
+      const isMobileDevice = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobileDevice) {
+        if (!showControls) {
+          showControlsHandler();
+        } else {
+          setShowControls(false);
+          if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+        }
+        return;
+      }
 
-    // If controls are currently visible and video is playing, tapping center pauses
-    if (side === 'center') {
-      setShortcutFeedback({ icon: 'pause', id: Date.now() });
-      togglePlay();
-    } else {
-      setShowControls(false);
-      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-    }
+      // On desktop: If video is currently paused, clicking anywhere starts playback immediately!
+      if (videoRef.current?.paused) {
+        togglePlay();
+        showControlsHandler();
+        return;
+      }
+
+      if (!showControls) {
+        showControlsHandler();
+        return;
+      }
+
+      // If controls are currently visible and video is playing, tapping center pauses
+      if (side === 'center') {
+        setShortcutFeedback({ icon: 'pause', id: Date.now() });
+        togglePlay();
+      } else {
+        setShowControls(false);
+        if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+      }
+    }, 280);
   };
 
   // 5. JSX
@@ -949,9 +1027,10 @@ export default function VideoPlayer({
     <div 
       ref={containerRef} 
       className={cn(
-        "relative bg-black group overflow-hidden select-none w-full aspect-video rounded-xl lg:rounded-2xl shadow-2xl touch-manipulation", 
+        "relative bg-black group overflow-hidden select-none w-full aspect-video rounded-xl lg:rounded-2xl shadow-2xl touch-manipulation will-change-transform", 
         isFullscreen && "fixed inset-0 z-[99999] w-screen h-[100dvh] rounded-none aspect-auto"
       )} 
+      style={{ transform: "translateZ(0)" }}
       onMouseMove={showControlsHandler} 
       onMouseLeave={() => isPlaying && setShowControls(false)}
       onTouchStart={attemptUnmute}
@@ -966,8 +1045,6 @@ export default function VideoPlayer({
         autoPlay={autoplay}
         muted={isMuted}
       />
-      
-
 
       <div className="absolute inset-0 flex z-10">
         <div className="w-[35%] h-full z-20 cursor-pointer" onClick={(e) => handleSmartClick(e, 'left')} />
@@ -1002,7 +1079,7 @@ export default function VideoPlayer({
       <div 
         className={cn(
           "absolute inset-0 flex items-center justify-center z-40 pointer-events-none transition-opacity duration-300",
-          (!isPlaying || showControls) && countdown === null && !error ? "opacity-100" : "opacity-0"
+          !isPlaying && countdown === null && !error ? "opacity-100" : "opacity-0"
         )}
       >
         <button
@@ -1012,7 +1089,7 @@ export default function VideoPlayer({
           }}
           className={cn(
             "w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shadow-2xl transition-transform active:scale-90 cursor-pointer",
-            (!isPlaying || showControls) && countdown === null && !error ? "pointer-events-auto" : "pointer-events-none"
+            !isPlaying && countdown === null && !error ? "pointer-events-auto" : "pointer-events-none"
           )}
           aria-label={isPlaying ? "Tạm dừng" : "Phát"}
         >
@@ -1084,7 +1161,10 @@ export default function VideoPlayer({
       )}
 
       {/* Bottom controls bar */}
-      <div className={cn("absolute bottom-0 left-0 right-0 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/50 to-transparent transition-opacity duration-300 z-50 pointer-events-none", showControls ? "opacity-100" : "opacity-0")}>
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className={cn("absolute bottom-0 left-0 right-0 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/50 to-transparent transition-opacity duration-300 z-50 pointer-events-none", showControls ? "opacity-100" : "opacity-0")}
+      >
         <div className="px-4 pb-0 pointer-events-auto">
           <Slider 
             value={[seekTime !== null ? seekTime : currentTime]} 
@@ -1098,9 +1178,29 @@ export default function VideoPlayer({
         </div>
         <div className="px-4 pb-4 flex items-center justify-between gap-4 pointer-events-auto">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={togglePlay} className="text-white hover:bg-white/10 hover:text-brand-green transition-colors cursor-pointer">{isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current" />}</Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={(e) => {
+                e.stopPropagation();
+                togglePlay();
+              }} 
+              className="text-white hover:bg-white/10 hover:text-brand-green transition-colors cursor-pointer"
+            >
+              {isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current" />}
+            </Button>
             <div className="flex items-center gap-2 group/volume">
-              <Button variant="ghost" size="icon" onClick={toggleMute} className="text-white hover:bg-white/10 cursor-pointer">{isMuted || volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}</Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleMute();
+                }} 
+                className="text-white hover:bg-white/10 cursor-pointer"
+              >
+                {isMuted || volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+              </Button>
               <Slider value={[isMuted ? 0 : volume]} min={0} max={1} step={0.01} onValueChange={handleVolumeChange} className="w-20 cursor-pointer" />
             </div>
             <div className="text-white text-xs tabular-nums font-bold">
@@ -1108,7 +1208,15 @@ export default function VideoPlayer({
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="text-white hover:bg-white/10 cursor-pointer w-8 h-8 sm:w-9 sm:h-9">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleFullscreen();
+              }} 
+              className="text-white hover:bg-white/10 cursor-pointer w-8 h-8 sm:w-9 sm:h-9"
+            >
               {isFullscreen ? <Minimize className="w-4 h-4 sm:w-5 sm:h-5" /> : <Maximize className="w-4 h-4 sm:w-5 sm:h-5" />}
             </Button>
           </div>

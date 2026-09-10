@@ -1,7 +1,4 @@
-import PhimApi from "@/libs/phimapi.com";
-import Header from "@/components/header";
 import MovieListClient from "@/components/movie/movie-list-client";
-import Sidebar from "@/components/sidebar";
 import ScrollToTop from "@/components/ui/scroll-to-top";
 
 type NewUpdatesProps = {
@@ -25,23 +22,12 @@ export default async function NewUpdatesPage({ searchParams }: NewUpdatesProps) 
   const params = await searchParams;
   const index = Number(params.index) || 1;
 
-  const api = new PhimApi();
-  const topics = api.listTopics();
-  const categories = await api.listCategories();
-  const countries = await api.listCountries();
-
   return (
-    <main className="min-h-screen bg-cinema-bg text-cinema-text lg:pl-[225px] transition-all duration-300">
-      <Sidebar categories={categories as any[]} countries={countries as any[]} />
-      <Header
-        categories={categories}
-        countries={countries}
-        topics={topics}
-      />
+    <>
       <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 pt-24 pb-20">
         <MovieListClient index={index} />
       </div>
       <ScrollToTop />
-    </main>
+    </>
   );
 }

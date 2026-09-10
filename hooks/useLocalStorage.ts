@@ -204,7 +204,22 @@ export function useWatchHistory() {
     setHistory([]);
   }, []);
 
-  return { history, addToHistory, removeFromHistory, clearHistory, hydrated };
+  const batchUpdateHistory = useCallback((patches: (Partial<WatchHistoryItem> & { slug: string })[]) => {
+    setHistory(prev => {
+      let changed = false;
+      const updated = prev.map(item => {
+        const patch = patches.find(p => p.slug === item.slug);
+        if (!patch) return item;
+        changed = true;
+        return { ...item, ...patch };
+      });
+      if (!changed) return prev;
+      safeSetItem(STORAGE_KEYS.HISTORY, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  return { history, addToHistory, removeFromHistory, clearHistory, batchUpdateHistory, hydrated };
 }
 
 // ============================================================
@@ -272,7 +287,22 @@ export function useFavorites() {
     setFavorites([]);
   }, []);
 
-  return { favorites, addFavorite, removeFavorite, toggleFavorite, isFavorite, clearFavorites, hydrated };
+  const batchUpdateFavorites = useCallback((patches: (Partial<FavoriteItem> & { slug: string })[]) => {
+    setFavorites(prev => {
+      let changed = false;
+      const updated = prev.map(item => {
+        const patch = patches.find(p => p.slug === item.slug);
+        if (!patch) return item;
+        changed = true;
+        return { ...item, ...patch };
+      });
+      if (!changed) return prev;
+      safeSetItem(STORAGE_KEYS.FAVORITES, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  return { favorites, addFavorite, removeFavorite, toggleFavorite, isFavorite, clearFavorites, batchUpdateFavorites, hydrated };
 }
 
 // ============================================================

@@ -33,6 +33,7 @@ interface EpisodeProps {
   onPlayerModeChange: (mode: "m3u8" | "embed") => void;
   movieSlug?: string;
   completedEpisodes?: Record<number, boolean>;
+  children?: React.ReactNode;
 }
 
 const ITEMS_PER_RANGE = 50;
@@ -47,6 +48,7 @@ export default function Episode({
   onPlayerModeChange,
   movieSlug,
   completedEpisodes,
+  children,
 }: EpisodeProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeRangeIndex, setActiveRangeIndex] = useState(0);
@@ -55,6 +57,14 @@ export default function Episode({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Automatically sync range tab when currentEpisodeIndex changes (hotkeys, next episode, or direct click)
+  useEffect(() => {
+    const requiredRange = Math.floor(currentEpisodeIndex / ITEMS_PER_RANGE);
+    if (requiredRange !== activeRangeIndex) {
+      setActiveRangeIndex(requiredRange);
+    }
+  }, [currentEpisodeIndex, activeRangeIndex]);
 
   const handleServerChange = (index: number, mode: "m3u8" | "embed" = playerMode) => {
     const epIndex = currentServerIndex === index ? currentEpisodeIndex : 0;
@@ -247,7 +257,7 @@ export default function Episode({
           )}
 
           {/* Grid of Episodes */}
-          <div className="w-full max-h-[350px] 2xl:max-h-[420px] overflow-y-auto pr-2 custom-scrollbar">
+          <div className="w-full max-h-[350px] 2xl:max-h-[420px] overflow-y-auto scrollbar-hide">
             {displayedEpisodes.length > 0 ? (
               <div className="grid grid-cols-4 gap-2 w-full">
                 {displayedEpisodes.map((episode) => {
@@ -314,6 +324,13 @@ export default function Episode({
             )}
           </div>
         </div>
+
+        {/* Action under episode list */}
+        {children && (
+          <div className="pt-2.5 border-t border-white/5 flex justify-center">
+            {children}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -4,15 +4,10 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import Episode from "./episode";
 import WatchHeader from "../watch/watch-header";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { 
-  Play
-} from "lucide-react";
+import { Heart } from "lucide-react";
 import { useContinueWatching } from "@/hooks/useContinueWatching";
-import { useWatchHistory } from "@/hooks/useLocalStorage";
+import { useWatchHistory, useFavorites } from "@/hooks/useLocalStorage";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -39,13 +34,24 @@ const EmbedPlayer = dynamic(() => import("../player/embed-player"), {
 });
 
 export default function Description({ movie, serverData }: any) {
-  const [showTrailer, setShowTrailer] = useState(false);
   const [isTheaterMode, setIsTheaterMode] = useState(false);
   const defaultEpisode = serverData?.[0]?.server_data?.[0];
   const [currentEpisodeUrl, setCurrentEpisodeUrl] = useState<string>(
     () => defaultEpisode?.link_m3u8 || defaultEpisode?.link_embed || ""
   );
-  const [resumeTime, setResumeTime] = useState(0);
+  const [resumeTime, setResumeTime] = useState<number>(() => {
+    if (typeof window === "undefined" || !movie?.slug) return 0;
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlTime = parseInt(urlParams.get('t') || '');
+      if (!isNaN(urlTime) && urlTime > 0) return urlTime;
+      const key = `watchProgress_${movie.slug}_0_0`;
+      const saved = Number(localStorage.getItem(key) || 0);
+      return Number.isFinite(saved) ? saved : 0;
+    } catch {
+      return 0;
+    }
+  });
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState<{
     server: number;
     episode: number;
@@ -54,8 +60,55 @@ export default function Description({ movie, serverData }: any) {
   const [completedEpisodes, setCompletedEpisodes] = useState<Record<number, boolean>>({});
   const { updateProgress } = useContinueWatching();
   const { addToHistory } = useWatchHistory();
+  const { toggleFavorite, isFavorite } = useFavorites();
   const prefetchedNextRef = useRef<string | null>(null);
   const lastSavedProgressRef = useRef<number>(0);
+
+  const isFav = isFavorite(movie.slug);
+
+  const handleToggleFavorite = useCallback(() => {
+    toggleFavorite({
+      slug: movie.slug,
+      name: movie.name,
+      origin_name: movie.origin_name,
+      thumb_url: movie.thumb_url || movie.poster_url || "",
+      poster_url: movie.poster_url,
+      year: typeof movie.year === "string" ? parseInt(movie.year, 10) : movie.year,
+      quality: movie.quality,
+      episode_current: movie.episode_current,
+      tmdb: movie.tmdb,
+      imdb: movie.imdb,
+    });
+
+    if (!isFav) {
+      toast.success(`Đã thêm "${movie.name}" vào phim yêu thích`);
+    } else {
+      toast.info(`Đã xóa "${movie.name}" khỏi phim yêu thích`);
+    }
+  }, [isFav, movie, toggleFavorite]);
+
+  const favoriteButton = (
+    <button
+      onClick={handleToggleFavorite}
+      className={cn(
+        "w-full max-w-[260px] sm:max-w-[280px] mx-auto py-2 px-4 rounded-xl border transition-all duration-200 flex items-center justify-center gap-2 font-semibold text-xs active:scale-[0.98] cursor-pointer group shadow-sm",
+        isFav
+          ? "bg-brand-green/15 border-brand-green/40 text-brand-green hover:bg-brand-green/20 shadow-[0_0_15px_rgba(34,197,94,0.15)]"
+          : "bg-[#222222] hover:bg-[#2a2a2a] text-white/80 hover:text-white border-transparent hover:border-white/10"
+      )}
+      title={isFav ? "Bấm để xóa khỏi danh sách yêu thích" : "Bấm để thêm vào danh sách yêu thích"}
+    >
+      <Heart
+        className={cn(
+          "w-3.5 h-3.5 transition-transform group-hover:scale-110 shrink-0",
+          isFav
+            ? "fill-brand-green text-brand-green"
+            : "text-white/60 group-hover:text-brand-green"
+        )}
+      />
+      <span>{isFav ? "Đã Thêm Vào Yêu Thích" : "Thêm Vào Phim Yêu Thích"}</span>
+    </button>
+  );
 
   if (!movie || !movie.slug) return null;
 
@@ -117,10 +170,14 @@ export default function Description({ movie, serverData }: any) {
       addToHistory({
         slug: movie.slug,
         name: movie.name,
+        origin_name: movie.origin_name,
         poster_url: movie.poster_url || "",
         thumb_url: movie.thumb_url || "",
         quality: movie.quality,
         year: movie.year,
+        episode_current: movie.episode_current,
+        tmdb: movie.tmdb,
+        imdb: movie.imdb,
         currentTime: 0,
         duration: 0,
       });
@@ -315,15 +372,6 @@ export default function Description({ movie, serverData }: any) {
       ? serverData[currentEpisodeIndex.server].server_data[currentEpisodeIndex.episode].name
       : "";
 
-  const cleanContent = (movie.content || "")
-    .replace(/<[^>]*>/g, "")
-    .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ');
-
   return (
     <div className="w-full flex flex-col gap-5 sm:gap-6 z-10 relative">
       
@@ -376,7 +424,6 @@ export default function Description({ movie, serverData }: any) {
                     }}
                   >
                     <VideoPlayer
-                      key={`player-${currentEpisodeIndex?.server}-${currentEpisodeIndex?.episode}-${currentEpisodeUrl}`}
                       videoUrl={currentEpisodeUrl}
                       autoplay={true}
                       poster={movie.thumb_url || movie.poster_url}
@@ -419,61 +466,14 @@ export default function Description({ movie, serverData }: any) {
               onPlayerModeChange={(mode) => setPlayerMode(mode)}
               movieSlug={movie.slug}
               completedEpisodes={completedEpisodes}
-            />
-          </div>
-
-          {/* Movie Details & Description Card - Single Column Card inside Left Stage */}
-          <div className="w-full sm:rounded-2xl lg:rounded-3xl border border-white/[0.08] bg-[#0a0a0a]/80 backdrop-blur-2xl shadow-2xl overflow-hidden relative">
-            {/* Subtle top glow */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-[1px] bg-gradient-to-r from-transparent via-brand-green/20 to-transparent" />
-            
-            <div className="p-5 sm:p-7 lg:p-9 space-y-6 relative z-10">
-              
-              {/* Header Title & Badges */}
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">{movie.name}</h1>
-                  <Badge className="bg-brand-green/20 text-brand-green border border-brand-green/40 text-xs px-3 py-1 font-bold">{movie.quality || "HD"}</Badge>
-                  {movie.origin_name && <span className="text-sm text-white/50 font-medium">({movie.origin_name})</span>}
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <span className="bg-white/5 border border-white/10 px-3.5 py-1 rounded-full text-xs font-semibold text-white/80">{movie.lang || "Vietsub"}</span>
-                  <span className="bg-white/5 border border-white/10 px-3.5 py-1 rounded-full text-xs font-semibold text-white/80">{movie.time || "Đang cập nhật"}</span>
-                  <span className="bg-white/5 border border-white/10 px-3.5 py-1 rounded-full text-xs font-semibold text-white/80">{movie.year || "N/A"}</span>
-                </div>
-              </div>
-
-              {/* Synopsis / Nội dung phim */}
-              <div className="space-y-3.5 pt-2">
-                <h3 className="text-base sm:text-lg font-extrabold text-white flex items-center gap-2.5">
-                  <span className="w-2 h-5 rounded-full bg-brand-green inline-block shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
-                  Nội dung phim
-                </h3>
-                <p className="text-sm sm:text-base text-white/85 text-justify leading-[1.85] break-words font-medium tracking-[0.015em] opacity-90">
-                  {cleanContent || "Chưa có thông tin nội dung phim."}
-                </p>
-
-                {movie.trailer_url && (
-                  <div className="pt-2">
-                    <Button
-                      onClick={() => setShowTrailer(true)}
-                      variant="outline"
-                      size="sm"
-                      className="bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl border-white/10 text-xs px-4 py-2 flex items-center gap-2 shadow-sm"
-                    >
-                      <Play className="w-3.5 h-3.5 text-brand-green fill-brand-green" />
-                      Xem Trailer
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
+            >
+              {favoriteButton}
+            </Episode>
           </div>
         </div>
 
         {/* Desktop Right Sidebar Episode List */}
-        <div className="hidden lg:flex w-full lg:w-[380px] 2xl:w-[420px] shrink-0 flex-col gap-6 sticky top-20">
+        <div className="hidden lg:flex w-full lg:w-[380px] 2xl:w-[420px] shrink-0 flex-col gap-4 sticky top-20">
           <Episode
             serverData={serverData}
             currentServerIndex={currentEpisodeIndex?.server || 0}
@@ -485,28 +485,12 @@ export default function Description({ movie, serverData }: any) {
             onPlayerModeChange={(mode) => setPlayerMode(mode)}
             movieSlug={movie.slug}
             completedEpisodes={completedEpisodes}
-          />
+          >
+            {favoriteButton}
+          </Episode>
         </div>
 
       </div>
-
-      {/* Trailer Dialog */}
-      <Dialog open={showTrailer} onOpenChange={setShowTrailer}>
-        <DialogContent className="sm:max-w-4xl bg-black/95 border-white/10">
-          <DialogTitle className="text-white text-xl font-bold mb-2">Trailer - {movie.name}</DialogTitle>
-          <div className="aspect-video rounded-xl overflow-hidden">
-            {movie.trailer_url ? (
-              <iframe
-                src={movie.trailer_url.replace("watch?v=", "embed/")}
-                className="w-full h-full border-0"
-                allowFullScreen
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-white/50">Không có video trailer</div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, startTransition } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import {
   Home,
@@ -23,6 +22,7 @@ import {
   Search,
   Check,
   Calendar,
+  Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sortCountriesByPopularity, getCountryCode } from "@/lib/countries";
@@ -35,6 +35,7 @@ interface SidebarProps {
 
 const NAV_MAIN = [
   { href: "/", label: "Trang Chủ", icon: Home },
+  // { href: "/bang-xep-hang", label: "Bảng Xếp Hạng", icon: Trophy }, // Tạm ẩn theo yêu cầu
   { href: "/?typeList=phim-chieu-rap", label: "Chiếu Rạp", icon: Clapperboard, typeList: "phim-chieu-rap" },
   { href: "/?typeList=phim-bo", label: "Phim Bộ", icon: Tv, typeList: "phim-bo" },
   { href: "/?typeList=phim-le", label: "Phim Lẻ", icon: Film, typeList: "phim-le" },
@@ -208,12 +209,14 @@ export default function Sidebar({
     }
     if (isSelecting) return;
     setIsSelecting(true);
-    router.push(`/?category=${slug}`);
+    startTransition(() => {
+      router.push(`/?category=${slug}`, { scroll: false });
+    });
     setTimeout(() => {
       setActiveModal(null);
       setIsMobileOpen(false);
       setIsSelecting(false);
-    }, 180);
+    }, 120);
   };
 
   const handleSelectCountry = (slug: string, e?: React.SyntheticEvent) => {
@@ -223,12 +226,14 @@ export default function Sidebar({
     }
     if (isSelecting) return;
     setIsSelecting(true);
-    router.push(`/?country=${slug}`);
+    startTransition(() => {
+      router.push(`/?country=${slug}`, { scroll: false });
+    });
     setTimeout(() => {
       setActiveModal(null);
       setIsMobileOpen(false);
       setIsSelecting(false);
-    }, 180);
+    }, 120);
   };
 
   const handleSelectYear = (year: number | string, e?: React.SyntheticEvent) => {
@@ -238,12 +243,14 @@ export default function Sidebar({
     }
     if (isSelecting) return;
     setIsSelecting(true);
-    router.push(`/?year=${year}`);
+    startTransition(() => {
+      router.push(`/?year=${year}`, { scroll: false });
+    });
     setTimeout(() => {
       setActiveModal(null);
       setIsMobileOpen(false);
       setIsSelecting(false);
-    }, 180);
+    }, 120);
   };
 
   // If in Theatre Mode during video watching, auto-hide sidebar
@@ -256,10 +263,10 @@ export default function Sidebar({
       {/* ======================================================== */}
       <nav
         aria-label="Điều hướng chính"
-        className="lg:hidden fixed left-3.5 right-3.5 sm:left-auto sm:right-auto sm:w-[400px] bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-[110] max-w-[420px] mx-auto pointer-events-auto select-none"
+        className="lg:hidden fixed left-3.5 right-3.5 sm:left-auto sm:right-auto sm:w-[400px] bottom-[max(0.35rem,calc(env(safe-area-inset-bottom)-6px))] z-[110] max-w-[420px] mx-auto pointer-events-auto select-none"
         style={{ contain: "layout style", isolation: "isolate" }}
       >
-        <div className="h-14 px-1.5 rounded-full bg-[#0B100E] border border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.7)] flex items-center justify-around">
+        <div className="h-16 px-2 py-1.5 rounded-full bg-[#131A16]/85 backdrop-blur-xl border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.08)] flex items-center justify-around">
           {/* Tab 1: Trang Chủ */}
           {(() => {
             const active =
@@ -277,7 +284,7 @@ export default function Sidebar({
                   setActiveModal(null);
                 }}
                 className={cn(
-                  "flex-1 h-10 mx-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none",
+                  "flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none",
                   active
                     ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold"
                     : "border border-transparent text-white/60"
@@ -302,7 +309,7 @@ export default function Sidebar({
                   setActiveModal(null);
                 }}
                 className={cn(
-                  "flex-1 h-10 mx-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none",
+                  "flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none",
                   active
                     ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold"
                     : "border border-transparent text-white/60"
@@ -327,7 +334,7 @@ export default function Sidebar({
                   setActiveModal(null);
                 }}
                 className={cn(
-                  "flex-1 h-10 mx-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none",
+                  "flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none",
                   active
                     ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold"
                     : "border border-transparent text-white/60"
@@ -352,7 +359,7 @@ export default function Sidebar({
                   setActiveModal(null);
                 }}
                 className={cn(
-                  "flex-1 h-10 mx-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none",
+                  "flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none",
                   active
                     ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold"
                     : "border border-transparent text-white/60"
@@ -383,7 +390,7 @@ export default function Sidebar({
                   setIsMobileOpen(true);
                 }}
                 className={cn(
-                  "relative flex-1 h-10 mx-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none",
+                  "relative flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none",
                   active
                     ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold"
                     : "border border-transparent text-white/60"
@@ -428,21 +435,13 @@ export default function Sidebar({
           isMobileOpen ? "translate-x-0 z-[130]" : "-translate-x-full lg:translate-x-0 z-[100]"
         )}
       >
-        {/* Sidebar Header / Logo */}
+        {/* Sidebar Header / Brand Name */}
         <div className="h-16 lg:h-12 px-4 flex items-center justify-between border-b border-white/8 shrink-0">
-          <Link href="/" className="flex items-center gap-2.5 overflow-hidden group py-1">
-            <Image
-              src="/favicon.svg"
-              alt="Hi Phim Logo"
-              width={32}
-              height={32}
-              className="w-8 h-8 object-contain transition-transform group-hover:scale-105"
-              priority
-            />
-            <div className="flex items-center tracking-tight leading-none">
-              <span className="text-base lg:text-lg font-black text-white font-sans tracking-wide">Hi</span>
-              <span className="text-base lg:text-lg font-black text-brand-green font-sans ml-1 tracking-wide">Phim</span>
-              <span className="text-[8px] lg:text-[9.5px] font-black text-brand-green self-start -mt-0.5 ml-0.5 select-none">®</span>
+          <Link href="/" className="flex items-center overflow-hidden group py-1" aria-label="Về trang chủ Hi Phim">
+            <div className="flex items-center tracking-tight leading-none group-hover:opacity-90 transition-opacity">
+              <span className="text-lg lg:text-xl font-black text-white font-sans tracking-wide">Hi</span>
+              <span className="text-lg lg:text-xl font-black text-brand-green font-sans ml-1 tracking-wide">Phim</span>
+              <span className="text-[9px] lg:text-[10px] font-black text-brand-green self-start -mt-0.5 ml-0.5 select-none">®</span>
             </div>
           </Link>
 
@@ -477,6 +476,7 @@ export default function Sidebar({
                 <Link
                   key={item.href}
                   href={item.href}
+                  scroll={false}
                   className={cn(
                     "relative flex items-center gap-3 lg:gap-2 px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-colors duration-150 group overflow-hidden",
                     active

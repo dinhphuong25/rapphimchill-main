@@ -7,7 +7,7 @@ import { Play, Star, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFavorites } from "@/hooks/useLocalStorage";
 
-interface MovieCardEditorialProps {
+export interface MovieCardEditorialProps {
   movie: {
     _id?: string;
     slug: string;
@@ -15,13 +15,14 @@ interface MovieCardEditorialProps {
     origin_name?: string;
     thumb_url?: string;
     poster_url?: string;
-    year?: number;
+    year?: number | string;
     quality?: string;
     episode_current?: string;
-    imdb?: { rating: number };
-    tmdb?: { vote_average: number };
+    imdb?: { rating?: number };
+    tmdb?: { vote_average?: number };
   };
   priority?: boolean;
+  hideFavoriteButton?: boolean;
 }
 
 const STATIC_BLUR_DATA_URL =
@@ -30,6 +31,7 @@ const STATIC_BLUR_DATA_URL =
 export const MovieCardEditorial = memo(function MovieCardEditorial({
   movie,
   priority = false,
+  hideFavoriteButton = false,
 }: MovieCardEditorialProps) {
   const { toggleFavorite, isFavorite } = useFavorites();
   if (!movie || !movie.slug) return null;
@@ -95,28 +97,35 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
         </Link>
 
         {/* Favorite Toggle Button */}
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            toggleFavorite({
-              slug: movie.slug,
-              name: movie.name,
-              thumb_url: imageUrl,
-              year: movie.year,
-              quality: movie.quality,
-            });
-          }}
-          aria-label="Yêu thích"
-          className={cn(
-            "absolute bottom-2.5 right-2.5 z-20 p-2 rounded-full border transition-colors active:scale-90 opacity-0 group-hover:opacity-100",
-            isFav
-              ? "bg-brand-green/20 border-brand-green text-brand-green opacity-100"
-              : "bg-black/60 border-white/15 text-white/70 hover:text-white"
-          )}
-        >
-          <Heart className={cn("w-3.5 h-3.5", isFav && "fill-brand-green")} />
-        </button>
+        {!hideFavoriteButton && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleFavorite({
+                slug: movie.slug,
+                name: movie.name,
+                origin_name: movie.origin_name,
+                thumb_url: imageUrl,
+                poster_url: movie.poster_url,
+                year: typeof movie.year === "string" ? parseInt(movie.year, 10) : movie.year,
+                quality: movie.quality,
+                episode_current: movie.episode_current,
+                tmdb: movie.tmdb,
+                imdb: movie.imdb,
+              });
+            }}
+            aria-label="Yêu thích"
+            className={cn(
+              "absolute bottom-2.5 right-2.5 z-20 p-2 rounded-full border transition-colors active:scale-90 opacity-0 group-hover:opacity-100",
+              isFav
+                ? "bg-brand-green/20 border-brand-green text-brand-green opacity-100"
+                : "bg-black/60 border-white/15 text-white/70 hover:text-white"
+            )}
+          >
+            <Heart className={cn("w-3.5 h-3.5", isFav && "fill-brand-green")} />
+          </button>
+        )}
       </div>
 
       {/* Info Under Poster */}
@@ -128,9 +137,9 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
           <span className="truncate">{movie.name}</span>
           <span className="font-mono text-brand-green opacity-0 group-hover/title:opacity-100 transition-opacity ml-1 shrink-0 text-sm">›</span>
         </Link>
-        <div className="flex items-center justify-between text-[11px] font-mono text-cinema-text-dim mt-0.5">
-          <span>{movie.year || "2025"}</span>
-          {movie.origin_name && <span className="truncate max-w-[120px] font-sans">{movie.origin_name}</span>}
+        <div className="flex items-center justify-between gap-2 text-[11px] font-mono text-cinema-text-dim mt-0.5">
+          <span className="shrink-0">{movie.year || "2025"}</span>
+          {movie.origin_name && <span className="truncate font-sans text-right">{movie.origin_name}</span>}
         </div>
       </div>
     </div>

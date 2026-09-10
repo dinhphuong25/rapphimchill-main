@@ -93,3 +93,117 @@ export const getCachedTopicMovies = unstable_cache(
   ["topic-movies"],
   { revalidate: 3600, tags: ["topic-movies"] }
 );
+
+export type RankingPeriod = "day" | "week" | "month" | "views" | "rating";
+
+export interface RankingMovieItem {
+  _id: string;
+  name: string;
+  slug: string;
+  origin_name?: string;
+  thumb_url?: string;
+  poster_url?: string;
+  year?: number;
+  quality?: string;
+  time?: string;
+  episode_current?: string;
+  lang?: string;
+  category?: Array<{ id?: string; name: string; slug: string }>;
+  country?: Array<{ id?: string; name: string; slug: string }>;
+  tmdb?: {
+    id?: string;
+    type?: string;
+    vote_average?: number;
+    vote_count?: number;
+  };
+  imdb?: {
+    id?: string;
+    vote_average?: number;
+    vote_count?: number;
+  };
+  view?: number;
+  type?: string;
+}
+
+export interface AllRankingsData {
+  day: RankingMovieItem[];
+  week: RankingMovieItem[];
+  month: RankingMovieItem[];
+  views: RankingMovieItem[];
+  rating: RankingMovieItem[];
+}
+
+/** All 5 Rankings cached for 15 minutes */
+export const getCachedAllRankings = unstable_cache(
+  async (): Promise<AllRankingsData> => {
+    try {
+      const [
+        [newItems],
+        [boViews],
+        [leViews],
+        [chieuRap],
+        featured,
+      ] = await Promise.all([
+        api.newAdding(1).catch(() => [[], null]),
+        api.getFilteredList({ typeList: "phim-bo", sortField: "view", sortType: "desc", limit: 20 }).catch(() => [[], null]),
+        api.getFilteredList({ typeList: "phim-le", sortField: "view", sortType: "desc", limit: 20 }).catch(() => [[], null]),
+        api.getFilteredList({ typeList: "phim-chieu-rap", sortField: "modified.time", sortType: "desc", limit: 16 }).catch(() => [[], null]),
+        getCachedFeaturedMovies().catch(() => []),
+      ]);
+
+      const safeNew = newItems || [];
+      const safeBo = boViews || [];
+      const safeLe = leViews || [];
+      const safeRap = chieuRap || [];
+      const safeFeat = featured || [];
+
+      const dedupe = (items: any[]): RankingMovieItem[] => {
+        const seen = new Set<string>();
+        const res: RankingMovieItem[] = [];
+        for (const item of items) {
+          if (item?.slug && !seen.has(item.slug)) {
+            seen.add(item.slug);
+            res.push(item);
+          }
+        }
+        return res;
+      };
+
+      // 1. Top Lượt Xem
+      const viewsList = dedupe([...safeBo, ...safeLe, ...safeRap]);
+
+      // 2. Top Đánh Giá: sorted by tmdb.vote_average desc
+      const allForRating = dedupe([...viewsList, ...safeNew, ...safeFeat]);
+      const ratingList = [...allForRating]
+        .filter((m) => (m.tmdb?.vote_average || 0) >= 6.5 || (m.imdb?.vote_average || 0) >= 6.5)
+        .sort((a, b) => {
+          const scoreB = b.tmdb?.vote_average || b.imdb?.vote_average || 0;
+          const scoreA = a.tmdb?.vote_average || a.imdb?.vote_average || 0;
+          return scoreB - scoreA;
+        });
+
+      // 3. Top Phim Ngày: featured blockbusters + today's latest updates
+      const dayList = dedupe([...safeFeat, ...safeNew, ...safeRap]);
+
+      // 4. Top Phim Tuần: top series & movies with strong activity
+      const weekList = dedupe([...safeRap, ...safeBo.slice(0, 10), ...safeLe.slice(0, 10), ...safeFeat]);
+
+      // 5. Top Phim Tháng: popular cinema & major series
+      const monthList = dedupe([...safeBo, ...safeRap, ...safeLe]);
+
+      return {
+        day: dayList.slice(0, 20),
+        week: weekList.slice(0, 20),
+        month: monthList.slice(0, 20),
+        views: viewsList.slice(0, 20),
+        rating: ratingList.slice(0, 20),
+      };
+    } catch (err) {
+      console.error("Failed to fetch rankings:", err);
+      return { day: [], week: [], month: [], views: [], rating: [] };
+    }
+  },
+  ["all-rankings-v1"],
+  { revalidate: 900, tags: ["rankings"] }
+);
+

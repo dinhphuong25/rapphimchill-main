@@ -15,6 +15,7 @@ import SpeculationRules from "@/components/seo/speculation-rules";
 import { Toaster } from "sonner";
 import AnnouncementBanner from "@/components/announcement-banner";
 import { getSiteConfig } from "@/lib/site-config";
+import AppShell from "@/components/layout/app-shell";
 
 // Be Vietnam Pro — font hỗ trợ tiếng Việt tốt nhất, sans-serif hiện đại
 const beVietnam = Be_Vietnam_Pro({
@@ -232,7 +233,9 @@ export default function RootLayout({
         <AnnouncementBanner initialAnnouncement={siteConfig.announcement} />
 
         {/* Main App — không còn MUI Provider */}
-        <LoadingProvider>{children}</LoadingProvider>
+        <LoadingProvider>
+          <AppShell>{children}</AppShell>
+        </LoadingProvider>
 
         {/* Lazy-init sau khi page load */}
         <PWAInstaller />

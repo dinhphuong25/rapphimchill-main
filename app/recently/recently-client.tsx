@@ -1,118 +1,66 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import Header from "@/components/header";
-import Sidebar from "@/components/sidebar";
+import { useCallback, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { Play, Trash2, Clock, Film } from "lucide-react";
-import { useLoading } from "@/components/ui/loading-context";
+import { Trash2 } from "lucide-react";
 import { useWatchHistory } from "@/hooks/useLocalStorage";
+import MovieCardEditorial from "@/components/movie/movie-card-editorial";
+import type { WatchHistoryItem } from "@/lib/types";
 
-interface WatchedMovie {
-  slug: string;
-  name: string;
-  poster_url?: string;
-  thumb_url?: string;
-  year?: string | number;
-  quality?: string;
-  timestamp?: number;
-  watchedAt?: number;
+interface RecentlyWatchedClientProps {
+  categories?: any[];
+  countries?: any[];
 }
 
-function timeAgo(ts: number): string {
-  const diff = Date.now() - ts;
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "Vừa xong";
-  if (mins < 60) return `${mins} phút trước`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs} giờ trước`;
-  const days = Math.floor(hrs / 24);
-  return `${days} ngày trước`;
-}
+export default function RecentlyWatchedClient({ categories, countries }: RecentlyWatchedClientProps) {
+  const { history, removeFromHistory, clearHistory, batchUpdateHistory, hydrated } = useWatchHistory();
+  const movies = history as WatchHistoryItem[];
 
-function RecentlyMovieCard({
-  movie,
-  index,
-  onRemove,
-}: {
-  movie: WatchedMovie;
-  index: number;
-  onRemove: (slug: string) => void;
-}) {
-  const { showLoading } = useLoading();
-  const poster = movie.poster_url || movie.thumb_url;
-  const imgUrl = poster?.startsWith("http")
-    ? poster
-    : `https://phimimg.com/${poster}`;
+  // Auto-enrich any items in history that miss origin_name or rating
+  useEffect(() => {
+    if (!hydrated || !history || history.length === 0) return;
 
-  return (
-    <div
-      className="group relative flex flex-col"
-      style={{
-        opacity: 0,
-        animation: `fadeSlideUp 0.4s ease forwards`,
-        animationDelay: `${index * 0.05}s`,
-      }}
-    >
-      <Link
-        href={`/watch?slug=${movie.slug}`}
-        onClick={() => showLoading()}
-        prefetch={false}
-        className="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-cinema-surface border border-white/10 group-hover:border-brand-green/40 transition-all duration-300 group-hover:-translate-y-1.5 shadow-lg group-hover:shadow-brand-green/10"
-      >
-        <Image
-          src={imgUrl}
-          alt={movie.name}
-          fill
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-          unoptimized={true}
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
-        />
+    const itemsToEnrich = (history as WatchHistoryItem[]).filter(
+      m => !m.origin_name || (!m.tmdb?.vote_average && !m.imdb?.rating)
+    );
+    if (itemsToEnrich.length === 0) return;
 
-        <div className="absolute inset-0 bg-gradient-to-t from-cinema-bg via-transparent to-transparent opacity-80 group-hover:opacity-40 transition-opacity" />
+    let isMounted = true;
+    Promise.all(
+      itemsToEnrich.map(async (item) => {
+        try {
+          const res = await fetch(`/api/phim?url=${encodeURIComponent(`https://phimapi.com/phim/${item.slug}`)}`);
+          if (!res.ok) return null;
+          const data = await res.json();
+          const m = data?.movie;
+          if (!m) return null;
+          return {
+            slug: item.slug,
+            origin_name: m.origin_name || item.origin_name,
+            year: typeof m.year === "string" ? parseInt(m.year, 10) : (m.year || item.year),
+            quality: m.quality || item.quality,
+            episode_current: m.episode_current || item.episode_current,
+            poster_url: m.poster_url || item.poster_url,
+            thumb_url: m.thumb_url || item.thumb_url,
+            tmdb: m.tmdb?.vote_average ? { vote_average: m.tmdb.vote_average } : item.tmdb,
+            imdb: (m.imdb?.vote_average || m.imdb?.rating) ? { rating: m.imdb.vote_average || m.imdb.rating } : item.imdb,
+          };
+        } catch {
+          return null;
+        }
+      })
+    ).then((results) => {
+      if (!isMounted) return;
+      const validPatches = results.filter(Boolean) as (Partial<WatchHistoryItem> & { slug: string })[];
+      if (validPatches.length > 0) {
+        batchUpdateHistory(validPatches);
+      }
+    });
 
-        {movie.quality && (
-          <span className="absolute top-2.5 left-2.5 z-10 px-2 py-0.5 rounded text-[10px] font-bold bg-cinema-bg/85 backdrop-blur-md text-white border border-white/15">
-            {movie.quality}
-          </span>
-        )}
-
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 z-10">
-          <div className="w-14 h-14 rounded-full bg-brand-green/90 backdrop-blur-sm flex items-center justify-center shadow-xl shadow-brand-green/40 scale-75 group-hover:scale-100 transition-transform duration-200">
-            <Play className="w-6 h-6 text-cinema-bg ml-0.5" fill="currentColor" />
-          </div>
-        </div>
-
-        <div className="absolute bottom-0 left-0 right-0 p-3 z-10">
-          <p className="text-white text-xs sm:text-sm font-bold leading-tight line-clamp-2">
-            {movie.name}
-          </p>
-        </div>
-      </Link>
-
-      <div className="mt-2.5 px-0.5 flex items-center justify-between">
-        <div className="flex items-center gap-1 text-[11px] text-cinema-text-muted font-medium">
-          <Clock className="w-3 h-3" />
-          <span>{timeAgo(movie.watchedAt || movie.timestamp || Date.now())}</span>
-          {movie.year && <span className="ml-1">· {movie.year}</span>}
-        </div>
-
-        <button
-          onClick={() => onRemove(movie.slug)}
-          className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-red-500/10 text-white/30 hover:text-red-400"
-          aria-label="Xóa khỏi lịch sử"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-export default function RecentlyWatchedClient({ categories, countries }: any) {
-  const { history, removeFromHistory, clearHistory, hydrated } = useWatchHistory();
-  const movies = history as unknown as WatchedMovie[];
+    return () => {
+      isMounted = false;
+    };
+  }, [hydrated, history, batchUpdateHistory]);
 
   const handleRemove = useCallback((slug: string) => {
     removeFromHistory(slug);
@@ -123,58 +71,82 @@ export default function RecentlyWatchedClient({ categories, countries }: any) {
   };
 
   if (!hydrated) {
-    return <main className="min-h-screen bg-cinema-bg text-cinema-text lg:pl-[225px] transition-all duration-300"></main>;
+    return null;
   }
 
   return (
-    <main className="min-h-screen bg-cinema-bg text-cinema-text lg:pl-[225px] transition-all duration-300">
-      <Sidebar categories={categories} countries={countries} />
-      <Header categories={categories} countries={countries} />
+    <>
+      <div className="w-full max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-12 xl:px-16 pt-5 sm:pt-8 lg:pt-20 pb-20">
+        <h1 className="sr-only">Lịch Sử Xem Phim</h1>
 
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 pt-16 sm:pt-20 pb-16">
-        <h1 className="sr-only">Lịch Sử Xem</h1>
-
+        {/* Clear Action */}
         {movies.length > 0 && (
           <div className="flex justify-end mb-3 sm:mb-4">
             <button
               onClick={handleClearAll}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-white/40 hover:text-red-400 border border-white/10 hover:border-red-400/30 rounded-lg transition-colors hover:bg-red-400/10 font-bold"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-white/50 hover:text-red-400 border border-white/10 hover:border-red-400/30 rounded-xl transition-colors hover:bg-red-400/10 font-bold cursor-pointer"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              Xóa lịch sử
+              <span>Xóa lịch sử</span>
             </button>
           </div>
         )}
 
+        {/* Empty State: Tinh tế, tối giản, không dùng khung hộp thô */}
         {movies.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-5">
-            <div className="w-20 h-20 rounded-2xl bg-cinema-surface border border-white/10 flex items-center justify-center">
-              <Film className="w-10 h-10 text-white/20" />
-            </div>
-            <div className="text-center">
-              <p className="text-white/60 text-lg font-bold mb-1">Chưa có phim nào</p>
-              <p className="text-cinema-text-muted text-sm">Bắt đầu xem phim và lịch sử sẽ xuất hiện ở đây</p>
-            </div>
-            <Link
-              href="/"
-              className="mt-2 px-5 py-2.5 bg-brand-green text-cinema-bg font-extrabold rounded-xl hover:bg-brand-green-hover transition-colors text-sm"
-            >
-              Khám phá phim
-            </Link>
+          <div className="py-24 text-center">
+            <p className="text-white/40 text-sm sm:text-base font-medium">
+              Chưa có phim nào trong lịch sử xem
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
+          /* Movie Grid - Identical to standard categories */
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             {movies.map((movie, i) => (
-              <RecentlyMovieCard
+              <div
                 key={movie.slug}
-                movie={movie}
-                index={i}
-                onRemove={handleRemove}
-              />
+                className="relative group/recent transform-gpu"
+                style={{
+                  opacity: 0,
+                  animation: `fadeSlideUp 0.4s ease forwards`,
+                  animationDelay: `${i * 0.04}s`,
+                }}
+              >
+                <MovieCardEditorial
+                  movie={{
+                    slug: movie.slug,
+                    name: movie.name,
+                    origin_name: movie.origin_name,
+                    thumb_url: movie.thumb_url,
+                    poster_url: movie.poster_url,
+                    year: typeof movie.year === "string" ? parseInt(movie.year, 10) : movie.year,
+                    quality: movie.quality,
+                    episode_current: movie.episodeName || movie.episode_current,
+                    tmdb: movie.tmdb,
+                    imdb: movie.imdb,
+                  }}
+                  hideFavoriteButton={true}
+                />
+
+                {/* Quick remove button on top-right on hover */}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleRemove(movie.slug);
+                  }}
+                  className="absolute top-2.5 right-2.5 z-20 p-1.5 rounded-full bg-black/80 hover:bg-red-500/90 text-white/70 hover:text-white border border-white/20 hover:border-red-400 transition-all opacity-0 group-hover/recent:opacity-100 shadow-md active:scale-90 cursor-pointer"
+                  title="Xóa khỏi lịch sử"
+                  aria-label="Xóa khỏi lịch sử"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
             ))}
           </div>
         )}
       </div>
+
       <style jsx global>{`
         @keyframes fadeSlideUp {
           from {
@@ -187,6 +159,6 @@ export default function RecentlyWatchedClient({ categories, countries }: any) {
           }
         }
       `}</style>
-    </main>
+    </>
   );
 }

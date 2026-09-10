@@ -1,8 +1,6 @@
 import PhimApi from "@/libs/phimapi.com";
 import { MovieCardEditorial } from "@/components/movie/movie-card-editorial";
 import AdvancedSearchFilter from "@/components/movie/advanced-search-filter";
-import Header from "@/components/header";
-import Sidebar from "@/components/sidebar";
 import Pagination from "@/components/pagination";
 import ScrollToTop from "@/components/ui/scroll-to-top";
 import { Search, Film } from "lucide-react";
@@ -78,14 +76,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-cinema-bg text-cinema-text lg:pl-[225px] transition-all duration-300">
-      <Sidebar categories={categories as any[]} countries={countries as any[]} />
-      <Header
-        topics={topics}
-        categories={categories as any[]}
-        countries={countries as any[]}
-      />
-
+    <>
       <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 pt-24 pb-16">
         {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 sm:mb-12">
@@ -153,6 +144,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         )}
       </div>
       <ScrollToTop />
-    </main>
+    </>
   );
 }

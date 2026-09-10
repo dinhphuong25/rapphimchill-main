@@ -1,25 +1,22 @@
 export default function RootLoading() {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header Skeleton */}
-      <div className="h-16 border-b border-white/5 bg-black/20 animate-pulse w-full" />
-      
-      <main className="flex-1 container mx-auto px-4 py-8">
-        {/* Featured Movie Skeleton */}
-        <div className="w-full aspect-[21/9] bg-zinc-900 rounded-3xl animate-pulse mb-12" />
-        
-        {/* Row Skeletons */}
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="mb-12">
-            <div className="h-8 w-48 bg-zinc-800 rounded-lg mb-6 animate-pulse" />
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {[1, 2, 3, 4, 5, 6].map((j) => (
-                <div key={j} className="aspect-[2/3] bg-zinc-900 rounded-xl animate-pulse" />
-              ))}
-            </div>
+    <div className="w-full max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-12 xl:px-16 pt-20 sm:pt-24 pb-20 animate-in fade-in duration-200">
+      {/* Top subtle filter placeholder */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="h-6 w-36 rounded-xl bg-white/[0.05] animate-pulse" />
+        <div className="h-6 w-24 rounded-xl bg-white/[0.03] animate-pulse hidden sm:block" />
+      </div>
+
+      {/* Movie Grid Skeletons */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4.5">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div key={i} className="flex flex-col gap-2">
+            <div className="aspect-[2/3] w-full rounded-2xl bg-white/[0.04] border border-white/5 animate-pulse" />
+            <div className="h-4 w-3/4 rounded-lg bg-white/[0.04] animate-pulse" />
+            <div className="h-3 w-1/2 rounded-lg bg-white/[0.03] animate-pulse" />
           </div>
         ))}
-      </main>
+      </div>
     </div>
   );
 }
