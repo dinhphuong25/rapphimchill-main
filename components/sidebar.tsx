@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, startTransition } from "react";
+import { useState, useEffect, useMemo, useRef, startTransition, Suspense } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import {
@@ -48,7 +48,7 @@ const NAV_PERSONAL = [
   { href: "/favorites", label: "Phim Yêu Thích", icon: Heart },
 ];
 
-export default function Sidebar({
+function SidebarContent({
   categories: propCategories = [],
   countries: propCountries = [],
   isTheatreMode = false,
@@ -1188,5 +1188,13 @@ export default function Sidebar({
         </div>
       )}
     </>
+  );
+}
+
+export default function Sidebar(props: SidebarProps) {
+  return (
+    <Suspense fallback={null}>
+      <SidebarContent {...props} />
+    </Suspense>
   );
 }

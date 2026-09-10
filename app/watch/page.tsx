@@ -6,8 +6,6 @@ import { HIDDEN_MOVIE_SLUGS } from "@/lib/hidden-movies";
 import { unstable_cache } from "next/cache";
 import { Suspense } from "react";
 import { LoadingWatch } from "@/components/ui/page-loaders";
-import Header from "@/components/header";
-import Sidebar from "@/components/sidebar";
 import { getCachedCategories, getCachedCountries } from "@/lib/data";
 
 async function getMovieData(slug: string) {
