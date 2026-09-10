@@ -551,11 +551,13 @@ export default function VideoPlayer({
           if (!video.src && !video.currentSrc) return;
           console.warn("Native HLS error on video element:", video.error);
           setIsLoading(false);
-          if (onSwitchToEmbedRef.current) {
-            console.warn("Auto-switching to embed server after native HLS error");
-            onSwitchToEmbedRef.current();
-          } else {
-            setError("Không thể phát video từ nguồn mặc định. Bạn có thể bấm Thử lại hoặc chuyển sang Máy chủ Dự phòng.");
+          if (video.error && (video.error.code === 2 || video.error.code === 4)) {
+            if (onSwitchToEmbedRef.current) {
+              console.warn("Auto-switching to embed server after native HLS fatal error");
+              onSwitchToEmbedRef.current();
+            } else {
+              setError("Không thể phát video từ nguồn mặc định. Bạn có thể bấm Thử lại hoặc chuyển sang Máy chủ Dự phòng.");
+            }
           }
         };
 
@@ -568,6 +570,7 @@ export default function VideoPlayer({
 
         video.preload = "auto";
         video.src = videoUrl;
+        try { video.load(); } catch (e) {}
 
         playWithAutoplayFallback();
 
@@ -583,39 +586,39 @@ export default function VideoPlayer({
         const hls = new HLS({
           enableWorker: true,
           lowLatencyMode: false,
-          progressive: true,
+          progressive: false,
           startFragPrefetch: true,
           autoStartLoad: true,
           startPosition: targetStartPosition,
           
-          backBufferLength: isMobile ? 10 : 30,
-          maxBufferLength: isMobile ? 30 : 60,
-          maxMaxBufferLength: isMobile ? 60 : 120,
-          maxBufferSize: isMobile ? 30 * 1024 * 1024 : 100 * 1024 * 1024,
-          maxBufferHole: 0.1,
-          highBufferWatchdogPeriod: 2,
+          backBufferLength: isMobile ? 10 : 15,
+          maxBufferLength: isMobile ? 15 : 20,
+          maxMaxBufferLength: isMobile ? 30 : 40,
+          maxBufferSize: 30 * 1024 * 1024,
+          maxBufferHole: 0.5,
+          highBufferWatchdogPeriod: 3,
           nudgeOffset: 0.1,
-          nudgeMaxRetry: 10,
+          nudgeMaxRetry: 5,
           
-          startLevel: -1,
+          startLevel: 0,
           capLevelToPlayerSize: isMobile,
-          testBandwidth: false,
+          testBandwidth: true,
           
-          abrEwmaDefaultEstimate: isMobile ? 2_000_000 : 3_500_000,
+          abrEwmaDefaultEstimate: isMobile ? 1_500_000 : 2_500_000,
           abrBandWidthFactor: 0.9,
           abrBandWidthUpFactor: 0.75,
           
-          manifestLoadingMaxRetry: 4,
-          manifestLoadingRetryDelay: 300,
-          levelLoadingMaxRetry: 4,
-          levelLoadingRetryDelay: 300,
-          fragLoadingMaxRetry: 8,
-          fragLoadingRetryDelay: 300,
-          fragLoadingMaxRetryTimeout: 20_000,
+          manifestLoadingMaxRetry: 5,
+          manifestLoadingRetryDelay: 800,
+          levelLoadingMaxRetry: 5,
+          levelLoadingRetryDelay: 800,
+          fragLoadingMaxRetry: 6,
+          fragLoadingRetryDelay: 1000,
+          fragLoadingMaxRetryTimeout: 25_000,
           
-          manifestLoadingTimeOut: 8_000,
-          levelLoadingTimeOut: 8_000,
-          fragLoadingTimeOut: 10_000,
+          manifestLoadingTimeOut: 15_000,
+          levelLoadingTimeOut: 15_000,
+          fragLoadingTimeOut: 20_000,
           
           xhrSetup: (xhr) => {
             xhr.withCredentials = false;
@@ -652,12 +655,12 @@ export default function VideoPlayer({
           if (data.fatal) {
             switch (data.type) {
               case HLS.ErrorTypes.NETWORK_ERROR:
-                if (retryCountRef.current < 2) {
+                if (retryCountRef.current < 4) {
                   retryCountRef.current += 1;
-                  console.warn(`HLS Network error, retrying (${retryCountRef.current}/2)...`);
+                  console.warn(`HLS Network error, retrying (${retryCountRef.current}/4)...`);
                   setTimeout(() => {
                     if (hlsRef.current) hlsRef.current.startLoad();
-                  }, 400 * retryCountRef.current);
+                  }, 800 * retryCountRef.current);
                 } else {
                   if (onSwitchToEmbedRef.current) {
                     console.warn("Auto-switching to embed server after HLS network errors");
@@ -961,6 +964,13 @@ export default function VideoPlayer({
     e.stopPropagation();
     attemptUnmute();
 
+    // If video is currently paused, tapping or clicking anywhere starts playback immediately (SYNCHRONOUS for mobile gesture permission)
+    if (videoRef.current?.paused) {
+      togglePlay();
+      showControlsHandler();
+      return;
+    }
+
     const now = Date.now();
     const isDoubleTap = now - lastTapRef.current.time < 350 && lastTapRef.current.side === side;
     lastTapRef.current = { time: now, side };
@@ -982,7 +992,7 @@ export default function VideoPlayer({
       return;
     }
 
-    // Single tap with small delay so double tap doesn't flicker controls
+    // Single tap when video is already playing
     if (singleTapTimerRef.current) clearTimeout(singleTapTimerRef.current);
     singleTapTimerRef.current = setTimeout(() => {
       singleTapTimerRef.current = null;
@@ -996,13 +1006,6 @@ export default function VideoPlayer({
           setShowControls(false);
           if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
         }
-        return;
-      }
-
-      // On desktop: If video is currently paused, clicking anywhere starts playback immediately!
-      if (videoRef.current?.paused) {
-        togglePlay();
-        showControlsHandler();
         return;
       }
 
