@@ -736,11 +736,11 @@ function SidebarContent({
             <div className="relative z-10 flex-1 overflow-y-auto pr-1 custom-scrollbar overscroll-contain -webkit-overflow-scrolling-touch">
               {filteredCategories.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-2.5 pb-4">
-                  {filteredCategories.map((cat) => {
+                  {filteredCategories.map((cat, idx) => {
                     const active = currentCategory === cat.slug;
                     return (
                       <button
-                        key={cat.slug}
+                        key={`${cat.slug}-${idx}`}
                         type="button"
                         onClick={(e) => handleSelectCategory(cat.slug, e)}
                         className={cn(

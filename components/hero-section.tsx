@@ -272,9 +272,9 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                   isTransitioning ? "opacity-0 translate-y-3" : "opacity-100 translate-y-0"
                 )}
               >
-                {categories.slice(0, 4).map((cat) => (
+                {categories.slice(0, 4).map((cat, idx) => (
                   <Link
-                    key={cat.slug}
+                    key={`${cat.slug}-${idx}`}
                     href={`/?category=${cat.slug}`}
                     className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-brand-green/20 border border-white/10 hover:border-brand-green/40 text-white/70 hover:text-brand-green text-[11px] font-semibold transition-all"
                   >

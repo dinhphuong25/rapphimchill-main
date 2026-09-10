@@ -105,7 +105,7 @@ export function MovieSEODescription({ movie }: MovieSEODescriptionProps) {
             <span className="text-gray-600 dark:text-gray-400">Thể loại:</span>
             <div className="ml-1 flex flex-wrap gap-1">
               {movie.category.map((cat, index) => (
-                <span key={cat.slug}>
+                <span key={`${cat.slug}-${index}`}>
                   <Link
                     href={`/?category=${cat.slug}`}
                     className="text-blue-600 dark:text-blue-400 hover:underline"
