@@ -42,6 +42,7 @@ const EmbedPlayer = ({
                 src={videoUrl}
                 className="w-full h-full absolute inset-0 rounded-lg border-0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
                 allowFullScreen
                 title="Video Player"
                 onLoad={() => setIsLoading(false)}
