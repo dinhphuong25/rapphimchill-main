@@ -373,7 +373,7 @@ export default function Description({ movie, serverData }: any) {
       : "";
 
   return (
-    <div className="w-full flex flex-col gap-5 sm:gap-6 z-10 relative">
+    <div className="w-full flex flex-col gap-5 sm:gap-6 z-10 relative lg:h-full lg:min-h-0">
       
       {/* Standalone Cinema Header */}
       <WatchHeader
@@ -398,7 +398,7 @@ export default function Description({ movie, serverData }: any) {
       )}
 
       {/* 2-Column Cinema Layout */}
-      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start w-full max-w-[1600px] mx-auto pt-2">
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start w-full max-w-[1600px] mx-auto pt-2 lg:flex-1 lg:min-h-0">
         
         {/* Left Primary Stage: Video Player & Movie Details */}
         <div className="flex-1 w-full min-w-0 flex flex-col gap-6">
@@ -473,7 +473,7 @@ export default function Description({ movie, serverData }: any) {
         </div>
 
         {/* Desktop Right Sidebar Episode List */}
-        <div className="hidden lg:flex w-full lg:w-[380px] 2xl:w-[420px] shrink-0 flex-col gap-4 sticky top-20">
+        <div className="hidden lg:flex w-full lg:w-[380px] 2xl:w-[420px] shrink-0 flex-col gap-4 lg:h-full lg:min-h-0 lg:overflow-hidden">
           <Episode
             serverData={serverData}
             currentServerIndex={currentEpisodeIndex?.server || 0}

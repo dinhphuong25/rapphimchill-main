@@ -27,8 +27,8 @@ export default function WatchHeader({
   const router = useRouter();
 
   return (
-    <div className="sticky top-0 z-40 w-full max-w-[1600px] mx-auto transition-all">
-      <header className="w-full bg-[#0a0a0a]/90 backdrop-blur-2xl border-x border-b border-white/10 rounded-b-2xl sm:rounded-b-3xl px-4 sm:px-6 py-3 shadow-2xl">
+    <div className="sticky top-0 z-40 w-full max-w-[1800px] mx-auto transition-all shrink-0">
+      <header className="w-full bg-[#0a0a0a]/90 backdrop-blur-2xl border-x border-b border-white/10 rounded-b-2xl sm:rounded-b-3xl px-4 sm:px-6 py-2.5 shadow-2xl">
         <div className="flex items-center justify-between gap-4">
         
         {/* Left: Back button & Breadcrumb Title */}
@@ -46,8 +46,8 @@ export default function WatchHeader({
             className="text-white/80 hover:text-white hover:bg-white/10 rounded-xl px-2.5 sm:px-3 py-2 flex items-center gap-2 border border-white/10 shrink-0"
             title="Quay lại"
           >
-            <ArrowLeft className="w-4 h-4 text-brand-green" />
-            <span className="hidden sm:inline text-xs font-bold">Trở về</span>
+            <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-green" />
+            <span className="text-xs font-bold">Trở về</span>
           </Button>
 
           <div className="h-4 w-px bg-white/10 hidden sm:block shrink-0" />
