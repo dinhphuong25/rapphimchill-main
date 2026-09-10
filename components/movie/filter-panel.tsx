@@ -11,6 +11,7 @@ interface FilterPanelProps {
 
 const TYPE_LIST_OPTIONS = [
   { value: "", label: "Tất Cả" },
+  { value: "phim-chieu-rap", label: "Phim Chiếu Rạp" },
   { value: "phim-bo", label: "Phim Bộ" },
   { value: "phim-le", label: "Phim Lẻ" },
   { value: "tv-shows", label: "TV Shows" },

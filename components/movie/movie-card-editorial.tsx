@@ -17,6 +17,7 @@ export interface MovieCardEditorialProps {
     poster_url?: string;
     year?: number | string;
     quality?: string;
+    lang?: string;
     episode_current?: string;
     imdb?: { rating?: number };
     tmdb?: { vote_average?: number };
@@ -66,12 +67,19 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
         {/* Poster Gradient Mask */}
         <div className="absolute inset-0 bg-gradient-to-t from-cinema-bg via-transparent to-transparent opacity-80 group-hover:opacity-40 transition-opacity" />
 
-        {/* Quality Badge Top Left (font-mono aitmpl style) */}
-        {movie.quality && (
-          <span className="absolute top-2.5 left-2.5 z-10 px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider uppercase bg-black/80 text-white border border-white/15 shadow-sm">
-            {movie.quality}
-          </span>
-        )}
+        {/* Quality & Lang Badges Top Left */}
+        <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 flex-wrap max-w-[80%]">
+          {movie.quality && (
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider uppercase bg-black/80 text-white border border-white/15 shadow-sm">
+              {movie.quality}
+            </span>
+          )}
+          {movie.lang && (
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold tracking-wide uppercase bg-emerald-950/80 text-brand-green border border-brand-green/30 shadow-sm">
+              {movie.lang.includes("Thuyết") ? "Thuyết Minh" : movie.lang.includes("Lồng") ? "Lồng Tiếng" : "Vietsub"}
+            </span>
+          )}
+        </div>
 
         {/* Rating Badge Top Right (font-mono aitmpl style) */}
         {isValidRating && (

@@ -10,6 +10,7 @@ interface FilterProps {
 }
 
 const TYPES = [
+  { name: "Phim Chiếu Rạp", slug: "phim-chieu-rap" },
   { name: "Phim Bộ", slug: "phim-bo" },
   { name: "Phim Lẻ", slug: "phim-le" },
   { name: "Hoạt Hình", slug: "hoat-hinh" },

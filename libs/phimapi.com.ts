@@ -55,9 +55,11 @@ export default class PhimApi {
 
   listTopics(): Array<{ name: string; slug: string }> {
     return [
-      { name: "Chương Trình Truyền Hình", slug: "phim-bo" },
-      { name: "Phim Điện Ảnh", slug: "phim-le" },
+      { name: "Phim Chiếu Rạp", slug: "phim-chieu-rap" },
+      { name: "Phim Bộ", slug: "phim-bo" },
+      { name: "Phim Lẻ", slug: "phim-le" },
       { name: "Phim Hoạt Hình", slug: "hoat-hinh" },
+      { name: "TV Shows", slug: "tv-shows" },
     ];
   }
 
