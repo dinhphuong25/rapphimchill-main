@@ -132,7 +132,8 @@ export default function Episode({
   return (
     <div className="flex flex-col gap-4 w-full lg:h-full lg:min-h-0">
       {/* Unified Server & Episode Selection Card */}
-      <div className="bg-[#141414] rounded-2xl border border-white/5 p-5 flex flex-col gap-5 relative shadow-xl lg:flex-1 lg:min-h-0 lg:overflow-hidden">
+      {/* Unified Server & Episode Selection Card */}
+      <div className="bg-[#141414] rounded-2xl border border-white/5 p-5 flex flex-col gap-5 relative shadow-xl lg:flex-1 lg:min-h-0">
         {/* Máy Chủ Phát Section */}
         <div className="space-y-3 min-w-0 z-10 relative">
           <h4 className="text-white/60 text-[13px] font-bold uppercase tracking-widest flex items-center gap-2 whitespace-nowrap">
@@ -205,7 +206,7 @@ export default function Episode({
         <div className="h-[1px] bg-white/[0.06] w-full" />
 
         {/* Danh Sách Tập Section (Replacing Phím tắt) */}
-        <div className="flex flex-col gap-3.5 min-w-0 z-10 relative lg:flex-1 lg:min-h-0 lg:overflow-hidden">
+        <div className="flex flex-col gap-3.5 min-w-0 z-10 relative lg:flex-1 lg:min-h-0">
           <div className="flex items-center justify-between gap-2">
             <h4 className="text-white/60 text-[13px] font-bold uppercase tracking-widest flex items-center gap-2 whitespace-nowrap">
               <Film className="w-4 h-4 text-brand-green shrink-0" />

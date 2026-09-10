@@ -473,7 +473,7 @@ export default function Description({ movie, serverData }: any) {
         </div>
 
         {/* Desktop Right Sidebar Episode List */}
-        <div className="hidden lg:flex w-full lg:w-[380px] 2xl:w-[420px] shrink-0 flex-col gap-4 lg:h-full lg:min-h-0 lg:overflow-hidden">
+        <div className="hidden lg:flex w-full lg:w-[380px] 2xl:w-[420px] shrink-0 flex-col gap-4 lg:h-full lg:min-h-0">
           <Episode
             serverData={serverData}
             currentServerIndex={currentEpisodeIndex?.server || 0}
