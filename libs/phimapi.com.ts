@@ -100,16 +100,18 @@ export default class PhimApi {
     return this.newAdding(index);
   }
 
-  async newAdding(index: number = 1): Promise<[MovieListItem[], Pagination]> {
-    const url = `${this.apiUrl}/danh-sach/phim-moi-cap-nhat-v2?page=${index}&limit=24`;
+  async newAdding(index: number = 1, limit: number = 24): Promise<[MovieListItem[], Pagination]> {
+    const url = `${this.apiUrl}/v1/api/danh-sach/phim-moi-cap-nhat?page=${index}&limit=${limit}`;
     const response = await fetch(url, {
       headers: this.fetchHeaders(),
       next: { revalidate: 60 }, // Cache 60s để luôn cập nhật tập mới
     });
     if (!response.ok) throw new Error(`API error: ${response.status}`);
     const data = await response.json();
-    const cdnDomain = data?.APP_DOMAIN_CDN_IMAGE || this.defaultCdnDomain;
-    return [normalizeItems(data.items || [], cdnDomain), data.pagination];
+    const cdnDomain = data?.data?.APP_DOMAIN_CDN_IMAGE || this.defaultCdnDomain;
+    const items = data?.data?.items || data?.items || [];
+    const pagination = data?.data?.params?.pagination || data?.pagination;
+    return [normalizeItems(items, cdnDomain), pagination];
   }
 
   async search(query: string, index: number = 1): Promise<[MovieListItem[], Pagination | null]> {

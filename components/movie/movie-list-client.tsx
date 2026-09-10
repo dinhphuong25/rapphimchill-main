@@ -97,8 +97,8 @@ const MovieListClient = ({
       } else if (topic) {
         url = `https://phimapi.com/v1/api/danh-sach/${topic}?page=${index}&limit=${limit}`;
       } else {
-        url = `https://phimapi.com/danh-sach/phim-moi-cap-nhat?page=${index}`;
-        usesV1Api = false;
+        url = `https://phimapi.com/v1/api/danh-sach/phim-moi-cap-nhat?page=${index}&limit=${limit}`;
+        usesV1Api = true;
       }
 
       const data = await proxyFetch(url);
