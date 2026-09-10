@@ -40,7 +40,6 @@ const NAV_MAIN = [
   { href: "/?typeList=phim-bo", label: "Phim Bộ", icon: Tv, typeList: "phim-bo" },
   { href: "/?typeList=phim-le", label: "Phim Lẻ", icon: Film, typeList: "phim-le" },
   { href: "/?typeList=hoat-hinh", label: "Hoạt Hình", icon: Cat, typeList: "hoat-hinh" },
-  { href: "/?typeList=tv-shows", label: "TV Shows", icon: Sparkles, typeList: "tv-shows" },
   { href: "/new-updates", label: "Mới Cập Nhật", icon: Flame },
 ];
 

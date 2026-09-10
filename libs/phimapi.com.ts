@@ -59,7 +59,6 @@ export default class PhimApi {
       { name: "Phim Bộ", slug: "phim-bo" },
       { name: "Phim Lẻ", slug: "phim-le" },
       { name: "Phim Hoạt Hình", slug: "hoat-hinh" },
-      { name: "TV Shows", slug: "tv-shows" },
     ];
   }
 

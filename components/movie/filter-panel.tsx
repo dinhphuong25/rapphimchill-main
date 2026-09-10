@@ -14,7 +14,6 @@ const TYPE_LIST_OPTIONS = [
   { value: "phim-chieu-rap", label: "Phim Chiếu Rạp" },
   { value: "phim-bo", label: "Phim Bộ" },
   { value: "phim-le", label: "Phim Lẻ" },
-  { value: "tv-shows", label: "TV Shows" },
   { value: "hoat-hinh", label: "Hoạt Hình" },
   { value: "phim-vietsub", label: "Phim Vietsub" },
   { value: "phim-thuyet-minh", label: "Phim Thuyết Minh" },

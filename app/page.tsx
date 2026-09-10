@@ -36,7 +36,6 @@ const TOPICS = [
   { name: "Chương Trình Truyền Hình", slug: "phim-bo" },
   { name: "Phim Điện Ảnh", slug: "phim-le" },
   { name: "Phim Hoạt Hình", slug: "hoat-hinh" },
-  { name: "TV Shows / Gameshow", slug: "tv-shows" },
 ];
 
 export async function generateMetadata({ searchParams }: HomeProps) {

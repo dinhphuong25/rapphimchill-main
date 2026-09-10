@@ -14,7 +14,6 @@ const TYPES = [
   { name: "Phim Bộ", slug: "phim-bo" },
   { name: "Phim Lẻ", slug: "phim-le" },
   { name: "Hoạt Hình", slug: "hoat-hinh" },
-  { name: "TV Shows", slug: "tv-shows" },
 ];
 
 const SORT_OPTIONS = [
