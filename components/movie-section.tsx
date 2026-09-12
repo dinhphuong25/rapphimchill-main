@@ -4,6 +4,7 @@ import Image from "next/image";
 import { ChevronRight, Play, Star } from "lucide-react";
 import MovieCardEditorial from "@/components/movie/movie-card-editorial";
 import Top10Card from "@/components/movie/top10-card";
+import FeaturedFocusImage from "@/components/movie/featured-focus-image";
 import { filterHiddenMovies } from "@/lib/hidden-movies";
 
 interface MovieSectionProps {
@@ -72,14 +73,7 @@ export const MovieSection = memo(function MovieSection({
               href={`/watch?slug=${filteredMovies[0].slug}`}
               className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-cinema-surface border border-brand-green/30 group-hover:border-brand-green/60 transition-[transform,border-color,box-shadow] duration-300 group-hover:-translate-y-2 group-hover:scale-[1.02] shadow-xl group-hover:shadow-[0_10px_30px_rgba(32,214,107,0.25)] block transform-gpu"
             >
-              <Image
-                src={filteredMovies[0].thumb_url || filteredMovies[0].poster_url || ""}
-                alt={filteredMovies[0].name}
-                fill
-                quality={75}
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
-                sizes="(max-width: 1024px) 100vw, 33vw"
-              />
+              <FeaturedFocusImage movie={filteredMovies[0]} />
               <div className="absolute inset-0 bg-gradient-to-t from-cinema-bg via-transparent to-transparent opacity-80 group-hover:opacity-40 transition-opacity" />
               
               <span className="absolute top-3 left-3 z-10 px-2.5 py-1 rounded text-[10px] font-black bg-brand-green text-cinema-bg shadow-lg tracking-widest uppercase">

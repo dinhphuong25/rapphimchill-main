@@ -11,6 +11,7 @@
 
 @layer base {
   :root {
+    color-scheme: dark;
     --cinema-bg: #050807;
     --cinema-sub: #0B100E;
     --cinema-surface: #111714;
@@ -50,8 +51,6 @@
     background-color: var(--cinema-bg);
     color: var(--cinema-text);
     overflow-x: clip;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255,255,255,0.15) var(--cinema-bg);
     -webkit-overflow-scrolling: touch;
     text-rendering: optimizeSpeed;
   }
@@ -77,27 +76,97 @@
   button, a, input, select {
     touch-action: manipulation;
   }
-
-  /* Custom scrollbar */
-  ::-webkit-scrollbar { width: 5px; height: 5px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.12);
-    border-radius: 9999px;
-  }
-  ::-webkit-scrollbar-thumb:hover { background: var(--brand-green); }
 }
 
-@layer utilities {
-  .custom-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
-  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-  .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 9999px; }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--brand-green); }
+  /* ============================================================
+     CINEMA SINGLE SCROLLBAR SYSTEM
+     Luôn chỉ có DUY NHẤT một thanh scroll ở ngoài cùng mép màn hình.
+     - Khi duyệt web thông thường: thanh cuộn ngoài cùng trên html.
+     - Khi mở Search Overlay: thanh cuộn html ẩn đi, Search Overlay tràn viền 100vw
+       và hiển thị thanh cuộn duy nhất ở ngoài cùng mép phải màn hình.
+     - Mọi container phụ khác (sidebar, modal) đều ẩn thanh cuộn con.
+     ============================================================ */
 
+  /* Thanh cuộn ngoài cùng duy nhất (cho trang chính html và khi mở Search Overlay) */
+  html::-webkit-scrollbar,
+  .search-scroll::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+  }
+
+  html::-webkit-scrollbar-track,
+  .search-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  html::-webkit-scrollbar-thumb,
+  .search-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.25);
+    border-radius: 9999px;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+    transition: background-color 0.2s ease;
+  }
+
+  html::-webkit-scrollbar-thumb:hover,
+  .search-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: #20D66B !important;
+    box-shadow: 0 0 10px rgba(32, 214, 107, 0.8), 0 0 20px rgba(32, 214, 107, 0.4);
+  }
+
+  html::-webkit-scrollbar-thumb:active,
+  .search-scroll::-webkit-scrollbar-thumb:active {
+    background-color: #2AE376 !important;
+    box-shadow: 0 0 14px rgba(32, 214, 107, 1);
+  }
+
+  html::-webkit-scrollbar-corner,
+  .search-scroll::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  html::-webkit-scrollbar-button,
+  .search-scroll::-webkit-scrollbar-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  /* Khi mở Search Overlay: Ẩn hoàn toàn thanh cuộn của html để không bị 2 thanh cuộn */
+  html.search-overlay-open::-webkit-scrollbar,
+  body.search-overlay-open::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  html.search-overlay-open,
+  body.search-overlay-open {
+    overflow: hidden !important;
+  }
+
+  /* Ẩn hoàn toàn thanh cuộn bên trong của TẤT CẢ các thành phần phụ khác */
+  *:not(html):not(.search-scroll)::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  *:not(html):not(.search-scroll) {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  /* Firefox Only Fallback */
+  @supports not selector(::-webkit-scrollbar) {
+    html:not(.search-overlay-open),
+    .search-scroll {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+    }
+  }
+
+@layer utilities {
   .scrollbar-hide,
   .hide-horizontal-scroll {
     -ms-overflow-style: none !important;
@@ -189,5 +258,26 @@
   .hero-right-mask {
     mask-image: linear-gradient(to left, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 100%);
     -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 100%);
+  }
+
+  /* Modern Glassmorphic & Glow System */
+  .glass-panel {
+    background: rgba(11, 16, 14, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+  }
+
+  .glow-green {
+    box-shadow: 0 0 25px -4px rgba(32, 214, 107, 0.45);
+  }
+
+  .glow-green-sm {
+    box-shadow: 0 0 14px -2px rgba(32, 214, 107, 0.35);
+  }
+
+  .cinematic-card-hover {
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
 }

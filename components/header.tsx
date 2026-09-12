@@ -71,7 +71,7 @@ export default function Header({}: HeaderProps) {
             {/* Right: Search Input Trigger Button */}
             <button
               onClick={() => setShowSearchOverlay(true)}
-              className="pointer-events-auto relative flex items-center justify-between w-36 sm:w-60 md:w-72 h-10 sm:h-11 px-3 sm:px-4 rounded-full bg-[#141414] hover:bg-white/10 border border-white/10 hover:border-white/25 text-white/70 hover:text-white transition-all duration-200 text-xs sm:text-sm group active:scale-95 shadow-none shrink-0"
+              className="pointer-events-auto relative flex items-center justify-between w-36 sm:w-60 md:w-72 h-10 sm:h-11 px-3 sm:px-4 rounded-full bg-[#111714]/80 backdrop-blur-md hover:bg-white/[0.08] border border-white/10 hover:border-brand-green/40 hover:shadow-[0_0_20px_rgba(32,214,107,0.2)] text-white/70 hover:text-white transition-all duration-300 text-xs sm:text-sm group active:scale-95 shrink-0"
             >
               <div className="flex items-center gap-2.5 truncate">
                 <Search className="w-4 h-4 text-white/50 group-hover:text-brand-green transition-colors shrink-0" />

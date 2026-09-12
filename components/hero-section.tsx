@@ -21,6 +21,40 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFavorites } from "@/hooks/useLocalStorage";
+import { getMovieImageCandidates } from "@/lib/image-helper";
+
+function HeroThumbImage({ movie, isActive }: { movie: any; isActive: boolean }) {
+  const [candidateIdx, setCandidateIdx] = useState(0);
+  const [hasError, setHasError] = useState(false);
+  const candidates = useMemo(() => getMovieImageCandidates(movie, "backdrop"), [movie]);
+  const src = !hasError && candidates.length > 0 ? candidates[candidateIdx] : null;
+
+  if (!src) {
+    return (
+      <div className="w-full h-full bg-[#0c1310] flex items-center justify-center p-2 text-center">
+        <Film className="w-5 h-5 text-brand-green/60" />
+      </div>
+    );
+  }
+
+  return (
+    <Image
+      src={src}
+      alt={movie.name}
+      fill
+      quality={70}
+      className={cn(
+        "object-cover transition-transform duration-500",
+        isActive ? "scale-105" : "group-hover:scale-110"
+      )}
+      sizes="(max-width: 768px) 120px, 240px"
+      onError={() => {
+        if (candidateIdx + 1 < candidates.length) setCandidateIdx((i) => i + 1);
+        else setHasError(true);
+      }}
+    />
+  );
+}
 
 interface HeroMovie {
   slug: string;
@@ -61,6 +95,18 @@ export default function HeroSection({ movies }: HeroSectionProps) {
   }, [movies]);
 
   const current = validMovies[currentIndex] || validMovies[0];
+
+  const backdropCandidates = useMemo(
+    () => getMovieImageCandidates(current, "backdrop"),
+    [current]
+  );
+  const [backdropIdx, setBackdropIdx] = useState(0);
+  const [backdropError, setBackdropError] = useState(false);
+
+  useEffect(() => {
+    setBackdropIdx(0);
+    setBackdropError(false);
+  }, [currentIndex]);
 
   const goTo = useCallback(
     (index: number) => {
@@ -103,9 +149,37 @@ export default function HeroSection({ movies }: HeroSectionProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [next, prev]);
 
+  // Touch Swipe Gestures for Mobile devices (60/120fps responsive)
+  const touchStartXRef = useRef<number | null>(null);
+  const touchEndXRef = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndXRef.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartXRef.current === null || touchEndXRef.current === null) return;
+    const distance = touchStartXRef.current - touchEndXRef.current;
+    const minSwipeDistance = 45; // 45px swipe threshold
+    if (distance > minSwipeDistance) {
+      next();
+    } else if (distance < -minSwipeDistance) {
+      prev();
+    }
+    touchStartXRef.current = null;
+    touchEndXRef.current = null;
+  };
+
   if (!current || !current.slug) return null;
 
-  const backdropUrl = current.thumb_url || current.poster_url || "";
+  const backdropUrl =
+    !backdropError && backdropCandidates.length > 0
+      ? backdropCandidates[backdropIdx]
+      : "";
   const rawRating = current.imdb?.rating || current.tmdb?.vote_average;
   const rating = Number(rawRating);
   const isValidRating = !isNaN(rating) && rating > 0;
@@ -145,10 +219,13 @@ export default function HeroSection({ movies }: HeroSectionProps) {
 
   return (
     <section
-      className="relative w-full overflow-hidden select-none bg-cinema-bg"
+      className="relative w-full overflow-hidden select-none bg-cinema-bg touch-pan-y"
       style={{ minHeight: "clamp(450px, 60vh, 560px)" }}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
       aria-label="Phim Nổi Bật Theo Xu Hướng"
     >
       {/* 1. Background Backdrop Image with Cross-fade Zoom */}
@@ -158,17 +235,28 @@ export default function HeroSection({ movies }: HeroSectionProps) {
           isTransitioning ? "opacity-0 scale-105" : "opacity-100 scale-100"
         )}
       >
-        <Image
-          src={backdropUrl}
-          alt={current.name}
-          fill
-          priority
-          loading="eager"
-          fetchPriority="high"
-          className="object-cover object-top"
-          sizes="(max-width: 768px) 100vw, (max-width: 1440px) 100vw, 1920px"
-          quality={80}
-        />
+        {backdropUrl ? (
+          <Image
+            src={backdropUrl}
+            alt={current.name}
+            fill
+            priority
+            loading="eager"
+            fetchPriority="high"
+            className="object-cover object-top"
+            sizes="(max-width: 768px) 100vw, (max-width: 1440px) 100vw, 1920px"
+            quality={80}
+            onError={() => {
+              if (backdropIdx + 1 < backdropCandidates.length) {
+                setBackdropIdx((i) => i + 1);
+              } else {
+                setBackdropError(true);
+              }
+            }}
+          />
+        ) : (
+          <div className="absolute inset-0 bg-[#070b09]" />
+        )}
 
         {/* Ambient Glow — desktop only, too heavy for mobile GPU */}
         <div className="hidden lg:block absolute -top-32 -left-32 w-96 h-96 bg-brand-green/10 rounded-full blur-[120px] pointer-events-none" />
@@ -421,17 +509,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                         : "w-28 h-20 border-white/10 hover:border-white/40 opacity-60 hover:opacity-100 hover:scale-105"
                     )}
                   >
-                    <Image
-                      src={thumb}
-                      alt={movie.name}
-                      fill
-                      quality={70}
-                      className={cn(
-                        "object-cover transition-transform duration-500",
-                        isActive ? "scale-105" : "group-hover:scale-110"
-                      )}
-                      sizes="(max-width: 768px) 120px, 240px"
-                    />
+                    <HeroThumbImage movie={movie} isActive={isActive} />
 
                     {/* Inactive Dark Shade */}
                     {!isActive && (

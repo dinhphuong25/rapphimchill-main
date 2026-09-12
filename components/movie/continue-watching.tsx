@@ -1,11 +1,41 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Play, X } from "lucide-react";
+import { Play, X, Film } from "lucide-react";
 import { useContinueWatching } from "@/hooks/useContinueWatching";
 import { cn } from "@/lib/utils";
+import { getMovieImageCandidates } from "@/lib/image-helper";
+
+function ContinueWatchingImage({ item }: { item: any }) {
+  const [candidateIdx, setCandidateIdx] = useState(0);
+  const [hasError, setHasError] = useState(false);
+  const candidates = useMemo(() => getMovieImageCandidates(item, "backdrop"), [item]);
+  const src = !hasError && candidates.length > 0 ? candidates[candidateIdx] : null;
+
+  if (!src) {
+    return (
+      <div className="w-full h-full bg-[#0c1310] flex items-center justify-center">
+        <Film className="w-8 h-8 text-brand-green/60" />
+      </div>
+    );
+  }
+
+  return (
+    <Image
+      src={src}
+      alt={item.name}
+      fill
+      unoptimized
+      className="object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+      onError={() => {
+        if (candidateIdx + 1 < candidates.length) setCandidateIdx((i) => i + 1);
+        else setHasError(true);
+      }}
+    />
+  );
+}
 
 export default function ContinueWatching() {
   const { items, removeItem } = useContinueWatching();
@@ -28,8 +58,6 @@ export default function ContinueWatching() {
           {items.map((item) => {
             if (!item || !item.slug) return null;
             const percent = item.duration > 0 ? (item.currentTime / item.duration) * 100 : 0;
-            const bgUrl = item.thumb_url || item.poster_url || "";
-            const imageUrl = bgUrl.startsWith("http") ? bgUrl : `https://phimimg.com/${bgUrl}`;
             
             return (
               <div 
@@ -38,13 +66,7 @@ export default function ContinueWatching() {
               >
                 <Link href={`/watch?slug=${item.slug}&t=${item.currentTime}`} className="block">
                   <div className="relative w-full aspect-video">
-                    <Image
-                      src={imageUrl}
-                      alt={item.name}
-                      fill
-                      unoptimized
-                      className="object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                    />
+                    <ContinueWatchingImage item={item} />
                     <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors" />
                     
                     {/* Hover Play Button */}

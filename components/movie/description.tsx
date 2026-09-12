@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import MovieRecommendations from "./movie-recommendations";
 import PlayerErrorBoundary from "../player/player-error-boundary";
+import { normalizeImageUrl } from "@/lib/image-helper";
 
 const VideoPlayer = dynamic(() => import("../player/video-player"), {
   ssr: false,
@@ -109,8 +110,6 @@ export default function Description({ movie, serverData }: any) {
       <span>{isFav ? "Đã Thêm Vào Yêu Thích" : "Thêm Vào Phim Yêu Thích"}</span>
     </button>
   );
-
-  if (!movie || !movie.slug) return null;
 
   const getEpisodeProgressKey = useCallback((serverIndex: number, episodeIndex: number) => {
     return `watchProgress_${movie.slug}_${serverIndex}_${episodeIndex}`;
@@ -372,6 +371,8 @@ export default function Description({ movie, serverData }: any) {
       ? serverData[currentEpisodeIndex.server].server_data[currentEpisodeIndex.episode].name
       : "";
 
+  if (!movie || !movie.slug) return null;
+
   return (
     <div className="w-full flex flex-col gap-5 sm:gap-6 z-10 relative">
       
@@ -426,7 +427,7 @@ export default function Description({ movie, serverData }: any) {
                     <VideoPlayer
                       videoUrl={currentEpisodeUrl}
                       autoplay={true}
-                      poster={movie.thumb_url || movie.poster_url}
+                      poster={normalizeImageUrl(movie.thumb_url || movie.poster_url)}
                       initialTime={resumeTime}
                       movieName={movie.name}
                       movieSlug={movie.slug}

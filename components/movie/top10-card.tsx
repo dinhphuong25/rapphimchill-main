@@ -1,9 +1,10 @@
 "use client";
 
-import { memo } from "react";
+import { useState, useMemo, memo } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Play } from "lucide-react";
+import { Play, Film } from "lucide-react";
+import { getMovieImageCandidates, STATIC_BLUR_DATA_URL } from "@/lib/image-helper";
 
 interface Top10CardProps {
   movie: {
@@ -18,8 +19,23 @@ interface Top10CardProps {
 }
 
 export const Top10Card = memo(function Top10Card({ movie, rank }: Top10CardProps) {
-  const rawUrl = movie.poster_url || movie.thumb_url || "";
-  const imageUrl = rawUrl.startsWith("http") ? rawUrl : (rawUrl ? `https://phimimg.com/${rawUrl}` : "");
+  const [candidateIndex, setCandidateIndex] = useState(0);
+  const [hasError, setHasError] = useState(false);
+
+  const candidates = useMemo(
+    () => getMovieImageCandidates(movie, "poster"),
+    [movie?.thumb_url, movie?.poster_url]
+  );
+
+  const currentSrc = !hasError && candidates.length > 0 ? candidates[candidateIndex] : null;
+
+  const handleImageError = () => {
+    if (candidateIndex + 1 < candidates.length) {
+      setCandidateIndex((prev) => prev + 1);
+    } else {
+      setHasError(true);
+    }
+  };
 
   return (
     <div className="group relative flex items-center select-none pl-6 pr-2">
@@ -33,14 +49,24 @@ export const Top10Card = memo(function Top10Card({ movie, rank }: Top10CardProps
         href={`/watch?slug=${movie.slug}`}
         className="relative z-10 w-full aspect-[2/3] rounded-xl overflow-hidden bg-cinema-surface border border-white/10 group-hover:border-brand-green/50 transition-[transform,border-color,box-shadow] duration-300 group-hover:-translate-y-2 group-hover:scale-[1.02] shadow-xl group-hover:shadow-[0_10px_30px_rgba(32,214,107,0.25)] ml-8 transform-gpu"
       >
-        <Image
-          src={imageUrl}
-          alt={movie.name}
-          fill
-          sizes="(max-width: 640px) 45vw, 20vw"
-          quality={75}
-          className="object-cover group-hover:scale-105 transition-transform duration-300"
-        />
+        {currentSrc ? (
+          <Image
+            src={currentSrc}
+            alt={movie.name}
+            fill
+            sizes="(max-width: 640px) 45vw, 20vw"
+            quality={75}
+            placeholder="blur"
+            blurDataURL={STATIC_BLUR_DATA_URL}
+            onError={handleImageError}
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-[#0c1310] flex flex-col items-center justify-center p-3 text-center select-none">
+            <Film className="w-6 h-6 text-brand-green mb-1" />
+            <span className="text-[11px] font-bold text-white/90 line-clamp-2">{movie.name}</span>
+          </div>
+        )}
 
         <div className="absolute inset-0 bg-gradient-to-t from-cinema-bg via-transparent to-transparent opacity-80" />
 

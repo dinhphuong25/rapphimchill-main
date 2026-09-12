@@ -1,11 +1,13 @@
 "use client";
 
-import { memo } from "react";
+import { useState, useMemo, memo } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Play, Star, Heart } from "lucide-react";
+import { Play, Star, Heart, Film } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFavorites } from "@/hooks/useLocalStorage";
+import { MotionCard } from "@/components/motion/motion-primitives";
+import { getMovieImageCandidates, STATIC_BLUR_DATA_URL } from "@/lib/image-helper";
 
 export interface MovieCardEditorialProps {
   movie: {
@@ -26,43 +28,72 @@ export interface MovieCardEditorialProps {
   hideFavoriteButton?: boolean;
 }
 
-const STATIC_BLUR_DATA_URL =
-  "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 450'%3E%3Crect width='300' height='450' fill='%23111714'/%3E%3C/svg%3E";
-
 export const MovieCardEditorial = memo(function MovieCardEditorial({
   movie,
   priority = false,
   hideFavoriteButton = false,
 }: MovieCardEditorialProps) {
   const { toggleFavorite, isFavorite } = useFavorites();
+  const [candidateIndex, setCandidateIndex] = useState(0);
+  const [hasError, setHasError] = useState(false);
+
+  const candidates = useMemo(
+    () => getMovieImageCandidates(movie, "poster"),
+    [movie?.thumb_url, movie?.poster_url]
+  );
+
   if (!movie || !movie.slug) return null;
-  const rawUrl = movie.poster_url || movie.thumb_url || "";
-  const imageUrl = rawUrl.startsWith("http") ? rawUrl : (rawUrl ? `https://phimimg.com/${rawUrl}` : "");
+
+  const currentSrc = !hasError && candidates.length > 0 ? candidates[candidateIndex] : null;
+
+  const handleImageError = () => {
+    if (candidateIndex + 1 < candidates.length) {
+      setCandidateIndex((prev) => prev + 1);
+    } else {
+      setHasError(true);
+    }
+  };
+
   const rawRating = movie.imdb?.rating || movie.tmdb?.vote_average;
   const rating = Number(rawRating);
   const isValidRating = !isNaN(rating) && rating > 0;
   const isFav = isFavorite(movie.slug);
 
   return (
-    <div className="group relative flex flex-col h-full select-none transform-gpu" style={{ contentVisibility: "auto", containIntrinsicSize: "200px 300px" }}>
+    <MotionCard className="group relative flex flex-col h-full select-none" style={{ contentVisibility: "auto", containIntrinsicSize: "200px 300px" }}>
       {/* Poster Image Container Wrapper */}
-      <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-cinema-surface border border-white/10 group-hover:border-brand-green/50 transition-[transform,border-color,box-shadow] duration-300 group-hover:-translate-y-2 group-hover:scale-[1.02] shadow-xl group-hover:shadow-[0_10px_30px_rgba(32,214,107,0.25)] transform-gpu">
+      <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-cinema-surface border border-white/10 group-hover:border-brand-green/60 transition-[border-color,box-shadow] duration-300 shadow-xl group-hover:shadow-[0_12px_32px_rgba(32,214,107,0.25)] transform-gpu">
         
         <Link
           href={`/watch?slug=${movie.slug}`}
           className="absolute inset-0 z-0 block"
         >
-        <Image
-          src={imageUrl}
-          alt={movie.name}
-          fill
-          priority={priority}
-          placeholder="blur"
-          blurDataURL={STATIC_BLUR_DATA_URL}
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-          quality={75}
-          className="object-cover group-hover:scale-105 transition-transform duration-300"
-        />
+        {currentSrc ? (
+          <Image
+            src={currentSrc}
+            alt={movie.name}
+            fill
+            priority={priority}
+            placeholder="blur"
+            blurDataURL={STATIC_BLUR_DATA_URL}
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+            quality={75}
+            onError={handleImageError}
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-[#0c1310] flex flex-col items-center justify-center p-4 text-center select-none">
+            <div className="w-12 h-12 rounded-full bg-brand-green/10 border border-brand-green/30 flex items-center justify-center mb-2 text-brand-green shadow-[0_0_15px_rgba(32,214,107,0.15)]">
+              <Film className="w-6 h-6" />
+            </div>
+            <span className="text-xs font-bold text-white/90 line-clamp-2 leading-tight mb-1">
+              {movie.name}
+            </span>
+            <span className="text-[10px] font-mono text-brand-green/80">
+              {movie.year || "Hi Phim"}
+            </span>
+          </div>
+        )}
 
         {/* Poster Gradient Mask */}
         <div className="absolute inset-0 bg-gradient-to-t from-cinema-bg via-transparent to-transparent opacity-80 group-hover:opacity-40 transition-opacity" />
@@ -90,8 +121,8 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
         )}
 
         {/* Center Hover Play Button */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40">
-          <div className="w-12 h-12 rounded-full bg-brand-green flex items-center justify-center text-cinema-bg shadow-lg scale-90 group-hover:scale-100 transition-transform duration-200">
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40 backdrop-blur-[2px]">
+          <div className="w-12 h-12 rounded-full bg-brand-green flex items-center justify-center text-cinema-bg shadow-[0_0_22px_rgba(32,214,107,0.6)] scale-90 group-hover:scale-100 transition-transform duration-200">
             <Play className="w-5 h-5 fill-cinema-bg ml-0.5" />
           </div>
         </div>
@@ -114,7 +145,7 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
                 slug: movie.slug,
                 name: movie.name,
                 origin_name: movie.origin_name,
-                thumb_url: imageUrl,
+                thumb_url: currentSrc || movie.thumb_url || movie.poster_url || "",
                 poster_url: movie.poster_url,
                 year: typeof movie.year === "string" ? parseInt(movie.year, 10) : movie.year,
                 quality: movie.quality,
@@ -150,7 +181,7 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
           {movie.origin_name && <span className="truncate font-sans text-right">{movie.origin_name}</span>}
         </div>
       </div>
-    </div>
+    </MotionCard>
   );
 });
 

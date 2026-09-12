@@ -4,10 +4,10 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://hiphim.biz";
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
 const REFERER = APP_URL;
 
+import { normalizeImageUrl } from "@/lib/image-helper";
+
 function normalizeCdnUrl(url: string | undefined, cdnDomain: string): string {
-  if (!url) return "";
-  if (url.startsWith("http")) return url;
-  return `${cdnDomain}/${url}`;
+  return normalizeImageUrl(url, cdnDomain);
 }
 
 function normalizeItems(items: any[], cdnDomain: string): any[] {

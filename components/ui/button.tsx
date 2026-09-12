@@ -19,6 +19,12 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
+        cinema:
+          "bg-brand-green text-cinema-bg font-extrabold shadow-[0_0_25px_rgba(32,214,107,0.35)] hover:bg-brand-green-hover hover:shadow-[0_0_40px_rgba(32,214,107,0.55)] active:scale-95 transition-all duration-200",
+        glow:
+          "bg-cinema-surface border border-brand-green/40 text-brand-green shadow-[0_0_15px_rgba(32,214,107,0.25)] hover:bg-brand-green/10 hover:border-brand-green active:scale-95 transition-all duration-200",
+        glass:
+          "bg-white/10 hover:bg-white/20 text-white border border-white/15 backdrop-blur-md active:scale-95 transition-all duration-200",
       },
       size: {
         default: "h-9 px-4 py-2",

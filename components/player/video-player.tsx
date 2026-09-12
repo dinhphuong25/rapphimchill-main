@@ -591,34 +591,34 @@ export default function VideoPlayer({
           autoStartLoad: true,
           startPosition: targetStartPosition,
           
-          backBufferLength: isMobile ? 10 : 15,
-          maxBufferLength: isMobile ? 15 : 20,
-          maxMaxBufferLength: isMobile ? 30 : 40,
-          maxBufferSize: 30 * 1024 * 1024,
+          backBufferLength: 15,
+          maxBufferLength: 30,
+          maxMaxBufferLength: 60,
+          maxBufferSize: 60 * 1024 * 1024,
           maxBufferHole: 0.5,
-          highBufferWatchdogPeriod: 3,
+          highBufferWatchdogPeriod: 2,
           nudgeOffset: 0.1,
           nudgeMaxRetry: 5,
           
-          startLevel: 0,
+          startLevel: -1,
           capLevelToPlayerSize: isMobile,
           testBandwidth: true,
           
-          abrEwmaDefaultEstimate: isMobile ? 1_500_000 : 2_500_000,
-          abrBandWidthFactor: 0.9,
-          abrBandWidthUpFactor: 0.75,
+          abrEwmaDefaultEstimate: 3_000_000,
+          abrBandWidthFactor: 0.85,
+          abrBandWidthUpFactor: 0.7,
           
-          manifestLoadingMaxRetry: 5,
-          manifestLoadingRetryDelay: 800,
-          levelLoadingMaxRetry: 5,
-          levelLoadingRetryDelay: 800,
+          manifestLoadingMaxRetry: 4,
+          manifestLoadingRetryDelay: 500,
+          levelLoadingMaxRetry: 4,
+          levelLoadingRetryDelay: 500,
           fragLoadingMaxRetry: 6,
-          fragLoadingRetryDelay: 1000,
+          fragLoadingRetryDelay: 500,
           fragLoadingMaxRetryTimeout: 25_000,
           
           manifestLoadingTimeOut: 15_000,
           levelLoadingTimeOut: 15_000,
-          fragLoadingTimeOut: 20_000,
+          fragLoadingTimeOut: 25_000,
           
           xhrSetup: (xhr) => {
             xhr.withCredentials = false;
@@ -626,8 +626,8 @@ export default function VideoPlayer({
         });
         
         hlsRef.current = hls;
-        hls.loadSource(videoUrl);
         hls.attachMedia(video);
+        hls.loadSource(videoUrl);
 
         hls.on(HLS.Events.MANIFEST_PARSED, (e, data) => {
           retryCountRef.current = 0;
@@ -640,6 +640,10 @@ export default function VideoPlayer({
         });
 
         hls.on(HLS.Events.FRAG_LOADED, () => {
+          setIsLoading(false);
+        });
+
+        hls.on(HLS.Events.FRAG_PARSED, () => {
           setIsLoading(false);
         });
 
@@ -809,34 +813,40 @@ export default function VideoPlayer({
       // If paused, NEVER show waiting/loading spinner!
       if (video.paused) return;
 
+      // Smart micro-gap auto-skip: If playback hits a tiny timestamp gap in stream, jump it immediately!
+      if (video.buffered.length > 0) {
+        const cur = video.currentTime;
+        for (let i = 0; i < video.buffered.length; i++) {
+          const start = video.buffered.start(i);
+          if (start > cur && start - cur <= 0.6) {
+            video.currentTime = start + 0.05;
+            return;
+          }
+        }
+      }
+
       if (waitingTimerRef.current) clearTimeout(waitingTimerRef.current);
       waitingTimerRef.current = setTimeout(() => {
         if (!video.paused) {
           setIsLoading(true);
         }
-      }, 500);
+      }, 350);
 
-      // Stall guard: Nếu xoay vòng quá 4s thì thử khôi phục
+      // Safe recovery: if stalled for 3s, trigger HLS load or resume without seek loops
       const stallTimeout = setTimeout(() => {
         if (video.paused) return;
-        console.warn("Video stalled, attempting recovery...");
         if (hlsRef.current) {
-          hlsRef.current.recoverMediaError();
           hlsRef.current.startLoad();
         } else {
-          // Native iOS stall recovery: unfreeze by nudging time or re-triggering play
           try {
             if (video.readyState >= 2) {
               video.play().catch(() => {});
-            } else if (video.currentTime > 0) {
-              video.currentTime = video.currentTime + 0.15;
-              video.play().catch(() => {});
             }
           } catch (e) {
-            console.warn("Native iOS recovery failed:", e);
+            console.warn("Native recovery play failed:", e);
           }
         }
-      }, 4000);
+      }, 3000);
 
       const clearWaiting = () => {
         clearTimeout(stallTimeout);
@@ -908,7 +918,7 @@ export default function VideoPlayer({
   // Initial Seek Fail-safe (Hls.js config handles startPosition natively, this is a fallback for non-HLS or edge cases)
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || initialTime <= 0 || didSeekInitialTimeRef.current) return;
+    if (!video || initialTime <= 0 || didSeekInitialTimeRef.current || hlsRef.current) return;
     const seek = () => {
       if (didSeekInitialTimeRef.current || !video.duration) return;
       if (Math.abs(video.currentTime - initialTime) > 2) {

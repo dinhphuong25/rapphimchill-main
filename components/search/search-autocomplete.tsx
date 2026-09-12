@@ -6,6 +6,33 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import PhimApi from "@/libs/phimapi.com";
 import { createPortal } from "react-dom";
+import { getMovieImageCandidates } from "@/lib/image-helper";
+
+function AutocompleteImage({ src, title }: { src?: string; title: string }) {
+  const [hasError, setHasError] = useState(false);
+
+  if (!src || hasError) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-[#0c1310]">
+        <svg className="w-5 h-5 text-brand-green/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 16h4m10 0h4" />
+        </svg>
+      </div>
+    );
+  }
+
+  return (
+    <Image
+      src={src}
+      alt={title}
+      fill
+      quality={70}
+      sizes="60px"
+      className="object-cover group-hover:scale-110 transition-transform duration-500"
+      onError={() => setHasError(true)}
+    />
+  );
+}
 
 interface SearchSuggestion {
   type: "movie" | "category";
@@ -110,13 +137,13 @@ function SearchPanel({ open, onClose, categories = [] }: SearchPanelProps) {
         });
 
         sortedMovies.slice(0, 6).forEach((movie: any) => {
-          const img = movie.thumb_url || movie.poster_url;
+          const candidates = getMovieImageCandidates(movie, "poster");
           results.push({
             type: "movie",
             title: movie.name,
             subtitle: `${movie.year} • ${movie.quality}`,
             slug: movie.slug,
-            image: img ? (img.startsWith("http") ? img : `https://phimimg.com/${img}`) : undefined,
+            image: candidates[0] || undefined,
             metadata: movie.episode_current || undefined,
           });
         });
@@ -293,15 +320,7 @@ function SearchPanel({ open, onClose, categories = [] }: SearchPanelProps) {
                         >
                           {/* Thumbnail */}
                           <div className="relative w-10 h-14 sm:w-14 sm:h-20 rounded-md overflow-hidden flex-shrink-0 bg-neutral-900 shadow-md">
-                            {s.image ? (
-                              <Image src={s.image} alt={s.title} fill quality={70} sizes="60px" className="object-cover group-hover:scale-110 transition-transform duration-500" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <svg className="w-5 h-5 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 16h4m10 0h4" />
-                                </svg>
-                              </div>
-                            )}
+                            <AutocompleteImage src={s.image} title={s.title} />
                           </div>
 
                           {/* Info */}

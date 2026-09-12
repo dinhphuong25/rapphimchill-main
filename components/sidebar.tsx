@@ -681,7 +681,7 @@ function SidebarContent({
           <div
             onClick={(e) => e.stopPropagation()}
             className={cn(
-              "relative z-10 w-full sm:max-w-4xl max-h-[85dvh] sm:max-h-[82vh] bg-[#0c121d] border-t sm:border border-white/10 rounded-t-[24px] sm:rounded-3xl p-3.5 sm:p-7 flex flex-col shadow-none overflow-hidden transform-gpu",
+              "relative z-10 w-full sm:max-w-4xl max-h-[85dvh] sm:max-h-[82vh] bg-[#0a0a0a] border-t sm:border border-white/10 rounded-t-[24px] sm:rounded-3xl p-3.5 sm:p-7 flex flex-col shadow-none overflow-hidden transform-gpu",
               isClosing ? "scale-95 opacity-0 duration-150" : "animate-in slide-in-from-bottom-3 sm:zoom-in-95 duration-200"
             )}
           >
@@ -706,7 +706,7 @@ function SidebarContent({
               <button
                 type="button"
                 onClick={closeModal}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/15 text-white/80 hover:text-white border border-white/10 transition-all shrink-0 active:scale-95"
+                className="p-2 rounded-xl bg-[#181818] hover:bg-[#222222] text-white/80 hover:text-white border border-white/10 transition-all shrink-0 active:scale-95"
                 aria-label="Đóng bảng"
               >
                 <X className="w-5 h-5" />
@@ -723,7 +723,7 @@ function SidebarContent({
                   value={categorySearchQuery}
                   onChange={(e) => setCategorySearchQuery(e.target.value)}
                   placeholder="Lọc nhanh thể loại (Hành động, Cổ trang, Kinh dị...)"
-                  className="w-full bg-white/[0.06] border border-white/10 focus:border-white/25 text-white placeholder-white/30 text-[16px] sm:text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none transition-all"
+                  className="w-full bg-[#141414] border border-white/10 focus:border-white/25 text-white placeholder-white/30 text-[16px] sm:text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none transition-all"
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
@@ -747,7 +747,7 @@ function SidebarContent({
                           "relative flex items-center justify-between p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border text-left transition-all duration-200 group active:scale-95 min-w-0 shadow-none",
                           active
                             ? "bg-brand-green/20 border-brand-green/50 text-brand-green font-bold"
-                            : "bg-white/[0.03] hover:bg-white/[0.08] border-white/5 hover:border-brand-green/30 text-white/80 hover:text-white"
+                            : "bg-[#141414] hover:bg-[#1f1f1f] border-white/5 hover:border-brand-green/30 text-white/80 hover:text-white"
                         )}
                       >
                         <div className="flex items-center gap-2 min-w-0 truncate">
@@ -822,7 +822,7 @@ function SidebarContent({
           <div
             onClick={(e) => e.stopPropagation()}
             className={cn(
-              "relative z-10 w-full sm:max-w-4xl max-h-[85dvh] sm:max-h-[82vh] bg-[#0c121d] border-t sm:border border-white/10 rounded-t-[24px] sm:rounded-3xl p-3.5 sm:p-7 flex flex-col shadow-none overflow-hidden transform-gpu",
+              "relative z-10 w-full sm:max-w-4xl max-h-[85dvh] sm:max-h-[82vh] bg-[#0a0a0a] border-t sm:border border-white/10 rounded-t-[24px] sm:rounded-3xl p-3.5 sm:p-7 flex flex-col shadow-none overflow-hidden transform-gpu",
               isClosing ? "scale-95 opacity-0 duration-150" : "animate-in slide-in-from-bottom-3 sm:zoom-in-95 duration-200"
             )}
           >
@@ -847,7 +847,7 @@ function SidebarContent({
               <button
                 type="button"
                 onClick={closeModal}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/15 text-white/80 hover:text-white border border-white/10 transition-all shrink-0 active:scale-95"
+                className="p-2 rounded-xl bg-[#181818] hover:bg-[#222222] text-white/80 hover:text-white border border-white/10 transition-all shrink-0 active:scale-95"
                 aria-label="Đóng bảng"
               >
                 <X className="w-5 h-5" />
@@ -864,7 +864,7 @@ function SidebarContent({
                   value={countrySearchQuery}
                   onChange={(e) => setCountrySearchQuery(e.target.value)}
                   placeholder="Lọc nhanh quốc gia (Hàn Quốc, Trung Quốc, Âu Mỹ...)"
-                  className="w-full bg-white/[0.06] border border-white/10 focus:border-white/25 text-white placeholder-white/30 text-[16px] sm:text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none transition-all"
+                  className="w-full bg-[#141414] border border-white/10 focus:border-white/25 text-white placeholder-white/30 text-[16px] sm:text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none transition-all"
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
@@ -894,7 +894,7 @@ function SidebarContent({
                             "relative p-3 sm:p-3.5 rounded-xl sm:rounded-2xl border text-center transition-all duration-200 group flex flex-col items-center justify-center gap-1.5 sm:gap-2 active:scale-95 min-w-0 shadow-none",
                             active
                               ? "bg-brand-green/20 border-brand-green/50 text-brand-green font-bold"
-                              : "bg-white/[0.04] hover:bg-white/[0.08] border-white/5 hover:border-brand-green/30 text-white/80 hover:text-white"
+                              : "bg-[#141414] hover:bg-[#1f1f1f] border-white/5 hover:border-brand-green/30 text-white/80 hover:text-white"
                           )}
                         >
                           {(!code || code === "WW") ? (
@@ -936,7 +936,7 @@ function SidebarContent({
                             "relative flex items-center justify-between p-2.5 sm:p-3 rounded-xl border text-left transition-all duration-200 group active:scale-95 min-w-0 shadow-none",
                             active
                               ? "bg-brand-green/20 border-brand-green/50 text-brand-green font-bold"
-                              : "bg-white/[0.02] hover:bg-white/[0.06] border-white/5 hover:border-brand-green/30 text-white/75 hover:text-white"
+                              : "bg-[#141414] hover:bg-[#1f1f1f] border-white/5 hover:border-brand-green/30 text-white/75 hover:text-white"
                           )}
                         >
                           <div className="flex items-center gap-2 min-w-0 truncate">
@@ -1012,7 +1012,7 @@ function SidebarContent({
           <div
             onClick={(e) => e.stopPropagation()}
             className={cn(
-              "relative z-10 w-full sm:max-w-4xl max-h-[85dvh] sm:max-h-[82vh] bg-[#0c121d] border-t sm:border border-white/10 rounded-t-[24px] sm:rounded-3xl p-3.5 sm:p-7 flex flex-col shadow-none overflow-hidden transform-gpu",
+              "relative z-10 w-full sm:max-w-4xl max-h-[85dvh] sm:max-h-[82vh] bg-[#0a0a0a] border-t sm:border border-white/10 rounded-t-[24px] sm:rounded-3xl p-3.5 sm:p-7 flex flex-col shadow-none overflow-hidden transform-gpu",
               isClosing ? "scale-95 opacity-0 duration-150" : "animate-in slide-in-from-bottom-3 sm:zoom-in-95 duration-200"
             )}
           >
@@ -1037,7 +1037,7 @@ function SidebarContent({
               <button
                 type="button"
                 onClick={closeModal}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/15 text-white/80 hover:text-white border border-white/10 transition-all shrink-0 active:scale-95"
+                className="p-2 rounded-xl bg-[#181818] hover:bg-[#222222] text-white/80 hover:text-white border border-white/10 transition-all shrink-0 active:scale-95"
                 aria-label="Đóng bảng"
               >
                 <X className="w-5 h-5" />
@@ -1054,7 +1054,7 @@ function SidebarContent({
                   value={yearSearchQuery}
                   onChange={(e) => setYearSearchQuery(e.target.value)}
                   placeholder="Lọc nhanh năm (2026, 2025, 2020...)"
-                  className="w-full bg-white/[0.06] border border-white/10 focus:border-white/25 text-white placeholder-white/30 text-[16px] sm:text-sm rounded-xl pl-10 pr-9 py-2 sm:py-2.5 outline-none transition-all"
+                  className="w-full bg-[#141414] border border-white/10 focus:border-white/25 text-white placeholder-white/30 text-[16px] sm:text-sm rounded-xl pl-10 pr-9 py-2 sm:py-2.5 outline-none transition-all"
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
@@ -1097,7 +1097,7 @@ function SidebarContent({
                             "relative py-2 sm:py-2.5 px-1.5 sm:px-2 rounded-xl sm:rounded-2xl border text-center transition-all duration-200 group flex flex-col items-center justify-center gap-0.5 active:scale-95 min-w-0 shadow-none",
                             active
                               ? "bg-brand-green/20 border-brand-green/50 text-brand-green font-bold"
-                              : "bg-white/[0.04] hover:bg-white/[0.08] border-white/5 hover:border-brand-green/30 text-white/90 hover:text-white"
+                              : "bg-[#141414] hover:bg-[#1f1f1f] border-white/5 hover:border-brand-green/30 text-white/90 hover:text-white"
                           )}
                         >
                           <div className="flex items-center gap-1 sm:gap-1.5">
@@ -1147,7 +1147,7 @@ function SidebarContent({
                             "relative flex items-center justify-center py-2 sm:py-2.5 px-1 rounded-xl border text-center transition-all duration-200 group active:scale-95 min-w-0 font-medium shadow-none",
                             active
                               ? "bg-brand-green/20 border-brand-green/50 text-brand-green font-bold"
-                              : "bg-white/[0.02] hover:bg-white/[0.06] border-white/5 hover:border-brand-green/30 text-white/75 hover:text-white"
+                              : "bg-[#141414] hover:bg-[#1f1f1f] border-white/5 hover:border-brand-green/30 text-white/75 hover:text-white"
                           )}
                         >
                           <span className="text-xs sm:text-sm font-semibold truncate">

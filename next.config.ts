@@ -60,7 +60,6 @@ const nextConfig: NextConfig = {
       "date-fns",
     ],
     staticGenerationRetryCount: 3,
-    webpackBuildWorker: true,
   },
 
   turbopack: {},

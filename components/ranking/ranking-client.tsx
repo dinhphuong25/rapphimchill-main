@@ -20,6 +20,7 @@ import {
   Smile
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getMovieImageCandidates } from "@/lib/image-helper";
 import type { AllRankingsData, RankingMovieItem, RankingPeriod } from "@/lib/data";
 
 interface RankingClientProps {
@@ -44,10 +45,44 @@ const TYPE_FILTERS: Array<{ id: MovieTypeFilter; label: string; icon: any }> = [
   { id: "anime", label: "Hoạt Hình", icon: Smile },
 ];
 
-function getImageUrl(movie: RankingMovieItem): string {
-  const raw = movie.poster_url || movie.thumb_url || "";
-  if (!raw) return "/placeholder.png";
-  return raw.startsWith("http") ? raw : `https://phimimg.com/${raw}`;
+function RankingImage({
+  movie,
+  type = "poster",
+  sizes,
+  className = "object-cover",
+}: {
+  movie: RankingMovieItem;
+  type?: "poster" | "backdrop";
+  sizes?: string;
+  className?: string;
+}) {
+  const [candidateIdx, setCandidateIdx] = useState(0);
+  const [hasError, setHasError] = useState(false);
+  const candidates = useMemo(() => getMovieImageCandidates(movie, type), [movie, type]);
+  const src = !hasError && candidates.length > 0 ? candidates[candidateIdx] : null;
+
+  if (!src) {
+    return (
+      <div className="w-full h-full bg-[#0c1310] flex flex-col items-center justify-center p-2 text-center">
+        <Film className="w-6 h-6 text-brand-green/60 mb-1" />
+        <span className="text-[10px] text-white/70 line-clamp-1">{movie.name}</span>
+      </div>
+    );
+  }
+
+  return (
+    <Image
+      src={src}
+      alt={movie.name}
+      fill
+      sizes={sizes}
+      className={className}
+      onError={() => {
+        if (candidateIdx + 1 < candidates.length) setCandidateIdx((i) => i + 1);
+        else setHasError(true);
+      }}
+    />
+  );
 }
 
 function getRating(movie: RankingMovieItem): number | null {
@@ -271,7 +306,6 @@ interface PodiumCardProps {
 
 function PodiumCard({ movie, rank, theme, isChampion }: PodiumCardProps) {
   const rating = getRating(movie);
-  const imageUrl = getImageUrl(movie);
 
   const themeConfig = {
     gold: {
@@ -332,10 +366,9 @@ function PodiumCard({ movie, rank, theme, isChampion }: PodiumCardProps) {
 
       {/* Poster Image */}
       <Link href={`/watch?slug=${movie.slug}`} className="relative aspect-[16/10] sm:aspect-[16/9] w-full overflow-hidden bg-cinema-sub block">
-        <Image
-          src={imageUrl}
-          alt={movie.name}
-          fill
+        <RankingImage
+          movie={movie}
+          type="backdrop"
           sizes="(max-width: 768px) 100vw, 33vw"
           className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
         />
@@ -428,7 +461,6 @@ interface LeaderboardRowProps {
 
 function LeaderboardRow({ movie, rank }: LeaderboardRowProps) {
   const rating = getRating(movie);
-  const imageUrl = getImageUrl(movie);
 
   return (
     <div className="group relative flex items-center gap-3 sm:gap-4 p-2.5 sm:p-3.5 rounded-xl bg-cinema-surface/70 hover:bg-cinema-surface border border-white/5 hover:border-brand-green/40 transition-all duration-200">
@@ -444,10 +476,9 @@ function LeaderboardRow({ movie, rank }: LeaderboardRowProps) {
         href={`/watch?slug=${movie.slug}`}
         className="relative w-16 sm:w-20 aspect-[2/3] shrink-0 rounded-lg overflow-hidden bg-cinema-sub border border-white/10 group-hover:border-brand-green/40 transition-colors"
       >
-        <Image
-          src={imageUrl}
-          alt={movie.name}
-          fill
+        <RankingImage
+          movie={movie}
+          type="poster"
           sizes="80px"
           className="object-cover group-hover:scale-105 transition-transform duration-300"
         />

@@ -7,6 +7,7 @@ import { unstable_cache } from "next/cache";
 import { Suspense } from "react";
 import { LoadingWatch } from "@/components/ui/page-loaders";
 import { getCachedCategories, getCachedCountries } from "@/lib/data";
+import { normalizeImageUrl } from "@/lib/image-helper";
 
 async function getMovieData(slug: string) {
   const api = new PhimApi();
@@ -24,13 +25,8 @@ export async function generateMetadata({ searchParams }: any) {
     const watchUrl = `https://hiphim.biz/watch?slug=${slug}`;
     const canonicalUrl = watchUrl;
     
-    const posterUrl = movie.poster_url?.startsWith("http") 
-      ? movie.poster_url 
-      : `https://phimimg.com/${movie.poster_url}`;
-      
-    const thumbUrl = movie.thumb_url?.startsWith("http")
-      ? movie.thumb_url
-      : `https://phimimg.com/${movie.thumb_url}`;
+    const posterUrl = normalizeImageUrl(movie.poster_url);
+    const thumbUrl = normalizeImageUrl(movie.thumb_url);
 
     return {
       title: `${movie.name} - Xem phim HD chất lượng cao | Hi Phim`,
@@ -98,10 +94,23 @@ async function WatchContent({ slug }: { slug: string }) {
     url: `https://hiphim.biz${item.url}`
   }));
 
-  const bgUrl = movie.poster_url?.startsWith("http") ? movie.poster_url : `https://phimimg.com/${movie.poster_url}`;
+  const bgUrl = normalizeImageUrl(movie.poster_url || movie.thumb_url);
+  const firstM3u8 = server?.[0]?.server_data?.[0]?.link_m3u8;
+  let m3u8Origin = "";
+  if (firstM3u8) {
+    try {
+      m3u8Origin = new URL(firstM3u8).origin;
+    } catch {}
+  }
 
   return (
     <div className="min-h-screen bg-cinema-bg text-white selection:bg-brand-green selection:text-cinema-bg">
+      {m3u8Origin && (
+        <link rel="preconnect" href={m3u8Origin} crossOrigin="anonymous" />
+      )}
+      {firstM3u8 && (
+        <link rel="preload" href={firstM3u8} as="fetch" crossOrigin="anonymous" />
+      )}
       {/* Dynamic Blurred Background - Chỉ hiện trên desktop để tối ưu GPU mobile */}
       <div 
         className="fixed inset-0 z-0 opacity-25 scale-105 pointer-events-none hidden sm:block will-change-transform"
