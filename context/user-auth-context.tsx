@@ -137,69 +137,59 @@ function TempBanModal({
   return (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.88)", backdropFilter: "blur(10px)" }}
+      style={{ backgroundColor: "rgba(0, 0, 0, 0.84)" }}
     >
-      <div className="w-full max-w-md bg-[#0e0b04] border border-amber-500/30 rounded-2xl shadow-2xl shadow-amber-900/20 overflow-hidden">
-        {/* Accent bar */}
-        <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, transparent, #f59e0b, #ef4444, #f59e0b, transparent)" }} />
-
-        {/* Header */}
-        <div className="flex flex-col items-center gap-3 px-6 pt-7 pb-5 text-center border-b border-amber-500/15">
-          <div className="relative">
-            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 shadow-[0_0_40px_rgba(245,158,11,0.25)]">
-              <ShieldAlert className="w-8 h-8" />
-            </div>
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-ping" />
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full" />
+      <div
+        className="overflow-hidden rounded-xl border border-[#39443d]"
+        style={{
+          width: "calc(100vw - 32px)",
+          maxWidth: "460px",
+          backgroundColor: "#171717",
+        }}
+      >
+        <div className="flex items-start gap-3 border-b border-[#353535] px-5 py-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-[#6c571e] bg-[#2a2415] text-amber-400">
+            <ShieldAlert className="h-5 w-5" />
           </div>
-          <div>
-            <h2 className="text-lg font-black text-white tracking-tight">Tài Khoản Bị Tạm Khóa</h2>
-            <p className="text-xs text-amber-400 mt-1 font-semibold uppercase tracking-widest">Temporary Ban</p>
+          <div className="min-w-0">
+            <h2 className="text-base font-bold text-white">Tài khoản đang bị tạm khóa</h2>
+            <p className="mt-1 text-xs text-[#b8b8b8]">Quyền xem phim sẽ được mở lại tự động</p>
           </div>
         </div>
 
-        {/* Body */}
-        <div className="px-6 py-5 space-y-3">
-          {/* Reason */}
-          <div className="bg-amber-950/30 border border-amber-500/20 rounded-xl px-4 py-3">
-            <p className="text-xs text-amber-300/60 uppercase tracking-wider mb-1 font-semibold">Lý do vi phạm</p>
-            <p className="text-sm text-amber-100 leading-relaxed">
+        <div className="space-y-3 px-5 py-4">
+          <section className="rounded-md border border-[#3a3a3a] bg-[#202020] px-4 py-3">
+            <p className="mb-1 text-xs font-semibold text-[#bdbdbd]">Lý do</p>
+            <p className="text-sm leading-6 text-white">
               {reason || "Tạm khóa quyền xem phim do vi phạm quy chế website."}
             </p>
-          </div>
+          </section>
 
-          {/* Countdown */}
-          <div className="bg-black/40 border border-white/8 rounded-xl px-4 py-3 space-y-2">
-            <div className="flex items-center justify-between text-xs text-white/50">
-              <span className="flex items-center gap-1.5 font-semibold uppercase tracking-wider">
-                <Clock className="w-3.5 h-3.5 text-amber-400" />
+          <section className="rounded-md border border-[#3a3a3a] bg-[#202020] px-4 py-3">
+            <div className="flex items-center justify-between gap-3 text-xs text-[#c7c7c7]">
+              <span className="flex items-center gap-1.5 font-semibold">
+                <Clock className="h-4 w-4 text-[#d1d1d1]" />
                 Mở khóa lúc
               </span>
-              <span className="text-amber-300 font-mono font-bold text-xs">{untilStr}</span>
+              <span className="text-right font-mono text-white">{untilStr}</span>
             </div>
-            <div className="flex items-center justify-center bg-black/50 border border-amber-500/20 rounded-lg px-3 py-2">
-              <p className="font-mono text-amber-400 font-black text-sm tracking-wide text-center">
-                {countdown}
-              </p>
+            <div className="mt-3 rounded border border-[#3a3a3a] bg-[#141414] px-3 py-3 text-center">
+              <p className="font-mono text-sm font-bold tracking-wide text-white">{countdown}</p>
             </div>
-          </div>
+          </section>
 
-          {/* Info note */}
-          <div className="flex items-start gap-2 px-1">
-            <Lock className="w-3.5 h-3.5 text-white/30 shrink-0 mt-0.5" />
-            <p className="text-xs text-white/40 leading-relaxed">
-              Trong thời gian bị tạm khóa, bạn không thể xem phim. Nếu đây là nhầm lẫn, vui lòng liên hệ Quản trị viên.
-            </p>
+          <div className="flex items-start gap-2 text-sm leading-5 text-[#bdbdbd]">
+            <Lock className="mt-0.5 h-4 w-4 shrink-0 text-[#bdbdbd]" />
+            <p>Trong thời gian tạm khóa, bạn không thể xem phim.</p>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="px-6 pb-6">
+        <div className="border-t border-[#353535] px-5 py-4">
           <button
             onClick={onDismiss}
-            className="w-full py-2.5 rounded-xl bg-white/8 hover:bg-white/12 active:bg-white/5 text-white/80 hover:text-white font-bold text-sm transition-all active:scale-95 border border-white/10 hover:border-white/20"
+            className="w-full rounded-md border border-[#4a4a4a] bg-[#2b2b2b] py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#363636]"
           >
-            Đã Hiểu
+            Đã hiểu
           </button>
         </div>
       </div>

@@ -31,7 +31,12 @@ export async function POST(request: Request) {
     }
 
     const user = result.user;
-    const sessionToken = await createUserSessionToken(user.id, user.email);
+    const sessionToken = await createUserSessionToken(user.id, user.email, {
+      name: user.name,
+      avatar: user.avatar,
+      role: user.role || "user",
+      isVerified: user.isVerified,
+    });
 
     const response = NextResponse.json({
       success: true,

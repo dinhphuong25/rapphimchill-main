@@ -27,14 +27,32 @@ export async function GET() {
       return NextResponse.json({ authenticated: false }, { headers: NO_CACHE_HEADERS });
     }
 
-    const user = findUserById(payload.userId);
-    if (!user) {
+    const storedUser = findUserById(payload.userId);
+    if (!storedUser && !payload.name) {
       return NextResponse.json({ authenticated: false }, { headers: NO_CACHE_HEADERS });
     }
 
+    const user = storedUser || {
+      id: payload.userId,
+      email: payload.email,
+      name: payload.name || payload.email.split("@")[0],
+      avatar: payload.avatar || "",
+      isVerified: payload.isVerified ?? true,
+      role: payload.role === "superadmin" ? "superadmin" : "user",
+      createdAt: new Date().toISOString(),
+      isLocked: false,
+      bannedUntil: 0,
+      banReason: "",
+      bannedAt: undefined,
+      favorites: [],
+      history: [],
+    };
+
     // Update real-time user activity
-    const { touchUserActivity } = await import("@/lib/user-store");
-    touchUserActivity(user.id);
+    if (storedUser) {
+      const { touchUserActivity } = await import("@/lib/user-store");
+      touchUserActivity(user.id);
+    }
 
     const isSuper = isSuperAdmin(user);
     const role = isSuper ? "superadmin" : (user.role || "user");

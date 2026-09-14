@@ -7,6 +7,10 @@ export interface UserSessionPayload {
   userId: string;
   email: string;
   expiresAt: number;
+  name?: string;
+  avatar?: string;
+  role?: string;
+  isVerified?: boolean;
 }
 
 export interface PendingRegistrationPayload {
@@ -51,11 +55,16 @@ export async function verifyPendingRegistrationToken(
  * Creates an HMAC signed session token using Web Crypto API.
  * 100% compatible with Node.js and Next.js Edge Middleware.
  */
-export async function createUserSessionToken(userId: string, email: string): Promise<string> {
+export async function createUserSessionToken(
+  userId: string,
+  email: string,
+  profile?: Pick<UserSessionPayload, "name" | "avatar" | "role" | "isVerified">
+): Promise<string> {
   const expiresAt = Date.now() + SESSION_MAX_AGE_SECONDS * 1000;
-  const payload = `${userId}:${email}:${expiresAt}`;
-  const signature = await generateHmac(payload, SECRET_SALT);
-  return `${payload}:${signature}`;
+  const payload: UserSessionPayload = { userId, email, expiresAt, ...profile };
+  const encodedPayload = encodeBase64Url(JSON.stringify(payload));
+  const signature = await generateHmac(encodedPayload, SECRET_SALT);
+  return `v2.${encodedPayload}.${signature}`;
 }
 
 /**
@@ -63,6 +72,24 @@ export async function createUserSessionToken(userId: string, email: string): Pro
  */
 export async function verifyUserSessionToken(token: string | null | undefined): Promise<UserSessionPayload | null> {
   if (!token) return null;
+
+  if (token.startsWith("v2.")) {
+    const [, encodedPayload, signature] = token.split(".");
+    if (!encodedPayload || !signature) return null;
+    const expectedSignature = await generateHmac(encodedPayload, SECRET_SALT);
+    if (signature !== expectedSignature) return null;
+
+    try {
+      const payload = JSON.parse(decodeBase64Url(encodedPayload)) as UserSessionPayload;
+      if (!payload.userId || !payload.email || !payload.expiresAt || Date.now() > payload.expiresAt) {
+        return null;
+      }
+      return payload;
+    } catch {
+      return null;
+    }
+  }
+
   const parts = token.split(":");
   if (parts.length !== 4) return null;
 

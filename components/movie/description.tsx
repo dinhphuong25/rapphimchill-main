@@ -723,24 +723,27 @@ export default function Description({ movie, serverData }: any) {
             {/* Ambient backlight glow - desktop only to prevent mobile GPU lag */}
             <div className="absolute -inset-3 bg-gradient-to-r from-brand-green/25 via-brand-green/10 to-emerald-600/20 rounded-[32px] blur-3xl opacity-70 group-hover/player:opacity-100 transition-opacity pointer-events-none hidden sm:block will-change-transform" />
 
-            <Card className="border border-white/10 overflow-hidden shadow-[0_0_90px_rgba(0,0,0,0.95)] w-full aspect-video rounded-2xl lg:rounded-3xl bg-black relative z-10">
+            <Card className={cn(
+              "border border-white/10 overflow-hidden w-full rounded-2xl lg:rounded-3xl bg-black relative z-10",
+              isUserBanned ? "min-h-[430px] sm:min-h-[500px]" : "aspect-video"
+            )}>
               <CardContent className="p-0 h-full w-full">
                 {isUserBanned ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center p-6 sm:p-10 text-center bg-gradient-to-b from-[#180808] via-black to-[#0e0404] border border-red-500/20 backdrop-blur-xl select-none">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 mb-4 shadow-[0_0_35px_rgba(239,68,68,0.25)] animate-pulse">
+                  <div className="w-full min-h-[430px] sm:min-h-[500px] flex flex-col items-center justify-center p-5 sm:p-10 text-center bg-[#160d0d] border border-red-500/20 select-none">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-[#2a1515] border border-red-500/30 flex items-center justify-center text-red-400 mb-4">
                       <ShieldAlert className="w-8 h-8 sm:w-10 sm:h-10" />
                     </div>
-                    <h3 className="text-xl sm:text-2xl font-black text-white mb-2 tracking-tight">
+                    <h3 className="text-lg sm:text-2xl font-black text-white mb-3 tracking-tight leading-tight">
                       {isUserPermanentlyBanned ? "Tài Khoản Đang Bị Khóa Vĩnh Viễn" : "Tạm Khóa Quyền Xem Phim"}
                     </h3>
-                    <div className="max-w-md w-full mb-4 bg-red-950/40 border border-red-500/25 px-4 py-3 rounded-xl text-center shadow-inner">
-                      <p className="text-xs sm:text-sm text-red-200 leading-relaxed">
+                    <div className="max-w-md w-full mb-4 bg-[#241313] border border-red-500/25 px-4 py-3 rounded-lg text-center">
+                      <p className="text-xs sm:text-sm text-red-100 leading-relaxed">
                         <span className="font-bold text-red-400">Lý do: </span>
                         {user?.banReason || "Vi phạm quy định sử dụng hoặc điều khoản của website."}
                       </p>
                     </div>
                     {isUserTemporarilyBanned && user?.bannedUntil && (
-                      <div className="flex flex-wrap items-center justify-center gap-2 text-xs sm:text-sm text-amber-300 bg-amber-500/10 border border-amber-500/20 px-4 py-2 rounded-xl mb-4">
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-xs sm:text-sm text-amber-200 bg-[#2b2413] border border-amber-500/25 px-4 py-3 rounded-lg mb-4 w-full max-w-md">
                         <Clock className="w-4 h-4 text-amber-400 shrink-0" />
                         <span>Mở khóa lúc: <strong>{new Date(user.bannedUntil).toLocaleString("vi-VN")}</strong></span>
                         {banRemainingTime && (
@@ -750,12 +753,12 @@ export default function Description({ movie, serverData }: any) {
                         )}
                       </div>
                     )}
-                    <p className="text-xs text-white/40 max-w-sm mb-6 leading-relaxed">
-                      Bạn tạm thời không thể tiếp tục phát video. Nếu đây là sự nhầm lẫn, vui lòng liên hệ Quản trị viên để được hỗ trợ giải quyết.
+                    <p className="text-xs text-white/60 max-w-sm mb-5 leading-relaxed">
+                      Bạn tạm thời không thể tiếp tục phát video. Vui lòng liên hệ Quản trị viên nếu cần hỗ trợ.
                     </p>
                     <Link
                       href="/"
-                      className="px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-bold transition-all border border-white/10 hover:border-white/25 active:scale-95 shadow-lg"
+                      className="px-6 py-2.5 rounded-lg bg-[#302020] hover:bg-[#3b2727] text-white text-xs sm:text-sm font-bold transition-colors border border-white/15"
                     >
                       Quay Về Trang Chủ
                     </Link>

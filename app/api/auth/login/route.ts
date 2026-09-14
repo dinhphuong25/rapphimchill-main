@@ -54,10 +54,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const sessionToken = await createUserSessionToken(user.id, user.email);
-
     const isSuper = isSuperAdmin(user);
     const role = isSuper ? "superadmin" : (user.role || "user");
+    const sessionToken = await createUserSessionToken(user.id, user.email, {
+      name: user.name,
+      avatar: user.avatar,
+      role,
+      isVerified: user.isVerified,
+    });
 
     const response = NextResponse.json({
       success: true,
