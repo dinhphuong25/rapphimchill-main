@@ -51,7 +51,10 @@ function PermanentBanModal({ reason, onDismiss }: { reason: string; onDismiss: (
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.92)", backdropFilter: "blur(8px)" }}
     >
-      <div className="w-full max-w-md bg-[#0f0606] border border-red-500/30 rounded-2xl shadow-2xl shadow-red-900/30 overflow-hidden animate-fade-in">
+      <div className="w-full max-w-md bg-[#0f0606] border border-red-500/30 rounded-2xl shadow-2xl shadow-red-900/30 overflow-hidden">
+        {/* Accent bar */}
+        <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, transparent, #ef4444, #dc2626, #ef4444, transparent)" }} />
+
         {/* Header */}
         <div className="flex flex-col items-center gap-3 px-6 pt-8 pb-5 text-center border-b border-red-500/20">
           <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 shadow-[0_0_40px_rgba(239,68,68,0.3)]">
@@ -94,12 +97,113 @@ function PermanentBanModal({ reason, onDismiss }: { reason: string; onDismiss: (
   );
 }
 
-// --- Temporary Ban Toast (fired once) ---
-function fireTempBanToast(reason: string, bannedUntil: number) {
+// --- Temporary Ban Modal Component ---
+function TempBanModal({
+  reason,
+  bannedUntil,
+  onDismiss,
+}: {
+  reason: string;
+  bannedUntil: number;
+  onDismiss: () => void;
+}) {
+  const [countdown, setCountdown] = React.useState("");
+
+  React.useEffect(() => {
+    const update = () => {
+      const diff = bannedUntil - Date.now();
+      if (diff <= 0) {
+        setCountdown("Đã hết thời hạn. Vui lòng tải lại trang.");
+        return;
+      }
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      const parts: string[] = [];
+      if (d > 0) parts.push(`${d} ngày`);
+      if (h > 0 || d > 0) parts.push(`${h} giờ`);
+      if (m > 0 || h > 0 || d > 0) parts.push(`${m} phút`);
+      parts.push(`${s} giây`);
+      setCountdown(parts.join(" "));
+    };
+    update();
+    const timer = setInterval(update, 1000);
+    return () => clearInterval(timer);
+  }, [bannedUntil]);
+
   const untilStr = new Date(bannedUntil).toLocaleString("vi-VN");
-  toast.error(
-    `Tài khoản của bạn đã bị TẠM KHÓA quyền xem phim đến ${untilStr}. Lý do: ${reason || "Vi phạm quy định"}.`,
-    { duration: 8000, id: "temp-ban-notice" }
+
+  return (
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.88)", backdropFilter: "blur(10px)" }}
+    >
+      <div className="w-full max-w-md bg-[#0e0b04] border border-amber-500/30 rounded-2xl shadow-2xl shadow-amber-900/20 overflow-hidden">
+        {/* Accent bar */}
+        <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, transparent, #f59e0b, #ef4444, #f59e0b, transparent)" }} />
+
+        {/* Header */}
+        <div className="flex flex-col items-center gap-3 px-6 pt-7 pb-5 text-center border-b border-amber-500/15">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 shadow-[0_0_40px_rgba(245,158,11,0.25)]">
+              <ShieldAlert className="w-8 h-8" />
+            </div>
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-ping" />
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full" />
+          </div>
+          <div>
+            <h2 className="text-lg font-black text-white tracking-tight">Tài Khoản Bị Tạm Khóa</h2>
+            <p className="text-xs text-amber-400 mt-1 font-semibold uppercase tracking-widest">Temporary Ban</p>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-5 space-y-3">
+          {/* Reason */}
+          <div className="bg-amber-950/30 border border-amber-500/20 rounded-xl px-4 py-3">
+            <p className="text-xs text-amber-300/60 uppercase tracking-wider mb-1 font-semibold">Lý do vi phạm</p>
+            <p className="text-sm text-amber-100 leading-relaxed">
+              {reason || "Tạm khóa quyền xem phim do vi phạm quy chế website."}
+            </p>
+          </div>
+
+          {/* Countdown */}
+          <div className="bg-black/40 border border-white/8 rounded-xl px-4 py-3 space-y-2">
+            <div className="flex items-center justify-between text-xs text-white/50">
+              <span className="flex items-center gap-1.5 font-semibold uppercase tracking-wider">
+                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                Mở khóa lúc
+              </span>
+              <span className="text-amber-300 font-mono font-bold text-xs">{untilStr}</span>
+            </div>
+            <div className="flex items-center justify-center bg-black/50 border border-amber-500/20 rounded-lg px-3 py-2">
+              <p className="font-mono text-amber-400 font-black text-sm tracking-wide text-center">
+                {countdown}
+              </p>
+            </div>
+          </div>
+
+          {/* Info note */}
+          <div className="flex items-start gap-2 px-1">
+            <Lock className="w-3.5 h-3.5 text-white/30 shrink-0 mt-0.5" />
+            <p className="text-xs text-white/40 leading-relaxed">
+              Trong thời gian bị tạm khóa, bạn không thể xem phim. Nếu đây là nhầm lẫn, vui lòng liên hệ Quản trị viên.
+            </p>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 pb-6">
+          <button
+            onClick={onDismiss}
+            className="w-full py-2.5 rounded-xl bg-white/8 hover:bg-white/12 active:bg-white/5 text-white/80 hover:text-white font-bold text-sm transition-all active:scale-95 border border-white/10 hover:border-white/20"
+          >
+            Đã Hiểu
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

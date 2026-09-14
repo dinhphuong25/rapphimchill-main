@@ -421,10 +421,6 @@ export default function AuthModal() {
                   </p>
                 )}
 
-                <div className="mt-3 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300/90 text-[11px] leading-relaxed text-center">
-                  💡 <strong>Chưa nhận được thư?</strong> Vui lòng kiểm tra mục <strong>Thư rác (Spam)</strong> hoặc tab <strong>Quảng cáo / Cập nhật</strong> trong Gmail của bạn.
-                </div>
-
                 <button
                   type="button"
                   onClick={() => openAuthModal("register")}
