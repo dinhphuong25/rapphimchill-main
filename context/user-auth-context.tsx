@@ -216,6 +216,8 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
 
   // Ban modal state
   const [permBanModal, setPermBanModal] = useState<{ open: boolean; reason: string }>({ open: false, reason: "" });
+  const [tempBanModal, setTempBanModal] = useState<{ open: boolean; reason: string; bannedUntil: number }>({ open: false, reason: "", bannedUntil: 0 });
+
 
   // Refs to track previous ban state for change detection
   const prevBanStateRef = useRef<{ isLocked: boolean; bannedUntil: number }>({ isLocked: false, bannedUntil: 0 });
@@ -454,14 +456,15 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
             try { v.pause(); } catch {}
           });
 
-          // Fire toast warning
-          fireTempBanToast(freshUser.banReason || "", freshUser.bannedUntil);
+          // Show popup modal instead of toast
+          setTempBanModal({ open: true, reason: freshUser.banReason || "", bannedUntil: newBannedUntil });
 
           // Update user state so description.tsx isUserBanned becomes true
           setUser((prev) => prev ? { ...prev, ...freshUser } : freshUser);
           prevBanStateRef.current = { isLocked: false, bannedUntil: newBannedUntil };
           return;
         }
+
 
         // --- Case 3: Temp ban expired (server auto-unblocked) ---
         if (prevBannedUntil > 0 && !isNowTempBanned && !isNowPermLocked) {
@@ -498,6 +501,11 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     await doLogout(oldId);
     toast.error("Tài khoản của bạn đã bị khóa vĩnh viễn.");
   }, [user?.id, doLogout]);
+
+  const handleTempBanDismiss = useCallback(() => {
+    setTempBanModal({ open: false, reason: "", bannedUntil: 0 });
+  }, []);
+
 
   const openAuthModal = useCallback((mode: "login" | "register" | "otp" = "login", email?: string) => {
     setAuthModalMode(mode);
@@ -678,6 +686,15 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       {/* Permanent Ban Modal - renders on top of every page */}
       {permBanModal.open && (
         <PermanentBanModal reason={permBanModal.reason} onDismiss={handlePermBanDismiss} />
+      )}
+
+      {/* Temporary Ban Modal - renders on top of every page */}
+      {tempBanModal.open && (
+        <TempBanModal
+          reason={tempBanModal.reason}
+          bannedUntil={tempBanModal.bannedUntil}
+          onDismiss={handleTempBanDismiss}
+        />
       )}
     </UserAuthContext.Provider>
   );
