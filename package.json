@@ -14,7 +14,7 @@
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
     "build:cf": "npx @opennextjs/cloudflare build",
-    "deploy:cf": "npx @opennextjs/cloudflare deploy",
+    "deploy:cf": "npm run build:cf && npx @opennextjs/cloudflare deploy",
     "preview:cf": "npx @opennextjs/cloudflare preview"
   },
   "dependencies": {

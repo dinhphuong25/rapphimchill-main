@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { verifyAndCreateUser, type PendingRegistration } from "@/lib/user-store";
+import { verifyAndCreateUserPersistent, type PendingRegistration } from "@/lib/user-store";
 import {
   createUserSessionToken,
   PENDING_REGISTRATION_COOKIE_NAME,
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     const pendingCookie = getCookie(request, PENDING_REGISTRATION_COOKIE_NAME);
     const pendingToken = await verifyPendingRegistrationToken(pendingCookie);
     const pendingOverride: PendingRegistration | undefined = pendingToken || undefined;
-    const result = verifyAndCreateUser(email, otp, pendingOverride);
+    const result = await verifyAndCreateUserPersistent(email, otp, pendingOverride);
     if (result.error || !result.user) {
       return NextResponse.json(
         { success: false, error: result.error || "Mã OTP không hợp lệ" },

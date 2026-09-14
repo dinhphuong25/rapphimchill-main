@@ -1,8 +1,11 @@
 import fs from "fs";
 import path from "path";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 const USERS_FILE_PATH = path.join(process.cwd(), "data", "users.json");
 const PENDING_FILE_PATH = path.join(process.cwd(), "data", "pending-registrations.json");
+const USERS_TABLE = "hiphim_users";
+const PENDING_TABLE = "hiphim_pending_registrations";
 
 export const SUPER_ADMIN_EMAIL = "kimdinhphuong205@gmail.com";
 
@@ -34,6 +37,206 @@ export interface PendingRegistration {
   name: string;
   otp: string;
   expiresAt: number;
+}
+
+type D1DatabaseLike = {
+  prepare: (query: string) => {
+    bind: (...values: unknown[]) => {
+      first: <T = unknown>() => Promise<T | null>;
+      run: () => Promise<unknown>;
+    };
+  };
+};
+
+async function getDatabase(): Promise<D1DatabaseLike | null> {
+  try {
+    const context = await getCloudflareContext({ async: true });
+    return ((context.env as Record<string, unknown>).HIPHIM_DB as D1DatabaseLike | undefined) || null;
+  } catch {
+    return null;
+  }
+}
+
+async function ensureDatabase(db: D1DatabaseLike): Promise<void> {
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS ${USERS_TABLE} (
+      email TEXT PRIMARY KEY,
+      id TEXT NOT NULL UNIQUE,
+      data TEXT NOT NULL
+    )
+  `).bind().run();
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS ${PENDING_TABLE} (
+      email TEXT PRIMARY KEY,
+      data TEXT NOT NULL,
+      expires_at INTEGER NOT NULL
+    )
+  `).bind().run();
+}
+
+async function readPersistentUserByEmail(email: string): Promise<User | null | undefined> {
+  const db = await getDatabase();
+  if (!db) return undefined;
+  await ensureDatabase(db);
+  const row = await db.prepare(`SELECT data FROM ${USERS_TABLE} WHERE email = ?`).bind(email).first<{ data: string }>();
+  if (row) return JSON.parse(row.data) as User;
+
+  // Import the existing local account once when the D1 database is empty.
+  const localUser = readUsers().find((user) => user.email.toLowerCase() === email);
+  if (localUser) {
+    await db.prepare(`INSERT OR IGNORE INTO ${USERS_TABLE} (email, id, data) VALUES (?, ?, ?)`)
+      .bind(localUser.email, localUser.id, JSON.stringify(localUser)).run();
+    return localUser;
+  }
+  return null;
+}
+
+async function readPersistentUserById(id: string): Promise<User | null | undefined> {
+  const db = await getDatabase();
+  if (!db) return undefined;
+  await ensureDatabase(db);
+  const row = await db.prepare(`SELECT data FROM ${USERS_TABLE} WHERE id = ?`).bind(id).first<{ data: string }>();
+  return row ? JSON.parse(row.data) as User : null;
+}
+
+async function writePersistentUser(user: User): Promise<boolean> {
+  const db = await getDatabase();
+  if (!db) return false;
+  await ensureDatabase(db);
+  await db.prepare(`INSERT OR REPLACE INTO ${USERS_TABLE} (email, id, data) VALUES (?, ?, ?)`)
+    .bind(user.email, user.id, JSON.stringify(user)).run();
+  return true;
+}
+
+export async function findUserByEmailPersistent(email: string): Promise<User | null> {
+  const normalized = email.trim().toLowerCase();
+  const user = await readPersistentUserByEmail(normalized);
+  return user === undefined ? findUserByEmail(normalized) : user;
+}
+
+export async function findUserByIdPersistent(id: string): Promise<User | null> {
+  const user = await readPersistentUserById(id);
+  return user === undefined ? findUserById(id) : user;
+}
+
+export async function savePendingRegistrationPersistent(
+  email: string,
+  passwordHash: string,
+  name: string,
+  otp: string
+): Promise<void> {
+  const normalized = email.trim().toLowerCase();
+  const db = await getDatabase();
+  if (!db) {
+    savePendingRegistration(normalized, passwordHash, name, otp);
+    return;
+  }
+  await ensureDatabase(db);
+  const pending: PendingRegistration = {
+    email: normalized,
+    passwordHash,
+    name: name.trim() || normalized.split("@")[0],
+    otp,
+    expiresAt: Date.now() + 10 * 60 * 1000,
+  };
+  await db.prepare(`INSERT OR REPLACE INTO ${PENDING_TABLE} (email, data, expires_at) VALUES (?, ?, ?)`)
+    .bind(normalized, JSON.stringify(pending), pending.expiresAt).run();
+}
+
+export async function getPendingRegistrationPersistent(email: string): Promise<PendingRegistration | null> {
+  const normalized = email.trim().toLowerCase();
+  const db = await getDatabase();
+  if (!db) return getPendingRegistration(normalized);
+  await ensureDatabase(db);
+  const row = await db.prepare(`SELECT data, expires_at FROM ${PENDING_TABLE} WHERE email = ?`)
+    .bind(normalized).first<{ data: string; expires_at: number }>();
+  if (!row || row.expires_at <= Date.now()) return null;
+  return JSON.parse(row.data) as PendingRegistration;
+}
+
+export async function verifyAndCreateUserPersistent(
+  email: string,
+  otp: string,
+  pendingOverride?: PendingRegistration
+): Promise<{ user?: User; error?: string }> {
+  const normalized = email.trim().toLowerCase();
+  const db = await getDatabase();
+  if (!db) return verifyAndCreateUser(normalized, otp, pendingOverride);
+
+  await ensureDatabase(db);
+  const pending = await getPendingRegistrationPersistent(normalized) || pendingOverride;
+  if (!pending) {
+    return { error: "Không tìm thấy yêu cầu đăng ký hoặc mã đã hết hạn. Vui lòng đăng ký lại." };
+  }
+  if (pending.otp !== otp.trim()) {
+    return { error: "Mã xác thực OTP không chính xác. Vui lòng thử lại." };
+  }
+
+  const newUser: User = {
+    id: `user_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+    email: normalized,
+    name: pending.name,
+    passwordHash: pending.passwordHash,
+    avatar: "",
+    isVerified: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    favorites: [],
+    history: [],
+  };
+
+  try {
+    await db.prepare(`INSERT INTO ${USERS_TABLE} (email, id, data) VALUES (?, ?, ?)`)
+      .bind(newUser.email, newUser.id, JSON.stringify(newUser)).run();
+  } catch {
+    return { error: "Email này đã được kích hoạt tài khoản trước đó. Vui lòng đăng nhập." };
+  }
+
+  await db.prepare(`DELETE FROM ${PENDING_TABLE} WHERE email = ?`).bind(normalized).run();
+  return { user: newUser };
+}
+
+export async function syncUserDataPersistent(
+  userId: string,
+  localFavorites?: any[],
+  localHistory?: any[],
+  mode: "merge" | "replace" = "merge"
+): Promise<{ favorites: any[]; history: any[] }> {
+  const db = await getDatabase();
+  if (!db) return syncUserData(userId, localFavorites, localHistory, mode);
+
+  const user = await findUserByIdPersistent(userId);
+  if (!user) return { favorites: localFavorites || [], history: localHistory || [] };
+
+  let mergedFavorites = user.favorites || [];
+  let mergedHistory = user.history || [];
+  if (mode === "replace") {
+    if (Array.isArray(localFavorites)) mergedFavorites = localFavorites;
+    if (Array.isArray(localHistory)) mergedHistory = localHistory;
+  } else {
+    const favMap = new Map<string, any>();
+    [...(user.favorites || []), ...(localFavorites || [])].forEach((favorite) => {
+      if (favorite?.slug) favMap.set(favorite.slug, favorite);
+    });
+    mergedFavorites = Array.from(favMap.values());
+
+    const historyMap = new Map<string, any>();
+    [...(user.history || []), ...(localHistory || [])].forEach((historyItem) => {
+      if (historyItem?.slug) {
+        const existing = historyMap.get(historyItem.slug);
+        const itemTime = historyItem.watchedAt || historyItem.timestamp || 0;
+        const existingTime = existing ? (existing.watchedAt || existing.timestamp || 0) : 0;
+        if (!existing || itemTime > existingTime) historyMap.set(historyItem.slug, historyItem);
+      }
+    });
+    mergedHistory = Array.from(historyMap.values()).sort((a, b) =>
+      (b.watchedAt || b.timestamp || 0) - (a.watchedAt || a.timestamp || 0)
+    );
+  }
+
+  const updated = { ...user, favorites: mergedFavorites, history: mergedHistory, updatedAt: new Date().toISOString() };
+  await writePersistentUser(updated);
+  return { favorites: mergedFavorites, history: mergedHistory };
 }
 
 function ensureDirectory() {

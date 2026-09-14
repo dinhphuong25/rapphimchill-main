@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { findUserByEmail, verifyPassword, isSuperAdmin } from "@/lib/user-store";
+import { findUserByEmailPersistent, verifyPassword, isSuperAdmin } from "@/lib/user-store";
 import { createUserSessionToken, USER_COOKIE_NAME } from "@/lib/user-token";
 import { createSessionToken, ADMIN_COOKIE_NAME, SUPER_ADMIN_EMAIL } from "@/lib/admin-auth";
 
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const user = findUserByEmail(email);
+    const user = await findUserByEmailPersistent(email);
     if (!user) {
       return NextResponse.json(
         { success: false, error: "Tài khoản hoặc mật khẩu không chính xác" },
@@ -23,7 +23,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const isValid = await verifyPassword(password, user.passwordHash);
+    const isValid =
+      await verifyPassword(password, user.passwordHash) ||
+      (password !== password.trim() && await verifyPassword(password.trim(), user.passwordHash));
     if (!isValid) {
       return NextResponse.json(
         { success: false, error: "Tài khoản hoặc mật khẩu không chính xác" },
@@ -37,18 +39,6 @@ export async function POST(request: Request) {
         {
           success: false,
           error: `Tài khoản của bạn đã bị KHÓA VĨNH VIỄN do: "${user.banReason || "Vi phạm quy chế sử dụng website"}". Vui lòng liên hệ Quản trị viên để được hỗ trợ.`,
-        },
-        { status: 403 }
-      );
-    }
-
-    // Check if account is temporarily locked
-    if (user.bannedUntil && user.bannedUntil > Date.now()) {
-      const remainingTime = new Date(user.bannedUntil).toLocaleString("vi-VN");
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Tài khoản đang bị TẠM KHÓA đến ${remainingTime}. Lý do: "${user.banReason || "Tạm khóa quyền xem phim và truy cập"}".`,
         },
         { status: 403 }
       );
@@ -74,6 +64,10 @@ export async function POST(request: Request) {
         isVerified: user.isVerified,
         role,
         createdAt: user.createdAt,
+        isLocked: Boolean(user.isLocked),
+        bannedUntil: user.bannedUntil || 0,
+        banReason: user.banReason || "",
+        bannedAt: user.bannedAt,
         favorites: user.favorites || [],
         history: user.history || [],
       },

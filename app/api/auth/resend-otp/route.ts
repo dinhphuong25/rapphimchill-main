@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getPendingRegistration, savePendingRegistration, type PendingRegistration } from "@/lib/user-store";
+import { getPendingRegistrationPersistent, savePendingRegistrationPersistent, type PendingRegistration } from "@/lib/user-store";
 import { sendOtpEmail } from "@/lib/email-service";
 import {
   createPendingRegistrationToken,
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Vui lòng cung cấp email" }, { status: 400 });
     }
 
-    const pending = getPendingRegistration(email) || await getPendingFromCookie(request, email);
+    const pending = await getPendingRegistrationPersistent(email) || await getPendingFromCookie(request, email);
     if (!pending) {
       return NextResponse.json(
         { success: false, error: "Không tìm thấy yêu cầu đăng ký đang chờ hoặc mã đã hết hạn." },
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     }
 
     const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    savePendingRegistration(pending.email, pending.passwordHash, pending.name, newOtp);
+    await savePendingRegistrationPersistent(pending.email, pending.passwordHash, pending.name, newOtp);
 
     const emailResult = await sendOtpEmail(pending.email, newOtp, pending.name);
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { syncUserData } from "@/lib/user-store";
+import { syncUserDataPersistent } from "@/lib/user-store";
 import { verifyUserSessionToken, USER_COOKIE_NAME } from "@/lib/user-token";
 
 export async function POST(request: Request) {
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { favorites, history, mode = "merge" } = body;
 
-    const synced = syncUserData(payload.userId, favorites, history, mode);
+    const synced = await syncUserDataPersistent(payload.userId, favorites, history, mode);
 
     return NextResponse.json({
       success: true,

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { findUserById, isSuperAdmin } from "@/lib/user-store";
+import { findUserByIdPersistent, isSuperAdmin } from "@/lib/user-store";
 import { verifyUserSessionToken, USER_COOKIE_NAME } from "@/lib/user-token";
 import { createSessionToken, ADMIN_COOKIE_NAME, SUPER_ADMIN_EMAIL } from "@/lib/admin-auth";
 
@@ -27,7 +27,7 @@ export async function GET() {
       return NextResponse.json({ authenticated: false }, { headers: NO_CACHE_HEADERS });
     }
 
-    const storedUser = findUserById(payload.userId);
+    const storedUser = await findUserByIdPersistent(payload.userId);
     if (!storedUser && !payload.name) {
       return NextResponse.json({ authenticated: false }, { headers: NO_CACHE_HEADERS });
     }

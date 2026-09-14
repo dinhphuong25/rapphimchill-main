@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { findUserByEmail, hashPassword, savePendingRegistration } from "@/lib/user-store";
+import { findUserByEmailPersistent, hashPassword, savePendingRegistrationPersistent } from "@/lib/user-store";
 import { sendOtpEmail } from "@/lib/email-service";
 import { createPendingRegistrationToken, PENDING_REGISTRATION_COOKIE_NAME } from "@/lib/user-token";
 
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     }
 
     // Check existing
-    const existing = findUserByEmail(normalizedEmail);
+    const existing = await findUserByEmailPersistent(normalizedEmail);
     if (existing) {
       return NextResponse.json(
         { success: false, error: "Email này đã được đăng ký tài khoản. Vui lòng đăng nhập." },
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       ? name.trim().replace(/\s+/g, " ")
       : normalizedEmail.split("@")[0];
 
-    savePendingRegistration(normalizedEmail, passwordHash, displayName, otp);
+    await savePendingRegistrationPersistent(normalizedEmail, passwordHash, displayName, otp);
 
     // Send email
     const emailResult = await sendOtpEmail(normalizedEmail, otp, displayName);

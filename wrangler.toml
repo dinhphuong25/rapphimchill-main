@@ -3,6 +3,9 @@ main = ".open-next/worker.js"
 compatibility_date = "2026-02-01"
 compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
 
+[build]
+command = "npx @opennextjs/cloudflare build"
+
 [assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
@@ -13,3 +16,9 @@ service = "rapphimchill"
 
 [images]
 binding = "IMAGES"
+
+# Create a D1 database, then replace the placeholder with its database_id.
+[[d1_databases]]
+binding = "HIPHIM_DB"
+database_name = "hiphim-users"
+database_id = "a5300649-2281-459d-8f57-a0e6f3c5dda7"
