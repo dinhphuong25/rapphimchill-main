@@ -53,6 +53,7 @@ import {
   CheckCheck,
   SlidersHorizontal,
   Copy,
+  Download,
   Menu,
   ChevronRight,
 } from "lucide-react";
@@ -91,6 +92,8 @@ export default function AdminDashboardPage() {
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [userSearchTerm, setUserSearchTerm] = useState("");
   const [userFilter, setUserFilter] = useState<"all" | "active" | "watching" | "banned" | "verified">("all");
+  const [userSort, setUserSort] = useState<"recent" | "name" | "activity">("recent");
+  const [userPage, setUserPage] = useState(1);
   const [userViewMode, setUserViewMode] = useState<"card" | "table">("card");
 
   // Full Authority Modals & Action States
@@ -2223,6 +2226,46 @@ export default function AdminDashboardPage() {
               );
             });
 
+            const sortedUsers = [...filteredUsers].sort((a, b) => {
+              if (userSort === "name") return String(a.name || a.email).localeCompare(String(b.name || b.email), "vi");
+              if (userSort === "activity") {
+                return new Date(b.lastActiveAt || 0).getTime() - new Date(a.lastActiveAt || 0).getTime();
+              }
+              return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+            });
+            const usersPerPage = 12;
+            const totalUserPages = Math.max(1, Math.ceil(sortedUsers.length / usersPerPage));
+            const currentUserPage = Math.min(userPage, totalUserPages);
+            const paginatedUsers = sortedUsers.slice(
+              (currentUserPage - 1) * usersPerPage,
+              currentUserPage * usersPerPage
+            );
+
+            const exportUsersCsv = () => {
+              const headers = ["Tên", "Email", "Vai trò", "Đã xác thực OTP", "Trạng thái", "Ngày tham gia", "Hoạt động gần nhất"];
+              const escapeCsv = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+              const rows = filteredUsers.map((user) => {
+                const isBanned = Boolean(user.isLocked || (user.bannedUntil && user.bannedUntil > Date.now()));
+                return [
+                  user.name,
+                  user.email,
+                  user.role || "user",
+                  user.isVerified ? "Có" : "Chưa",
+                  isBanned ? "Bị khóa" : "Bình thường",
+                  user.createdAt ? new Date(user.createdAt).toLocaleDateString("vi-VN") : "",
+                  user.lastActiveAt ? new Date(user.lastActiveAt).toLocaleString("vi-VN") : "",
+                ].map(escapeCsv).join(",");
+              });
+              const csv = `\uFEFF${[headers.map(escapeCsv).join(","), ...rows].join("\n")}`;
+              const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+              const link = document.createElement("a");
+              link.href = url;
+              link.download = `hiphim-members-${new Date().toISOString().slice(0, 10)}.csv`;
+              link.click();
+              URL.revokeObjectURL(url);
+              toast.success(`Đã xuất ${filteredUsers.length} thành viên`);
+            };
+
             return (
               <div className="space-y-6">
                 {/* Header Section */}
@@ -2279,11 +2322,54 @@ export default function AdminDashboardPage() {
                       <input
                         type="text"
                         value={userSearchTerm}
-                        onChange={(e) => setUserSearchTerm(e.target.value)}
+                        onChange={(e) => {
+                          setUserSearchTerm(e.target.value);
+                          setUserPage(1);
+                        }}
                         placeholder="Tìm theo tên, email, phim..."
                         className="bg-black/60 border border-white/15 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-brand-green w-48 sm:w-60 transition-all"
                       />
                     </div>
+
+                    {(userSearchTerm || userFilter !== "all") && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUserSearchTerm("");
+                          setUserFilter("all");
+                          setUserPage(1);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs font-bold text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        Xóa lọc
+                      </button>
+                    )}
+
+                    <select
+                      value={userSort}
+                      onChange={(e) => {
+                        setUserSort(e.target.value as typeof userSort);
+                        setUserPage(1);
+                      }}
+                      className="bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white/80 focus:outline-none focus:border-brand-green"
+                      title="Sắp xếp danh sách thành viên"
+                    >
+                      <option value="recent" className="bg-[#181818]">Mới tham gia</option>
+                      <option value="activity" className="bg-[#181818]">Hoạt động gần đây</option>
+                      <option value="name" className="bg-[#181818]">Theo tên</option>
+                    </select>
+
+                    <button
+                      type="button"
+                      onClick={exportUsersCsv}
+                      disabled={filteredUsers.length === 0}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-brand-green/25 bg-brand-green/10 text-xs font-bold text-brand-green hover:bg-brand-green/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      title="Xuất danh sách đang hiển thị ra CSV"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Xuất CSV
+                    </button>
 
                     {/* Refresh Button */}
                     <button
@@ -2339,9 +2425,12 @@ export default function AdminDashboardPage() {
 
                 {/* Filter Pills */}
                 <div className="flex flex-wrap items-center gap-2">
+                  <span className="mr-1 text-[11px] font-semibold text-white/40">
+                    Hiển thị <span className="text-white">{filteredUsers.length}</span> / {totalUsersCount}
+                  </span>
                   <button
                     type="button"
-                    onClick={() => setUserFilter("all")}
+                    onClick={() => { setUserFilter("all"); setUserPage(1); }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                       userFilter === "all"
                         ? "bg-brand-green text-black shadow-[0_0_12px_rgba(34,197,94,0.3)]"
@@ -2352,7 +2441,7 @@ export default function AdminDashboardPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setUserFilter("active")}
+                    onClick={() => { setUserFilter("active"); setUserPage(1); }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                       userFilter === "active"
                         ? "bg-emerald-500 text-black shadow-[0_0_12px_rgba(16,185,129,0.3)]"
@@ -2363,7 +2452,7 @@ export default function AdminDashboardPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setUserFilter("watching")}
+                    onClick={() => { setUserFilter("watching"); setUserPage(1); }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                       userFilter === "watching"
                         ? "bg-brand-green text-black shadow-[0_0_12px_rgba(34,197,94,0.3)]"
@@ -2374,7 +2463,7 @@ export default function AdminDashboardPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setUserFilter("verified")}
+                    onClick={() => { setUserFilter("verified"); setUserPage(1); }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                       userFilter === "verified"
                         ? "bg-teal-500 text-black shadow-[0_0_12px_rgba(20,184,166,0.3)]"
@@ -2385,7 +2474,7 @@ export default function AdminDashboardPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setUserFilter("banned")}
+                    onClick={() => { setUserFilter("banned"); setUserPage(1); }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                       userFilter === "banned"
                         ? "bg-red-500 text-white shadow-[0_0_12px_rgba(239,68,68,0.3)]"
@@ -2401,7 +2490,7 @@ export default function AdminDashboardPage() {
                 {/* ======================================================== */}
                 {userViewMode === "card" && (
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                    {filteredUsers.map((u) => {
+                    {paginatedUsers.map((u) => {
                       const isSuper = u.role === "superadmin" || u.email?.toLowerCase() === "kimdinhphuong205@gmail.com";
                       const isPermBanned = Boolean(u.isLocked);
                       const isTempBanned = Boolean(u.bannedUntil && u.bannedUntil > Date.now());
@@ -2742,7 +2831,20 @@ export default function AdminDashboardPage() {
                             <span>Đang tải danh sách thành viên...</span>
                           </div>
                         ) : (
-                          "Không tìm thấy tài khoản thành viên nào phù hợp bộ lọc."
+                          <div className="space-y-3">
+                            <p>Không tìm thấy tài khoản thành viên nào phù hợp bộ lọc.</p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setUserSearchTerm("");
+                                setUserFilter("all");
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-brand-green text-black text-xs font-bold hover:bg-emerald-300 transition-colors"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                              Hiển thị tất cả
+                            </button>
+                          </div>
                         )}
                       </div>
                     )}
@@ -2766,7 +2868,7 @@ export default function AdminDashboardPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                          {filteredUsers.map((u) => {
+                          {paginatedUsers.map((u) => {
                             const isSuper = u.role === "superadmin" || u.email?.toLowerCase() === "kimdinhphuong205@gmail.com";
                             const isPermBanned = Boolean(u.isLocked);
                             const isTempBanned = Boolean(u.bannedUntil && u.bannedUntil > Date.now());
@@ -3074,6 +3176,32 @@ export default function AdminDashboardPage() {
                           )}
                         </tbody>
                       </table>
+                    </div>
+                  </div>
+                )}
+
+                {totalUserPages > 1 && (
+                  <div className="flex items-center justify-between gap-3 pt-1">
+                    <span className="text-[11px] text-white/40">
+                      Trang {currentUserPage} / {totalUserPages}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={currentUserPage === 1}
+                        onClick={() => setUserPage((page) => Math.max(1, page - 1))}
+                        className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-xs font-bold text-white/70 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        Trước
+                      </button>
+                      <button
+                        type="button"
+                        disabled={currentUserPage === totalUserPages}
+                        onClick={() => setUserPage((page) => Math.min(totalUserPages, page + 1))}
+                        className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-xs font-bold text-white/70 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        Sau
+                      </button>
                     </div>
                   </div>
                 )}
