@@ -58,11 +58,10 @@ export async function sendOtpEmail(toEmail: string, otp: string, userName?: stri
     }
   }
 
-  if (process.env.NODE_ENV === "production") {
-    return { success: false, error: "Hệ thống email chưa được cấu hình trên Vercel." };
-  }
-
   if (!gmailPass) {
+    if (process.env.NODE_ENV === "production") {
+      return { success: false, error: "Hệ thống email chưa được cấu hình trên Vercel." };
+    }
     console.log(`[HI PHIM EMAIL OTP DEV MODE] To: ${toEmail}; OTP: ${otp}`);
     return { success: true, devMode: true, devCode: otp };
   }
