@@ -123,7 +123,6 @@ function SidebarContent({
   // Close modals and mobile drawer on route change
   useEffect(() => {
     setIsMobileOpen(false);
-    setIsAccountOpen(false);
     setActiveModal(null);
     setCategorySearchQuery("");
     setCountrySearchQuery("");
@@ -138,7 +137,7 @@ function SidebarContent({
         setIsAccountOpen(false);
       }
     };
-    if (activeModal || isAccountOpen) {
+    if (activeModal) {
       window.addEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "hidden";
     }
@@ -146,7 +145,7 @@ function SidebarContent({
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "unset";
     };
-  }, [activeModal, isAccountOpen]);
+  }, [activeModal]);
 
   const currentCategory = searchParams.get("category");
   const currentCountry = searchParams.get("country");
@@ -439,60 +438,6 @@ function SidebarContent({
             );
           })()}
 
-          {/* Tab 6: Tài Khoản / Quản Trị (Mobile Nav) */}
-          {(() => {
-            const active = isAccountOpen;
-            const initial = (user?.name || user?.email || "U").charAt(0).toUpperCase();
-
-            return (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setActiveModal(null);
-                  setIsMobileOpen(false);
-                  setIsAccountOpen(prev => !prev);
-                }}
-                className={cn(
-                  "flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none min-w-0 cursor-pointer",
-                  active
-                    ? isSuperAdmin
-                      ? "bg-amber-400/15 border border-amber-400/35 text-amber-300 font-bold shadow-[0_0_12px_rgba(251,191,36,0.2)]"
-                      : "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold"
-                    : "border border-transparent text-white/60 hover:text-white"
-                )}
-                aria-label={isSuperAdmin ? "Quản Trị" : "Tài Khoản"}
-              >
-                {user ? (
-                  <div className="relative">
-                    <div className={cn(
-                      "w-[19px] h-[19px] rounded-full font-black text-[9.5px] flex items-center justify-center shrink-0 transition-transform",
-                      isSuperAdmin
-                        ? "bg-gradient-to-tr from-amber-400 via-emerald-400 to-brand-green text-black ring-1.5 ring-amber-400/80 shadow-[0_0_8px_rgba(251,191,36,0.5)]"
-                        : "bg-gradient-to-tr from-brand-green to-emerald-300 text-black shadow-[0_0_8px_rgba(32,214,107,0.4)]",
-                      active && "scale-105"
-                    )}>
-                      {initial}
-                    </div>
-                    {isSuperAdmin && (
-                      <span className="absolute -top-1 -right-1.5 w-3 h-3 rounded-full bg-amber-400 text-black flex items-center justify-center ring-1 ring-[#0d1410] shadow-[0_0_5px_rgba(251,191,36,0.8)]">
-                        <Crown className="w-2 h-2 fill-current" />
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <User className={cn("w-[17px] h-[17px]", active && "scale-105 text-brand-green")} />
-                )}
-                <span className={cn(
-                  "text-[9px] xs:text-[10px] font-bold tracking-tight whitespace-nowrap",
-                  isSuperAdmin ? "text-amber-300 font-extrabold" : ""
-                )}>
-                  {isSuperAdmin ? "Quản Trị" : "Tài Khoản"}
-                </span>
-              </button>
-            );
-          })()}
         </div>
       </nav>
 

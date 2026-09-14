@@ -64,7 +64,7 @@ export default function UserMenu() {
         aria-label="Đăng nhập tài khoản"
       >
         <User className="w-4 h-4 text-white/60 group-hover:text-brand-green transition-colors shrink-0" />
-        <span className="hidden sm:inline font-semibold">Đăng Nhập</span>
+        <span className="font-semibold">Đăng Nhập</span>
       </button>
     );
   }

@@ -93,8 +93,8 @@ export default function Header({}: HeaderProps) {
               </kbd>
             </button>
 
-            {/* User Profile / Admin Control - Chỉ hiện trên desktop, mobile chỉ hiển thị ở thanh nav dưới */}
-            <div className="hidden lg:flex items-center shrink-0">
+            {/* User Profile / Admin Control */}
+            <div className="flex items-center shrink-0">
               <UserMenu />
             </div>
           </div>
