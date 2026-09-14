@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
-import { getPendingRegistration, savePendingRegistration } from "@/lib/user-store";
+import { getPendingRegistration, savePendingRegistration, type PendingRegistration } from "@/lib/user-store";
 import { sendOtpEmail } from "@/lib/email-service";
+import {
+  createPendingRegistrationToken,
+  PENDING_REGISTRATION_COOKIE_NAME,
+  verifyPendingRegistrationToken,
+} from "@/lib/user-token";
 
 export async function POST(request: Request) {
   try {
@@ -11,7 +16,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Vui lòng cung cấp email" }, { status: 400 });
     }
 
-    const pending = getPendingRegistration(email);
+    const pending = getPendingRegistration(email) || await getPendingFromCookie(request, email);
     if (!pending) {
       return NextResponse.json(
         { success: false, error: "Không tìm thấy yêu cầu đăng ký đang chờ hoặc mã đã hết hạn." },
@@ -34,12 +39,30 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({
+    const pendingToken = await createPendingRegistrationToken({
+      email: pending.email,
+      passwordHash: pending.passwordHash,
+      name: pending.name,
+      otp: newOtp,
+      expiresAt: Date.now() + 10 * 60 * 1000,
+    });
+
+    const response = NextResponse.json({
       success: true,
       message: `Đã gửi lại mã OTP mới đến ${pending.email}`,
       devMode: emailResult.devMode,
       devCode: emailResult.devCode,
     });
+    response.cookies.set({
+      name: PENDING_REGISTRATION_COOKIE_NAME,
+      value: pendingToken,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 600,
+      path: "/",
+    });
+    return response;
   } catch (err: any) {
     console.error("Resend OTP error:", err);
     return NextResponse.json(
@@ -47,4 +70,16 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+}
+
+async function getPendingFromCookie(request: Request, email: string): Promise<PendingRegistration | null> {
+  const cookieHeader = request.headers.get("cookie") || "";
+  const cookie = cookieHeader
+    .split(";")
+    .find((part) => part.trim().startsWith(`${PENDING_REGISTRATION_COOKIE_NAME}=`));
+  if (!cookie) return null;
+
+  const token = decodeURIComponent(cookie.trim().slice(PENDING_REGISTRATION_COOKIE_NAME.length + 1));
+  const pending = await verifyPendingRegistrationToken(token);
+  return pending?.email === email.trim().toLowerCase() ? pending : null;
 }

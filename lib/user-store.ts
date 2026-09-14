@@ -28,7 +28,7 @@ export interface User extends UserProfile {
   history: any[];
 }
 
-interface PendingRegistration {
+export interface PendingRegistration {
   email: string;
   passwordHash: string;
   name: string;
@@ -390,16 +390,20 @@ export function getPendingRegistration(email: string): PendingRegistration | nul
   return pending.find((p) => p.email.toLowerCase() === normalized) || null;
 }
 
-export function verifyAndCreateUser(email: string, otp: string): { user?: User; error?: string } {
+export function verifyAndCreateUser(
+  email: string,
+  otp: string,
+  pendingOverride?: PendingRegistration
+): { user?: User; error?: string } {
   const normalized = email.trim().toLowerCase();
   const pendingList = readPending();
   const index = pendingList.findIndex((p) => p.email.toLowerCase() === normalized);
 
-  if (index === -1) {
+  const pending = index >= 0 ? pendingList[index] : pendingOverride;
+  if (!pending) {
     return { error: "Không tìm thấy yêu cầu đăng ký hoặc mã đã hết hạn. Vui lòng đăng ký lại." };
   }
 
-  const pending = pendingList[index];
   if (pending.otp !== otp.trim()) {
     return { error: "Mã xác thực OTP không chính xác. Vui lòng thử lại." };
   }
@@ -428,8 +432,10 @@ export function verifyAndCreateUser(email: string, otp: string): { user?: User; 
   writeUsers(users);
 
   // Remove from pending
-  pendingList.splice(index, 1);
-  writePending(pendingList);
+  if (index >= 0) {
+    pendingList.splice(index, 1);
+    writePending(pendingList);
+  }
 
   return { user: newUser };
 }

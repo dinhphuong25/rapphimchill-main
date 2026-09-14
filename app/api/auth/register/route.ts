@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { findUserByEmail, hashPassword, savePendingRegistration } from "@/lib/user-store";
 import { sendOtpEmail } from "@/lib/email-service";
+import { createPendingRegistrationToken, PENDING_REGISTRATION_COOKIE_NAME } from "@/lib/user-token";
 
 export async function POST(request: Request) {
   try {
@@ -59,12 +60,30 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({
+    const pendingToken = await createPendingRegistrationToken({
+      email: normalizedEmail,
+      passwordHash,
+      name: displayName,
+      otp,
+      expiresAt: Date.now() + 10 * 60 * 1000,
+    });
+
+    const response = NextResponse.json({
       success: true,
       message: `Mã OTP kích hoạt đã được gửi đến ${normalizedEmail}`,
       devMode: emailResult.devMode,
       devCode: emailResult.devCode,
     });
+    response.cookies.set({
+      name: PENDING_REGISTRATION_COOKIE_NAME,
+      value: pendingToken,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 600,
+      path: "/",
+    });
+    return response;
   } catch (err: any) {
     console.error("Register error:", err);
     return NextResponse.json(

@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
-import { verifyAndCreateUser } from "@/lib/user-store";
-import { createUserSessionToken, USER_COOKIE_NAME } from "@/lib/user-token";
+import { verifyAndCreateUser, type PendingRegistration } from "@/lib/user-store";
+import {
+  createUserSessionToken,
+  PENDING_REGISTRATION_COOKIE_NAME,
+  USER_COOKIE_NAME,
+  verifyPendingRegistrationToken,
+} from "@/lib/user-token";
 
 export async function POST(request: Request) {
   try {
@@ -14,7 +19,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = verifyAndCreateUser(email, otp);
+    const pendingCookie = getCookie(request, PENDING_REGISTRATION_COOKIE_NAME);
+    const pendingToken = await verifyPendingRegistrationToken(pendingCookie);
+    const pendingOverride: PendingRegistration | undefined = pendingToken || undefined;
+    const result = verifyAndCreateUser(email, otp, pendingOverride);
     if (result.error || !result.user) {
       return NextResponse.json(
         { success: false, error: result.error || "Mã OTP không hợp lệ" },
@@ -49,6 +57,12 @@ export async function POST(request: Request) {
       maxAge: 86400 * 30, // 30 days
       path: "/",
     });
+    response.cookies.set({
+      name: PENDING_REGISTRATION_COOKIE_NAME,
+      value: "",
+      maxAge: 0,
+      path: "/",
+    });
 
     return response;
   } catch (err: any) {
@@ -58,4 +72,10 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+}
+
+function getCookie(request: Request, name: string): string | null {
+  const cookieHeader = request.headers.get("cookie") || "";
+  const cookie = cookieHeader.split(";").find((part) => part.trim().startsWith(`${name}=`));
+  return cookie ? decodeURIComponent(cookie.trim().slice(name.length + 1)) : null;
 }
