@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useMemo, useRef, startTransition, Suspense } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
+import { useUserAuth } from "@/context/user-auth-context";
+import { toast } from "sonner";
 import {
   Home,
   Tv,
@@ -23,14 +26,24 @@ import {
   Check,
   Calendar,
   Trophy,
+  User,
+  LogIn,
+  LogOut,
+  RefreshCw,
+  ShieldCheck,
+  Crown,
+  Shield,
+  Users,
+  Settings,
+  ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sortCountriesByPopularity, getCountryCode } from "@/lib/countries";
+import { instantMovieStore } from "@/lib/instant-movie-store";
 
 interface SidebarProps {
   categories?: { slug: string; name: string }[];
   countries?: { slug: string; name: string }[];
-  isTheatreMode?: boolean;
 }
 
 const NAV_MAIN = [
@@ -51,12 +64,24 @@ const NAV_PERSONAL = [
 function SidebarContent({
   categories: propCategories = [],
   countries: propCountries = [],
-  isTheatreMode = false,
 }: SidebarProps) {
+  const { user, openAuthModal, logout, syncWithServer } = useUserAuth();
+  const isSuperAdmin = Boolean(
+    user && (user.role === "superadmin" || user.role === "admin" || user.email?.toLowerCase() === "kimdinhphuong205@gmail.com")
+  );
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    await syncWithServer();
+    setIsSyncing(false);
+    toast.success("Đã đồng bộ phim yêu thích & lịch sử xem!");
+  };
 
   // Active selection modal: 'categories' | 'countries' | 'years' | null
   const [activeModal, setActiveModal] = useState<"categories" | "countries" | "years" | null>(null);
@@ -98,6 +123,7 @@ function SidebarContent({
   // Close modals and mobile drawer on route change
   useEffect(() => {
     setIsMobileOpen(false);
+    setIsAccountOpen(false);
     setActiveModal(null);
     setCategorySearchQuery("");
     setCountrySearchQuery("");
@@ -109,9 +135,10 @@ function SidebarContent({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setActiveModal(null);
+        setIsAccountOpen(false);
       }
     };
-    if (activeModal) {
+    if (activeModal || isAccountOpen) {
       window.addEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "hidden";
     }
@@ -119,7 +146,7 @@ function SidebarContent({
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "unset";
     };
-  }, [activeModal]);
+  }, [activeModal, isAccountOpen]);
 
   const currentCategory = searchParams.get("category");
   const currentCountry = searchParams.get("country");
@@ -253,9 +280,6 @@ function SidebarContent({
     }, 120);
   };
 
-  // If in Theatre Mode during video watching, auto-hide sidebar
-  if (isTheatreMode) return null;
-
   return (
     <>
       {/* ======================================================== */}
@@ -263,10 +287,10 @@ function SidebarContent({
       {/* ======================================================== */}
       <nav
         aria-label="Điều hướng chính"
-        className="lg:hidden fixed left-3.5 right-3.5 sm:left-auto sm:right-auto sm:w-[400px] bottom-[max(0.35rem,calc(env(safe-area-inset-bottom)-6px))] z-[110] max-w-[420px] mx-auto pointer-events-auto select-none"
+        className="lg:hidden fixed left-2.5 right-2.5 sm:left-auto sm:right-auto sm:w-[440px] bottom-[max(0.35rem,calc(env(safe-area-inset-bottom)-6px))] z-[110] max-w-[450px] mx-auto pointer-events-auto select-none"
         style={{ contain: "layout style", isolation: "isolate" }}
       >
-        <div className="h-16 px-2 py-1.5 rounded-full bg-[#131A16]/85 backdrop-blur-xl border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.08)] flex items-center justify-around">
+        <div className="h-16 px-1.5 py-1.5 rounded-full bg-[#131A16]/90 backdrop-blur-xl border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)] flex items-center justify-around">
           {/* Tab 1: Trang Chủ */}
           {(() => {
             const active =
@@ -274,100 +298,105 @@ function SidebarContent({
               !currentTypeList &&
               !currentCountry &&
               !currentCategory &&
-              !currentYear;
+              !currentYear &&
+              !isAccountOpen;
             return (
               <Link
                 href="/"
                 prefetch={true}
                 onClick={() => {
                   setIsMobileOpen(false);
+                  setIsAccountOpen(false);
                   setActiveModal(null);
                 }}
                 className={cn(
-                  "flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none",
+                  "flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none min-w-0",
                   active
                     ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold"
-                    : "border border-transparent text-white/60"
+                    : "border border-transparent text-white/60 hover:text-white"
                 )}
                 aria-label="Trang Chủ"
               >
-                <Home className={cn("w-[18px] h-[18px]", active && "scale-105")} />
-                <span className="text-[10px] font-bold tracking-tight whitespace-nowrap">Trang Chủ</span>
+                <Home className={cn("w-[17px] h-[17px]", active && "scale-105")} />
+                <span className="text-[9px] xs:text-[10px] font-bold tracking-tight whitespace-nowrap">Trang Chủ</span>
               </Link>
             );
           })()}
 
           {/* Tab 2: Chiếu Rạp */}
           {(() => {
-            const active = pathname === "/" && currentTypeList === "phim-chieu-rap";
+            const active = pathname === "/" && currentTypeList === "phim-chieu-rap" && !isAccountOpen;
             return (
               <Link
                 href="/?typeList=phim-chieu-rap"
                 prefetch={true}
                 onClick={() => {
                   setIsMobileOpen(false);
+                  setIsAccountOpen(false);
                   setActiveModal(null);
                 }}
                 className={cn(
-                  "flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none",
+                  "flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none min-w-0",
                   active
                     ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold"
-                    : "border border-transparent text-white/60"
+                    : "border border-transparent text-white/60 hover:text-white"
                 )}
                 aria-label="Chiếu Rạp"
               >
-                <Clapperboard className={cn("w-[18px] h-[18px]", active && "scale-105")} />
-                <span className="text-[10px] font-bold tracking-tight whitespace-nowrap">Chiếu Rạp</span>
+                <Clapperboard className={cn("w-[17px] h-[17px]", active && "scale-105")} />
+                <span className="text-[9px] xs:text-[10px] font-bold tracking-tight whitespace-nowrap">Chiếu Rạp</span>
               </Link>
             );
           })()}
 
           {/* Tab 3: Lịch Sử Xem */}
           {(() => {
-            const active = pathname === "/recently";
+            const active = pathname === "/recently" && !isAccountOpen;
             return (
               <Link
                 href="/recently"
                 prefetch={true}
                 onClick={() => {
                   setIsMobileOpen(false);
+                  setIsAccountOpen(false);
                   setActiveModal(null);
                 }}
                 className={cn(
-                  "flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none",
+                  "flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none min-w-0",
                   active
                     ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold"
-                    : "border border-transparent text-white/60"
+                    : "border border-transparent text-white/60 hover:text-white"
                 )}
                 aria-label="Lịch Sử Xem"
               >
-                <History className={cn("w-[18px] h-[18px]", active && "scale-105")} />
-                <span className="text-[10px] font-bold tracking-tight whitespace-nowrap">Lịch Sử</span>
+                <History className={cn("w-[17px] h-[17px]", active && "scale-105")} />
+                <span className="text-[9px] xs:text-[10px] font-bold tracking-tight whitespace-nowrap">Lịch Sử</span>
               </Link>
             );
           })()}
 
           {/* Tab 4: Yêu Thích */}
           {(() => {
-            const active = pathname === "/favorites";
+            const active = pathname === "/favorites" && !isAccountOpen;
             return (
               <Link
                 href="/favorites"
                 prefetch={true}
                 onClick={() => {
                   setIsMobileOpen(false);
+                  setIsAccountOpen(false);
                   setActiveModal(null);
                 }}
                 className={cn(
-                  "flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none",
+                  "flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none min-w-0",
                   active
                     ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold"
-                    : "border border-transparent text-white/60"
+                    : "border border-transparent text-white/60 hover:text-white"
                 )}
                 aria-label="Phim Yêu Thích"
               >
-                <Heart className={cn("w-[18px] h-[18px]", active && "scale-105", active && "fill-brand-green")} />
-                <span className="text-[10px] font-bold tracking-tight whitespace-nowrap">Yêu Thích</span>
+                <Heart className={cn("w-[17px] h-[17px]", active && "scale-105", active && "fill-brand-green")} />
+                <span className="text-[9px] xs:text-[10px] font-bold tracking-tight whitespace-nowrap">Yêu Thích</span>
               </Link>
             );
           })()}
@@ -375,11 +404,12 @@ function SidebarContent({
           {/* Tab 5: Danh Mục (Mở Drawer đầy đủ Thể loại, Quốc gia, Năm...) */}
           {(() => {
             const active =
-              isMobileOpen ||
-              Boolean(currentCategory) ||
-              Boolean(currentCountry) ||
-              Boolean(currentYear) ||
-              (Boolean(currentTypeList) && currentTypeList !== "phim-chieu-rap");
+              !isAccountOpen &&
+              (isMobileOpen ||
+                Boolean(currentCategory) ||
+                Boolean(currentCountry) ||
+                Boolean(currentYear) ||
+                (Boolean(currentTypeList) && currentTypeList !== "phim-chieu-rap"));
             return (
               <button
                 type="button"
@@ -387,28 +417,346 @@ function SidebarContent({
                   e.preventDefault();
                   e.stopPropagation();
                   setActiveModal(null);
+                  setIsAccountOpen(false);
                   setIsMobileOpen(true);
                 }}
                 className={cn(
-                  "relative flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none",
+                  "relative flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none min-w-0 cursor-pointer",
                   active
                     ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold"
-                    : "border border-transparent text-white/60"
+                    : "border border-transparent text-white/60 hover:text-white"
                 )}
                 aria-label="Danh Mục"
               >
                 <div className="relative">
-                  <Layers className={cn("w-[18px] h-[18px]", active && "scale-105")} />
+                  <Layers className={cn("w-[17px] h-[17px]", active && "scale-105")} />
                   {(currentCategory || currentCountry || currentYear) && (
                     <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-brand-green rounded-full" />
                   )}
                 </div>
-                <span className="text-[10px] font-bold tracking-tight whitespace-nowrap">Danh Mục</span>
+                <span className="text-[9px] xs:text-[10px] font-bold tracking-tight whitespace-nowrap">Danh Mục</span>
+              </button>
+            );
+          })()}
+
+          {/* Tab 6: Tài Khoản / Quản Trị (Mobile Nav) */}
+          {(() => {
+            const active = isAccountOpen;
+            const initial = (user?.name || user?.email || "U").charAt(0).toUpperCase();
+
+            return (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setActiveModal(null);
+                  setIsMobileOpen(false);
+                  setIsAccountOpen(prev => !prev);
+                }}
+                className={cn(
+                  "flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none min-w-0 cursor-pointer",
+                  active
+                    ? isSuperAdmin
+                      ? "bg-amber-400/15 border border-amber-400/35 text-amber-300 font-bold shadow-[0_0_12px_rgba(251,191,36,0.2)]"
+                      : "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold"
+                    : "border border-transparent text-white/60 hover:text-white"
+                )}
+                aria-label={isSuperAdmin ? "Quản Trị" : "Tài Khoản"}
+              >
+                {user ? (
+                  <div className="relative">
+                    <div className={cn(
+                      "w-[19px] h-[19px] rounded-full font-black text-[9.5px] flex items-center justify-center shrink-0 transition-transform",
+                      isSuperAdmin
+                        ? "bg-gradient-to-tr from-amber-400 via-emerald-400 to-brand-green text-black ring-1.5 ring-amber-400/80 shadow-[0_0_8px_rgba(251,191,36,0.5)]"
+                        : "bg-gradient-to-tr from-brand-green to-emerald-300 text-black shadow-[0_0_8px_rgba(32,214,107,0.4)]",
+                      active && "scale-105"
+                    )}>
+                      {initial}
+                    </div>
+                    {isSuperAdmin && (
+                      <span className="absolute -top-1 -right-1.5 w-3 h-3 rounded-full bg-amber-400 text-black flex items-center justify-center ring-1 ring-[#0d1410] shadow-[0_0_5px_rgba(251,191,36,0.8)]">
+                        <Crown className="w-2 h-2 fill-current" />
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <User className={cn("w-[17px] h-[17px]", active && "scale-105 text-brand-green")} />
+                )}
+                <span className={cn(
+                  "text-[9px] xs:text-[10px] font-bold tracking-tight whitespace-nowrap",
+                  isSuperAdmin ? "text-amber-300 font-extrabold" : ""
+                )}>
+                  {isSuperAdmin ? "Quản Trị" : "Tài Khoản"}
+                </span>
               </button>
             );
           })()}
         </div>
       </nav>
+
+      {/* Mobile Account Backdrop */}
+      {isAccountOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsAccountOpen(false);
+          }}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsAccountOpen(false);
+          }}
+        />
+      )}
+
+      {/* Mobile Account Floating Sheet */}
+      {isAccountOpen && (
+        <div
+          className="lg:hidden fixed inset-x-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 bottom-[max(4.25rem,calc(env(safe-area-inset-bottom)+3.75rem))] z-[130] w-auto sm:w-[420px] max-w-[440px] max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain bg-[#0d1310]/95 backdrop-blur-2xl border border-white/15 rounded-3xl p-3.5 sm:p-4 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_30px_rgba(32,214,107,0.15)] animate-in fade-in slide-in-from-bottom-5 duration-200 pointer-events-auto select-none"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Top Pill Handle */}
+          <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-2.5 shrink-0" />
+
+          {user ? (
+            <div>
+              {/* User Profile Info Card */}
+              <div className="flex items-center justify-between pb-2.5 border-b border-white/10 mb-2.5">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className={cn(
+                    "w-9 h-9 sm:w-10 sm:h-10 rounded-2xl font-black text-sm sm:text-base flex items-center justify-center shrink-0 relative",
+                    isSuperAdmin
+                      ? "bg-gradient-to-tr from-amber-400 via-emerald-400 to-brand-green text-black ring-2 ring-amber-400/60 shadow-[0_0_15px_rgba(251,191,36,0.35)]"
+                      : "bg-gradient-to-tr from-brand-green to-emerald-300 text-black shadow-[0_0_12px_rgba(32,214,107,0.4)]"
+                  )}>
+                    {(user.name || user.email || "U").charAt(0).toUpperCase()}
+                    {isSuperAdmin && (
+                      <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-amber-400 flex items-center justify-center text-[9px] text-black ring-1.5 ring-[#0d1310]">
+                        <Crown className="w-2 h-2 fill-current" />
+                      </span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-xs sm:text-sm text-white truncate">{user.name}</span>
+                      {isSuperAdmin ? (
+                        <span className="px-1.5 py-0.5 rounded-md bg-amber-400/20 border border-amber-400/40 text-[9px] font-black text-amber-300 flex items-center gap-0.5 shrink-0 shadow-[0_0_8px_rgba(251,191,36,0.2)]">
+                          <Crown className="w-2.5 h-2.5 fill-current" />
+                          Super Admin
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.5 rounded-full bg-brand-green/20 border border-brand-green/40 text-[9px] font-bold text-brand-green flex items-center gap-0.5 shrink-0">
+                          <ShieldCheck className="w-2.5 h-2.5" />
+                          Đã bảo mật
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-white/50 truncate font-mono mt-0.5">{user.email}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAccountOpen(false)}
+                  className="p-1.5 rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
+                  aria-label="Đóng"
+                >
+                  <X className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              </div>
+
+              {/* Super Admin Control Center Hub */}
+              {isSuperAdmin && (
+                <div className="mb-2.5 p-2.5 sm:p-3 rounded-2xl bg-gradient-to-br from-emerald-950/70 via-[#0c140f] to-black border border-emerald-500/35 shadow-[0_4px_25px_rgba(0,0,0,0.6),0_0_20px_rgba(34,197,94,0.15)] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-emerald-400/90 uppercase tracking-wider flex items-center gap-1.5">
+                      <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                      Bảng Điều Hành Quản Trị
+                    </span>
+                    <span className="text-[9px] font-mono text-amber-300 bg-amber-400/15 border border-amber-400/30 px-1.5 py-0.2 rounded">
+                      Toàn Quyền
+                    </span>
+                  </div>
+
+                  {/* Master Button to Admin */}
+                  <Link
+                    href="/admin"
+                    onClick={() => setIsAccountOpen(false)}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-500/25 via-brand-green/30 to-emerald-500/25 hover:from-emerald-500/35 hover:to-brand-green/40 border border-emerald-400/40 shadow-[0_0_15px_rgba(34,197,94,0.2)] transition-all group cursor-pointer active:scale-[0.98]"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-5 h-5 rounded-md bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform shrink-0">
+                        <Shield className="w-3 h-3" />
+                      </div>
+                      <div className="min-w-0 text-left">
+                        <p className="font-black text-xs text-white group-hover:text-emerald-300 transition-colors truncate">
+                          Mở Trang Quản Trị Hệ Thống
+                        </p>
+                        <p className="text-[9.5px] text-white/60 font-normal truncate">Quản trị toàn quyền website</p>
+                      </div>
+                    </div>
+                    <ArrowRight className="w-3.5 h-3.5 text-emerald-400 group-hover:translate-x-1 transition-transform shrink-0 ml-1" />
+                  </Link>
+
+                  {/* 3 Quick Navigation Shortcuts */}
+                  <div className="grid grid-cols-3 gap-1 pt-0.5">
+                    <Link
+                      href="/admin?tab=users"
+                      onClick={() => setIsAccountOpen(false)}
+                      className="flex flex-col items-center gap-1 py-1.5 px-1 rounded-xl bg-white/[0.04] hover:bg-emerald-500/10 border border-white/5 hover:border-emerald-500/30 text-white/80 hover:text-white transition-all text-center group cursor-pointer"
+                    >
+                      <Users className="w-3 h-3 text-emerald-400 group-hover:scale-110 transition-transform" />
+                      <span className="text-[9.5px] font-semibold">Thành Viên</span>
+                    </Link>
+
+                    <Link
+                      href="/admin?tab=featured"
+                      onClick={() => setIsAccountOpen(false)}
+                      className="flex flex-col items-center gap-1 py-1.5 px-1 rounded-xl bg-white/[0.04] hover:bg-amber-500/10 border border-white/5 hover:border-amber-500/30 text-white/80 hover:text-white transition-all text-center group cursor-pointer"
+                    >
+                      <Film className="w-3 h-3 text-amber-400 group-hover:scale-110 transition-transform" />
+                      <span className="text-[9.5px] font-semibold">Ghim Phim</span>
+                    </Link>
+
+                    <Link
+                      href="/admin?tab=settings"
+                      onClick={() => setIsAccountOpen(false)}
+                      className="flex flex-col items-center gap-1 py-1.5 px-1 rounded-xl bg-white/[0.04] hover:bg-sky-500/10 border border-white/5 hover:border-sky-500/30 text-white/80 hover:text-white transition-all text-center group cursor-pointer"
+                    >
+                      <Settings className="w-3 h-3 text-sky-400 group-hover:scale-110 transition-transform" />
+                      <span className="text-[9.5px] font-semibold">Cấu Hình</span>
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Links */}
+              <div className="space-y-0.5">
+                <Link
+                  href="/favorites"
+                  onClick={() => setIsAccountOpen(false)}
+                  className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-white/90 hover:text-white hover:bg-white/[0.08] transition-colors group"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center text-white/70 group-hover:text-red-400 group-hover:bg-red-500/10 transition-colors">
+                      <Heart className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="font-semibold">Phim Yêu Thích</span>
+                  </div>
+                  <span className="text-[9.5px] px-2 py-0.5 rounded-full bg-white/5 text-white/60 font-mono">
+                    Đồng bộ
+                  </span>
+                </Link>
+
+                <Link
+                  href="/recently"
+                  onClick={() => setIsAccountOpen(false)}
+                  className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-white/90 hover:text-white hover:bg-white/[0.08] transition-colors group"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center text-white/70 group-hover:text-brand-green group-hover:bg-brand-green/10 transition-colors">
+                      <History className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="font-semibold">Lịch Sử Xem</span>
+                  </div>
+                  <span className="text-[9.5px] px-2 py-0.5 rounded-full bg-white/5 text-white/60 font-mono">
+                    Đồng bộ
+                  </span>
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={handleManualSync}
+                  disabled={isSyncing}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-white/90 hover:text-white hover:bg-white/[0.08] transition-colors group cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center text-white/70 group-hover:text-brand-green group-hover:bg-brand-green/10 transition-colors">
+                      <RefreshCw className={cn("w-3.5 h-3.5", isSyncing && "animate-spin text-brand-green")} />
+                    </div>
+                    <span className="font-semibold">Đồng Bộ Ngay</span>
+                  </div>
+                  <span className="text-[9.5px] text-brand-green font-mono">
+                    {isSyncing ? "Đang lưu..." : "Sẵn sàng"}
+                  </span>
+                </button>
+              </div>
+
+              <div className="border-t border-white/10 my-1.5" />
+
+              {/* Logout Button */}
+              <button
+                type="button"
+                onClick={async () => {
+                  setIsAccountOpen(false);
+                  await logout();
+                  if (typeof window !== "undefined" && window.location.pathname.startsWith("/admin")) {
+                    window.location.href = "/";
+                  }
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Đăng Xuất</span>
+              </button>
+            </div>
+          ) : (
+            <div>
+              {/* Not Logged In View */}
+              <div className="flex items-center justify-between pb-2.5 border-b border-white/10 mb-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-2xl bg-brand-green/15 border border-brand-green/30 flex items-center justify-center text-brand-green shadow-[0_0_15px_rgba(32,214,107,0.2)]">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-bold text-white">Tài Khoản Hi Phim</h3>
+                    <p className="text-[10px] sm:text-[11px] text-white/50">Trải nghiệm xem phim riêng tư</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAccountOpen(false)}
+                  className="p-1.5 rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                  aria-label="Đóng"
+                >
+                  <X className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              </div>
+
+              <p className="text-xs text-white/70 mb-3 leading-relaxed">
+                Đăng nhập để lưu lịch sử xem phim và đồng bộ danh sách phim yêu thích xuyên suốt mọi thiết bị.
+              </p>
+
+              <div className="grid grid-cols-2 gap-2 mb-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAccountOpen(false);
+                    openAuthModal("login");
+                  }}
+                  className="h-9 sm:h-10 rounded-xl bg-brand-green hover:bg-brand-green-hover text-black font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.35)] active:scale-95 transition-all cursor-pointer"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  Đăng Nhập
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAccountOpen(false);
+                    openAuthModal("register");
+                  }}
+                  className="h-9 sm:h-10 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/15 active:scale-95 transition-all cursor-pointer"
+                >
+                  Đăng Ký
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Mobile Backdrop Overlay */}
       {isMobileOpen && (
@@ -438,10 +786,15 @@ function SidebarContent({
         {/* Sidebar Header / Brand Name */}
         <div className="h-16 lg:h-12 px-4 flex items-center justify-between border-b border-white/8 shrink-0">
           <Link href="/" className="flex items-center overflow-hidden group py-1" aria-label="Về trang chủ Hi Phim">
-            <div className="flex items-center tracking-tight leading-none group-hover:opacity-90 transition-opacity">
-              <span className="text-lg lg:text-xl font-black text-white font-sans tracking-wide">Hi</span>
-              <span className="text-lg lg:text-xl font-black text-brand-green font-sans ml-1 tracking-wide">Phim</span>
-              <span className="text-[9px] lg:text-[10px] font-black text-brand-green self-start -mt-0.5 ml-0.5 select-none">®</span>
+            <div className="relative flex items-center h-8 lg:h-7.5">
+              <Image
+                src="/logo.png"
+                alt="Hi Phim"
+                width={120}
+                height={48}
+                priority
+                className="h-8 lg:h-7.5 w-auto object-contain drop-shadow-[0_0_12px_rgba(32,214,107,0.3)] group-hover:drop-shadow-[0_0_18px_rgba(32,214,107,0.55)] group-hover:scale-105 transition-all duration-300"
+              />
             </div>
           </Link>
 
@@ -477,6 +830,12 @@ function SidebarContent({
                   key={item.href}
                   href={item.href}
                   scroll={false}
+                  onMouseEnter={() => {
+                    if (item.typeList) instantMovieStore.prefetch(item.typeList);
+                  }}
+                  onTouchStart={() => {
+                    if (item.typeList) instantMovieStore.prefetch(item.typeList);
+                  }}
                   className={cn(
                     "relative flex items-center gap-3 lg:gap-2 px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-colors duration-150 group overflow-hidden",
                     active
