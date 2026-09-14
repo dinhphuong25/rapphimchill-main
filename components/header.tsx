@@ -47,7 +47,7 @@ export default function Header({}: HeaderProps) {
           "left-0 lg:left-[225px]" // Aligns next to Left Sidebar
         )}
       >
-        <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-8 lg:px-12 xl:px-16 flex items-center justify-between lg:justify-end h-full">
+        <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-8 lg:px-12 xl:px-16 flex items-center justify-center lg:justify-end h-full">
           {/* Mobile Brand Name on Left (Only visible on mobile screens) */}
           <Link
             href="/"

@@ -184,12 +184,6 @@ export default function AuthModal() {
               <h3 className="text-base font-bold text-white flex items-center justify-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-brand-green" /> Nhập Mã Xác Thực OTP
               </h3>
-              <p className="text-xs text-white/60 mt-1">
-                Mã đã được gửi từ <span className="text-brand-green font-medium">notification.hiphim@gmail.com</span> đến:
-              </p>
-              <div className="inline-block mt-1 px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-xs text-white font-mono font-semibold">
-                {pendingEmail || email}
-              </div>
             </div>
           ) : (
             <p className="text-xs text-white/60">
