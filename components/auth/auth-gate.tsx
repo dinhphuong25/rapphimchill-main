@@ -35,22 +35,22 @@ export default function AuthGate({ title, description, icon: Icon }: AuthGatePro
       </p>
 
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-3 max-w-[240px] sm:max-w-none mx-auto">
+      <div className="flex flex-row items-center justify-center gap-2 sm:gap-3 max-w-[340px] sm:max-w-none mx-auto">
         <button
           type="button"
           onClick={() => openAuthModal("login")}
-          className="w-full sm:w-auto h-10 sm:h-11 px-6 sm:px-7 rounded-xl bg-brand-green hover:bg-brand-green-hover text-cinema-bg font-bold text-sm flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(32,214,107,0.25)] transition-all active:scale-95 whitespace-nowrap cursor-pointer"
+          className="flex-1 sm:flex-none h-10 sm:h-11 px-2 sm:px-7 rounded-xl bg-brand-green hover:bg-brand-green-hover text-cinema-bg font-bold text-[13px] sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 shadow-[0_0_20px_rgba(32,214,107,0.25)] transition-all active:scale-95 whitespace-nowrap cursor-pointer"
         >
           <span>Đăng nhập</span>
-          <ArrowRight className="w-4 h-4" />
+          <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         </button>
 
         <button
           type="button"
           onClick={() => openAuthModal("register")}
-          className="w-full sm:w-auto h-10 sm:h-11 px-6 sm:px-7 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 hover:border-brand-green/40 text-white/90 font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 whitespace-nowrap cursor-pointer"
+          className="flex-1 sm:flex-none h-10 sm:h-11 px-2 sm:px-7 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 hover:border-brand-green/40 text-white/90 font-semibold text-[13px] sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all active:scale-95 whitespace-nowrap cursor-pointer"
         >
-          <UserPlus className="w-4 h-4 text-brand-green/80" />
+          <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-green/80" />
           <span>Tạo tài khoản</span>
         </button>
       </div>
