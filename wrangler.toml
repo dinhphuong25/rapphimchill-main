@@ -17,6 +17,10 @@ service = "rapphimchill"
 [images]
 binding = "IMAGES"
 
+[[send_email]]
+name = "EMAIL"
+allowed_sender_addresses = ["noreply@hiphim.biz"]
+
 # Create a D1 database, then replace the placeholder with its database_id.
 [[d1_databases]]
 binding = "HIPHIM_DB"
