@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { ensureVercelDatabase, vercelSql } from "@/lib/vercel-db";
 
 const USERS_FILE_PATH = path.join(process.cwd(), "data", "users.json");
 const PENDING_FILE_PATH = path.join(process.cwd(), "data", "pending-registrations.json");
@@ -39,72 +39,31 @@ export interface PendingRegistration {
   expiresAt: number;
 }
 
-type D1DatabaseLike = {
-  prepare: (query: string) => {
-    bind: (...values: unknown[]) => {
-      first: <T = unknown>() => Promise<T | null>;
-      run: () => Promise<unknown>;
-    };
-  };
-};
-
-async function getDatabase(): Promise<D1DatabaseLike | null> {
-  try {
-    const context = await getCloudflareContext({ async: true });
-    return ((context.env as Record<string, unknown>).HIPHIM_DB as D1DatabaseLike | undefined) || null;
-  } catch {
-    return null;
-  }
-}
-
-async function ensureDatabase(db: D1DatabaseLike): Promise<void> {
-  await db.prepare(`
-    CREATE TABLE IF NOT EXISTS ${USERS_TABLE} (
-      email TEXT PRIMARY KEY,
-      id TEXT NOT NULL UNIQUE,
-      data TEXT NOT NULL
-    )
-  `).bind().run();
-  await db.prepare(`
-    CREATE TABLE IF NOT EXISTS ${PENDING_TABLE} (
-      email TEXT PRIMARY KEY,
-      data TEXT NOT NULL,
-      expires_at INTEGER NOT NULL
-    )
-  `).bind().run();
-}
-
 async function readPersistentUserByEmail(email: string): Promise<User | null | undefined> {
-  const db = await getDatabase();
-  if (!db) return undefined;
-  await ensureDatabase(db);
-  const row = await db.prepare(`SELECT data FROM ${USERS_TABLE} WHERE email = ?`).bind(email).first<{ data: string }>();
-  if (row) return JSON.parse(row.data) as User;
+  if (!(await ensureVercelDatabase())) return undefined;
+  const rows = await vercelSql!`SELECT data FROM hiphim_users WHERE email = ${email}`;
+  const row = rows[0] as { data: User } | undefined;
+  if (row) return row.data;
 
-  // Import the existing local account once when the D1 database is empty.
+  // Import a legacy local account the first time it is requested.
   const localUser = readUsers().find((user) => user.email.toLowerCase() === email);
   if (localUser) {
-    await db.prepare(`INSERT OR IGNORE INTO ${USERS_TABLE} (email, id, data) VALUES (?, ?, ?)`)
-      .bind(localUser.email, localUser.id, JSON.stringify(localUser)).run();
+    await vercelSql!`INSERT INTO hiphim_users (email, id, data) VALUES (${localUser.email}, ${localUser.id}, ${JSON.stringify(localUser)}::jsonb) ON CONFLICT (email) DO NOTHING`;
     return localUser;
   }
   return null;
 }
 
 async function readPersistentUserById(id: string): Promise<User | null | undefined> {
-  const db = await getDatabase();
-  if (!db) return undefined;
-  await ensureDatabase(db);
-  const row = await db.prepare(`SELECT data FROM ${USERS_TABLE} WHERE id = ?`).bind(id).first<{ data: string }>();
-  return row ? JSON.parse(row.data) as User : null;
+  if (!(await ensureVercelDatabase())) return undefined;
+  const rows = await vercelSql!`SELECT data FROM hiphim_users WHERE id = ${id}`;
+  return rows[0] ? (rows[0] as { data: User }).data : null;
 }
 
 async function writePersistentUser(user: User): Promise<boolean> {
-  const db = await getDatabase();
-  if (!db) return false;
-  await ensureDatabase(db);
-  await db.prepare(`INSERT OR REPLACE INTO ${USERS_TABLE} (email, id, data) VALUES (?, ?, ?)`)
-    .bind(user.email, user.id, JSON.stringify(user)).run();
+  if (!(await ensureVercelDatabase())) return false;
+  await vercelSql!`INSERT INTO hiphim_users (email, id, data) VALUES (${user.email}, ${user.id}, ${JSON.stringify(user)}::jsonb)
+    ON CONFLICT (email) DO UPDATE SET id = EXCLUDED.id, data = EXCLUDED.data`;
   return true;
 }
 
@@ -126,12 +85,10 @@ export async function savePendingRegistrationPersistent(
   otp: string
 ): Promise<void> {
   const normalized = email.trim().toLowerCase();
-  const db = await getDatabase();
-  if (!db) {
+  if (!(await ensureVercelDatabase())) {
     savePendingRegistration(normalized, passwordHash, name, otp);
     return;
   }
-  await ensureDatabase(db);
   const pending: PendingRegistration = {
     email: normalized,
     passwordHash,
@@ -139,19 +96,17 @@ export async function savePendingRegistrationPersistent(
     otp,
     expiresAt: Date.now() + 10 * 60 * 1000,
   };
-  await db.prepare(`INSERT OR REPLACE INTO ${PENDING_TABLE} (email, data, expires_at) VALUES (?, ?, ?)`)
-    .bind(normalized, JSON.stringify(pending), pending.expiresAt).run();
+  await vercelSql!`INSERT INTO hiphim_pending_registrations (email, data, expires_at) VALUES (${normalized}, ${JSON.stringify(pending)}::jsonb, ${pending.expiresAt})
+    ON CONFLICT (email) DO UPDATE SET data = EXCLUDED.data, expires_at = EXCLUDED.expires_at`;
 }
 
 export async function getPendingRegistrationPersistent(email: string): Promise<PendingRegistration | null> {
   const normalized = email.trim().toLowerCase();
-  const db = await getDatabase();
-  if (!db) return getPendingRegistration(normalized);
-  await ensureDatabase(db);
-  const row = await db.prepare(`SELECT data, expires_at FROM ${PENDING_TABLE} WHERE email = ?`)
-    .bind(normalized).first<{ data: string; expires_at: number }>();
-  if (!row || row.expires_at <= Date.now()) return null;
-  return JSON.parse(row.data) as PendingRegistration;
+  if (!(await ensureVercelDatabase())) return getPendingRegistration(normalized);
+  const rows = await vercelSql!`SELECT data, expires_at FROM hiphim_pending_registrations WHERE email = ${normalized}`;
+  const row = rows[0] as { data: PendingRegistration; expires_at: number } | undefined;
+  if (!row || Number(row.expires_at) <= Date.now()) return null;
+  return row.data;
 }
 
 export async function verifyAndCreateUserPersistent(
@@ -160,10 +115,7 @@ export async function verifyAndCreateUserPersistent(
   pendingOverride?: PendingRegistration
 ): Promise<{ user?: User; error?: string }> {
   const normalized = email.trim().toLowerCase();
-  const db = await getDatabase();
-  if (!db) return verifyAndCreateUser(normalized, otp, pendingOverride);
-
-  await ensureDatabase(db);
+  if (!(await ensureVercelDatabase())) return verifyAndCreateUser(normalized, otp, pendingOverride);
   const pending = await getPendingRegistrationPersistent(normalized) || pendingOverride;
   if (!pending) {
     return { error: "Không tìm thấy yêu cầu đăng ký hoặc mã đã hết hạn. Vui lòng đăng ký lại." };
@@ -186,13 +138,15 @@ export async function verifyAndCreateUserPersistent(
   };
 
   try {
-    await db.prepare(`INSERT INTO ${USERS_TABLE} (email, id, data) VALUES (?, ?, ?)`)
-      .bind(newUser.email, newUser.id, JSON.stringify(newUser)).run();
-  } catch {
-    return { error: "Email này đã được kích hoạt tài khoản trước đó. Vui lòng đăng nhập." };
+    await vercelSql!`INSERT INTO hiphim_users (email, id, data) VALUES (${newUser.email}, ${newUser.id}, ${JSON.stringify(newUser)}::jsonb)`;
+  } catch (error: unknown) {
+    if ((error as { code?: string })?.code === "23505") {
+      return { error: "Email này đã được kích hoạt tài khoản trước đó. Vui lòng đăng nhập." };
+    }
+    throw error;
   }
 
-  await db.prepare(`DELETE FROM ${PENDING_TABLE} WHERE email = ?`).bind(normalized).run();
+  await vercelSql!`DELETE FROM hiphim_pending_registrations WHERE email = ${normalized}`;
   return { user: newUser };
 }
 
@@ -202,8 +156,7 @@ export async function syncUserDataPersistent(
   localHistory?: any[],
   mode: "merge" | "replace" = "merge"
 ): Promise<{ favorites: any[]; history: any[] }> {
-  const db = await getDatabase();
-  if (!db) return syncUserData(userId, localFavorites, localHistory, mode);
+  if (!(await ensureVercelDatabase())) return syncUserData(userId, localFavorites, localHistory, mode);
 
   const user = await findUserByIdPersistent(userId);
   if (!user) return { favorites: localFavorites || [], history: localHistory || [] };
@@ -572,6 +525,149 @@ export function getAllUsersForAdmin(): UserAdminDetail[] {
       history: (u.history || []).slice(0, 50),
     };
   });
+}
+
+function toAdminUserDetail(user: User): UserAdminDetail {
+  const isSuper = isSuperAdmin(user.email);
+  const latest = Array.isArray(user.history)
+    ? [...user.history].sort((a, b) => (Number(b.watchedAt) || 0) - (Number(a.watchedAt) || 0))[0]
+    : undefined;
+  const bannedUntil = user.bannedUntil && user.bannedUntil > 0 && user.bannedUntil <= Date.now()
+    ? 0
+    : user.bannedUntil;
+
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    avatar: user.avatar || "",
+    isVerified: user.isVerified,
+    role: isSuper ? "superadmin" : (user.role || "user"),
+    createdAt: user.createdAt,
+    lastActiveAt: user.lastActiveAt || user.updatedAt || user.createdAt,
+    isLocked: bannedUntil === 0 ? false : Boolean(user.isLocked),
+    bannedUntil,
+    banReason: bannedUntil === 0 ? "" : user.banReason,
+    bannedAt: user.bannedAt,
+    favoritesCount: (user.favorites || []).length,
+    historyCount: (user.history || []).length,
+    currentWatching: latest?.slug
+      ? {
+          slug: latest.slug,
+          name: latest.name || latest.slug,
+          origin_name: latest.origin_name,
+          episodeName: latest.episodeName || (typeof latest.episodeIndex === "number" ? `Tập ${latest.episodeIndex + 1}` : latest.episode_current),
+          episodeIndex: latest.episodeIndex,
+          currentTime: Number(latest.currentTime) || 0,
+          duration: Number(latest.duration) || 0,
+          watchedAt: Number(latest.watchedAt) || 0,
+        }
+      : null,
+    favorites: user.favorites || [],
+    history: (user.history || []).slice(0, 50),
+  };
+}
+
+async function getPersistentUserForAdmin(userId: string): Promise<User | null> {
+  const user = await readPersistentUserById(userId);
+  return user === undefined ? findUserById(userId) : user;
+}
+
+async function updatePersistentUser(userId: string, updates: Partial<User>): Promise<User | null> {
+  const user = await getPersistentUserForAdmin(userId);
+  if (!user) return null;
+  const updated = { ...user, ...updates, updatedAt: new Date().toISOString() };
+  if (!(await writePersistentUser(updated))) {
+    return updateUser(userId, updates);
+  }
+  return updated;
+}
+
+export async function updateUserPersistent(userId: string, updates: Partial<User>): Promise<User | null> {
+  return updatePersistentUser(userId, updates);
+}
+
+export async function getAllUsersForAdminPersistent(): Promise<UserAdminDetail[]> {
+  if (!(await ensureVercelDatabase())) return getAllUsersForAdmin();
+  for (const localUser of readUsers()) {
+    await vercelSql!`INSERT INTO hiphim_users (email, id, data) VALUES (${localUser.email}, ${localUser.id}, ${JSON.stringify(localUser)}::jsonb)
+      ON CONFLICT (email) DO NOTHING`;
+  }
+  const rows = await vercelSql!`SELECT data FROM hiphim_users ORDER BY data->>'createdAt' DESC`;
+  return (rows as Array<{ data: User }>).map((row) => toAdminUserDetail(row.data));
+}
+
+export async function banUserPersistent(
+  userId: string,
+  durationHours: number | "permanent",
+  reason: string
+): Promise<{ success: boolean; error?: string; user?: User }> {
+  const user = await getPersistentUserForAdmin(userId);
+  if (!user) return { success: false, error: "Không tìm thấy người dùng" };
+  if (isSuperAdmin(user.email)) return { success: false, error: "Không thể khóa tài khoản Super Admin!" };
+  const isPermanent = durationHours === "permanent";
+  const bannedUntil = isPermanent ? -1 : Date.now() + Number(durationHours) * 60 * 60 * 1000;
+  const updated = await updatePersistentUser(userId, {
+    isLocked: isPermanent,
+    bannedUntil,
+    banReason: reason.trim() || (isPermanent ? "Vi phạm quy định hệ thống" : "Tạm khóa quyền xem phim"),
+    bannedAt: new Date().toISOString(),
+  });
+  return { success: Boolean(updated), user: updated || undefined };
+}
+
+export async function unbanUserPersistent(userId: string) {
+  const user = await getPersistentUserForAdmin(userId);
+  if (!user) return { success: false, error: "Không tìm thấy người dùng" };
+  const updated = await updatePersistentUser(userId, { isLocked: false, bannedUntil: 0, banReason: "", bannedAt: undefined });
+  return { success: Boolean(updated), user: updated || undefined };
+}
+
+export async function deleteUserPersistent(userId: string): Promise<{ success: boolean; error?: string }> {
+  const user = await getPersistentUserForAdmin(userId);
+  if (!user) return { success: false, error: "Không tìm thấy người dùng" };
+  if (isSuperAdmin(user.email)) return { success: false, error: "Không thể xóa tài khoản Super Admin!" };
+  if (!(await ensureVercelDatabase())) return deleteUser(userId);
+  await vercelSql!`DELETE FROM hiphim_users WHERE id = ${userId}`;
+  return { success: true };
+}
+
+export async function changeUserRolePersistent(userId: string, newRole: "user" | "admin" | "vip") {
+  const user = await getPersistentUserForAdmin(userId);
+  if (!user) return { success: false, error: "Không tìm thấy người dùng" };
+  if (isSuperAdmin(user.email)) return { success: false, error: "Không thể thay đổi vai trò của Super Admin tối cao!" };
+  const updated = await updatePersistentUser(userId, { role: newRole });
+  return { success: Boolean(updated), user: updated || undefined };
+}
+
+export async function setUserVerifiedPersistent(userId: string, isVerified: boolean) {
+  const user = await getPersistentUserForAdmin(userId);
+  if (!user) return { success: false, error: "Không tìm thấy người dùng" };
+  const updated = await updatePersistentUser(userId, { isVerified });
+  return { success: Boolean(updated), user: updated || undefined };
+}
+
+export async function clearUserWatchingPersistent(userId: string) {
+  const user = await getPersistentUserForAdmin(userId);
+  if (!user) return { success: false, error: "Không tìm thấy người dùng" };
+  const updated = await updatePersistentUser(userId, { history: [] });
+  return { success: Boolean(updated), user: updated || undefined };
+}
+
+export async function adminResetPasswordPersistent(userId: string, newPasswordPlain: string) {
+  const user = await getPersistentUserForAdmin(userId);
+  if (!user) return { success: false, error: "Không tìm thấy người dùng" };
+  if (newPasswordPlain.length < 6) return { success: false, error: "Mật khẩu mới phải có ít nhất 6 ký tự" };
+  const updated = await updatePersistentUser(userId, { passwordHash: await hashPassword(newPasswordPlain) });
+  return { success: Boolean(updated) };
+}
+
+export async function touchUserActivityPersistent(userId: string): Promise<void> {
+  if (await ensureVercelDatabase()) {
+    await updatePersistentUser(userId, { lastActiveAt: new Date().toISOString() });
+    return;
+  }
+  touchUserActivity(userId);
 }
 
 export function savePendingRegistration(email: string, passwordHash: string, name: string, otp: string): void {

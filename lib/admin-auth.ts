@@ -1,9 +1,9 @@
 import {
   SUPER_ADMIN_EMAIL,
-  findUserByEmail,
+  findUserByEmailPersistent,
   verifyPassword,
   hashPassword,
-  updateUser,
+  updateUserPersistent,
 } from "./user-store";
 import type { NextRequest } from "next/server";
 import { verifyUserSessionToken, USER_COOKIE_NAME } from "./user-token";
@@ -49,7 +49,7 @@ export async function checkAdminCredentials(usernameOrEmail: string, password: s
     return false;
   }
 
-  const adminUser = findUserByEmail(SUPER_ADMIN_EMAIL);
+  const adminUser = await findUserByEmailPersistent(SUPER_ADMIN_EMAIL);
   if (!adminUser || !adminUser.passwordHash) {
     return false;
   }
@@ -62,11 +62,11 @@ export async function checkAdminCredentials(usernameOrEmail: string, password: s
  */
 export async function updateAdminPassword(newPassword: string, _username?: string): Promise<boolean> {
   try {
-    const adminUser = findUserByEmail(SUPER_ADMIN_EMAIL);
+    const adminUser = await findUserByEmailPersistent(SUPER_ADMIN_EMAIL);
     if (!adminUser) return false;
 
     const newHash = await hashPassword(newPassword);
-    const updated = updateUser(adminUser.id, { passwordHash: newHash });
+    const updated = await updateUserPersistent(adminUser.id, { passwordHash: newHash });
     return !!updated;
   } catch (err) {
     console.error("Could not update super admin password:", err);

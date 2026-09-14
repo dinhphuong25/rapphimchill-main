@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkAdminCredentials, createSessionToken, ADMIN_COOKIE_NAME, SUPER_ADMIN_EMAIL } from "@/lib/admin-auth";
-import { findUserByEmail } from "@/lib/user-store";
+import { findUserByEmailPersistent } from "@/lib/user-store";
 import { createUserSessionToken, USER_COOKIE_NAME } from "@/lib/user-token";
 
 export async function POST(req: NextRequest) {
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     });
 
     // 2. Also set user session cookie so client user state is unified
-    const adminUser = findUserByEmail(SUPER_ADMIN_EMAIL);
+    const adminUser = await findUserByEmailPersistent(SUPER_ADMIN_EMAIL);
     if (adminUser) {
       const userToken = await createUserSessionToken(adminUser.id, adminUser.email);
       res.cookies.set(USER_COOKIE_NAME, userToken, {

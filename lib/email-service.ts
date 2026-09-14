@@ -1,17 +1,6 @@
 import nodemailer from "nodemailer";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 
-const DEFAULT_SENDER = "noreply@hiphim.biz";
-
-type EmailBinding = {
-  send: (message: {
-    to: string;
-    from: string;
-    subject: string;
-    html: string;
-    text: string;
-  }) => Promise<{ messageId: string }>;
-};
+const DEFAULT_SENDER = process.env.EMAIL_FROM || "noreply@hiphim.biz";
 
 export interface SendOtpResult {
   success: boolean;
@@ -21,12 +10,13 @@ export interface SendOtpResult {
 }
 
 /**
- * Sends a 6-digit activation OTP email from notification.hiphim@gmail.com
- * Includes a sleek cinematic HTML template with brand colors.
+ * Sends a 6-digit activation OTP email through Resend on Vercel.
  */
 export async function sendOtpEmail(toEmail: string, otp: string, userName?: string): Promise<SendOtpResult> {
+  const resendApiKey = process.env.RESEND_API_KEY?.trim();
   const gmailUser = (process.env.GMAIL_USER || process.env.SMTP_USER || "notification.hiphim@gmail.com").trim();
   const gmailPass = (process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || "").replace(/\s+/g, "").trim();
+  const subject = "Mã xác nhận kích hoạt tài khoản Hi Phim của bạn";
   const textContent = `Mã xác thực kích hoạt tài khoản Hi Phim của bạn là: ${otp}\n\nTuyệt đối không chia sẻ mã này cho bất kỳ ai.\n\nTrân trọng,\nĐội ngũ Hi Phim`;
   const htmlContent = `
 <!DOCTYPE html>
@@ -41,28 +31,35 @@ export async function sendOtpEmail(toEmail: string, otp: string, userName?: stri
 </body>
 </html>`;
 
-  try {
-    const context = await getCloudflareContext({ async: true });
-    const emailBinding = (context.env as Record<string, unknown>).EMAIL as EmailBinding | undefined;
-    if (emailBinding) {
-      await emailBinding.send({
-        to: toEmail,
-        from: DEFAULT_SENDER,
-        subject: "Mã xác nhận kích hoạt tài khoản Hi Phim của bạn",
-        html: htmlContent,
-        text: textContent,
+  if (resendApiKey) {
+    try {
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: DEFAULT_SENDER,
+          to: [toEmail],
+          subject,
+          html: htmlContent,
+          text: textContent,
+        }),
       });
-      return { success: true, devMode: false };
-    }
-  } catch (err: any) {
-    console.error("[EMAIL SERVICE ERROR] Cloudflare Email Sending failed:", err);
-    if (process.env.NODE_ENV === "production") {
+
+      if (response.ok) return { success: true, devMode: false };
+      const errorBody = await response.text();
+      console.error("[RESEND ERROR] Failed to send OTP email:", errorBody);
       return { success: false, error: "Không thể gửi email OTP. Vui lòng thử lại sau." };
+    } catch (err) {
+      console.error("[RESEND ERROR] Request failed:", err);
+      return { success: false, error: "Không thể kết nối dịch vụ email. Vui lòng thử lại sau." };
     }
   }
 
   if (process.env.NODE_ENV === "production") {
-    return { success: false, error: "Hệ thống email chưa được cấu hình trên Cloudflare." };
+    return { success: false, error: "Hệ thống email chưa được cấu hình trên Vercel." };
   }
 
   if (!gmailPass) {
@@ -85,7 +82,7 @@ export async function sendOtpEmail(toEmail: string, otp: string, userName?: stri
       from: `"Hi Phim" <${gmailUser}>`,
       replyTo: gmailUser,
       to: toEmail,
-      subject: "Mã xác nhận kích hoạt tài khoản Hi Phim của bạn",
+      subject,
       text: textContent,
       html: htmlContent,
       headers: {

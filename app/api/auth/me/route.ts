@@ -50,8 +50,8 @@ export async function GET() {
 
     // Update real-time user activity
     if (storedUser) {
-      const { touchUserActivity } = await import("@/lib/user-store");
-      touchUserActivity(user.id);
+      const { touchUserActivityPersistent } = await import("@/lib/user-store");
+      await touchUserActivityPersistent(user.id);
     }
 
     const isSuper = isSuperAdmin(user);

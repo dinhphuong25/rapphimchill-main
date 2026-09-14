@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthorizedAdminRequest } from "@/lib/admin-auth";
-import { getAllUsersForAdmin } from "@/lib/user-store";
+import {
+  adminResetPasswordPersistent,
+  banUserPersistent,
+  changeUserRolePersistent,
+  clearUserWatchingPersistent,
+  deleteUserPersistent,
+  getAllUsersForAdminPersistent,
+  setUserVerifiedPersistent,
+  unbanUserPersistent,
+} from "@/lib/user-store";
 
 export async function GET(req: NextRequest) {
   const isAuthorized = await isAuthorizedAdminRequest(req);
@@ -13,7 +22,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const users = getAllUsersForAdmin();
+    const users = await getAllUsersForAdminPersistent();
     return NextResponse.json({
       success: true,
       users,
@@ -49,19 +58,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const {
-      banUser,
-      unbanUser,
-      deleteUser,
-      changeUserRole,
-      setUserVerified,
-      clearUserWatching,
-      adminResetPassword,
-    } = await import("@/lib/user-store");
-
     if (action === "ban_temp") {
       const hours = Number(durationHours) || 24;
-      const res = banUser(userId, hours, reason || "Tạm khóa quyền xem phim");
+      const res = await banUserPersistent(userId, hours, reason || "Tạm khóa quyền xem phim");
       if (!res.success) {
         return NextResponse.json({ success: false, error: res.error }, { status: 400 });
       }
@@ -73,7 +72,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "ban_perm") {
-      const res = banUser(userId, "permanent", reason || "Khóa vĩnh viễn do vi phạm quy định");
+      const res = await banUserPersistent(userId, "permanent", reason || "Khóa vĩnh viễn do vi phạm quy định");
       if (!res.success) {
         return NextResponse.json({ success: false, error: res.error }, { status: 400 });
       }
@@ -85,7 +84,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "unban") {
-      const res = unbanUser(userId);
+      const res = await unbanUserPersistent(userId);
       if (!res.success) {
         return NextResponse.json({ success: false, error: res.error }, { status: 400 });
       }
@@ -97,7 +96,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "delete") {
-      const res = deleteUser(userId);
+      const res = await deleteUserPersistent(userId);
       if (!res.success) {
         return NextResponse.json({ success: false, error: res.error }, { status: 400 });
       }
@@ -112,7 +111,7 @@ export async function POST(req: NextRequest) {
       if (!newRole || !["user", "admin", "vip"].includes(newRole)) {
         return NextResponse.json({ success: false, error: "Vai trò mới không hợp lệ" }, { status: 400 });
       }
-      const res = changeUserRole(userId, newRole);
+      const res = await changeUserRolePersistent(userId, newRole);
       if (!res.success) {
         return NextResponse.json({ success: false, error: res.error }, { status: 400 });
       }
@@ -125,7 +124,7 @@ export async function POST(req: NextRequest) {
 
     if (action === "verify_otp") {
       const isVerified = body.isVerified !== undefined ? Boolean(body.isVerified) : true;
-      const res = setUserVerified(userId, isVerified);
+      const res = await setUserVerifiedPersistent(userId, isVerified);
       if (!res.success) {
         return NextResponse.json({ success: false, error: res.error }, { status: 400 });
       }
@@ -137,7 +136,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "clear_history") {
-      const res = clearUserWatching(userId);
+      const res = await clearUserWatchingPersistent(userId);
       if (!res.success) {
         return NextResponse.json({ success: false, error: res.error }, { status: 400 });
       }
@@ -153,7 +152,7 @@ export async function POST(req: NextRequest) {
       if (!newPassword || newPassword.length < 6) {
         return NextResponse.json({ success: false, error: "Mật khẩu mới phải có ít nhất 6 ký tự" }, { status: 400 });
       }
-      const res = await adminResetPassword(userId, newPassword);
+      const res = await adminResetPasswordPersistent(userId, newPassword);
       if (!res.success) {
         return NextResponse.json({ success: false, error: res.error }, { status: 400 });
       }
