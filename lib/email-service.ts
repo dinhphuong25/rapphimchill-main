@@ -51,10 +51,8 @@ export async function sendOtpEmail(toEmail: string, otp: string, userName?: stri
       if (response.ok) return { success: true, devMode: false };
       const errorBody = await response.text();
       console.error("[RESEND ERROR] Failed to send OTP email:", errorBody);
-      return { success: false, error: "Không thể gửi email OTP. Vui lòng thử lại sau." };
     } catch (err) {
       console.error("[RESEND ERROR] Request failed:", err);
-      return { success: false, error: "Không thể kết nối dịch vụ email. Vui lòng thử lại sau." };
     }
   }
 
@@ -66,38 +64,47 @@ export async function sendOtpEmail(toEmail: string, otp: string, userName?: stri
     return { success: true, devMode: true, devCode: otp };
   }
 
-  try {
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true, // SSL
-      auth: {
-        user: gmailUser,
-        pass: gmailPass,
-      },
-    });
+  let lastError: any;
+  for (const smtpConfig of [
+    { port: 465, secure: true },
+    { port: 587, secure: false },
+  ]) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: smtpConfig.port,
+        secure: smtpConfig.secure,
+        requireTLS: !smtpConfig.secure,
+        auth: { user: gmailUser, pass: gmailPass },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
+      });
 
-    const info = await transporter.sendMail({
-      from: `"Hi Phim" <${gmailUser}>`,
-      replyTo: gmailUser,
-      to: toEmail,
-      subject,
-      text: textContent,
-      html: htmlContent,
-      headers: {
-        "X-Priority": "1 (Highest)",
-        "X-MSMail-Priority": "High",
-        "Importance": "High",
-      },
-    });
+      const info = await transporter.sendMail({
+        from: `"Hi Phim" <${gmailUser}>`,
+        replyTo: gmailUser,
+        to: toEmail,
+        subject,
+        text: textContent,
+        html: htmlContent,
+        headers: {
+          "X-Priority": "1 (Highest)",
+          "X-MSMail-Priority": "High",
+          "Importance": "High",
+        },
+      });
 
-    console.log(`[SMTP SUCCESS] OTP email sent to ${toEmail}. MessageId: ${info.messageId}`);
-    return { success: true, devMode: false };
-  } catch (err: any) {
-    console.error("[SMTP ERROR] Failed to send OTP email:", err);
-    return {
-      success: false,
-      error: err?.message || "Không thể gửi email xác thực. Vui lòng kiểm tra lại cấu hình SMTP.",
-    };
+      console.log(`[SMTP SUCCESS] OTP email sent to ${toEmail} via port ${smtpConfig.port}. MessageId: ${info.messageId}`);
+      return { success: true, devMode: false };
+    } catch (err: any) {
+      lastError = err;
+      console.error(`[SMTP ERROR] Port ${smtpConfig.port} failed:`, err?.message || err);
+    }
   }
+
+  return {
+    success: false,
+    error: "Gmail từ chối gửi email. Hãy kiểm tra App Password, bật xác minh 2 bước và Redeploy Vercel.",
+  };
 }
