@@ -20,6 +20,14 @@ export async function sendOtpEmail(toEmail: string, otp: string, userName?: stri
 
   const isDevMode = !gmailPass;
 
+  if (isDevMode && process.env.NODE_ENV === "production") {
+    console.error("[SMTP ERROR] GMAIL_APP_PASSWORD is missing in production environment.");
+    return {
+      success: false,
+      error: "Hệ thống email chưa được cấu hình trên môi trường production. Vui lòng liên hệ quản trị viên.",
+    };
+  }
+
   if (isDevMode) {
     console.log("\n=======================================================");
     console.log(`🎬 [HI PHIM EMAIL OTP DEV MODE]`);
