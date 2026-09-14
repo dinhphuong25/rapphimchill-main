@@ -1,11 +1,12 @@
 "use client";
 
-import { memo, useMemo } from "react";
+import { memo, useMemo, useEffect } from "react";
 import { useNewUpdates, useTopicsWithMovies } from "@/hooks/useApiHooks";
 import HeroSection from "@/components/hero-section";
 import MovieSection from "@/components/movie-section";
 import LiveStatus from "@/components/live-status";
 import { filterHiddenMovies } from "@/lib/hidden-movies";
+import { instantMovieStore } from "@/lib/instant-movie-store";
 import dynamic from "next/dynamic";
 
 const ContinueWatching = dynamic(() => import("@/components/movie/continue-watching"), {
@@ -29,6 +30,21 @@ export default function HomeClient({
   featuredMovie,
   featuredMovies = [],
 }: HomeClientProps) {
+  // Prime cache and prefetch main tabs in background for instant navigation
+  useEffect(() => {
+    const primeMap: Record<string, any[]> = {
+      "phim-moi-cap-nhat": initialMovies || [],
+    };
+    if (Array.isArray(initialTopicsWithMovies)) {
+      initialTopicsWithMovies.forEach((t) => {
+        if (t?.slug && Array.isArray(t.movies)) {
+          primeMap[t.slug] = t.movies;
+        }
+      });
+    }
+    instantMovieStore.prime(primeMap);
+    instantMovieStore.warmUpMainTabs();
+  }, [initialMovies, initialTopicsWithMovies]);
   const {
     movies: clientMovies,
     heroMovie,

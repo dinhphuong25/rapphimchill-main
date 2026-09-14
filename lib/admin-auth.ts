@@ -1,56 +1,75 @@
-import fs from "fs";
-import path from "path";
+import {
+  SUPER_ADMIN_EMAIL,
+  findUserByEmail,
+  verifyPassword,
+  hashPassword,
+  updateUser,
+} from "./user-store";
+import type { NextRequest } from "next/server";
+import { verifyUserSessionToken, USER_COOKIE_NAME } from "./user-token";
+import { createSessionToken, verifySessionToken, ADMIN_COOKIE_NAME } from "./admin-token";
 export { createSessionToken, verifySessionToken, ADMIN_COOKIE_NAME } from "./admin-token";
 
-const AUTH_FILE_PATH = path.join(process.cwd(), "data", "admin-auth.json");
+export { SUPER_ADMIN_EMAIL };
 
-const DEFAULT_USERNAME = process.env.ADMIN_USERNAME || "admin";
-const DEFAULT_PASSWORD = process.env.ADMIN_PASSWORD || "hiphim_admin_2026";
-
-interface AuthStore {
-  username: string;
-  passwordHash: string;
-  updatedAt: string;
-}
-
-function getStoredAuth(): { username: string; password: string } {
-  try {
-    if (fs.existsSync(AUTH_FILE_PATH)) {
-      const data = JSON.parse(fs.readFileSync(AUTH_FILE_PATH, "utf-8"));
-      if (data.username && data.passwordHash) {
-        return { username: data.username, password: data.passwordHash };
-      }
-    }
-  } catch (err) {
-    console.warn("Could not read admin-auth.json, using default credentials:", err);
-  }
-  return { username: DEFAULT_USERNAME, password: DEFAULT_PASSWORD };
-}
-
-export function updateAdminPassword(newPassword: string, newUsername?: string): boolean {
-  try {
-    const current = getStoredAuth();
-    const updated: AuthStore = {
-      username: newUsername || current.username,
-      passwordHash: newPassword,
-      updatedAt: new Date().toISOString(),
-    };
-    const dir = path.dirname(AUTH_FILE_PATH);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(AUTH_FILE_PATH, JSON.stringify(updated, null, 2), "utf-8");
+/**
+ * Checks if incoming request has valid superadmin permissions (either via admin cookie or superadmin user cookie).
+ */
+export async function isAuthorizedAdminRequest(req: NextRequest): Promise<boolean> {
+  // 1. Check admin session cookie
+  const adminToken = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
+  if (adminToken && (await verifySessionToken(adminToken))) {
     return true;
-  } catch (err) {
-    console.error("Could not write admin-auth.json:", err);
+  }
+
+  // 2. Check user session cookie for Super Admin
+  const userToken = req.cookies.get(USER_COOKIE_NAME)?.value;
+  if (userToken) {
+    const userPayload = await verifyUserSessionToken(userToken);
+    if (userPayload?.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Validates admin credentials.
+ * Per security specification: Only kimdinhphuong205@gmail.com has superadmin privileges.
+ * The default 'admin' account is disabled.
+ */
+export async function checkAdminCredentials(usernameOrEmail: string, password: string): Promise<boolean> {
+  const input = (usernameOrEmail || "").trim().toLowerCase();
+  const superEmail = SUPER_ADMIN_EMAIL.toLowerCase();
+  const superPrefix = superEmail.split("@")[0].toLowerCase();
+
+  const isMatch = input === superEmail || input === superPrefix;
+  if (!isMatch) {
     return false;
   }
+
+  const adminUser = findUserByEmail(SUPER_ADMIN_EMAIL);
+  if (!adminUser || !adminUser.passwordHash) {
+    return false;
+  }
+
+  return await verifyPassword(password.trim(), adminUser.passwordHash);
 }
 
-export function checkAdminCredentials(username: string, password: string): boolean {
-  const current = getStoredAuth();
-  return (
-    username.trim().toLowerCase() === current.username.toLowerCase() &&
-    password.trim() === current.password
-  );
+/**
+ * Updates Super Admin password directly in the user store.
+ */
+export async function updateAdminPassword(newPassword: string, _username?: string): Promise<boolean> {
+  try {
+    const adminUser = findUserByEmail(SUPER_ADMIN_EMAIL);
+    if (!adminUser) return false;
+
+    const newHash = await hashPassword(newPassword);
+    const updated = updateUser(adminUser.id, { passwordHash: newHash });
+    return !!updated;
+  } catch (err) {
+    console.error("Could not update super admin password:", err);
+    return false;
+  }
 }

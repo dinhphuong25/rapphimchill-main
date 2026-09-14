@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect } from "react";
 import { useFavorites } from "@/hooks/useLocalStorage";
-import { Trash2 } from "lucide-react";
+import { useUserAuth } from "@/context/user-auth-context";
+import AuthGate from "@/components/auth/auth-gate";
+import { Trash2, Heart } from "lucide-react";
 import Link from "next/link";
 import MovieCardEditorial from "@/components/movie/movie-card-editorial";
 import type { FavoriteItem } from "@/lib/types";
@@ -13,8 +15,9 @@ interface FavoritesClientProps {
 }
 
 export default function FavoritesClient({ categories, countries }: FavoritesClientProps) {
+  const { user, loading: authLoading, updateServerData } = useUserAuth();
   const { favorites, removeFavorite, clearFavorites, batchUpdateFavorites, hydrated } = useFavorites();
-  const movies = favorites;
+  const movies = (favorites && favorites.length > 0 ? favorites : (user?.favorites || [])) as FavoriteItem[];
 
   // Auto-enrich any items in favorites that miss origin_name or rating
   useEffect(() => {
@@ -61,41 +64,57 @@ export default function FavoritesClient({ categories, countries }: FavoritesClie
   }, [hydrated, favorites, batchUpdateFavorites]);
 
   const handleRemove = useCallback((slug: string) => {
-    removeFavorite(slug);
-  }, [removeFavorite]);
+    const updated = removeFavorite(slug);
+    if (user && Array.isArray(updated)) {
+      updateServerData({ favorites: updated });
+    }
+  }, [removeFavorite, user, updateServerData]);
 
   const handleClearAll = () => {
     clearFavorites();
+    if (user) {
+      updateServerData({ favorites: [] });
+    }
   };
 
-  if (!hydrated) {
+  if (!hydrated || authLoading) {
     return null;
+  }
+
+  // If not logged in, require authentication
+  if (!user) {
+    return (
+      <div className="w-full max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-12 xl:px-16 pt-20 sm:pt-24 lg:pt-28 pb-20">
+        <AuthGate
+          title="Tủ Phim Yêu Thích Của Bạn"
+          description="Tủ phim yêu thích được liên kết và đồng bộ an toàn với tài khoản cá nhân. Vui lòng đăng nhập hoặc tạo tài khoản để xem và quản lý danh sách của bạn trên mọi thiết bị."
+          icon={Heart}
+        />
+      </div>
+    );
   }
 
   return (
     <>
-      <div className="w-full max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-12 xl:px-16 pt-5 sm:pt-8 lg:pt-20 pb-20">
-        <h1 className="sr-only">Phim Yêu Thích</h1>
-
-        {/* Clear Action */}
-        {movies.length > 0 && (
-          <div className="flex justify-end mb-3 sm:mb-4">
-            <button
-              onClick={handleClearAll}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-white/50 hover:text-red-400 border border-white/10 hover:border-red-400/30 rounded-xl transition-colors hover:bg-red-400/10 font-bold cursor-pointer"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Xóa yêu thích</span>
-            </button>
-          </div>
-        )}
-
-        {/* Empty State: Tinh tế, tối giản, không dùng khung hộp thô */}
+      <div className="w-full max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-12 xl:px-16 pt-20 sm:pt-24 lg:pt-28 pb-20">
+        {/* Empty State */}
         {movies.length === 0 ? (
-          <div className="py-24 text-center">
-            <p className="text-white/40 text-sm sm:text-base font-medium">
+          <div className="py-16 sm:py-24 text-center select-none animate-in fade-in duration-200">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-5 rounded-3xl bg-white/[0.04] border border-white/10 flex items-center justify-center text-brand-green/50 shadow-xl">
+              <Heart className="w-10 h-10 sm:w-12 sm:h-12 stroke-[1.8]" />
+            </div>
+            <h3 className="text-xl sm:text-2xl font-bold text-white mb-2.5">
               Chưa có phim nào trong danh sách yêu thích
+            </h3>
+            <p className="text-sm sm:text-base text-white/60 max-w-md mx-auto mb-8 leading-relaxed font-normal">
+              Bấm vào biểu tượng trái tim trên bất kỳ bộ phim nào để lưu lại và xem lại bất cứ lúc nào trên mọi thiết bị.
             </p>
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 h-11 px-7 rounded-xl bg-brand-green hover:bg-brand-green-hover text-cinema-bg font-bold text-sm tracking-wide shadow-[0_0_20px_rgba(32,214,107,0.25)] transition-all active:scale-95 cursor-pointer"
+            >
+              <span>Khám phá phim ngay</span>
+            </Link>
           </div>
         ) : (
           /* Movie Grid - Identical to standard categories */

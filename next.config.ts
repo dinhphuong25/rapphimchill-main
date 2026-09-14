@@ -115,10 +115,22 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/api/admin/:path*",
-        headers: [{ key: "Cache-Control", value: "no-store, no-cache, must-revalidate, private" }],
+        headers: [{ key: "Cache-Control", value: "no-store, no-cache, must-revalidate, private, max-age=0" }],
       },
       {
-        source: "/api/:path*",
+        source: "/api/auth/:path*",
+        headers: [{ key: "Cache-Control", value: "no-store, no-cache, must-revalidate, private, max-age=0" }],
+      },
+      {
+        source: "/api/system/:path*",
+        headers: [{ key: "Cache-Control", value: "no-store, no-cache, must-revalidate, private, max-age=0" }],
+      },
+      {
+        source: "/api/cron/:path*",
+        headers: [{ key: "Cache-Control", value: "no-store, no-cache, must-revalidate, private, max-age=0" }],
+      },
+      {
+        source: "/api/phim/:path*",
         headers: [{ key: "Cache-Control", value: "public, max-age=300, stale-while-revalidate=600" }],
       },
       {

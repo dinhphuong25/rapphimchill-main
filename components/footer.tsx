@@ -16,16 +16,12 @@ export default function Footer({}: FooterProps = {}) {
         <div className="hidden sm:flex flex-col items-start text-left gap-1 min-w-0">
           <div className="flex items-center gap-2">
             <Image
-              src="/favicon.svg"
-              alt="Hi Phim Logo"
-              width={20}
-              height={20}
-              className="w-5 h-5 object-contain shrink-0"
+              src="/logo.png"
+              alt="Hi Phim"
+              width={100}
+              height={40}
+              className="h-6 sm:h-7 w-auto object-contain drop-shadow-[0_0_10px_rgba(32,214,107,0.35)]"
             />
-            <span className="text-sm sm:text-base font-black text-white tracking-wide truncate flex items-center">
-              Hi <span className="text-brand-green ml-1">Phim</span>
-              <span className="text-[8px] sm:text-[9px] font-black text-brand-green self-start -mt-0.5 ml-0.5 select-none">®</span>
-            </span>
           </div>
 
           <p className="text-[11px] sm:text-[12px] text-white/60 leading-normal">

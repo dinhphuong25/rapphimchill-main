@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSiteConfig, saveSiteConfig } from "@/lib/site-config";
-import { verifySessionToken, ADMIN_COOKIE_NAME } from "@/lib/admin-auth";
+import { isAuthorizedAdminRequest } from "@/lib/admin-auth";
 import { setMaintenanceState } from "@/lib/maintenance";
 import { revalidatePath, revalidateTag } from "next/cache";
 
 export async function GET(req: NextRequest) {
-  const sessionToken = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
-  const isValid = await verifySessionToken(sessionToken);
+  const isAuthorized = await isAuthorizedAdminRequest(req);
 
-  if (!isValid) {
+  if (!isAuthorized) {
     return NextResponse.json(
       { success: false, error: "Unauthorized" },
       { status: 401 }
@@ -23,10 +22,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const sessionToken = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
-  const isValid = await verifySessionToken(sessionToken);
+  const isAuthorized = await isAuthorizedAdminRequest(req);
 
-  if (!isValid) {
+  if (!isAuthorized) {
     return NextResponse.json(
       { success: false, error: "Unauthorized" },
       { status: 401 }

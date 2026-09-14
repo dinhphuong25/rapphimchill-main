@@ -159,6 +159,7 @@ export interface WatchHistoryItem {
   episode_current?: string;
   currentTime: number;
   duration: number;
+  episodeIndex?: number;
   episodeName?: string;
   episodeSlug?: string;
   serverIndex?: number;

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Play, Star, Heart, Film } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFavorites } from "@/hooks/useLocalStorage";
+import { useUserAuth } from "@/context/user-auth-context";
 import { MotionCard } from "@/components/motion/motion-primitives";
 import { getMovieImageCandidates, STATIC_BLUR_DATA_URL } from "@/lib/image-helper";
 
@@ -23,6 +24,10 @@ export interface MovieCardEditorialProps {
     episode_current?: string;
     imdb?: { rating?: number };
     tmdb?: { vote_average?: number };
+    episodeIndex?: number;
+    episodeName?: string;
+    currentTime?: number;
+    duration?: number;
   };
   priority?: boolean;
   hideFavoriteButton?: boolean;
@@ -33,6 +38,7 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
   priority = false,
   hideFavoriteButton = false,
 }: MovieCardEditorialProps) {
+  const { user, checkAuthOrPrompt, updateServerData } = useUserAuth();
   const { toggleFavorite, isFavorite } = useFavorites();
   const [candidateIndex, setCandidateIndex] = useState(0);
   const [hasError, setHasError] = useState(false);
@@ -59,13 +65,38 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
   const isValidRating = !isNaN(rating) && rating > 0;
   const isFav = isFavorite(movie.slug);
 
+  const epParam = typeof movie.episodeIndex === "number" && movie.episodeIndex >= 0
+    ? `&ep=${movie.episodeIndex + 1}`
+    : "";
+  const timeParam = movie.currentTime && movie.currentTime > 5
+    ? `&t=${Math.floor(movie.currentTime)}`
+    : "";
+  const watchHref = `/watch?slug=${movie.slug}${epParam}${timeParam}`;
+
+  const badgeText = useMemo(() => {
+    if (movie.episodeName) {
+      return movie.currentTime && movie.currentTime > 5 ? `Đang xem: ${movie.episodeName}` : movie.episodeName;
+    }
+    if (typeof movie.episodeIndex === "number" && movie.episodeIndex >= 0) {
+      const epTitle = `Tập ${movie.episodeIndex + 1}`;
+      return movie.currentTime && movie.currentTime > 5 ? `Đang xem: ${epTitle}` : epTitle;
+    }
+    if (movie.episode_current && movie.episode_current !== "Full") {
+      return movie.episode_current;
+    }
+    return null;
+  }, [movie.episodeName, movie.episodeIndex, movie.currentTime, movie.episode_current]);
+
+  const hasProgress = Boolean(movie.duration && movie.currentTime && movie.currentTime > 5 && movie.duration > 0);
+  const progressPercent = hasProgress ? Math.min(100, Math.max(2, (movie.currentTime! / movie.duration!) * 100)) : 0;
+
   return (
     <MotionCard className="group relative flex flex-col h-full select-none" style={{ contentVisibility: "auto", containIntrinsicSize: "200px 300px" }}>
       {/* Poster Image Container Wrapper */}
       <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-cinema-surface border border-white/10 group-hover:border-brand-green/60 transition-[border-color,box-shadow] duration-300 shadow-xl group-hover:shadow-[0_12px_32px_rgba(32,214,107,0.25)] transform-gpu">
         
         <Link
-          href={`/watch?slug=${movie.slug}`}
+          href={watchHref}
           className="absolute inset-0 z-0 block"
         >
         {currentSrc ? (
@@ -128,10 +159,25 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
         </div>
 
         {/* Current Episode Badge Bottom Left */}
-        {movie.episode_current && movie.episode_current !== "Full" && (
-          <span className="absolute bottom-2.5 left-2.5 z-10 text-[10px] font-mono font-semibold text-white/80 bg-black/80 px-2 py-0.5 rounded border border-white/10 truncate max-w-[80%]">
-            {movie.episode_current}
+        {badgeText && (
+          <span className={cn(
+            "absolute bottom-2.5 left-2.5 z-10 text-[10px] font-mono font-semibold px-2 py-0.5 rounded border truncate max-w-[80%]",
+            movie.currentTime && movie.currentTime > 5
+              ? "bg-black/90 text-brand-green border-brand-green/40 shadow-[0_0_10px_rgba(34,197,94,0.2)]"
+              : "text-white/80 bg-black/80 border-white/10"
+          )}>
+            {badgeText}
           </span>
+        )}
+
+        {/* Watch Progress Bar at bottom of poster */}
+        {hasProgress && (
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/60 z-20 overflow-hidden">
+            <div
+              className="h-full bg-brand-green shadow-[0_0_8px_rgba(34,197,94,0.8)] transition-all duration-300"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
         )}
         </Link>
 
@@ -141,7 +187,8 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              toggleFavorite({
+              if (!checkAuthOrPrompt("lưu phim yêu thích")) return;
+              const updated = toggleFavorite({
                 slug: movie.slug,
                 name: movie.name,
                 origin_name: movie.origin_name,
@@ -153,6 +200,9 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
                 tmdb: movie.tmdb,
                 imdb: movie.imdb,
               });
+              if (user && updated) {
+                updateServerData({ favorites: updated });
+              }
             }}
             aria-label="Yêu thích"
             className={cn(
@@ -170,7 +220,7 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
       {/* Info Under Poster */}
       <div className="mt-2.5 flex flex-col">
         <Link
-          href={`/watch?slug=${movie.slug}`}
+          href={watchHref}
           className="text-xs font-bold text-cinema-text hover:text-brand-green transition-colors line-clamp-1 flex items-center justify-between group/title"
         >
           <span className="truncate">{movie.name}</span>

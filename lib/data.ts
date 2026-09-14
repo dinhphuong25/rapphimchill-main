@@ -207,3 +207,76 @@ export const getCachedAllRankings = unstable_cache(
   { revalidate: 900, tags: ["rankings"] }
 );
 
+/** Filtered/Topic movies cached for 15 minutes - instant SSR */
+export const getCachedFilteredMovies = async (params: {
+  typeList?: string;
+  category?: string;
+  topic?: string;
+  country?: string;
+  year?: string | number;
+  page?: number;
+  sortField?: string;
+  sortType?: string;
+  sortLang?: string;
+  limit?: number;
+}) => {
+  const {
+    typeList,
+    category,
+    topic,
+    country,
+    year,
+    page = 1,
+    sortField = "modified.time",
+    sortType = "desc",
+    sortLang = "vietsub",
+    limit = 20,
+  } = params;
+
+  const cacheKey = `filter_${typeList || ""}_${category || ""}_${topic || ""}_${country || ""}_${year || ""}_p${page}_sf${sortField}_st${sortType}_l${limit}`;
+
+  return unstable_cache(
+    async () => {
+      try {
+        if (typeList) {
+          const [items, pagination] = await api.getFilteredList({
+            typeList,
+            page,
+            sortField,
+            sortType,
+            sortLang,
+            category,
+            country,
+            year,
+            limit,
+          });
+          return { items: items || [], pagination: pagination || null };
+        }
+        if (category) {
+          const [items, pagination] = await api.byCategory(category, page);
+          return { items: items || [], pagination: pagination || null };
+        }
+        if (country) {
+          const [items, pagination] = await api.byCountry(country, page);
+          return { items: items || [], pagination: pagination || null };
+        }
+        if (year) {
+          const [items, pagination] = await api.byYear(year, page);
+          return { items: items || [], pagination: pagination || null };
+        }
+        if (topic) {
+          const [items, pagination] = await api.byTopic(topic, page);
+          return { items: items || [], pagination: pagination || null };
+        }
+        const [items, pagination] = await api.newAdding(page);
+        return { items: items || [], pagination: pagination || null };
+      } catch (err) {
+        console.warn("Failed to fetch filtered movies in getCachedFilteredMovies:", err);
+        return { items: [], pagination: null };
+      }
+    },
+    [cacheKey],
+    { revalidate: 600, tags: ["filtered-movies"] }
+  )();
+};
+

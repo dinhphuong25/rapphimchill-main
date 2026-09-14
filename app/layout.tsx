@@ -16,6 +16,8 @@ import { Toaster } from "sonner";
 import AnnouncementBanner from "@/components/announcement-banner";
 import { getSiteConfig } from "@/lib/site-config";
 import AppShell from "@/components/layout/app-shell";
+import { UserAuthProvider } from "@/context/user-auth-context";
+import AuthModal from "@/components/auth/auth-modal";
 
 // Be Vietnam Pro — font hỗ trợ tiếng Việt tốt nhất, sans-serif hiện đại
 const beVietnam = Be_Vietnam_Pro({
@@ -114,12 +116,13 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
+      { url: "/favicon.ico", sizes: "any" },
       { url: "/favicon.svg", type: "image/svg+xml" },
       { url: "/favicon.png", type: "image/png", sizes: "512x512" },
       { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
     ],
-    shortcut: "/favicon.svg",
-    apple: "/favicon.svg",
+    shortcut: "/favicon.ico",
+    apple: "/apple-icon.png",
   },
 };
 
@@ -134,8 +137,9 @@ export default function RootLayout({
         <meta name="dmca-site-verification" content="MkFjU1d2RTgwK1BXdndRaHRUMUpOd1BxdEFPRmg3RUhzRHIxWjFYM1BlMD01" />
 
         {/* Favicon */}
+        <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/favicon.svg" />
+        <link rel="apple-touch-icon" href="/apple-icon.png" />
 
         {/* PWA */}
         <link rel="manifest" href="/manifest.json" />
@@ -232,10 +236,13 @@ export default function RootLayout({
         {/* Global Admin Announcement Banner */}
         <AnnouncementBanner initialAnnouncement={siteConfig.announcement} />
 
-        {/* Main App — không còn MUI Provider */}
-        <LoadingProvider>
-          <AppShell>{children}</AppShell>
-        </LoadingProvider>
+        {/* Main App with User Auth & Instant Loading */}
+        <UserAuthProvider>
+          <LoadingProvider>
+            <AppShell>{children}</AppShell>
+          </LoadingProvider>
+          <AuthModal />
+        </UserAuthProvider>
 
         {/* Lazy-init sau khi page load */}
         <PWAInstaller />

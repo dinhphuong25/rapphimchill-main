@@ -2,27 +2,19 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Home, Film, Lightbulb, Search, Sparkles } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface WatchHeaderProps {
   movieName: string;
   movieSlug: string;
   currentEpName?: string;
-  quality?: string;
-  isTheaterMode: boolean;
-  onToggleTheaterMode: () => void;
 }
 
 export default function WatchHeader({
   movieName,
   movieSlug,
   currentEpName,
-  quality,
-  isTheaterMode,
-  onToggleTheaterMode,
 }: WatchHeaderProps) {
   const router = useRouter();
 
@@ -78,29 +70,6 @@ export default function WatchHeader({
           </div>
         </div>
 
-        {/* Right: Actions */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {quality && (
-            <Badge className="hidden sm:inline-flex bg-brand-green/15 text-brand-green border border-brand-green/30 text-xs font-bold px-2.5 py-1">
-              {quality}
-            </Badge>
-          )}
-
-          {/* Theater mode toggle */}
-          <button
-            onClick={onToggleTheaterMode}
-            className={cn(
-              "px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border shadow-sm",
-              isTheaterMode
-                ? "bg-amber-500/20 text-amber-400 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.3)]"
-                : "bg-white/5 hover:bg-white/10 text-white/80 border-white/10"
-            )}
-          >
-            <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden sm:inline">{isTheaterMode ? "Bật Đèn" : "Tắt Đèn"}</span>
-          </button>
-
-        </div>
         </div>
       </header>
     </div>

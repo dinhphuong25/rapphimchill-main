@@ -460,14 +460,14 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
     <div className="fixed inset-0 z-[150] overflow-y-auto bg-[#050807] overscroll-contain shadow-none search-scroll">
       <div className="min-h-full flex flex-col">
         {/* Sticky Search Header Container - Solid background to eliminate backdrop-blur lag */}
-        <div className="sticky top-0 z-40 bg-[#050807] border-b border-white/10 shadow-md">
+        <div className="sticky top-0 z-40 bg-[#050807]/95 backdrop-blur-md border-b border-white/5 shadow-[0_4px_25px_rgba(0,0,0,0.8)]">
           <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-3 sm:pb-4">
-            <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-white/10 relative">
+            <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-white/10 focus-within:border-white/20 transition-colors relative">
               <form
                 onSubmit={handleSubmit}
                 className="flex items-center gap-2.5 sm:gap-4 flex-1 mr-2 sm:mr-4"
               >
-                <span className="font-mono text-xl sm:text-3xl font-bold text-brand-green select-none">
+                <span className="font-mono text-xl sm:text-3xl font-black text-brand-green select-none">
                   &gt;
                 </span>
                 <Search className="w-5 h-5 sm:w-7 sm:h-7 text-brand-green shrink-0" />
@@ -485,21 +485,6 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                 />
                 {isLoading && (
                   <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 text-brand-green animate-spin shrink-0" />
-                )}
-                {query.length > 0 && !isLoading && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setQuery("");
-                      setResults([]);
-                      setTotalItems(0);
-                      inputRef.current?.focus();
-                    }}
-                    className="p-1.5 rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-colors"
-                    aria-label="Xóa nội dung"
-                  >
-                    <X className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </button>
                 )}
               </form>
 
@@ -535,43 +520,38 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                 </span>
               </div>
 
-              <div className="flex items-center gap-3">
-                {results.length > 0 && (
-                  <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10">
-                    <button
-                      type="button"
-                      onClick={() => setViewMode("grid")}
-                      className={cn(
-                        "flex items-center gap-1.5 px-2.5 py-1 rounded text-xs transition-all font-sans",
-                        viewMode === "grid"
-                          ? "bg-brand-green text-cinema-bg font-bold shadow-sm"
-                          : "text-white/60 hover:text-white"
-                      )}
-                      title="Chế độ lưới"
-                    >
-                      <LayoutGrid className="w-3.5 h-3.5" />
-                      <span>Lưới</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setViewMode("list")}
-                      className={cn(
-                        "flex items-center gap-1.5 px-2.5 py-1 rounded text-xs transition-all font-sans",
-                        viewMode === "list"
-                          ? "bg-brand-green text-cinema-bg font-bold shadow-sm"
-                          : "text-white/60 hover:text-white"
-                      )}
-                      title="Chế độ danh sách"
-                    >
-                      <List className="w-3.5 h-3.5" />
-                      <span>Danh sách</span>
-                    </button>
-                  </div>
-                )}
-                <span className="text-brand-green/80 font-semibold tracking-wider">
-                  Command Palette v2.0
-                </span>
-              </div>
+              {results.length > 0 && (
+                <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("grid")}
+                    className={cn(
+                      "flex items-center gap-1.5 px-2.5 py-1 rounded text-xs transition-all font-sans",
+                      viewMode === "grid"
+                        ? "bg-brand-green text-cinema-bg font-bold shadow-sm"
+                        : "text-white/60 hover:text-white"
+                    )}
+                    title="Chế độ lưới"
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    <span>Lưới</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("list")}
+                    className={cn(
+                      "flex items-center gap-1.5 px-2.5 py-1 rounded text-xs transition-all font-sans",
+                      viewMode === "list"
+                        ? "bg-brand-green text-cinema-bg font-bold shadow-sm"
+                        : "text-white/60 hover:text-white"
+                    )}
+                    title="Chế độ danh sách"
+                  >
+                    <List className="w-3.5 h-3.5" />
+                    <span>Danh sách</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

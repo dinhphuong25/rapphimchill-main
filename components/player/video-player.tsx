@@ -19,10 +19,15 @@ import {
   ChevronsLeft,
   Settings,
   Check,
+  Tv,
+  ShieldCheck,
+  X,
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+export type VideoFitMode = 'contain' | 'cover' | 'fill' | '4:3' | '21:9';
 
 interface VideoPlayerProps {
   videoUrl: string;
@@ -128,14 +133,28 @@ export default function VideoPlayer({
     id: number;
   } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<'quality' | 'speed' | 'filter' | 'fit'>('quality');
+  const [videoFit, setVideoFit] = useState<VideoFitMode>('contain');
+  const [containerAspect, setContainerAspect] = useState<number>(16 / 9);
+  const [visualFilter, setVisualFilter] = useState<'normal' | 'oled' | 'vivid' | 'bright'>('normal');
+  const [currentLevelPlaying, setCurrentLevelPlaying] = useState<number>(-1);
+  const [isSlowNetwork, setIsSlowNetwork] = useState(false);
+  const [hasRenderedFirstFrame, setHasRenderedFirstFrame] = useState(false);
+  const slowNetworkTimerRef = useRef<NodeJS.Timeout | null>(null);
   const settingsMenuRef = useRef<HTMLDivElement | null>(null);
   const waitingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastBufferedRef = useRef<number>(0);
-  // Safeguard against any external scripts or stale references
-  const isMaskVisible = false;
-  if (typeof globalThis !== 'undefined' && !(globalThis as any).isMaskVisible) {
-    (globalThis as any).isMaskVisible = false;
-  }
+  // Anti-Ad Banner Shield (Tự động phát hiện & che dải quảng cáo bài bạc ở mép trên)
+  const [adShieldMode, setAdShieldMode] = useState<'auto' | 'always' | 'off'>('auto');
+  const [isAdDetected, setIsAdDetected] = useState(false);
+  const [showShieldBadge, setShowShieldBadge] = useState(false);
+  const detectorCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const consecutiveDetectionsRef = useRef(0);
+  const consecutiveMissesRef = useRef(0);
+  const prevFrameLuminanceRef = useRef<Uint8Array | null>(null);
+  const badgeTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+
 
   // Auto Unmute Helper - immediately unmute and restore audio whenever called
   const attemptUnmute = useCallback(() => {
@@ -205,6 +224,15 @@ export default function VideoPlayer({
       videoRef.current.volume = initialVol;
       videoRef.current.muted = false;
     }
+
+    try {
+      // Remove obsolete global visual filter key so it never leaks across movies
+      localStorage.removeItem('cinema_visual_filter');
+      const savedFit = localStorage.getItem('cinema_video_fit') as VideoFitMode;
+      if (savedFit && ['contain', 'cover', 'fill', '4:3', '21:9'].includes(savedFit)) {
+        setVideoFit(savedFit);
+      }
+    } catch (e) {}
   }, []);
 
   // 3. ACTIONS (Strictly defined before any useEffect)
@@ -260,6 +288,8 @@ export default function VideoPlayer({
       showControlsHandler();
     }
   }, [showControlsHandler]);
+
+
 
   const handleVolumeChange = useCallback((value: number[]) => {
     const newVolume = value[0];
@@ -358,11 +388,141 @@ export default function VideoPlayer({
   }, []);
 
   const handlePlaybackRateChange = useCallback((rate: number) => {
-    if (videoRef.current) { videoRef.current.playbackRate = rate; setPlaybackRate(rate); }
+    if (videoRef.current) {
+      videoRef.current.playbackRate = rate;
+      setPlaybackRate(rate);
+      toast.info(`Tốc độ phát: ${rate === 1 ? '1.0x (Chuẩn)' : `${rate}x`}`);
+    }
   }, []);
 
   const handleQualityChange = useCallback((level: number) => {
-    if (hlsRef.current) { hlsRef.current.currentLevel = level; setQuality(level); }
+    if (hlsRef.current) {
+      hlsRef.current.currentLevel = level;
+      setQuality(level);
+      if (level === -1) {
+        toast.info("Chất lượng: Tự động (Thích ứng theo mạng)");
+      } else {
+        const selected = qualities.find(q => q.level === level);
+        toast.success(`Chất lượng: ${selected?.height || ''}p Siêu Nét`);
+      }
+    }
+  }, [qualities]);
+
+  const handleVisualFilterChange = useCallback((filter: 'normal' | 'oled' | 'vivid' | 'bright') => {
+    setVisualFilter(filter);
+    const slug = movieSlugRef.current;
+    if (slug) {
+      try {
+        if (filter === 'normal') {
+          localStorage.removeItem(`cinema_visual_filter_${slug}`);
+        } else {
+          localStorage.setItem(`cinema_visual_filter_${slug}`, filter);
+        }
+      } catch (e) {}
+    }
+    try { localStorage.removeItem('cinema_visual_filter'); } catch (e) {}
+
+    const label = filter === 'oled' 
+      ? 'OLED Cinema Pro (Đề xuất)' 
+      : filter === 'vivid' 
+      ? 'Sống động (Vivid Colors)' 
+      : filter === 'bright'
+      ? 'Sáng rõ (Night Clarify)'
+      : 'Chuẩn (Natural)';
+    toast.success(`Chế độ màu: ${label}`);
+  }, []);
+
+  const handleVideoFitChange = useCallback((newFit: VideoFitMode) => {
+    setVideoFit(newFit);
+    try {
+      localStorage.setItem('cinema_video_fit', newFit);
+    } catch (e) {}
+
+    const titles: Record<VideoFitMode, string> = {
+      contain: 'Mặc định (16:9)',
+      cover: 'Phóng to lấp đầy (Zoom Fill)',
+      '4:3': 'Tỷ lệ 4:3 (TV/Anime)',
+      '21:9': 'Điện ảnh (21:9)',
+      fill: 'Kéo giãn (Stretch)',
+    };
+    toast.success(`Tỷ lệ: ${titles[newFit] || newFit}`);
+  }, []);
+
+  // Track container width/height ratio for responsive aspect fitting
+  useEffect(() => {
+    const updateAspect = () => {
+      if (containerRef.current) {
+        const w = containerRef.current.clientWidth;
+        const h = containerRef.current.clientHeight;
+        if (w > 0 && h > 0) {
+          setContainerAspect(w / h);
+        }
+      }
+    };
+    updateAspect();
+    window.addEventListener('resize', updateAspect);
+    return () => window.removeEventListener('resize', updateAspect);
+  }, [isFullscreen]);
+
+  // Compute CSS transform & fit styling for <video>
+  const getVideoTransformStyle = useCallback((): React.CSSProperties => {
+    switch (videoFit) {
+      case 'cover': {
+        // Trên màn hình siêu rộng (màn hình 21:9 hoặc điện thoại tràn viền), object-fit: cover tự lấp đầy
+        // Trên màn 16:9 chuẩn, scale(1.334) phóng to 133.4% để cắt sạch 2 viền đen trên dưới (letterbox 2.35:1)
+        const scale = containerAspect > 2.0 ? 1 : 1.334;
+        return {
+          objectFit: 'cover',
+          transform: `translateZ(0) scale(${scale})`,
+          transformOrigin: 'center center',
+        };
+      }
+      case 'fill': {
+        return {
+          objectFit: 'fill',
+          transform: 'translateZ(0) scale(1)',
+          transformOrigin: 'center center',
+        };
+      }
+      case '4:3': {
+        // Tỷ lệ chuẩn 4:3 = 1.3333 so với 16:9 (1.7777) => co lại 75% chiều ngang
+        return {
+          objectFit: 'fill',
+          transform: 'translateZ(0) scaleX(0.75)',
+          transformOrigin: 'center center',
+        };
+      }
+      case '21:9': {
+        // Tỷ lệ chuẩn 21:9 = 2.3333 so với 16:9 (1.7777) => ép 76.2% chiều cao
+        return {
+          objectFit: 'fill',
+          transform: 'translateZ(0) scaleY(0.762)',
+          transformOrigin: 'center center',
+        };
+      }
+      case 'contain':
+      default: {
+        return {
+          objectFit: 'contain',
+          transform: 'translateZ(0) scale(1)',
+          transformOrigin: 'center center',
+        };
+      }
+    }
+  }, [videoFit, containerAspect]);
+
+  const togglePiP = useCallback(async () => {
+    const video = videoRef.current;
+    if (!video) return;
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else if (document.pictureInPictureEnabled && (video as any).requestPictureInPicture) {
+        await (video as any).requestPictureInPicture();
+      }
+    } catch (err) {
+      console.warn("PiP error:", err);
+    }
   }, []);
 
   const handleBack = useCallback(() => {
@@ -370,10 +530,27 @@ export default function VideoPlayer({
     else router.push("/");
   }, [router]);
 
-  // 4. EFFECTS (All defined after actions)
-
   useEffect(() => { movieNameRef.current = movieName; }, [movieName]);
   useEffect(() => { movieSlugRef.current = movieSlug; }, [movieSlug]);
+
+  // Chế độ màu luôn mặc định là 'normal' (Chuẩn), chỉ nạp lại nếu người dùng đã chỉnh riêng cho phim này
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!movieSlug) {
+      setVisualFilter('normal');
+      return;
+    }
+    try {
+      const savedForMovie = localStorage.getItem(`cinema_visual_filter_${movieSlug}`);
+      if (savedForMovie && ['oled', 'vivid', 'bright'].includes(savedForMovie)) {
+        setVisualFilter(savedForMovie as any);
+      } else {
+        setVisualFilter('normal');
+      }
+    } catch {
+      setVisualFilter('normal');
+    }
+  }, [movieSlug]);
   useEffect(() => { videoUrlRef.current = videoUrl; }, [videoUrl]);
   useEffect(() => { posterRef.current = poster; }, [poster]);
 
@@ -400,6 +577,17 @@ export default function VideoPlayer({
           handleVolumeChange([volDown]); showFeedback('volume', `${Math.round(volDown * 100)}%`); break;
         case 'KeyF': toggleFullscreen(); break;
         case 'KeyM': toggleMute(); showFeedback(videoRef.current.muted ? 'mute' : 'volume'); break;
+        case 'KeyA':
+        case 'KeyZ': {
+          const modes: VideoFitMode[] = ['contain', 'cover', '4:3', '21:9', 'fill'];
+          setVideoFit((prev) => {
+            const currentIndex = modes.indexOf(prev);
+            const nextMode = modes[(currentIndex + 1) % modes.length];
+            handleVideoFitChange(nextMode);
+            return nextMode;
+          });
+          break;
+        }
         case 'Digit1': case 'Digit2': case 'Digit3': case 'Digit4': case 'Digit5':
         case 'Digit6': case 'Digit7': case 'Digit8': case 'Digit9': case 'Digit0':
           const percent = e.code === 'Digit0' ? 0 : parseInt(e.code.replace('Digit', '')) * 10;
@@ -410,7 +598,7 @@ export default function VideoPlayer({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [togglePlay, skip, handleVolumeChange, handleSeekCommit, toggleMute, toggleFullscreen, showControlsHandler]);
+  }, [togglePlay, skip, handleVolumeChange, handleSeekCommit, toggleMute, toggleFullscreen, showControlsHandler, handleVideoFitChange]);
 
   // Clear shortcut feedback automatically
   useEffect(() => {
@@ -440,6 +628,7 @@ export default function VideoPlayer({
     video.setAttribute('x5-playsinline', 'true');
     video.setAttribute('x5-video-player-type', 'h5-page');
     video.playsInline = true;
+    try { video.crossOrigin = "anonymous"; } catch (e) {}
 
     // Helper for fast, non-blocking playback start
     const playWithAutoplayFallback = () => {
@@ -524,11 +713,26 @@ export default function VideoPlayer({
     }
 
     prevVideoUrlRef.current = videoUrl;
+    setHasRenderedFirstFrame(false);
+    setIsSlowNetwork(false);
 
-    // Safety watchdog: ensure loading spinner is NEVER stuck forever
-    const loadWatchdog = setTimeout(() => {
+    // Watchdog: If initial load takes more than 3.5s, trigger active buffer recovery and flag slow network
+    const slowWatchdog = setTimeout(() => {
+      setIsSlowNetwork(true);
+      if (hlsRef.current) {
+        hlsRef.current.startLoad();
+      }
+    }, 3500);
+
+    // Watchdog: If still loading after 8s, try recovery once and offer backup
+    const fatalWatchdog = setTimeout(() => {
+      if (hlsRef.current) {
+        hlsRef.current.recoverMediaError();
+        hlsRef.current.startLoad();
+      }
+      setIsSlowNetwork(true);
       setIsLoading(false);
-    }, 2000);
+    }, 8000);
 
     const initHls = () => {
       // 1. Prefer Native HLS for Apple iOS devices (iPhone, iPad)
@@ -537,7 +741,9 @@ export default function VideoPlayer({
 
       if (useNativeHls) {
         const handleReady = () => { 
-          setIsLoading(false); 
+          setIsLoading(false);
+          setIsSlowNetwork(false);
+          setHasRenderedFirstFrame(true);
         };
 
         const handleMetadata = () => {
@@ -591,34 +797,34 @@ export default function VideoPlayer({
           autoStartLoad: true,
           startPosition: targetStartPosition,
           
-          backBufferLength: 15,
-          maxBufferLength: 30,
-          maxMaxBufferLength: 60,
-          maxBufferSize: 60 * 1024 * 1024,
+          backBufferLength: 30,
+          maxBufferLength: isMobile ? 60 : 90,
+          maxMaxBufferLength: isMobile ? 120 : 240,
+          maxBufferSize: 64 * 1024 * 1024,
           maxBufferHole: 0.5,
           highBufferWatchdogPeriod: 2,
-          nudgeOffset: 0.1,
-          nudgeMaxRetry: 5,
+          nudgeOffset: 0.2,
+          nudgeMaxRetry: 10,
           
           startLevel: -1,
           capLevelToPlayerSize: isMobile,
           testBandwidth: true,
           
-          abrEwmaDefaultEstimate: 3_000_000,
-          abrBandWidthFactor: 0.85,
+          abrEwmaDefaultEstimate: 1_200_000,
+          abrBandWidthFactor: 0.8,
           abrBandWidthUpFactor: 0.7,
           
           manifestLoadingMaxRetry: 4,
           manifestLoadingRetryDelay: 500,
           levelLoadingMaxRetry: 4,
           levelLoadingRetryDelay: 500,
-          fragLoadingMaxRetry: 6,
+          fragLoadingMaxRetry: 5,
           fragLoadingRetryDelay: 500,
-          fragLoadingMaxRetryTimeout: 25_000,
+          fragLoadingMaxRetryTimeout: 15_000,
           
-          manifestLoadingTimeOut: 15_000,
-          levelLoadingTimeOut: 15_000,
-          fragLoadingTimeOut: 25_000,
+          manifestLoadingTimeOut: 8_000,
+          levelLoadingTimeOut: 8_000,
+          fragLoadingTimeOut: 10_000,
           
           xhrSetup: (xhr) => {
             xhr.withCredentials = false;
@@ -641,6 +847,7 @@ export default function VideoPlayer({
 
         hls.on(HLS.Events.FRAG_LOADED, () => {
           setIsLoading(false);
+          setIsSlowNetwork(false);
         });
 
         hls.on(HLS.Events.FRAG_PARSED, () => {
@@ -651,26 +858,32 @@ export default function VideoPlayer({
           setIsLoading(false);
         });
 
+        hls.on(HLS.Events.LEVEL_SWITCHED, (e, data) => {
+          setCurrentLevelPlaying(data.level);
+        });
+
         hls.on(HLS.Events.ERROR, (e, data) => {
           if (data.details === HLS.ErrorDetails.BUFFER_STALLED_ERROR) {
+            setIsSlowNetwork(true);
             if (hlsRef.current) hlsRef.current.startLoad();
             return;
           }
           if (data.fatal) {
             switch (data.type) {
               case HLS.ErrorTypes.NETWORK_ERROR:
-                if (retryCountRef.current < 4) {
+                if (retryCountRef.current < 3) {
                   retryCountRef.current += 1;
-                  console.warn(`HLS Network error, retrying (${retryCountRef.current}/4)...`);
+                  console.warn(`HLS Network error, retrying (${retryCountRef.current}/3)...`);
+                  setIsSlowNetwork(true);
                   setTimeout(() => {
                     if (hlsRef.current) hlsRef.current.startLoad();
-                  }, 800 * retryCountRef.current);
+                  }, 600 * retryCountRef.current);
                 } else {
                   if (onSwitchToEmbedRef.current) {
                     console.warn("Auto-switching to embed server after HLS network errors");
                     onSwitchToEmbedRef.current();
                   } else {
-                    setError("Không thể kết nối máy chủ mặc định. Bạn có thể bấm Thử lại hoặc chuyển sang Máy chủ Dự phòng.");
+                    setError("Không thể kết nối máy chủ mặc định do giờ cao điểm. Bạn có thể bấm Thử lại hoặc chuyển sang Máy chủ Dự phòng.");
                   }
                 }
                 break;
@@ -739,7 +952,8 @@ export default function VideoPlayer({
 
     const cleanupNative = initHls();
     return () => { 
-      clearTimeout(loadWatchdog);
+      clearTimeout(slowWatchdog);
+      clearTimeout(fatalWatchdog);
       if (cleanupNative) cleanupNative();
     };
   }, [videoUrl]);
@@ -766,6 +980,11 @@ export default function VideoPlayer({
     const onTimeUpdate = () => {
       const cur = video.currentTime;
       const now = performance.now();
+      if (cur > 0.1 && !hasRenderedFirstFrame) {
+        setHasRenderedFirstFrame(true);
+      }
+
+
       // Throttle UI currentTime state updates to ~250ms to save CPU & avoid frame drops on mobile
       if (!isSeekingRef.current && (now - lastTimeUpdateRef.current >= 250 || video.ended)) {
         lastTimeUpdateRef.current = now;
@@ -806,6 +1025,10 @@ export default function VideoPlayer({
         clearTimeout(waitingTimerRef.current);
         waitingTimerRef.current = null;
       }
+      if (slowNetworkTimerRef.current) {
+        clearTimeout(slowNetworkTimerRef.current);
+        slowNetworkTimerRef.current = null;
+      }
       setIsLoading(false);
     };
 
@@ -818,7 +1041,7 @@ export default function VideoPlayer({
         const cur = video.currentTime;
         for (let i = 0; i < video.buffered.length; i++) {
           const start = video.buffered.start(i);
-          if (start > cur && start - cur <= 0.6) {
+          if (start > cur && start - cur <= 0.8) {
             video.currentTime = start + 0.05;
             return;
           }
@@ -830,13 +1053,23 @@ export default function VideoPlayer({
         if (!video.paused) {
           setIsLoading(true);
         }
-      }, 350);
+      }, 300);
+
+      if (slowNetworkTimerRef.current) clearTimeout(slowNetworkTimerRef.current);
+      slowNetworkTimerRef.current = setTimeout(() => {
+        if (!video.paused) {
+          setIsSlowNetwork(true);
+        }
+      }, 4000);
 
       // Safe recovery: if stalled for 3s, trigger HLS load or resume without seek loops
       const stallTimeout = setTimeout(() => {
         if (video.paused) return;
         if (hlsRef.current) {
           hlsRef.current.startLoad();
+          if (video.currentTime > 0) {
+            video.currentTime += 0.1;
+          }
         } else {
           try {
             if (video.readyState >= 2) {
@@ -850,6 +1083,10 @@ export default function VideoPlayer({
 
       const clearWaiting = () => {
         clearTimeout(stallTimeout);
+        if (slowNetworkTimerRef.current) {
+          clearTimeout(slowNetworkTimerRef.current);
+          slowNetworkTimerRef.current = null;
+        }
         hideLoading();
       };
 
@@ -873,6 +1110,8 @@ export default function VideoPlayer({
 
     const onPlayEvent = () => {
       setIsPlaying(true);
+      setHasRenderedFirstFrame(true);
+      setIsSlowNetwork(false);
       hideLoading();
     };
     const onPauseEvent = () => {
@@ -881,6 +1120,10 @@ export default function VideoPlayer({
       if (waitingTimerRef.current) {
         clearTimeout(waitingTimerRef.current);
         waitingTimerRef.current = null;
+      }
+      if (slowNetworkTimerRef.current) {
+        clearTimeout(slowNetworkTimerRef.current);
+        slowNetworkTimerRef.current = null;
       }
     };
 
@@ -958,6 +1201,136 @@ export default function VideoPlayer({
       document.removeEventListener('msfullscreenchange', handleFullscreenChange);
     };
   }, []);
+
+  // Intelligent Real-Time Ad Banner Detector Loop
+  useEffect(() => {
+    if (adShieldMode === 'off') {
+      setIsAdDetected(false);
+      setShowShieldBadge(false);
+      consecutiveDetectionsRef.current = 0;
+      prevFrameLuminanceRef.current = null;
+      return;
+    }
+    if (adShieldMode === 'always') {
+      setIsAdDetected(true);
+      return;
+    }
+
+    const checkInterval = setInterval(() => {
+      const video = videoRef.current;
+      if (!video || video.paused || video.ended || video.readyState < 2) return;
+
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      if (!vw || !vh) return;
+
+      let detected = false;
+      try {
+        let canvas = detectorCanvasRef.current;
+        if (!canvas) {
+          canvas = document.createElement('canvas');
+          canvas.width = 160;
+          canvas.height = 20;
+          detectorCanvasRef.current = canvas;
+        }
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (ctx) {
+          // Lấy dải mép trên 5% nơi đóng dấu quảng cáo bài bạc
+          const sampleHeight = Math.max(Math.round(vh * 0.05), 10);
+          ctx.drawImage(video, 0, 0, vw, sampleHeight, 0, 0, 160, 20);
+
+          const imgData = ctx.getImageData(0, 0, 160, 20);
+          const data = imgData.data;
+
+          const currentLum = new Uint8Array(160 * 20);
+          let edgeTransitions = 0;
+          let brightPixels = 0;
+          let darkPixels = 0;
+
+          // Quét ma trận điểm ảnh ngang
+          for (let y = 2; y < 18; y++) {
+            let prevLum = -1;
+            for (let x = 4; x < 156; x++) {
+              const idx = (y * 160 + x) * 4;
+              const r = data[idx];
+              const g = data[idx + 1];
+              const b = data[idx + 2];
+              const lum = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+              currentLum[y * 160 + x] = lum;
+
+              if (lum > 185) brightPixels++;
+              if (lum < 50) darkPixels++;
+
+              if (prevLum >= 0) {
+                const diff = Math.abs(lum - prevLum);
+                if (diff > 55) edgeTransitions++;
+              }
+              prevLum = lum;
+            }
+          }
+
+          // Kiểm tra tính tĩnh (watermark cố định trên khung hình)
+          let isTemporallyStatic = false;
+          const prevLum = prevFrameLuminanceRef.current;
+          if (prevLum && prevLum.length === currentLum.length) {
+            let diffSum = 0;
+            let comparedPixels = 0;
+            for (let i = 0; i < currentLum.length; i += 4) {
+              if (currentLum[i] > 160 || currentLum[i] < 60) {
+                diffSum += Math.abs(currentLum[i] - prevLum[i]);
+                comparedPixels++;
+              }
+            }
+            if (comparedPixels > 30) {
+              const avgDiff = diffSum / comparedPixels;
+              if (avgDiff < 14) {
+                isTemporallyStatic = true;
+              }
+            }
+          }
+          prevFrameLuminanceRef.current = currentLum;
+
+          // Quảng cáo cờ bạc: chữ có độ tương phản cao, mật độ cạnh chữ dày và cố định
+          if (edgeTransitions >= 65 && brightPixels >= 35 && darkPixels >= 35 && isTemporallyStatic) {
+            detected = true;
+          }
+        }
+      } catch {
+        // Tuyệt đối không tự suy đoán nếu canvas không đọc được
+        detected = false;
+      }
+
+      if (detected) {
+        consecutiveDetectionsRef.current++;
+        consecutiveMissesRef.current = 0;
+        // Cần ít nhất 2 lần quét liên tiếp xác nhận có dải quảng cáo tĩnh mới kích hoạt che
+        if (consecutiveDetectionsRef.current >= 2) {
+          setIsAdDetected((prev) => {
+            if (!prev) {
+              setShowShieldBadge(true);
+              if (badgeTimerRef.current) clearTimeout(badgeTimerRef.current);
+              badgeTimerRef.current = setTimeout(() => setShowShieldBadge(false), 3000);
+            }
+            return true;
+          });
+        }
+      } else {
+        consecutiveMissesRef.current++;
+        // Tắt che ngay lập tức khi không còn quảng cáo
+        if (consecutiveMissesRef.current >= 1) {
+          consecutiveDetectionsRef.current = 0;
+          prevFrameLuminanceRef.current = null;
+          setIsAdDetected(false);
+          setShowShieldBadge(false);
+        }
+      }
+    }, 1500);
+
+    return () => {
+      clearInterval(checkInterval);
+      if (badgeTimerRef.current) clearTimeout(badgeTimerRef.current);
+    };
+  }, [adShieldMode]);
 
   // PiP Storage Cleanup
   useEffect(() => {
@@ -1051,13 +1424,79 @@ export default function VideoPlayer({
     >
       <video 
         ref={videoRef} 
-        className="w-full h-full object-contain" 
+        className="w-full h-full"
+        style={{
+          ...getVideoTransformStyle(),
+          backfaceVisibility: "hidden",
+          filter: visualFilter === 'oled' 
+            ? 'contrast(1.20) saturate(1.24) brightness(0.96)' 
+            : visualFilter === 'vivid' 
+            ? 'contrast(1.10) saturate(1.42) brightness(1.02)' 
+            : visualFilter === 'bright'
+            ? 'contrast(1.08) saturate(1.12) brightness(1.15)'
+            : 'none',
+          transition: "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), filter 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+          willChange: "transform, filter",
+        }}
         poster={poster} 
         playsInline 
         preload="auto" 
         autoPlay={autoplay}
         muted={isMuted}
       />
+
+      {/* Poster Backdrop while video hasn't rendered first frame */}
+      {!hasRenderedFirstFrame && poster && (
+        <div className="absolute inset-0 z-[5] pointer-events-none overflow-hidden transition-opacity duration-700">
+          <img
+            src={poster}
+            alt={movieName || "Movie Poster"}
+            className="w-full h-full object-cover filter blur-md scale-105 opacity-30 pointer-events-none"
+          />
+          <img
+            src={poster}
+            alt={movieName || "Movie Poster"}
+            className="w-full h-full object-contain absolute inset-0 z-10 pointer-events-none"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/50 z-20 pointer-events-none" />
+        </div>
+      )}
+
+      {/* Intelligent Anti-Ad Banner Shield (Tự động che dải quảng cáo bài bạc ở mép trên) */}
+      <div 
+        className={cn(
+          "absolute top-0 left-0 right-0 z-[28] transition-all duration-500 overflow-hidden pointer-events-none",
+          (adShieldMode === 'always' || (adShieldMode === 'auto' && isAdDetected))
+            ? "opacity-100 h-9 sm:h-11 md:h-12" 
+            : "opacity-0 h-0"
+        )}
+      >
+        <div className="w-full h-full bg-gradient-to-b from-black via-black/85 via-65% to-transparent" />
+
+        {/* Small subtle status badge */}
+        {(adShieldMode === 'always' || isAdDetected) && (
+          <div className={cn(
+            "absolute top-2.5 right-3.5 z-30 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-md border border-brand-green/30 text-[11px] font-semibold text-brand-green shadow-xl transition-opacity duration-300 pointer-events-auto",
+            showShieldBadge ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          )}>
+          <ShieldCheck className="w-3.5 h-3.5 text-brand-green animate-pulse" />
+          <span>Đã tự động che QC cờ bạc</span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setAdShieldMode('off');
+              toast.info("Đã tạm tắt che quảng cáo");
+            }}
+            className="ml-1 text-white/50 hover:text-white cursor-pointer p-0.5"
+            title="Tắt che quảng cáo"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+        )}
+      </div>
+
 
       <div className="absolute inset-0 flex z-10">
         <div className="w-[35%] h-full z-20 cursor-pointer" onClick={(e) => handleSmartClick(e, 'left')} />
@@ -1114,16 +1553,29 @@ export default function VideoPlayer({
         </button>
       </div>
 
-      {isLoading && isPlaying && (
+      {isLoading && (
         <div 
           onClick={(e) => {
             e.stopPropagation();
             togglePlay();
           }}
-          className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 z-30 cursor-pointer pointer-events-auto"
+          className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 z-30 cursor-pointer pointer-events-auto backdrop-blur-xs"
         >
-          <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-          <p className="text-white/80 text-sm font-bold">Đang tải video...</p>
+          <Loader2 className="w-12 h-12 text-brand-green animate-spin mb-3 shadow-[0_0_20px_rgba(34,197,94,0.4)]" />
+          <p className="text-white/90 text-sm font-bold tracking-wide">
+            {isSlowNetwork ? "Đang tăng tốc bộ đệm giờ cao điểm..." : "Đang tải video..."}
+          </p>
+          {isSlowNetwork && onSwitchToEmbed && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onSwitchToEmbed();
+              }}
+              className="mt-4 px-4 py-2 bg-brand-green/20 hover:bg-brand-green/30 border border-brand-green/50 text-brand-green font-bold text-xs rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-1.5"
+            >
+              <span>Phát ngay bằng Máy chủ Dự phòng</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -1220,7 +1672,44 @@ export default function VideoPlayer({
               {formatTime(seekTime !== null ? seekTime : currentTime)} / {formatTime(duration)}
             </div>
           </div>
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
+            {/* Resolution indicator pill */}
+            <span className="hidden sm:inline-flex text-[10px] font-black text-brand-green bg-brand-green/10 border border-brand-green/25 px-2 py-0.5 rounded-full uppercase tracking-wider select-none">
+              {quality === -1 ? (currentLevelPlaying >= 0 && qualities[currentLevelPlaying] ? `${qualities[currentLevelPlaying].height}p Auto` : "FHD 1080p") : `${qualities.find(q => q.level === quality)?.height || 1080}p FHD`}
+            </span>
+
+            {/* PiP Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                togglePiP();
+              }}
+              title="Hình trong hình (PiP)"
+              className="text-white hover:bg-white/10 hover:text-brand-green cursor-pointer w-8 h-8 sm:w-9 sm:h-9"
+            >
+              <Tv className="w-4 h-4 sm:w-5 sm:h-5" />
+            </Button>
+
+            {/* Settings Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowSettings(!showSettings);
+              }}
+              title="Cài đặt phát & Chất lượng"
+              className={cn(
+                "text-white hover:bg-white/10 cursor-pointer w-8 h-8 sm:w-9 sm:h-9 transition-all duration-300",
+                showSettings && "text-brand-green rotate-45 bg-white/10"
+              )}
+            >
+              <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
+            </Button>
+
+            {/* Fullscreen Button */}
             <Button 
               variant="ghost" 
               size="icon" 
@@ -1228,6 +1717,7 @@ export default function VideoPlayer({
                 e.stopPropagation();
                 toggleFullscreen();
               }} 
+              title={isFullscreen ? "Thu nhỏ" : "Toàn màn hình"}
               className="text-white hover:bg-white/10 cursor-pointer w-8 h-8 sm:w-9 sm:h-9"
             >
               {isFullscreen ? <Minimize className="w-4 h-4 sm:w-5 sm:h-5" /> : <Maximize className="w-4 h-4 sm:w-5 sm:h-5" />}
@@ -1235,6 +1725,268 @@ export default function VideoPlayer({
           </div>
         </div>
       </div>
+
+      {/* Floating Glassmorphism Settings Menu */}
+      {showSettings && (
+        <div
+          ref={settingsMenuRef}
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          className="absolute bottom-12 sm:bottom-14 right-2 sm:right-4 z-[60] w-72 sm:w-80 max-h-[calc(100%-3.25rem)] flex flex-col bg-[#121212]/95 backdrop-blur-2xl border border-white/15 rounded-2xl p-3 text-white shadow-[0_10px_40px_rgba(0,0,0,0.85)] animate-in fade-in zoom-in-95 duration-200 pointer-events-auto select-none"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-white/10 pb-1.5 mb-2 px-1 shrink-0">
+            <span className="text-xs font-bold text-white/90 uppercase tracking-wider flex items-center gap-1.5">
+              <Settings className="w-3.5 h-3.5 text-brand-green" />
+              Cài đặt phát & Chất lượng
+            </span>
+            <span className="text-[10px] font-bold text-brand-green bg-brand-green/10 border border-brand-green/20 px-2 py-0.5 rounded-full">
+              {quality === -1 ? (currentLevelPlaying >= 0 && qualities[currentLevelPlaying] ? `${qualities[currentLevelPlaying].height}p Auto` : "FHD Auto") : `${qualities.find(q => q.level === quality)?.height || 1080}p`}
+            </span>
+          </div>
+
+          {/* Tab selector */}
+          <div className="grid grid-cols-4 gap-1 p-1 bg-white/5 rounded-xl mb-2 text-[11px] font-semibold shrink-0">
+            <button
+              onClick={() => setSettingsTab('quality')}
+              className={cn("py-1 rounded-lg transition-all cursor-pointer", settingsTab === 'quality' ? "bg-brand-green text-black font-bold shadow" : "text-white/70 hover:text-white")}
+            >
+              Nét
+            </button>
+            <button
+              onClick={() => setSettingsTab('speed')}
+              className={cn("py-1 rounded-lg transition-all cursor-pointer", settingsTab === 'speed' ? "bg-brand-green text-black font-bold shadow" : "text-white/70 hover:text-white")}
+            >
+              Tốc độ
+            </button>
+            <button
+              onClick={() => setSettingsTab('filter')}
+              className={cn("py-1 rounded-lg transition-all cursor-pointer", settingsTab === 'filter' ? "bg-brand-green text-black font-bold shadow" : "text-white/70 hover:text-white")}
+            >
+              Màu
+            </button>
+            <button
+              onClick={() => setSettingsTab('fit')}
+              className={cn("py-1 rounded-lg transition-all cursor-pointer", settingsTab === 'fit' ? "bg-brand-green text-black font-bold shadow" : "text-white/70 hover:text-white")}
+            >
+              Tỷ lệ
+            </button>
+          </div>
+
+          {/* Tab Content: Quality */}
+          {settingsTab === 'quality' && (
+            <div className="flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto pr-1">
+              <button
+                onClick={() => handleQualityChange(-1)}
+                className={cn(
+                  "w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer",
+                  quality === -1 ? "bg-brand-green/15 text-brand-green font-bold border border-brand-green/30" : "hover:bg-white/5 text-white/80"
+                )}
+              >
+                <span>Tự động (Thích ứng theo mạng)</span>
+                {quality === -1 && <Check className="w-3.5 h-3.5 text-brand-green" />}
+              </button>
+              {qualities.length > 0 ? (
+                qualities.map((q) => (
+                  <button
+                    key={q.level}
+                    onClick={() => handleQualityChange(q.level)}
+                    className={cn(
+                      "w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer",
+                      quality === q.level ? "bg-brand-green/15 text-brand-green font-bold border border-brand-green/30" : "hover:bg-white/5 text-white/80"
+                    )}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      {q.height >= 1080 ? `${q.height}p FHD (Siêu Nét)` : `${q.height}p HD`}
+                      {q.height >= 1080 && <span className="text-[9px] bg-brand-green/20 text-brand-green px-1.5 py-0.2 rounded font-black">PRO</span>}
+                    </span>
+                    {quality === q.level && <Check className="w-3.5 h-3.5 text-brand-green" />}
+                  </button>
+                ))
+              ) : (
+                <div className="px-2.5 py-1.5 text-xs text-white/60 bg-white/5 rounded-xl flex items-center justify-between">
+                  <span>FHD 1080p (Chất lượng gốc cao nhất)</span>
+                  <Check className="w-3.5 h-3.5 text-brand-green" />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Tab Content: Speed */}
+          {settingsTab === 'speed' && (
+            <div className="grid grid-cols-3 gap-1.5 flex-1 min-h-0 overflow-y-auto pr-1 py-1">
+              {[0.5, 0.75, 1, 1.25, 1.5, 2].map((rate) => (
+                <button
+                  key={rate}
+                  onClick={() => handlePlaybackRateChange(rate)}
+                  className={cn(
+                    "py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer text-center",
+                    playbackRate === rate ? "bg-brand-green text-black font-bold shadow" : "bg-white/5 hover:bg-white/10 text-white/80"
+                  )}
+                >
+                  {rate === 1 ? "1.0x Chuẩn" : `${rate}x`}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Tab Content: Color & Visual Filter */}
+          {settingsTab === 'filter' && (
+            <div className="flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto pr-1">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleVisualFilterChange('normal');
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                className={cn(
+                  "w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer",
+                  visualFilter === 'normal' 
+                    ? "bg-brand-green/20 text-brand-green font-bold border border-brand-green/40 shadow-[0_0_15px_rgba(32,214,107,0.15)]" 
+                    : "hover:bg-white/5 text-white/80 border border-transparent"
+                )}
+              >
+                <div className="flex flex-col items-start text-left">
+                  <span>Chuẩn (Natural)</span>
+                  <span className="text-[10px] text-white/40">Màu sắc gốc mặc định</span>
+                </div>
+                {visualFilter === 'normal' && <Check className="w-4 h-4 text-brand-green shrink-0" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleVisualFilterChange('oled');
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                className={cn(
+                  "w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer",
+                  visualFilter === 'oled' 
+                    ? "bg-brand-green/20 text-brand-green font-bold border border-brand-green/40 shadow-[0_0_15px_rgba(32,214,107,0.15)]" 
+                    : "hover:bg-white/5 text-white/80 border border-transparent"
+                )}
+              >
+                <div className="flex flex-col items-start text-left">
+                  <span className="flex items-center gap-1.5">
+                    OLED Cinema Pro
+                    <span className="text-[9px] bg-amber-500/25 text-amber-300 px-1.5 py-0.2 rounded font-black border border-amber-500/30">ĐỀ XUẤT</span>
+                  </span>
+                  <span className="text-[10px] text-white/40">Đen sâu, tương phản cao, rõ cảnh tối</span>
+                </div>
+                {visualFilter === 'oled' && <Check className="w-4 h-4 text-brand-green shrink-0" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleVisualFilterChange('vivid');
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                className={cn(
+                  "w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer",
+                  visualFilter === 'vivid' 
+                    ? "bg-brand-green/20 text-brand-green font-bold border border-brand-green/40 shadow-[0_0_15px_rgba(32,214,107,0.15)]" 
+                    : "hover:bg-white/5 text-white/80 border border-transparent"
+                )}
+              >
+                <div className="flex flex-col items-start text-left">
+                  <span>Sống động (Vivid Colors)</span>
+                  <span className="text-[10px] text-white/40">Rực rỡ, thích hợp Anime & Hoạt hình</span>
+                </div>
+                {visualFilter === 'vivid' && <Check className="w-4 h-4 text-brand-green shrink-0" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleVisualFilterChange('bright');
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                className={cn(
+                  "w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer",
+                  visualFilter === 'bright' 
+                    ? "bg-brand-green/20 text-brand-green font-bold border border-brand-green/40 shadow-[0_0_15px_rgba(32,214,107,0.15)]" 
+                    : "hover:bg-white/5 text-white/80 border border-transparent"
+                )}
+              >
+                <div className="flex flex-col items-start text-left">
+                  <span>Sáng rõ (Night Clarify)</span>
+                  <span className="text-[10px] text-white/40">Tăng sáng, làm rõ cảnh đêm & phim kinh dị</span>
+                </div>
+                {visualFilter === 'bright' && <Check className="w-4 h-4 text-brand-green shrink-0" />}
+              </button>
+            </div>
+          )}
+
+          {/* Tab Content: Aspect Ratio */}
+          {settingsTab === 'fit' && (
+            <div className="flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto pr-1">
+              {[
+                { id: 'contain', title: 'Mặc định (16:9)', desc: 'Giữ đúng tỷ lệ gốc chuẩn 16:9' },
+                { id: 'cover', title: 'Phóng to lấp đầy (Zoom Fill)', desc: 'Cắt viền đen trên dưới (Zoom 1.33x)' },
+                { id: '4:3', title: 'Tỷ lệ 4:3', desc: 'Chuẩn TV & Anime cổ điển' },
+                { id: '21:9', title: 'Điện ảnh (21:9)', desc: 'Chuẩn chiếu rạp CinemaScope' },
+                { id: 'fill', title: 'Kéo giãn (Stretch)', desc: 'Lấp đầy toàn bộ khung phát' },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleVideoFitChange(item.id as VideoFitMode)}
+                  className={cn(
+                    "w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer",
+                    videoFit === item.id ? "bg-brand-green/15 text-brand-green font-bold border border-brand-green/30" : "hover:bg-white/5 text-white/80"
+                  )}
+                >
+                  <div className="flex flex-col items-start text-left">
+                    <span>{item.title}</span>
+                    <span className="text-[10px] text-white/40">{item.desc}</span>
+                  </div>
+                  {videoFit === item.id && <Check className="w-3.5 h-3.5 text-brand-green" />}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Quick Anti-Ad Banner Shield Controller */}
+          <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between px-1 text-xs shrink-0">
+            <span className="flex items-center gap-1.5 text-white/80 font-medium">
+              <ShieldCheck className={cn("w-3.5 h-3.5", adShieldMode !== 'off' ? "text-brand-green" : "text-white/40")} />
+              Che QC cờ bạc
+            </span>
+            <div className="flex items-center gap-1 bg-white/5 p-0.5 rounded-lg border border-white/10 text-[10px]">
+              {(['auto', 'always', 'off'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAdShieldMode(mode);
+                    toast.success(
+                      mode === 'auto'
+                        ? 'Che QC: Tự động khi phát hiện'
+                        : mode === 'always'
+                        ? 'Che QC: Luôn che mép trên'
+                        : 'Che QC: Đã tắt'
+                    );
+                  }}
+                  className={cn(
+                    "px-2 py-0.5 rounded cursor-pointer font-bold transition-all",
+                    adShieldMode === mode ? "bg-brand-green text-black" : "text-white/60 hover:text-white"
+                  )}
+                >
+                  {mode === 'auto' ? 'Tự động' : mode === 'always' ? 'Luôn che' : 'Tắt'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      )}
     </div>
   );
 }

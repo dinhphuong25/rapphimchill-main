@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Play, X, Film } from "lucide-react";
 import { useContinueWatching } from "@/hooks/useContinueWatching";
+import { useUserAuth } from "@/context/user-auth-context";
 import { cn } from "@/lib/utils";
 import { getMovieImageCandidates } from "@/lib/image-helper";
 
@@ -38,14 +39,22 @@ function ContinueWatchingImage({ item }: { item: any }) {
 }
 
 export default function ContinueWatching() {
+  const { user } = useUserAuth();
   const { items, removeItem } = useContinueWatching();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    // Clean up any legacy unauthenticated continue_watching_list
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("continue_watching_list");
+      } catch {}
+    }
   }, []);
 
-  if (!mounted || items.length === 0) return null;
+  // Only render when authenticated and there are continue watching items
+  if (!mounted || !user || items.length === 0) return null;
 
   return (
     <div className="w-full relative z-10 mt-8 mb-4">
@@ -64,7 +73,7 @@ export default function ContinueWatching() {
                 key={item.slug} 
                 className="snap-start shrink-0 w-[260px] sm:w-[300px] relative group overflow-hidden rounded-xl bg-cinema-surface border border-white/5 transition-transform hover:scale-105 duration-300"
               >
-                <Link href={`/watch?slug=${item.slug}&t=${item.currentTime}`} className="block">
+                <Link href={`/watch?slug=${item.slug}${typeof item.episodeIndex === "number" ? `&ep=${item.episodeIndex + 1}` : ""}&t=${item.currentTime}`} className="block">
                   <div className="relative w-full aspect-video">
                     <ContinueWatchingImage item={item} />
                     <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors" />

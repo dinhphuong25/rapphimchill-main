@@ -1,6 +1,7 @@
 "use client";
 
 import { useWatchHistory } from "@/hooks/useLocalStorage";
+import { useUserAuth } from "@/context/user-auth-context";
 import MovieSection from "@/components/movie-section";
 
 interface RecentlyWatchedProps {
@@ -8,9 +9,10 @@ interface RecentlyWatchedProps {
 }
 
 export default function RecentlyWatched({ limit }: RecentlyWatchedProps) {
+  const { user } = useUserAuth();
   const { history, hydrated } = useWatchHistory();
 
-  if (!hydrated || history.length === 0) return null;
+  if (!user || !hydrated || history.length === 0) return null;
 
   const movies = limit ? history.slice(0, limit) : history;
 

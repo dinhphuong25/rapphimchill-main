@@ -5,9 +5,10 @@ import dynamic from "next/dynamic";
 import Episode from "./episode";
 import WatchHeader from "../watch/watch-header";
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart } from "lucide-react";
+import { Heart, ShieldAlert, Clock, AlertTriangle } from "lucide-react";
 import { useContinueWatching } from "@/hooks/useContinueWatching";
 import { useWatchHistory, useFavorites } from "@/hooks/useLocalStorage";
+import { useUserAuth } from "@/context/user-auth-context";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -34,41 +35,250 @@ const EmbedPlayer = dynamic(() => import("../player/embed-player"), {
   ),
 });
 
-export default function Description({ movie, serverData }: any) {
-  const [isTheaterMode, setIsTheaterMode] = useState(false);
-  const defaultEpisode = serverData?.[0]?.server_data?.[0];
-  const [currentEpisodeUrl, setCurrentEpisodeUrl] = useState<string>(
-    () => defaultEpisode?.link_m3u8 || defaultEpisode?.link_embed || ""
-  );
-  const [resumeTime, setResumeTime] = useState<number>(() => {
-    if (typeof window === "undefined" || !movie?.slug) return 0;
+interface ResolvedInitialWatch {
+  serverIndex: number;
+  episodeIndex: number;
+  resumeTime: number;
+  episodeUrl: string;
+}
+
+function resolveInitialWatchState(
+  slug: string,
+  serverData: any[],
+  defaultMode: "m3u8" | "embed" = "m3u8"
+): ResolvedInitialWatch {
+  let resolvedServer = 0;
+  let resolvedEpisode = 0;
+  let resolvedTime = 0;
+
+  if (typeof window !== "undefined" && slug && Array.isArray(serverData) && serverData.length > 0) {
     try {
       const urlParams = new URLSearchParams(window.location.search);
-      const urlTime = parseInt(urlParams.get('t') || '');
-      if (!isNaN(urlTime) && urlTime > 0) return urlTime;
-      const key = `watchProgress_${movie.slug}_0_0`;
-      const saved = Number(localStorage.getItem(key) || 0);
-      return Number.isFinite(saved) ? saved : 0;
-    } catch {
-      return 0;
+      const epParam = urlParams.get("ep") || urlParams.get("episode");
+      const svParam = urlParams.get("sv") || urlParams.get("server");
+      const tParam = urlParams.get("t") || urlParams.get("time");
+
+      // 1. Resolve Server
+      if (svParam !== null) {
+        const parsedSv = parseInt(svParam, 10);
+        if (!isNaN(parsedSv) && parsedSv >= 0 && parsedSv < serverData.length) {
+          resolvedServer = parsedSv;
+        }
+      }
+
+      const episodes = serverData[resolvedServer]?.server_data || [];
+
+      // 2. Resolve Episode
+      if (epParam) {
+        const parsedNum = parseInt(epParam, 10);
+        if (!isNaN(parsedNum) && parsedNum > 0) {
+          const targetIdx = parsedNum - 1;
+          if (targetIdx >= 0 && targetIdx < episodes.length) {
+            resolvedEpisode = targetIdx;
+          } else {
+            const matchedIdx = episodes.findIndex((ep: any) => {
+              const numInName = parseInt(ep.name?.match(/\d+/)?.[0] || "-1", 10);
+              return numInName === parsedNum;
+            });
+            if (matchedIdx !== -1) resolvedEpisode = matchedIdx;
+          }
+        } else {
+          const matchedIdx = episodes.findIndex(
+            (ep: any) => ep.slug === epParam || ep.name?.toLowerCase() === epParam.toLowerCase()
+          );
+          if (matchedIdx !== -1) resolvedEpisode = matchedIdx;
+        }
+      } else {
+        // No query param in URL: Check localStorage for last watched episode for this movie
+        let foundInStorage = false;
+        const lastWatchedRaw = localStorage.getItem(`lastWatchedEpisode_${slug}`);
+        if (lastWatchedRaw) {
+          try {
+            const parsed = JSON.parse(lastWatchedRaw);
+            if (parsed && typeof parsed.episodeIndex === "number" && parsed.episodeIndex >= 0) {
+              const sv = typeof parsed.serverIndex === "number" ? parsed.serverIndex : resolvedServer;
+              if (sv >= 0 && sv < serverData.length) {
+                resolvedServer = sv;
+              }
+              const svEpisodes = serverData[resolvedServer]?.server_data || [];
+              if (parsed.episodeIndex < svEpisodes.length) {
+                resolvedEpisode = parsed.episodeIndex;
+                if (parsed.currentTime && parsed.currentTime > 0) {
+                  resolvedTime = parsed.currentTime;
+                }
+                foundInStorage = true;
+              }
+            }
+          } catch {}
+        }
+
+        // Fallback to rpc_history or watchHistory
+        if (!foundInStorage) {
+          try {
+            const histRaw = localStorage.getItem("rpc_history") || localStorage.getItem("watchHistory");
+            if (histRaw) {
+              const histArr = JSON.parse(histRaw);
+              if (Array.isArray(histArr)) {
+                const found = histArr.find((h: any) => h.slug === slug);
+                if (found && typeof found.episodeIndex === "number" && found.episodeIndex >= 0) {
+                  const sv = typeof found.serverIndex === "number" ? found.serverIndex : resolvedServer;
+                  if (sv >= 0 && sv < serverData.length) {
+                    resolvedServer = sv;
+                  }
+                  const svEpisodes = serverData[resolvedServer]?.server_data || [];
+                  if (found.episodeIndex < svEpisodes.length) {
+                    resolvedEpisode = found.episodeIndex;
+                    if (found.currentTime && found.currentTime > 0) {
+                      resolvedTime = found.currentTime;
+                    }
+                    foundInStorage = true;
+                  }
+                }
+              }
+            }
+          } catch {}
+        }
+
+        // Fallback to continue_watching_list
+        if (!foundInStorage) {
+          try {
+            const cwRaw = localStorage.getItem("continue_watching_list");
+            if (cwRaw) {
+              const cwArr = JSON.parse(cwRaw);
+              if (Array.isArray(cwArr)) {
+                const found = cwArr.find((h: any) => h.slug === slug);
+                if (found && typeof found.episodeIndex === "number" && found.episodeIndex >= 0) {
+                  const sv = typeof found.serverIndex === "number" ? found.serverIndex : resolvedServer;
+                  if (sv >= 0 && sv < serverData.length) {
+                    resolvedServer = sv;
+                  }
+                  const svEpisodes = serverData[resolvedServer]?.server_data || [];
+                  if (found.episodeIndex < svEpisodes.length) {
+                    resolvedEpisode = found.episodeIndex;
+                    if (found.currentTime && found.currentTime > 0) {
+                      resolvedTime = found.currentTime;
+                    }
+                  }
+                }
+              }
+            }
+          } catch {}
+        }
+      }
+
+      // 3. Resolve Timestamp / Resume Time
+      if (tParam) {
+        const parsedTime = parseInt(tParam, 10);
+        if (!isNaN(parsedTime) && parsedTime > 0) {
+          resolvedTime = parsedTime;
+        }
+      } else if (resolvedTime <= 0) {
+        const progressKey = `watchProgress_${slug}_${resolvedServer}_${resolvedEpisode}`;
+        const savedProgress = Number(localStorage.getItem(progressKey) || 0);
+        if (Number.isFinite(savedProgress) && savedProgress > 0) {
+          resolvedTime = savedProgress;
+        }
+      }
+    } catch (e) {
+      console.error("Error resolving initial watch state:", e);
     }
-  });
+  }
+
+  const targetEpisode =
+    serverData?.[resolvedServer]?.server_data?.[resolvedEpisode] ||
+    serverData?.[0]?.server_data?.[0];
+
+  const resolvedUrl =
+    defaultMode === "m3u8"
+      ? (targetEpisode?.link_m3u8 || targetEpisode?.link_embed || "")
+      : (targetEpisode?.link_embed || targetEpisode?.link_m3u8 || "");
+
+  return {
+    serverIndex: resolvedServer,
+    episodeIndex: resolvedEpisode,
+    resumeTime: resolvedTime,
+    episodeUrl: resolvedUrl,
+  };
+}
+
+export default function Description({ movie, serverData }: any) {
+  const [playerMode, setPlayerMode] = useState<'m3u8' | 'embed'>('m3u8');
+  
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState<{
     server: number;
     episode: number;
-  }>({ server: 0, episode: 0 });
-  const [playerMode, setPlayerMode] = useState<'m3u8' | 'embed'>('m3u8');
+  }>(() => {
+    const resolved = resolveInitialWatchState(movie?.slug, serverData, 'm3u8');
+    return { server: resolved.serverIndex, episode: resolved.episodeIndex };
+  });
+
+  const [currentEpisodeUrl, setCurrentEpisodeUrl] = useState<string>(() => {
+    const resolved = resolveInitialWatchState(movie?.slug, serverData, 'm3u8');
+    return resolved.episodeUrl;
+  });
+
+  const [resumeTime, setResumeTime] = useState<number>(() => {
+    const resolved = resolveInitialWatchState(movie?.slug, serverData, 'm3u8');
+    return resolved.resumeTime;
+  });
+
   const [completedEpisodes, setCompletedEpisodes] = useState<Record<number, boolean>>({});
+  const { user, checkAuthOrPrompt, updateServerData } = useUserAuth();
   const { updateProgress } = useContinueWatching();
-  const { addToHistory } = useWatchHistory();
+  const { addToHistory, updateHistoryProgress } = useWatchHistory();
   const { toggleFavorite, isFavorite } = useFavorites();
   const prefetchedNextRef = useRef<string | null>(null);
   const lastSavedProgressRef = useRef<number>(0);
+  const initialResolvedRef = useRef<boolean>(false);
+
+  const isUserPermanentlyBanned = Boolean(user?.isLocked);
+  const isUserTemporarilyBanned = Boolean(user?.bannedUntil && user.bannedUntil > Date.now());
+  const isUserBanned = isUserPermanentlyBanned || isUserTemporarilyBanned;
+
+  const [banRemainingTime, setBanRemainingTime] = useState<string>("");
+
+  // Stop video immediately when user gets banned (real-time heartbeat response)
+  const prevBannedRef = useRef<boolean>(isUserBanned);
+  useEffect(() => {
+    if (isUserBanned && !prevBannedRef.current) {
+      // Newly banned - stop all videos
+      document.querySelectorAll("video").forEach((v) => {
+        try { v.pause(); } catch {}
+      });
+    }
+    prevBannedRef.current = isUserBanned;
+  }, [isUserBanned]);
+
+  useEffect(() => {
+    if (!isUserTemporarilyBanned || !user?.bannedUntil) return;
+    const updateCountdown = () => {
+      const diff = (user.bannedUntil || 0) - Date.now();
+      if (diff <= 0) {
+        setBanRemainingTime("Đã hết thời hạn tạm khóa. Vui lòng tải lại trang.");
+      } else {
+        const totalSec = Math.floor(diff / 1000);
+        const d = Math.floor(totalSec / 86400);
+        const h = Math.floor((totalSec % 86400) / 3600);
+        const m = Math.floor((totalSec % 3600) / 60);
+        const s = totalSec % 60;
+        const parts = [];
+        if (d > 0) parts.push(`${d} ngày`);
+        if (h > 0 || d > 0) parts.push(`${h} giờ`);
+        if (m > 0 || h > 0 || d > 0) parts.push(`${m} phút`);
+        parts.push(`${s} giây`);
+        setBanRemainingTime(parts.join(" "));
+      }
+    };
+    updateCountdown();
+    const timer = setInterval(updateCountdown, 1000);
+    return () => clearInterval(timer);
+  }, [isUserTemporarilyBanned, user?.bannedUntil]);
 
   const isFav = isFavorite(movie.slug);
 
   const handleToggleFavorite = useCallback(() => {
-    toggleFavorite({
+    if (!checkAuthOrPrompt("lưu phim yêu thích")) return;
+    const updated = toggleFavorite({
       slug: movie.slug,
       name: movie.name,
       origin_name: movie.origin_name,
@@ -81,12 +291,16 @@ export default function Description({ movie, serverData }: any) {
       imdb: movie.imdb,
     });
 
+    if (user && updated) {
+      updateServerData({ favorites: updated });
+    }
+
     if (!isFav) {
       toast.success(`Đã thêm "${movie.name}" vào phim yêu thích`);
     } else {
       toast.info(`Đã xóa "${movie.name}" khỏi phim yêu thích`);
     }
-  }, [isFav, movie, toggleFavorite]);
+  }, [checkAuthOrPrompt, isFav, movie, toggleFavorite, updateServerData, user]);
 
   const favoriteButton = (
     <button
@@ -141,32 +355,115 @@ export default function Description({ movie, serverData }: any) {
     localStorage.removeItem(getEpisodeProgressKey(serverIndex, episodeIndex));
   }, [getEpisodeProgressKey]);
 
-  const handleServerChange = (serverIndex: number) => {
-    setCurrentEpisodeIndex({ server: serverIndex, episode: 0 });
-    if (serverData && serverData[serverIndex]?.server_data?.length > 0) {
-      const firstEpisode = serverData[serverIndex].server_data[0];
-      if (playerMode === 'm3u8' && firstEpisode?.link_m3u8) {
-        setCurrentEpisodeUrl(firstEpisode.link_m3u8);
-      } else if (playerMode === 'embed' && firstEpisode?.link_embed) {
-        setCurrentEpisodeUrl(firstEpisode.link_embed);
-      }
-    }
-  };
-
-  const handleSelectEpisode = (
+  const handleSelectEpisode = useCallback((
     link: string,
     serverIndex: number,
     episodeIndex: number
   ) => {
     setCurrentEpisodeUrl(link);
     setCurrentEpisodeIndex({ server: serverIndex, episode: episodeIndex });
+
+    // Look up saved resume time for this specific episode
+    const epKey = getEpisodeProgressKey(serverIndex, episodeIndex);
+    const savedEpProgress = Number(localStorage.getItem(epKey) || 0);
+    const newResumeTime = Number.isFinite(savedEpProgress) && savedEpProgress > 0 ? savedEpProgress : 0;
+    setResumeTime(newResumeTime);
+
+    const epData = serverData?.[serverIndex]?.server_data?.[episodeIndex];
+    const epName = epData?.name || `Tập ${episodeIndex + 1}`;
+    const epSlug = epData?.slug || "";
+
+    // Synchronize browser URL
+    if (typeof window !== "undefined") {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set("ep", String(episodeIndex + 1));
+        if (newResumeTime > 5) {
+          url.searchParams.set("t", String(Math.floor(newResumeTime)));
+        } else {
+          url.searchParams.delete("t");
+        }
+        window.history.replaceState(null, "", url.toString());
+
+        // Save last watched episode
+        localStorage.setItem(`lastWatchedEpisode_${movie.slug}`, JSON.stringify({
+          serverIndex,
+          episodeIndex,
+          episodeName: epName,
+          episodeSlug: epSlug,
+          currentTime: newResumeTime,
+        }));
+      } catch {}
+    }
+
+    // Update watch history
+    const updated = updateHistoryProgress(movie.slug, {
+      serverIndex,
+      episodeIndex,
+      episodeName: epName,
+      episodeSlug: epSlug,
+      currentTime: newResumeTime,
+    });
+    if (user && Array.isArray(updated) && updated.length > 0) {
+      updateServerData({ history: updated });
+    }
+  }, [serverData, movie?.slug, getEpisodeProgressKey, updateHistoryProgress, updateServerData, user]);
+
+  const handleServerChange = (serverIndex: number) => {
+    const epIndex = 0;
+    if (serverData && serverData[serverIndex]?.server_data?.length > 0) {
+      const firstEpisode = serverData[serverIndex].server_data[0];
+      const link = playerMode === 'm3u8' ? firstEpisode?.link_m3u8 : firstEpisode?.link_embed;
+      if (link) {
+        handleSelectEpisode(link, serverIndex, epIndex);
+      }
+    }
   };
 
-  // Save movie to recently watched
+  // Client-side synchronization on initial load (URL query or local storage)
   useEffect(() => {
-    if (typeof window === "undefined" || !movie?.slug) return;
+    if (typeof window === "undefined" || !serverData || serverData.length === 0 || !movie?.slug) return;
+    if (initialResolvedRef.current) return;
+    initialResolvedRef.current = true;
+
+    const resolved = resolveInitialWatchState(movie.slug, serverData, playerMode);
+    setCurrentEpisodeIndex({ server: resolved.serverIndex, episode: resolved.episodeIndex });
+    if (resolved.episodeUrl) {
+      setCurrentEpisodeUrl(resolved.episodeUrl);
+    }
+    if (resolved.resumeTime > 0) {
+      setResumeTime(resolved.resumeTime);
+    }
+
+    // Sync URL if missing ep query param
     try {
-      addToHistory({
+      const url = new URL(window.location.href);
+      let changed = false;
+      if (!url.searchParams.has("ep") && resolved.episodeIndex >= 0) {
+        url.searchParams.set("ep", String(resolved.episodeIndex + 1));
+        changed = true;
+      }
+      if (!url.searchParams.has("t") && resolved.resumeTime > 5) {
+        url.searchParams.set("t", String(Math.floor(resolved.resumeTime)));
+        changed = true;
+      }
+      if (changed) {
+        window.history.replaceState(null, "", url.toString());
+      }
+    } catch {}
+  }, [movie?.slug, serverData, playerMode]);
+
+  // Save movie to recently watched only for authenticated account
+  useEffect(() => {
+    if (typeof window === "undefined" || !movie?.slug || !user) return;
+    try {
+      const serverIdx = currentEpisodeIndex?.server || 0;
+      const episodeIdx = currentEpisodeIndex?.episode || 0;
+      const currentEp = serverData?.[serverIdx]?.server_data?.[episodeIdx];
+      const epName = currentEp?.name || `Tập ${episodeIdx + 1}`;
+      const epSlug = currentEp?.slug || "";
+
+      const updated = addToHistory({
         slug: movie.slug,
         name: movie.name,
         origin_name: movie.origin_name,
@@ -174,31 +471,23 @@ export default function Description({ movie, serverData }: any) {
         thumb_url: movie.thumb_url || "",
         quality: movie.quality,
         year: movie.year,
-        episode_current: movie.episode_current,
+        episode_current: epName || movie.episode_current,
+        episodeIndex: episodeIdx,
+        episodeName: epName,
+        episodeSlug: epSlug,
+        serverIndex: serverIdx,
         tmdb: movie.tmdb,
         imdb: movie.imdb,
-        currentTime: 0,
+        currentTime: resumeTime || 0,
         duration: 0,
       });
-    } catch (e) {
-      console.error(e);
-    }
-  }, [movie, addToHistory]);
-
-  // Auto-select initial episode
-  useEffect(() => {
-    if (!serverData || serverData.length === 0) return;
-    if (!currentEpisodeIndex) {
-      const firstServer = serverData[0];
-      if (firstServer?.server_data?.length > 0) {
-        const firstEpisode = firstServer.server_data[0];
-        setCurrentEpisodeIndex({ server: 0, episode: 0 });
-        setCurrentEpisodeUrl(
-          playerMode === 'm3u8' ? firstEpisode.link_m3u8 : firstEpisode.link_embed
-        );
+      if (Array.isArray(updated) && updated.length > 0) {
+        updateServerData({ history: updated });
       }
+    } catch (e) {
+      console.error("Failed to add to watch history:", e);
     }
-  }, [serverData, currentEpisodeIndex, playerMode]);
+  }, [movie?.slug, user?.id, currentEpisodeIndex?.server, currentEpisodeIndex?.episode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Update episode URL on playerMode change
   useEffect(() => {
@@ -213,10 +502,9 @@ export default function Description({ movie, serverData }: any) {
     }
   }, [playerMode, currentEpisodeIndex, serverData]);
 
-  // Resume progress
+  // Resume progress on server/episode change
   useEffect(() => {
     if (typeof window === "undefined" || !currentEpisodeIndex || playerMode !== 'm3u8') {
-      setResumeTime(0);
       return;
     }
     const urlParams = new URLSearchParams(window.location.search);
@@ -231,6 +519,7 @@ export default function Description({ movie, serverData }: any) {
   }, [currentEpisodeIndex, playerMode, getEpisodeProgressKey]);
 
   const handleProgress = useCallback((currentTime: number, duration: number) => {
+    if (isUserBanned) return;
     if (!currentEpisodeIndex || playerMode !== 'm3u8') return;
     const { server, episode } = currentEpisodeIndex;
     const key = getEpisodeProgressKey(server, episode);
@@ -244,6 +533,20 @@ export default function Description({ movie, serverData }: any) {
         lastSavedProgressRef.current = nowInt;
         localStorage.setItem(key, String(nowInt));
         
+        const epData = serverData?.[server]?.server_data?.[episode];
+        const epName = epData?.name || `Tập ${episode + 1}`;
+        const epSlug = epData?.slug || "";
+
+        // Save last watched episode
+        localStorage.setItem(`lastWatchedEpisode_${movie.slug}`, JSON.stringify({
+          serverIndex: server,
+          episodeIndex: episode,
+          episodeName: epName,
+          episodeSlug: epSlug,
+          currentTime: nowInt,
+          duration: Math.floor(duration),
+        }));
+
         // Update master continue watching list throttled to every 5s
         updateProgress({
           slug: movie.slug,
@@ -252,10 +555,25 @@ export default function Description({ movie, serverData }: any) {
           thumb_url: movie.thumb_url,
           serverIndex: server,
           episodeIndex: episode,
-          episodeName: serverData?.[server]?.server_data?.[episode]?.name || "",
+          episodeName: epName,
           currentTime: nowInt,
           duration: Math.floor(duration),
         });
+
+        // Also update watch history with current episode and timestamp!
+        const updated = updateHistoryProgress(movie.slug, {
+          serverIndex: server,
+          episodeIndex: episode,
+          episodeName: epName,
+          episodeSlug: epSlug,
+          currentTime: nowInt,
+          duration: Math.floor(duration),
+        });
+
+        // Throttled sync to server for authenticated user (every 15s)
+        if (user && Array.isArray(updated) && nowInt % 15 === 0) {
+          updateServerData({ history: updated });
+        }
       }
     }
 
@@ -267,7 +585,7 @@ export default function Description({ movie, serverData }: any) {
         fetch(nextEp.link_m3u8, { mode: 'no-cors' }).catch(() => {});
       }
     }
-  }, [currentEpisodeIndex, playerMode, getEpisodeProgressKey, markEpisodeCompleted, updateProgress, movie, serverData]);
+  }, [currentEpisodeIndex, playerMode, getEpisodeProgressKey, markEpisodeCompleted, updateProgress, updateHistoryProgress, updateServerData, movie, serverData, user, isUserBanned]);
 
   const handleNextEpisode = useCallback(() => {
     if (!serverData || !currentEpisodeIndex) return;
@@ -287,11 +605,10 @@ export default function Description({ movie, serverData }: any) {
     const nextEpisode = nextServer.server_data[nextEpisodeIndex];
     if (nextEpisode) {
       const link = playerMode === 'm3u8' ? nextEpisode.link_m3u8 : nextEpisode.link_embed;
-      setCurrentEpisodeUrl(link);
-      setCurrentEpisodeIndex({ server: nextServerIndex, episode: nextEpisodeIndex });
+      handleSelectEpisode(link, nextServerIndex, nextEpisodeIndex);
       toast.info(`Đã chuyển sang ${nextEpisode.name}`);
     }
-  }, [serverData, currentEpisodeIndex, clearEpisodeProgress, playerMode]);
+  }, [serverData, currentEpisodeIndex, clearEpisodeProgress, playerMode, handleSelectEpisode]);
 
   const handlePrevEpisode = useCallback(() => {
     if (!serverData || !currentEpisodeIndex) return;
@@ -308,12 +625,14 @@ export default function Description({ movie, serverData }: any) {
       if (prevServer?.server_data?.length > 0) {
         const lastIdx = prevServer.server_data.length - 1;
         const prevEpisode = prevServer.server_data[lastIdx];
-        const link = playerMode === 'm3u8' ? prevEpisode.link_m3u8 : prevEpisode.link_embed;
-        handleSelectEpisode(link, server - 1, lastIdx);
-        toast.info(`Đã chuyển sang ${prevEpisode.name}`);
+        if (prevEpisode) {
+          const link = playerMode === 'm3u8' ? prevEpisode.link_m3u8 : prevEpisode.link_embed;
+          handleSelectEpisode(link, server - 1, lastIdx);
+          toast.info(`Đã chuyển sang ${prevEpisode.name}`);
+        }
       }
     }
-  }, [serverData, currentEpisodeIndex, playerMode]);
+  }, [serverData, currentEpisodeIndex, playerMode, handleSelectEpisode]);
 
   // Global hotkeys for N (Next) and P (Prev)
   useEffect(() => {
@@ -351,12 +670,22 @@ export default function Description({ movie, serverData }: any) {
     return false;
   };
 
+  const handleSwitchToM3u8 = useCallback(() => {
+    setPlayerMode('m3u8');
+    if (currentEpisodeIndex && serverData) {
+      const currentEpisode = serverData[currentEpisodeIndex.server]?.server_data?.[currentEpisodeIndex.episode];
+      if (currentEpisode?.link_m3u8) setCurrentEpisodeUrl(currentEpisode.link_m3u8);
+    }
+    toast.info("Đã chuyển sang Máy chủ Mặc định (HLS)");
+  }, [currentEpisodeIndex, serverData]);
+
   const handleSwitchToEmbed = useCallback(() => {
     setPlayerMode('embed');
     if (currentEpisodeIndex && serverData) {
       const currentEpisode = serverData[currentEpisodeIndex.server]?.server_data?.[currentEpisodeIndex.episode];
       if (currentEpisode?.link_embed) setCurrentEpisodeUrl(currentEpisode.link_embed);
     }
+    toast.info("Đã chuyển sang Máy chủ Dự phòng (VIP Embed)");
   }, [currentEpisodeIndex, serverData]);
 
   const handleEnded = useCallback(() => {
@@ -381,22 +710,7 @@ export default function Description({ movie, serverData }: any) {
         movieName={movie.name}
         movieSlug={movie.slug}
         currentEpName={currentEpName}
-        quality={movie.quality}
-        isTheaterMode={isTheaterMode}
-        onToggleTheaterMode={() => setIsTheaterMode(!isTheaterMode)}
       />
-
-      {/* Theater Mode Dark Backdrop Overlay */}
-      {isTheaterMode && (
-        <div 
-          className="fixed inset-0 bg-black/95 z-[80] transition-opacity duration-500 backdrop-blur-2xl cursor-pointer"
-          onClick={() => setIsTheaterMode(false)}
-        >
-          <div className="absolute top-6 right-6 text-white/60 text-xs font-bold bg-white/10 px-4 py-2 rounded-full border border-white/20">
-            Chế độ Tắt Đèn — Bấm vào đây để bật lại đèn
-          </div>
-        </div>
-      )}
 
       {/* 2-Column Cinema Layout */}
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start w-full max-w-[1600px] mx-auto pt-2">
@@ -405,13 +719,48 @@ export default function Description({ movie, serverData }: any) {
         <div className="flex-1 w-full min-w-0 flex flex-col gap-6 lg:sticky lg:top-[60px]">
           
           {/* Video Player Container with Dynamic OLED Backlight Glow */}
-          <div className={cn("relative group/player w-full transition-all duration-500", isTheaterMode && "z-[85]")}>
+          <div className="relative group/player w-full">
             {/* Ambient backlight glow - desktop only to prevent mobile GPU lag */}
             <div className="absolute -inset-3 bg-gradient-to-r from-brand-green/25 via-brand-green/10 to-emerald-600/20 rounded-[32px] blur-3xl opacity-70 group-hover/player:opacity-100 transition-opacity pointer-events-none hidden sm:block will-change-transform" />
 
             <Card className="border border-white/10 overflow-hidden shadow-[0_0_90px_rgba(0,0,0,0.95)] w-full aspect-video rounded-2xl lg:rounded-3xl bg-black relative z-10">
               <CardContent className="p-0 h-full w-full">
-                {playerMode === 'm3u8' ? (
+                {isUserBanned ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center p-6 sm:p-10 text-center bg-gradient-to-b from-[#180808] via-black to-[#0e0404] border border-red-500/20 backdrop-blur-xl select-none">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 mb-4 shadow-[0_0_35px_rgba(239,68,68,0.25)] animate-pulse">
+                      <ShieldAlert className="w-8 h-8 sm:w-10 sm:h-10" />
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-black text-white mb-2 tracking-tight">
+                      {isUserPermanentlyBanned ? "Tài Khoản Đang Bị Khóa Vĩnh Viễn" : "Tạm Khóa Quyền Xem Phim"}
+                    </h3>
+                    <div className="max-w-md w-full mb-4 bg-red-950/40 border border-red-500/25 px-4 py-3 rounded-xl text-center shadow-inner">
+                      <p className="text-xs sm:text-sm text-red-200 leading-relaxed">
+                        <span className="font-bold text-red-400">Lý do: </span>
+                        {user?.banReason || "Vi phạm quy định sử dụng hoặc điều khoản của website."}
+                      </p>
+                    </div>
+                    {isUserTemporarilyBanned && user?.bannedUntil && (
+                      <div className="flex flex-wrap items-center justify-center gap-2 text-xs sm:text-sm text-amber-300 bg-amber-500/10 border border-amber-500/20 px-4 py-2 rounded-xl mb-4">
+                        <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>Mở khóa lúc: <strong>{new Date(user.bannedUntil).toLocaleString("vi-VN")}</strong></span>
+                        {banRemainingTime && (
+                          <span className="text-amber-400 font-mono font-bold bg-black/50 px-2 py-0.5 rounded border border-amber-500/30">
+                            {banRemainingTime}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    <p className="text-xs text-white/40 max-w-sm mb-6 leading-relaxed">
+                      Bạn tạm thời không thể tiếp tục phát video. Nếu đây là sự nhầm lẫn, vui lòng liên hệ Quản trị viên để được hỗ trợ giải quyết.
+                    </p>
+                    <Link
+                      href="/"
+                      className="px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-bold transition-all border border-white/10 hover:border-white/25 active:scale-95 shadow-lg"
+                    >
+                      Quay Về Trang Chủ
+                    </Link>
+                  </div>
+                ) : playerMode === 'm3u8' ? (
                   <PlayerErrorBoundary
                     onReset={() => {
                       setPlayerMode('m3u8');
@@ -419,9 +768,7 @@ export default function Description({ movie, serverData }: any) {
                       if (ep?.link_m3u8) setCurrentEpisodeUrl(ep.link_m3u8);
                     }}
                     onSwitchToEmbed={() => {
-                      setPlayerMode('embed');
-                      const ep = serverData?.[currentEpisodeIndex?.server || 0]?.server_data?.[currentEpisodeIndex?.episode || 0];
-                      if (ep?.link_embed) setCurrentEpisodeUrl(ep.link_embed);
+                      handleSwitchToEmbed();
                     }}
                   >
                     <VideoPlayer
@@ -446,6 +793,7 @@ export default function Description({ movie, serverData }: any) {
                         ? `https://player.phimapi.com/player/?url=${encodeURIComponent(currentEpisodeUrl)}`
                         : currentEpisodeUrl)
                     }
+                    onSwitchToM3u8={handleSwitchToM3u8}
                   />
                 )}
               </CardContent>

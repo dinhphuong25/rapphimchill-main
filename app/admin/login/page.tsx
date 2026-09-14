@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Lock, User, ShieldCheck, Film, ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -11,6 +11,28 @@ export default function AdminLoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // If already authenticated as Admin, enter dashboard immediately
+  useEffect(() => {
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (
+          data.authenticated &&
+          (data.user?.role === "admin" ||
+            data.user?.role === "superadmin" ||
+            data.user?.email?.toLowerCase() === "kimdinhphuong205@gmail.com")
+        ) {
+          window.location.href = "/admin";
+        } else {
+          setIsCheckingAuth(false);
+        }
+      })
+      .catch(() => {
+        setIsCheckingAuth(false);
+      });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,8 +52,7 @@ export default function AdminLoginPage() {
       const data = await res.json();
       if (data.success) {
         toast.success("Đăng nhập thành công! Đang chuyển hướng...");
-        router.push("/admin");
-        router.refresh();
+        window.location.href = "/admin";
       } else {
         toast.error(data.error || "Tài khoản hoặc mật khẩu không chính xác!");
       }
@@ -41,6 +62,17 @@ export default function AdminLoginPage() {
       setIsLoading(false);
     }
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-[#070707] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 text-brand-green animate-spin" />
+          <p className="text-xs text-white/50 font-mono">Đang kiểm tra quyền quản trị...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#070707] text-cinema-text flex items-center justify-center p-4 relative overflow-hidden select-none">
@@ -76,7 +108,7 @@ export default function AdminLoginPage() {
             {/* Username */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-white/80 block">
-                Tài khoản
+                Email hoặc Tài khoản Super Admin
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-white/40">
@@ -86,7 +118,7 @@ export default function AdminLoginPage() {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="admin"
+                  placeholder="kimdinhphuong205@gmail.com"
                   required
                   className="w-full bg-black/60 border border-white/15 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-brand-green focus:ring-1 focus:ring-brand-green transition-all"
                 />
@@ -106,7 +138,7 @@ export default function AdminLoginPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
+                  placeholder="Nhập mật khẩu của bạn"
                   required
                   className="w-full bg-black/60 border border-white/15 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-brand-green focus:ring-1 focus:ring-brand-green transition-all"
                 />
@@ -126,17 +158,17 @@ export default function AdminLoginPage() {
                 </>
               ) : (
                 <>
-                  <span>Đăng Nhập Quản Trị</span>
+                  <span>Đăng Nhập Super Admin</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
           </form>
 
-          {/* Quick Credential Hint */}
+          {/* Security Notice */}
           <div className="mt-6 pt-5 border-t border-white/10 text-center">
-            <p className="text-[11px] text-white/40">
-              Tài khoản mặc định: <span className="text-white/70 font-mono font-bold">admin</span> / Mật khẩu: <span className="text-white/70 font-mono font-bold">hiphim_admin_2026</span>
+            <p className="text-[11px] text-white/50 leading-relaxed">
+              Cổng bảo mật cấp cao. Chỉ tài khoản Super Admin <span className="text-brand-green font-mono font-bold">kimdinhphuong205@gmail.com</span> mới có quyền đăng nhập và quản trị.
             </p>
           </div>
         </div>

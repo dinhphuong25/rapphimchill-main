@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  verifySessionToken,
+  isAuthorizedAdminRequest,
   checkAdminCredentials,
   updateAdminPassword,
-  ADMIN_COOKIE_NAME,
 } from "@/lib/admin-auth";
 
 export async function POST(req: NextRequest) {
-  const sessionToken = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
-  const isValid = await verifySessionToken(sessionToken);
+  const isAuthorized = await isAuthorizedAdminRequest(req);
 
-  if (!isValid) {
+  if (!isAuthorized) {
     return NextResponse.json(
       { success: false, error: "Unauthorized" },
       { status: 401 }
@@ -35,7 +33,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify current credentials
-    const isCurrentValid = checkAdminCredentials(username || "admin", currentPassword);
+    const isCurrentValid = await checkAdminCredentials(username || "kimdinhphuong205@gmail.com", currentPassword);
     if (!isCurrentValid) {
       return NextResponse.json(
         { success: false, error: "Mật khẩu hiện tại không chính xác!" },
@@ -43,7 +41,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const updated = updateAdminPassword(newPassword, username);
+    const updated = await updateAdminPassword(newPassword, username);
     if (!updated) {
       return NextResponse.json(
         { success: false, error: "Không thể lưu mật khẩu mới vào hệ thống!" },

@@ -14,6 +14,7 @@ import {
   getCachedFeaturedMovies,
   getCachedNewUpdates,
   getCachedTopicMovies,
+  getCachedFilteredMovies,
 } from "@/lib/data";
 import { getSiteConfig } from "@/lib/site-config";
 
@@ -96,7 +97,26 @@ export default async function Home({ searchParams }: HomeProps) {
   let featuredMovies: any[] = [];
   let topicsWithMovies: any[] = [];
 
-  if (!hasFilters) {
+  // When filters active, pre-hydrate movies on server so user NEVER sees an empty loading screen
+  let initialFilteredMovies: any[] = [];
+  let initialPageInfo: any = null;
+
+  if (hasFilters) {
+    const filterData = await getCachedFilteredMovies({
+      typeList,
+      category,
+      topic,
+      country: params.country,
+      year: params.year,
+      page: index,
+      sortField: params.sortField,
+      sortType: params.sortType,
+      sortLang: params.sortLang,
+      limit: Number(params.limit) || 20,
+    });
+    initialFilteredMovies = filterData.items;
+    initialPageInfo = filterData.pagination;
+  } else {
     // Parallel fetch — all cached separately
     const [newUpdates, featuredList, ...topicMoviesList] = await Promise.all([
       getCachedNewUpdates(),
@@ -122,8 +142,11 @@ export default async function Home({ searchParams }: HomeProps) {
             index={index}
             category={category}
             topic={topic}
+            typeList={typeList}
             categories={categories as any[]}
             countries={countries as any[]}
+            initialMovies={initialFilteredMovies}
+            initialPageInfo={initialPageInfo}
           />
         </div>
       ) : (

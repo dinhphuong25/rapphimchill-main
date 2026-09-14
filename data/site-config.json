@@ -7,11 +7,11 @@
     "enabled": false,
     "text": "Chào mừng bạn đến với Hi Phim! Chúc bạn có những phút giây xem phim thư giãn tuyệt vời.",
     "link": "",
-    "type": "info"
+    "type": "success"
   },
   "featuredSlugs": [
-    "deadpool-va-wolverine",
     "godzilla-x-kong-de-che-moi",
+    "deadpool-va-wolverine",
     "quat-mo-trung-ma",
     "arcane-lien-minh-huyen-thoai-phan-2",
     "nu-hoang-nuoc-mat",

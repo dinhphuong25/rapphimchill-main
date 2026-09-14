@@ -516,7 +516,7 @@ function SidebarContent({
       {/* Mobile Account Floating Sheet */}
       {isAccountOpen && (
         <div
-          className="lg:hidden fixed inset-x-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 bottom-[max(4.25rem,calc(env(safe-area-inset-bottom)+3.75rem))] z-[130] w-auto sm:w-[420px] max-w-[440px] max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain bg-[#0d1310]/95 backdrop-blur-2xl border border-white/15 rounded-3xl p-3.5 sm:p-4 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_30px_rgba(32,214,107,0.15)] animate-in fade-in slide-in-from-bottom-5 duration-200 pointer-events-auto select-none"
+          className="lg:hidden fixed left-1/2 -translate-x-1/2 bottom-[max(4.5rem,calc(env(safe-area-inset-bottom)+4rem))] z-[130] w-[calc(100%-24px)] max-w-[390px] max-h-[calc(100dvh-5.5rem)] overflow-y-auto overscroll-contain bg-[#0d1310]/95 backdrop-blur-2xl border border-white/15 rounded-3xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_30px_rgba(32,214,107,0.15)] animate-in fade-in slide-in-from-bottom-5 duration-200 pointer-events-auto select-none"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Top Pill Handle */}
@@ -543,16 +543,8 @@ function SidebarContent({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <span className="font-bold text-xs sm:text-sm text-white truncate">{user.name}</span>
-                      {isSuperAdmin ? (
-                        <span className="px-1.5 py-0.5 rounded-md bg-amber-400/20 border border-amber-400/40 text-[9px] font-black text-amber-300 flex items-center gap-0.5 shrink-0 shadow-[0_0_8px_rgba(251,191,36,0.2)]">
-                          <Crown className="w-2.5 h-2.5 fill-current" />
-                          Super Admin
-                        </span>
-                      ) : (
-                        <span className="px-1.5 py-0.5 rounded-full bg-brand-green/20 border border-brand-green/40 text-[9px] font-bold text-brand-green flex items-center gap-0.5 shrink-0">
-                          <ShieldCheck className="w-2.5 h-2.5" />
-                          Đã bảo mật
-                        </span>
+                      {isSuperAdmin && (
+                        <Crown className="w-3 h-3 text-amber-400 shrink-0" />
                       )}
                     </div>
                     <p className="text-[11px] text-white/50 truncate font-mono mt-0.5">{user.email}</p>
@@ -575,9 +567,6 @@ function SidebarContent({
                     <span className="text-[10px] font-bold text-emerald-400/90 uppercase tracking-wider flex items-center gap-1.5">
                       <Shield className="w-3.5 h-3.5 text-emerald-400" />
                       Bảng Điều Hành Quản Trị
-                    </span>
-                    <span className="text-[9px] font-mono text-amber-300 bg-amber-400/15 border border-amber-400/30 px-1.5 py-0.2 rounded">
-                      Toàn Quyền
                     </span>
                   </div>
 

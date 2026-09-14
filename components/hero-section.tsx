@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFavorites } from "@/hooks/useLocalStorage";
+import { useUserAuth } from "@/context/user-auth-context";
 import { getMovieImageCandidates } from "@/lib/image-helper";
 
 function HeroThumbImage({ movie, isActive }: { movie: any; isActive: boolean }) {
@@ -38,21 +39,23 @@ function HeroThumbImage({ movie, isActive }: { movie: any; isActive: boolean }) 
   }
 
   return (
-    <Image
-      src={src}
-      alt={movie.name}
-      fill
-      quality={70}
-      className={cn(
-        "object-cover transition-transform duration-500",
-        isActive ? "scale-105" : "group-hover:scale-110"
-      )}
-      sizes="(max-width: 768px) 120px, 240px"
-      onError={() => {
-        if (candidateIdx + 1 < candidates.length) setCandidateIdx((i) => i + 1);
-        else setHasError(true);
-      }}
-    />
+    <div className="relative w-full h-full overflow-hidden">
+      <Image
+        src={src}
+        alt={movie.name}
+        fill
+        sizes="(max-width: 1024px) 140px, 180px"
+        className="object-cover"
+        quality={75}
+        onError={() => {
+          if (candidateIdx + 1 < candidates.length) {
+            setCandidateIdx((i) => i + 1);
+          } else {
+            setHasError(true);
+          }
+        }}
+      />
+    </div>
   );
 }
 
@@ -88,6 +91,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const { user, checkAuthOrPrompt, updateServerData } = useUserAuth();
   const { toggleFavorite, isFavorite } = useFavorites();
 
   const validMovies = useMemo(() => {
@@ -427,15 +431,19 @@ export default function HeroSection({ movies }: HeroSectionProps) {
 
               {/* Favorite Bookmark Button */}
               <button
-                onClick={() =>
-                  toggleFavorite({
+                onClick={() => {
+                  if (!checkAuthOrPrompt("lưu phim yêu thích")) return;
+                  const updated = toggleFavorite({
                     slug: current.slug,
                     name: current.name,
                     thumb_url: backdropUrl,
                     year: current.year,
                     quality: current.quality,
-                  })
-                }
+                  });
+                  if (user && updated) {
+                    updateServerData({ favorites: updated });
+                  }
+                }}
                 aria-label="Lưu phim yêu thích"
                 className={cn(
                   "p-3 sm:p-3.5 rounded-full border transition-colors active:scale-95 shrink-0",

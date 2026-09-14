@@ -138,6 +138,18 @@ export default class PhimApi {
     return [normalizeItems(data?.data?.items || [], cdnDomain), data?.data?.params?.pagination];
   }
 
+  async byCountry(slug: string, index: number = 1): Promise<[MovieListItem[], Pagination]> {
+    const url = `${this.apiUrl}/v1/api/quoc-gia/${slug}?page=${index}&limit=20`;
+    const response = await fetch(url, {
+      headers: this.fetchHeaders(),
+      next: { revalidate: 3600 },
+    });
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+    const data = await response.json();
+    const cdnDomain = data?.data?.APP_DOMAIN_CDN_IMAGE || this.defaultCdnDomain;
+    return [normalizeItems(data?.data?.items || [], cdnDomain), data?.data?.params?.pagination];
+  }
+
   async byTopic(slug: string, index: number = 1): Promise<[MovieListItem[], Pagination]> {
     const url = `${this.apiUrl}/v1/api/danh-sach/${slug}?page=${index}&limit=20`;
     const response = await fetch(url, {

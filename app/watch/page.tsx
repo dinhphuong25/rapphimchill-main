@@ -9,10 +9,15 @@ import { LoadingWatch } from "@/components/ui/page-loaders";
 import { getCachedCategories, getCachedCountries } from "@/lib/data";
 import { normalizeImageUrl } from "@/lib/image-helper";
 
-async function getMovieData(slug: string) {
-  const api = new PhimApi();
-  return api.get(slug);
-}
+const getMovieData = (slug: string) =>
+  unstable_cache(
+    async () => {
+      const api = new PhimApi();
+      return api.get(slug);
+    },
+    [`movie-data-${slug}`],
+    { revalidate: 600, tags: [`movie-${slug}`] }
+  )();
 
 export async function generateMetadata({ searchParams }: any) {
   const { slug } = await searchParams;
@@ -106,8 +111,13 @@ async function WatchContent({ slug }: { slug: string }) {
   return (
     <div className="min-h-screen bg-cinema-bg text-white selection:bg-brand-green selection:text-cinema-bg">
       {m3u8Origin && (
-        <link rel="preconnect" href={m3u8Origin} crossOrigin="anonymous" />
+        <>
+          <link rel="dns-prefetch" href={m3u8Origin} />
+          <link rel="preconnect" href={m3u8Origin} crossOrigin="anonymous" />
+        </>
       )}
+      <link rel="dns-prefetch" href="https://player.phimapi.com" />
+      <link rel="preconnect" href="https://player.phimapi.com" crossOrigin="anonymous" />
       {firstM3u8 && (
         <link rel="preload" href={firstM3u8} as="fetch" crossOrigin="anonymous" />
       )}

@@ -1,24 +1,26 @@
 "use client";
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useState, useMemo, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { filterHiddenMovies } from "@/lib/hidden-movies";
 import { MovieGridSkeleton } from "@/components/movie/movie-skeleton";
 import dynamic from "next/dynamic";
 import { apiCache } from "@/lib/api-cache";
+import { instantMovieStore } from "@/lib/instant-movie-store";
 import { getCategoryDisplayName } from "@/lib/categories";
 import { getCountryDisplayName } from "@/lib/countries";
+import { cn } from "@/lib/utils";
 
-const InfiniteMovieGrid = dynamic(
-  () => import("@/components/movie/infinite-movie-grid"),
-  { ssr: false, loading: () => <MovieGridSkeleton count={10} /> }
-);
+import InfiniteMovieGrid from "@/components/movie/infinite-movie-grid";
 
 interface MovieListClientProps {
   index?: number;
   category?: string;
   topic?: string;
+  typeList?: string;
   categories?: { slug: string; name: string }[];
   countries?: { slug: string; name: string }[];
+  initialMovies?: any[];
+  initialPageInfo?: any;
 }
 
 // Topic name mapping
@@ -37,138 +39,185 @@ const MovieListClient = ({
   index = 1,
   category,
   topic,
+  typeList,
   categories = [],
   countries = [],
+  initialMovies = [],
+  initialPageInfo = null,
 }: MovieListClientProps) => {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [movies, setMovies] = useState<any[]>([]);
-  const [pageInfo, setPageInfo] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  // Compute cache key for current filter combination
+  const currentCountry = searchParams.get("country");
+  const currentCategory = searchParams.get("category") || category;
+  const currentYear = searchParams.get("year");
+  const currentTypeList = searchParams.get("typeList") || typeList;
+  const sortField = searchParams.get("sortField");
+  const sortType = searchParams.get("sortType") || "desc";
+  const sortLang = searchParams.get("sortLang") || "vietsub";
+  const limit = searchParams.get("limit") || "20";
+
+  const currentKey = useMemo(() => {
+    return instantMovieStore.buildKey({
+      typeList: currentTypeList,
+      category: currentCategory,
+      topic,
+      country: currentCountry,
+      year: currentYear,
+      page: index,
+      sortField,
+      sortType,
+    });
+  }, [currentTypeList, currentCategory, topic, currentCountry, currentYear, index, sortField, sortType]);
+
+  // Seed cache with initial SSR movies if provided
+  if (initialMovies && initialMovies.length > 0) {
+    instantMovieStore.set(currentKey, {
+      items: initialMovies,
+      pagination: initialPageInfo,
+    });
+  }
+
+  // Synchronous initialization: if SSR movies or memory cache has data, load with 0 delay!
+  const [movies, setMovies] = useState<any[]>(() => {
+    if (initialMovies && initialMovies.length > 0) {
+      return filterHiddenMovies(initialMovies);
+    }
+    const cached = instantMovieStore.get(currentKey);
+    if (cached && cached.items.length > 0) {
+      return cached.items;
+    }
+    return [];
+  });
+
+  const [pageInfo, setPageInfo] = useState<any>(() => {
+    if (initialPageInfo) return initialPageInfo;
+    const cached = instantMovieStore.get(currentKey);
+    return cached?.pagination || null;
+  });
+
+  const [loading, setLoading] = useState<boolean>(() => {
+    if (initialMovies && initialMovies.length > 0) return false;
+    const cached = instantMovieStore.get(currentKey);
+    return !cached || cached.items.length === 0;
+  });
+
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const lastKeyRef = useRef(currentKey);
 
   const proxyFetch = (url: string) =>
     apiCache.fetchWithCache(url, () =>
       fetch(`/api/phim?url=${encodeURIComponent(url)}`).then((r) => r.json())
     , 60000);
 
-  const fetchMovies = async (isRefresh = false) => {
-    if (isRefresh) {
+  const fetchMovies = async (targetKey: string, isSilent = false) => {
+    if (isSilent) {
       setIsRefreshing(true);
-    } else {
-      setLoading(true);
     }
 
     try {
-      // Lấy tất cả filter params
-      const filterCountry = searchParams.get("country");
-      const filterCategory = searchParams.get("category");
-      const filterYear = searchParams.get("year");
-      const typeList = searchParams.get("typeList");
-      const sortField = searchParams.get("sortField");
-      const sortType = searchParams.get("sortType") || "desc";
-      const sortLang = searchParams.get("sortLang") || "vietsub";
-      const limit = searchParams.get("limit") || "20";
-
       let url: string;
-      let usesV1Api = true;
+      const cat = currentCategory;
 
-      const cat = filterCategory || category;
-
-      if (typeList) {
-        const baseType = typeList;
-        const urlObj = new URL(`https://phimapi.com/v1/api/danh-sach/${baseType}`);
+      if (currentTypeList) {
+        const urlObj = new URL(`https://phimapi.com/v1/api/danh-sach/${currentTypeList}`);
         urlObj.searchParams.set("page", String(index));
         urlObj.searchParams.set("sort_field", sortField || "modified.time");
         urlObj.searchParams.set("sort_type", sortType);
         urlObj.searchParams.set("limit", limit);
         if (sortLang) urlObj.searchParams.set("sort_lang", sortLang);
         if (cat) urlObj.searchParams.set("category", cat);
-        if (filterCountry) urlObj.searchParams.set("country", filterCountry);
-        if (filterYear) urlObj.searchParams.set("year", filterYear);
+        if (currentCountry) urlObj.searchParams.set("country", currentCountry);
+        if (currentYear) urlObj.searchParams.set("year", currentYear);
         url = urlObj.toString();
       } else if (cat) {
         url = `https://phimapi.com/v1/api/the-loai/${cat}?page=${index}&limit=${limit}`;
-      } else if (filterCountry) {
-        url = `https://phimapi.com/v1/api/quoc-gia/${filterCountry}?page=${index}&limit=${limit}`;
-      } else if (filterYear) {
-        url = `https://phimapi.com/v1/api/nam-phat-hanh/${filterYear}?page=${index}&limit=${limit}`;
+      } else if (currentCountry) {
+        url = `https://phimapi.com/v1/api/quoc-gia/${currentCountry}?page=${index}&limit=${limit}`;
+      } else if (currentYear) {
+        url = `https://phimapi.com/v1/api/nam-phat-hanh/${currentYear}?page=${index}&limit=${limit}`;
       } else if (topic) {
         url = `https://phimapi.com/v1/api/danh-sach/${topic}?page=${index}&limit=${limit}`;
       } else {
         url = `https://phimapi.com/v1/api/danh-sach/phim-moi-cap-nhat?page=${index}&limit=${limit}`;
-        usesV1Api = true;
       }
 
       const data = await proxyFetch(url);
 
-
-      // Robust data parsing: handle data.data.items (v1) and data.items (v2/legacy)
       const items = data?.data?.items || data?.items || [];
       const pagination = data?.data?.params?.pagination || data?.pagination || null;
+      const filtered = filterHiddenMovies(items);
 
-      setMovies(filterHiddenMovies(items));
-      setPageInfo(pagination);
+      // Save to instant memory store
+      instantMovieStore.set(targetKey, { items: filtered, pagination });
 
-      setLastUpdated(new Date());
+      // Only update if user hasn't switched to another filter in the meantime
+      if (lastKeyRef.current === targetKey) {
+        setMovies(filtered);
+        setPageInfo(pagination);
+      }
     } catch (error) {
       console.error("Failed to fetch movies:", error);
-      setMovies([]);
-      setPageInfo(null);
     } finally {
       setLoading(false);
+      setIsTransitioning(false);
       setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
-    fetchMovies();
+    lastKeyRef.current = currentKey;
 
-    const interval = setInterval(() => {
-      if (document.visibilityState === "visible") {
-        fetchMovies(true);
-      }
-    }, 180000);
+    // Check instant cache first: INSTANT ZERO-LATENCY TAB SWITCHING
+    const cached = instantMovieStore.get(currentKey);
+    if (cached && cached.items.length > 0) {
+      setMovies(cached.items);
+      setPageInfo(cached.pagination);
+      setLoading(false);
+      setIsTransitioning(false);
+      // Revalidate in background silently (Stale-While-Revalidate)
+      fetchMovies(currentKey, true);
+      return;
+    }
 
-    return () => clearInterval(interval);
-  }, [index, category, topic, searchParams]);
-
-  const handleRefresh = () => {
-    fetchMovies(true);
-  };
+    // Not in cache: if we have existing movies, keep them visible and show subtle indicator
+    if (movies.length > 0) {
+      setIsTransitioning(true);
+      fetchMovies(currentKey, false);
+    } else {
+      setLoading(true);
+      fetchMovies(currentKey, false);
+    }
+  }, [currentKey, index]);
 
   const getPageTitle = () => {
-    const typeList = searchParams.get("typeList");
-    const filterYear = searchParams.get("year");
-    const filterCountry = searchParams.get("country");
-    const filterCategory = searchParams.get("category") || category;
-
-    const catName = getCategoryDisplayName(filterCategory, categories);
-    const countryName = getCountryDisplayName(filterCountry, countries);
+    const catName = getCategoryDisplayName(currentCategory, categories);
+    const countryName = getCountryDisplayName(currentCountry, countries);
 
     const parts: string[] = [];
-    if (typeList) parts.push(TOPIC_NAMES[typeList] || "Kết quả lọc");
+    if (currentTypeList) parts.push(TOPIC_NAMES[currentTypeList] || "Kết quả lọc");
     else if (topic) parts.push(TOPIC_NAMES[topic] || topic);
     else if (catName) parts.push(catName);
 
     if (countryName) parts.push(countryName);
-    if (filterYear) parts.push(`Năm ${filterYear}`);
+    if (currentYear) parts.push(`Năm ${currentYear}`);
 
     if (parts.length > 0) return parts.join(" - ");
     return "Danh Sách Phim";
   };
 
-  if (loading) {
+  // Only show skeleton on first cold uncached load when 0 movies exist
+  if (loading && movies.length === 0) {
     return (
-      <div className="pt-4 sm:pt-8 px-1 sm:px-0 space-y-6">
-        <div className="h-8 w-48 bg-zinc-800 animate-pulse rounded" />
+      <div className="pt-2 sm:pt-4 px-1 sm:px-0 animate-in fade-in duration-200">
         <MovieGridSkeleton count={10} />
       </div>
     );
   }
 
-  if (movies.length === 0) {
+  if (!loading && movies.length === 0) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center pt-8">
         <div className="text-center space-y-4 max-w-md">
@@ -185,22 +234,28 @@ const MovieListClient = ({
   }
 
   return (
-    <div className="pt-2 sm:pt-4 px-1 sm:px-0">
+    <div className="pt-2 sm:pt-4 px-1 sm:px-0 relative">
+      {/* Sleek emerald top progress bar during background transitions */}
+      {isTransitioning && (
+        <div className="fixed top-0 left-0 right-0 h-[2.5px] bg-brand-green shadow-[0_0_12px_rgba(34,197,94,0.9)] z-[200] animate-pulse pointer-events-none" />
+      )}
+
       {/* Hidden for accessibility & SEO */}
       <h1 className="sr-only">{getPageTitle()}</h1>
 
-      {/* Infinite scroll grid — replaces paginated grid */}
-      <Suspense fallback={<MovieGridSkeleton count={10} />}>
+      {/* Infinite scroll grid with smooth fade transitions */}
+      <div className={cn("transition-opacity duration-200", isTransitioning ? "opacity-80" : "opacity-100")}>
         <InfiniteMovieGrid
-          key={searchParams.toString()}
+          key={currentKey}
           initialMovies={movies}
           topic={topic}
-          category={category}
+          category={currentCategory}
         />
-      </Suspense>
+      </div>
     </div>
   );
 };
 
 export default React.memo(MovieListClient);
+
 

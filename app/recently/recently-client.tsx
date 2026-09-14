@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect } from "react";
 import Link from "next/link";
-import { Trash2 } from "lucide-react";
+import { Trash2, History } from "lucide-react";
 import { useWatchHistory } from "@/hooks/useLocalStorage";
+import { useUserAuth } from "@/context/user-auth-context";
+import AuthGate from "@/components/auth/auth-gate";
 import MovieCardEditorial from "@/components/movie/movie-card-editorial";
 import type { WatchHistoryItem } from "@/lib/types";
 
@@ -13,8 +15,9 @@ interface RecentlyWatchedClientProps {
 }
 
 export default function RecentlyWatchedClient({ categories, countries }: RecentlyWatchedClientProps) {
+  const { user, loading: authLoading, updateServerData } = useUserAuth();
   const { history, removeFromHistory, clearHistory, batchUpdateHistory, hydrated } = useWatchHistory();
-  const movies = history as WatchHistoryItem[];
+  const movies = (history && history.length > 0 ? history : (user?.history || [])) as WatchHistoryItem[];
 
   // Auto-enrich any items in history that miss origin_name or rating
   useEffect(() => {
@@ -63,41 +66,57 @@ export default function RecentlyWatchedClient({ categories, countries }: Recentl
   }, [hydrated, history, batchUpdateHistory]);
 
   const handleRemove = useCallback((slug: string) => {
-    removeFromHistory(slug);
-  }, [removeFromHistory]);
+    const updated = removeFromHistory(slug);
+    if (user && Array.isArray(updated)) {
+      updateServerData({ history: updated });
+    }
+  }, [removeFromHistory, user, updateServerData]);
 
   const handleClearAll = () => {
     clearHistory();
+    if (user) {
+      updateServerData({ history: [] });
+    }
   };
 
-  if (!hydrated) {
+  if (!hydrated || authLoading) {
     return null;
+  }
+
+  // If not logged in, require authentication
+  if (!user) {
+    return (
+      <div className="w-full max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-12 xl:px-16 pt-20 sm:pt-24 lg:pt-28 pb-20">
+        <AuthGate
+          title="Lịch Sử Xem Phim Cá Nhân"
+          description="Lịch sử xem phim được lưu trữ và đồng bộ riêng cho tài khoản của bạn. Vui lòng đăng nhập hoặc tạo tài khoản để tiếp tục theo dõi các tập phim bạn đang xem dở."
+          icon={History}
+        />
+      </div>
+    );
   }
 
   return (
     <>
-      <div className="w-full max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-12 xl:px-16 pt-5 sm:pt-8 lg:pt-20 pb-20">
-        <h1 className="sr-only">Lịch Sử Xem Phim</h1>
-
-        {/* Clear Action */}
-        {movies.length > 0 && (
-          <div className="flex justify-end mb-3 sm:mb-4">
-            <button
-              onClick={handleClearAll}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-white/50 hover:text-red-400 border border-white/10 hover:border-red-400/30 rounded-xl transition-colors hover:bg-red-400/10 font-bold cursor-pointer"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Xóa lịch sử</span>
-            </button>
-          </div>
-        )}
-
-        {/* Empty State: Tinh tế, tối giản, không dùng khung hộp thô */}
+      <div className="w-full max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-12 xl:px-16 pt-20 sm:pt-24 lg:pt-28 pb-20">
+        {/* Empty State */}
         {movies.length === 0 ? (
-          <div className="py-24 text-center">
-            <p className="text-white/40 text-sm sm:text-base font-medium">
+          <div className="py-16 sm:py-24 text-center select-none animate-in fade-in duration-200">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-5 rounded-3xl bg-white/[0.04] border border-white/10 flex items-center justify-center text-white/40 shadow-xl">
+              <History className="w-10 h-10 sm:w-12 sm:h-12 stroke-[1.8]" />
+            </div>
+            <h3 className="text-xl sm:text-2xl font-bold text-white mb-2.5">
               Chưa có phim nào trong lịch sử xem
+            </h3>
+            <p className="text-sm sm:text-base text-white/60 max-w-md mx-auto mb-8 leading-relaxed font-normal">
+              Khi bạn xem phim trên tài khoản này, danh sách các tập phim đang xem dở sẽ tự động được lưu và đồng bộ tại đây.
             </p>
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 h-11 px-7 rounded-xl bg-brand-green hover:bg-brand-green-hover text-cinema-bg font-bold text-sm tracking-wide shadow-[0_0_20px_rgba(32,214,107,0.25)] transition-all active:scale-95 cursor-pointer"
+            >
+              <span>Khám phá phim ngay</span>
+            </Link>
           </div>
         ) : (
           /* Movie Grid - Identical to standard categories */
@@ -122,6 +141,10 @@ export default function RecentlyWatchedClient({ categories, countries }: Recentl
                     year: typeof movie.year === "string" ? parseInt(movie.year, 10) : movie.year,
                     quality: movie.quality,
                     episode_current: movie.episodeName || movie.episode_current,
+                    episodeIndex: movie.episodeIndex,
+                    episodeName: movie.episodeName,
+                    currentTime: movie.currentTime,
+                    duration: movie.duration,
                     tmdb: movie.tmdb,
                     imdb: movie.imdb,
                   }}
