@@ -3,6 +3,8 @@ import { findUserByEmailPersistent, hashPassword, savePendingRegistrationPersist
 import { sendOtpEmail } from "@/lib/email-service";
 import { createPendingRegistrationToken, PENDING_REGISTRATION_COOKIE_NAME } from "@/lib/user-token";
 
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();

@@ -7,6 +7,8 @@ import {
   verifyPendingRegistrationToken,
 } from "@/lib/user-token";
 
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();

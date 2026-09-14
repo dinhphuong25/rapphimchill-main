@@ -105,6 +105,6 @@ export async function sendOtpEmail(toEmail: string, otp: string, userName?: stri
 
   return {
     success: false,
-    error: "Gmail từ chối gửi email. Hãy kiểm tra App Password, bật xác minh 2 bước và Redeploy Vercel.",
+    error: `Gmail SMTP không gửi được (${lastError?.code || "UNKNOWN"}). Hãy kiểm tra App Password và log Vercel.`,
   };
 }
