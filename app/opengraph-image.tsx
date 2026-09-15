@@ -1,185 +1,161 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "Hi Phim - Xem Phim Online HD Miễn Phí #1 Việt Nam";
-export const size = {
-  width: 1200,
-  height: 630,
-};
+export const alt = "Hi Phim - Xem Phim Online HD Miễn Phí";
+export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function Image() {
   return new ImageResponse(
-    (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "stretch",
+        backgroundColor: "#050807",
+        backgroundImage:
+          "radial-gradient(circle at 80% 42%, rgba(32, 214, 107, 0.2) 0%, rgba(5, 8, 7, 0) 36%), linear-gradient(120deg, #050807 0%, #0c1d14 58%, #06100b 100%)",
+        fontFamily: "sans-serif",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
       <div
         style={{
-          width: "100%",
-          height: "100%",
+          position: "absolute",
+          inset: 0,
+          opacity: 0.04,
+          backgroundImage:
+            "linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)",
+          backgroundSize: "42px 42px",
+        }}
+      />
+
+      <div
+        style={{
+          position: "absolute",
+          left: "56px",
+          top: "42px",
+          width: "52px",
+          height: "4px",
+          backgroundColor: "#20D66B",
+        }}
+      />
+
+      <div
+        style={{
           display: "flex",
           flexDirection: "column",
-          alignItems: "flex-start",
           justifyContent: "center",
-          padding: "72px 88px",
-          backgroundColor: "#06100b",
-          backgroundImage:
-            "radial-gradient(circle at 78% 42%, rgba(32, 214, 107, 0.22) 0%, rgba(6, 16, 11, 0) 38%), linear-gradient(135deg, #06100b 0%, #0a1b12 52%, #030705 100%)",
-          fontFamily: "sans-serif",
-          position: "relative",
-          overflow: "hidden",
+          width: "58%",
+          padding: "24px 32px 24px 56px",
+          zIndex: 2,
         }}
       >
-        {/* Subtle decorative grid lines */}
-        <div
+        <span
           style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            opacity: 0.05,
-            backgroundImage:
-              "linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)",
-            backgroundSize: "48px 48px",
-          }}
-        />
-
-        {/* Top Tag */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            padding: "8px 18px",
-            borderRadius: "9999px",
-            backgroundColor: "rgba(32, 214, 107, 0.15)",
-            border: "1px solid rgba(32, 214, 107, 0.35)",
             color: "#20D66B",
-            fontSize: "18px",
+            fontSize: "20px",
             fontWeight: 800,
-            letterSpacing: "0.1em",
+            letterSpacing: "0.18em",
             textTransform: "uppercase",
-            marginBottom: "26px",
+            marginBottom: "22px",
           }}
         >
-          KHO PHIM ONLINE CHẤT LƯỢNG CAO #1 VIỆT NAM
-        </div>
+          Xem phim theo cách của bạn
+        </span>
 
-        {/* Brand Logo & Name */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-start",
-            marginBottom: "18px",
-          }}
-        >
-          <span
-            style={{
-              fontSize: "76px",
-              fontWeight: 900,
-              color: "#FFFFFF",
-              letterSpacing: "0.01em",
-            }}
-          >
+        <div style={{ display: "flex", alignItems: "baseline", marginBottom: "18px" }}>
+          <span style={{ fontSize: "92px", fontWeight: 900, color: "#FFFFFF", letterSpacing: "-0.04em", lineHeight: 1 }}>
             Hi
           </span>
-          <span
-            style={{
-              fontSize: "76px",
-              fontWeight: 900,
-              color: "#20D66B",
-              marginLeft: "12px",
-              letterSpacing: "0.01em",
-            }}
-          >
+          <span style={{ fontSize: "92px", fontWeight: 900, color: "#20D66B", marginLeft: "14px", letterSpacing: "-0.04em", lineHeight: 1 }}>
             Phim
           </span>
         </div>
 
-        {/* Slogan */}
-        <div
+        <span
           style={{
-            fontSize: "25px",
+            fontSize: "27px",
             fontWeight: 600,
-            color: "rgba(255, 255, 255, 0.75)",
-            textAlign: "left",
-            maxWidth: "820px",
-            lineHeight: 1.4,
-            marginBottom: "34px",
+            color: "rgba(255, 255, 255, 0.78)",
+            lineHeight: 1.35,
+            maxWidth: "560px",
+            marginBottom: "30px",
           }}
         >
-          Xem Phim Bộ, Phim Lẻ, Chiếu Rạp & Anime Vietsub Miễn Phí Chuẩn Full HD / 4K
-        </div>
+          Phim bộ, phim lẻ, chiếu rạp và anime Vietsub miễn phí.
+        </span>
 
-        {/* Highlights Badges */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              padding: "9px 16px",
-              borderRadius: "10px",
-              backgroundColor: "rgba(255, 255, 255, 0.06)",
-              border: "1px solid rgba(255, 255, 255, 0.12)",
-              color: "#FFFFFF",
-              fontSize: "16px",
-              fontWeight: 700,
-            }}
-          >
-            TỐC ĐỘ CAO 0.8s
-          </div>
-          <div
-            style={{
-              display: "flex",
-              padding: "9px 16px",
-              borderRadius: "10px",
-              backgroundColor: "rgba(255, 255, 255, 0.06)",
-              border: "1px solid rgba(255, 255, 255, 0.12)",
-              color: "#FFFFFF",
-              fontSize: "16px",
-              fontWeight: 700,
-            }}
-          >
-            50,000+ TẬP PHIM
-          </div>
-          <div
-            style={{
-              display: "flex",
-              padding: "9px 16px",
-              borderRadius: "10px",
-              backgroundColor: "rgba(255, 255, 255, 0.06)",
-              border: "1px solid rgba(255, 255, 255, 0.12)",
-              color: "#FFFFFF",
-              fontSize: "16px",
-              fontWeight: 700,
-            }}
-          >
-            KHÔNG QUẢNG CÁO
-          </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
+          <span style={{ color: "#FFFFFF", fontSize: "17px", fontWeight: 700 }}>FULL HD / 4K</span>
+          <span style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#20D66B" }} />
+          <span style={{ color: "rgba(255, 255, 255, 0.62)", fontSize: "17px", fontWeight: 600 }}>Cập nhật mỗi ngày</span>
         </div>
+      </div>
 
-        {/* Footer domain */}
+      <div
+        style={{
+          position: "relative",
+          display: "flex",
+          width: "42%",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 2,
+        }}
+      >
         <div
           style={{
             position: "absolute",
-            bottom: "24px",
-            fontSize: "16px",
-            fontWeight: 700,
-            color: "rgba(32, 214, 107, 0.8)",
-            letterSpacing: "0.05em",
+            right: "32px",
+            top: "52px",
+            width: "250px",
+            height: "470px",
+            border: "1px solid rgba(32, 214, 107, 0.35)",
+            backgroundColor: "rgba(4, 12, 8, 0.72)",
+            transform: "rotate(7deg)",
+          }}
+        />
+
+        <div
+          style={{
+            position: "relative",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            width: "250px",
+            height: "470px",
+            padding: "28px",
+            border: "1px solid rgba(255, 255, 255, 0.18)",
+            backgroundImage:
+              "linear-gradient(145deg, rgba(32, 214, 107, 0.45), rgba(3, 8, 5, 0.92) 48%, rgba(11, 40, 23, 0.96))",
+            boxShadow: "0 24px 60px rgba(0, 0, 0, 0.45)",
           }}
         >
-          hiphim.biz
+          <div style={{ display: "flex", justifyContent: "space-between", color: "rgba(255,255,255,0.68)", fontSize: "14px", fontWeight: 700, letterSpacing: "0.12em" }}>
+            <span>HP</span>
+            <span>01</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+            <div style={{ width: "64px", height: "64px", border: "2px solid #20D66B", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", color: "#20D66B", fontSize: "26px", fontWeight: 900 }}>
+              +
+            </div>
+            <span style={{ color: "#FFFFFF", fontSize: "28px", fontWeight: 800, lineHeight: 1.1 }}>
+              Điện ảnh<br />mỗi ngày
+            </span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px", color: "rgba(255,255,255,0.62)", fontSize: "14px", fontWeight: 600 }}>
+            <span>PHIM MỚI</span>
+            <span style={{ color: "#20D66B" }}>hiphim.biz</span>
+          </div>
         </div>
       </div>
-    ),
-    {
-      ...size,
-    }
+
+      <div style={{ position: "absolute", left: "56px", bottom: "28px", fontSize: "16px", fontWeight: 700, color: "rgba(32, 214, 107, 0.8)", letterSpacing: "0.05em" }}>
+        hiphim.biz
+      </div>
+    </div>,
+    { ...size }
   );
 }

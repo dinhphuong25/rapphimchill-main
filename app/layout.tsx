@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     template: "%s | Hi Phim",
   },
   description:
-    "Hi Phim - Trang xem phim online HD miễn phí tốc độ cao #1 Việt Nam. Kho 50,000+ phim bộ, phim lẻ, anime vietsub mới nhất 2026. Cập nhật hàng ngày, không quảng cáo.",
+    "Hi Phim - Trang xem phim online HD miễn phí tốc độ cao tại Việt Nam. Kho 50,000+ phim bộ, phim lẻ, anime vietsub mới nhất 2026. Cập nhật hàng ngày, không quảng cáo.",
   keywords: [
     "hi phim",
     "hiphim",
@@ -68,7 +68,7 @@ export const metadata: Metadata = {
   ],
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://hiphim.biz"),
   openGraph: {
-    title: "Hi Phim - Xem Phim Online HD Miễn Phí #1 Việt Nam",
+    title: "Hi Phim - Xem Phim Online HD Miễn Phí",
     description:
       "Kho 50,000+ phim bộ, phim lẻ chiếu rạp, anime vietsub mới nhất 2026. Tốc độ cao, chuẩn Full HD/4K, cập nhật liên tục hàng ngày.",
     url: "https://hiphim.biz",
