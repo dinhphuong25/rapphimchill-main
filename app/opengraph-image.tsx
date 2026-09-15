@@ -83,7 +83,7 @@ export default async function Image() {
                 borderRadius: "999px",
                 backgroundColor: "rgba(32, 214, 107, 0.12)",
                 border: "1px solid rgba(32, 214, 107, 0.38)",
-                width: "fit-content",
+                alignSelf: "flex-start",
                 marginBottom: "20px",
               }}
             >
@@ -168,7 +168,7 @@ export default async function Image() {
                 marginBottom: "16px",
               }}
             >
-              Xem phim theo cách của bạn
+              Xem Phim Online HD Miễn Phí
             </span>
 
             {/* Sub-description */}
@@ -210,7 +210,7 @@ export default async function Image() {
                 fontWeight: 700,
               }}
             >
-              <span style={{ color: "#20D66B" }}>✦</span>
+              <div style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#20D66B" }} />
               <span>Ultra HD 4K</span>
             </div>
 
@@ -228,7 +228,7 @@ export default async function Image() {
                 fontWeight: 700,
               }}
             >
-              <span style={{ color: "#20D66B" }}>✦</span>
+              <div style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#20D66B" }} />
               <span>Vietsub & Thuyết Minh</span>
             </div>
 
@@ -246,7 +246,7 @@ export default async function Image() {
                 fontWeight: 700,
               }}
             >
-              <span style={{ color: "#20D66B" }}>✦</span>
+              <div style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#20D66B" }} />
               <span>Tốc Độ Siêu Tốc</span>
             </div>
           </div>
@@ -487,16 +487,21 @@ export default async function Image() {
                 />
 
                 <div style={{ display: "flex", flexDirection: "column" }}>
-                  <span
-                    style={{
-                      color: "#20D66B",
-                      fontSize: "20px",
-                      fontWeight: 900,
-                      lineHeight: 1.1,
-                    }}
-                  >
-                    ⭐ 9.8/10
-                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="#20D66B">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                    <span
+                      style={{
+                        color: "#20D66B",
+                        fontSize: "20px",
+                        fontWeight: 900,
+                        lineHeight: 1.1,
+                      }}
+                    >
+                      9.8/10
+                    </span>
+                  </div>
                   <span
                     style={{
                       color: "rgba(255, 255, 255, 0.5)",
