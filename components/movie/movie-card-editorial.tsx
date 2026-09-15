@@ -96,6 +96,7 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
         
         <Link
           href={watchHref}
+          aria-label={`Xem phim ${movie.name}`}
           className="absolute inset-0 z-0 block"
         >
         {currentSrc ? (

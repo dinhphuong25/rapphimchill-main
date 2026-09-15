@@ -4,16 +4,20 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 
 export function SplashScreen() {
-  const [show, setShow] = useState(true);
+  const [show, setShow] = useState(false);
   const [isFading, setIsFading] = useState(false);
 
   useEffect(() => {
-    // Ẩn splash screen ngay lập tức sau khi hydrate xong 
-    // thay vì bắt người dùng đợi 2-3 giây vô nghĩa
-    setIsFading(true);
-    const timer = setTimeout(() => setShow(false), 300); // Wait for fade out animation
-
-    return () => clearTimeout(timer);
+    // Chỉ kích hoạt splash screen khi người dùng mở từ chế độ PWA Standalone (App đã cài đặt)
+    const isStandalone = typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches;
+    if (isStandalone) {
+      setShow(true);
+      const timer = setTimeout(() => {
+        setIsFading(true);
+        setTimeout(() => setShow(false), 200);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
   }, []);
 
   if (!show) return null;

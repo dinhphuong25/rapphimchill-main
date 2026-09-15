@@ -8,7 +8,6 @@ import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SearchOverlay from "@/components/search/search-overlay";
 import UserMenu from "@/components/auth/user-menu";
-import { preconnect } from "react-dom";
 
 interface HeaderProps {
   categories?: { slug: string; name: string }[];
@@ -17,12 +16,6 @@ interface HeaderProps {
 }
 
 export default function Header({}: HeaderProps) {
-  useEffect(() => {
-    preconnect("https://phimapi.com", { crossOrigin: "anonymous" });
-    preconnect("https://img.phimapi.com", { crossOrigin: "anonymous" });
-    preconnect("https://phimimg.com", { crossOrigin: "anonymous" });
-  }, []);
-
   const [showSearchOverlay, setShowSearchOverlay] = useState(false);
 
   // Hotkey '/' or 'Ctrl+K' to open search overlay
