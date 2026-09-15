@@ -122,10 +122,7 @@ export default function InfiniteMovieGrid({
     <div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
         {movies.map((movie, idx) => (
-          <div
-            key={`${movie.slug}-${idx}`}
-            className="transform-gpu"
-          >
+          <div key={movie.slug || movie._id || idx}>
             <MovieCardEditorial movie={movie} />
           </div>
         ))}

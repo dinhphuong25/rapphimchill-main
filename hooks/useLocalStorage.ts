@@ -168,34 +168,90 @@ function migrateFavoritesFromLegacy(): FavoriteItem[] {
 }
 
 // ============================================================
+// IN-MEMORY SINGLETON CACHES (Zero-cost lookups & zero lag)
+// ============================================================
+
+let globalHistoryCache: WatchHistoryItem[] | null = null;
+const historyListeners = new Set<(items: WatchHistoryItem[]) => void>();
+
+function getGlobalHistory(): WatchHistoryItem[] {
+  if (typeof window === "undefined") return [];
+  if (globalHistoryCache !== null) return globalHistoryCache;
+  globalHistoryCache = migrateHistoryFromLegacy();
+  return globalHistoryCache;
+}
+
+function setGlobalHistory(updated: WatchHistoryItem[]) {
+  globalHistoryCache = updated;
+  safeSetItem(STORAGE_KEYS.HISTORY, JSON.stringify(updated));
+  historyListeners.forEach(l => l(updated));
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("storage"));
+  }
+}
+
+let globalFavoritesCache: FavoriteItem[] | null = null;
+let globalFavoriteSlugs = new Set<string>();
+const favoriteListeners = new Set<(items: FavoriteItem[]) => void>();
+
+function getGlobalFavorites(): FavoriteItem[] {
+  if (typeof window === "undefined") return [];
+  if (globalFavoritesCache !== null) return globalFavoritesCache;
+  globalFavoritesCache = migrateFavoritesFromLegacy();
+  globalFavoriteSlugs = new Set(globalFavoritesCache.map(f => f.slug));
+  return globalFavoritesCache;
+}
+
+function setGlobalFavorites(updated: FavoriteItem[]) {
+  globalFavoritesCache = updated;
+  globalFavoriteSlugs = new Set(updated.map(f => f.slug));
+  safeSetItem(STORAGE_KEYS.FAVORITES, JSON.stringify(updated));
+  favoriteListeners.forEach(l => l(updated));
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("storage"));
+  }
+}
+
+// Single cross-tab synchronization listener
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e) => {
+    if (!e.key || e.key === STORAGE_KEYS.FAVORITES) {
+      const stored = safeParseJSON<FavoriteItem[]>(safeGetItem(STORAGE_KEYS.FAVORITES), []);
+      globalFavoritesCache = stored;
+      globalFavoriteSlugs = new Set(stored.map(f => f.slug));
+      favoriteListeners.forEach(l => l(stored));
+    }
+    if (!e.key || e.key === STORAGE_KEYS.HISTORY) {
+      const stored = safeParseJSON<WatchHistoryItem[]>(safeGetItem(STORAGE_KEYS.HISTORY), []);
+      globalHistoryCache = stored;
+      historyListeners.forEach(l => l(stored));
+    }
+  });
+}
+
+// ============================================================
 // WATCH HISTORY HOOK
 // ============================================================
 
 export function useWatchHistory() {
-  const [history, setHistory] = useState<WatchHistoryItem[]>([]);
+  const [history, setHistory] = useState<WatchHistoryItem[]>(() => getGlobalHistory());
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const migrated = migrateHistoryFromLegacy();
-    setHistory(migrated);
+    setHistory(getGlobalHistory());
     setHydrated(true);
 
-    // Listen for storage changes from other tabs or same-window events
-    const handleStorage = (e: StorageEvent) => {
-      if (!e.key || e.key === STORAGE_KEYS.HISTORY) {
-        const stored = safeParseJSON<WatchHistoryItem[]>(
-          safeGetItem(STORAGE_KEYS.HISTORY),
-          []
-        );
-        setHistory(stored);
-      }
+    const listener = (newHistory: WatchHistoryItem[]) => {
+      setHistory(newHistory);
     };
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    historyListeners.add(listener);
+    return () => {
+      historyListeners.delete(listener);
+    };
   }, []);
 
   const addToHistory = useCallback((item: Omit<WatchHistoryItem, "watchedAt">): WatchHistoryItem[] => {
-    const current = safeParseJSON<WatchHistoryItem[]>(safeGetItem(STORAGE_KEYS.HISTORY), []);
+    const current = getGlobalHistory();
     const existing = current.find(h => h.slug === item.slug);
 
     // Merge: preserve existing playback progress if incoming item is just a basic shell
@@ -213,11 +269,7 @@ export function useWatchHistory() {
 
     const filtered = current.filter(h => h.slug !== item.slug);
     const updated = [mergedItem, ...filtered].slice(0, 50);
-    safeSetItem(STORAGE_KEYS.HISTORY, JSON.stringify(updated));
-    setHistory(updated);
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("storage"));
-    }
+    setGlobalHistory(updated);
     return updated;
   }, []);
 
@@ -232,7 +284,7 @@ export function useWatchHistory() {
       duration?: number;
     }
   ): WatchHistoryItem[] => {
-    const current = safeParseJSON<WatchHistoryItem[]>(safeGetItem(STORAGE_KEYS.HISTORY), []);
+    const current = getGlobalHistory();
     const existing = current.find(h => h.slug === slug);
     if (!existing) return current;
 
@@ -245,35 +297,24 @@ export function useWatchHistory() {
 
     const filtered = current.filter(h => h.slug !== slug);
     const updated = [updatedItem, ...filtered].slice(0, 50);
-    safeSetItem(STORAGE_KEYS.HISTORY, JSON.stringify(updated));
-    setHistory(updated);
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("storage"));
-    }
+    setGlobalHistory(updated);
     return updated;
   }, []);
 
   const removeFromHistory = useCallback((slug: string): WatchHistoryItem[] => {
-    const current = safeParseJSON<WatchHistoryItem[]>(safeGetItem(STORAGE_KEYS.HISTORY), []);
+    const current = getGlobalHistory();
     const updated = current.filter(h => h.slug !== slug);
-    safeSetItem(STORAGE_KEYS.HISTORY, JSON.stringify(updated));
-    setHistory(updated);
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("storage"));
-    }
+    setGlobalHistory(updated);
     return updated;
   }, []);
 
   const clearHistory = useCallback(() => {
     safeRemoveItem(STORAGE_KEYS.HISTORY);
-    setHistory([]);
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("storage"));
-    }
+    setGlobalHistory([]);
   }, []);
 
   const batchUpdateHistory = useCallback((patches: (Partial<WatchHistoryItem> & { slug: string })[]) => {
-    const current = safeParseJSON<WatchHistoryItem[]>(safeGetItem(STORAGE_KEYS.HISTORY), []);
+    const current = getGlobalHistory();
     let changed = false;
     const updated = current.map(item => {
       const patch = patches.find(p => p.slug === item.slug);
@@ -282,11 +323,7 @@ export function useWatchHistory() {
       return { ...item, ...patch };
     });
     if (changed) {
-      safeSetItem(STORAGE_KEYS.HISTORY, JSON.stringify(updated));
-      setHistory(updated);
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("storage"));
-      }
+      setGlobalHistory(updated);
     }
   }, []);
 
@@ -298,84 +335,63 @@ export function useWatchHistory() {
 // ============================================================
 
 export function useFavorites() {
-  const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
+  const [favorites, setFavorites] = useState<FavoriteItem[]>(() => getGlobalFavorites());
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const migrated = migrateFavoritesFromLegacy();
-    setFavorites(migrated);
+    setFavorites(getGlobalFavorites());
     setHydrated(true);
 
-    // Listen for storage changes from other tabs or same-window events
-    const handleStorage = (e: StorageEvent) => {
-      if (!e.key || e.key === STORAGE_KEYS.FAVORITES) {
-        const stored = safeParseJSON<FavoriteItem[]>(
-          safeGetItem(STORAGE_KEYS.FAVORITES),
-          []
-        );
-        setFavorites(stored);
-      }
+    const listener = (newFavs: FavoriteItem[]) => {
+      setFavorites(newFavs);
     };
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    favoriteListeners.add(listener);
+    return () => {
+      favoriteListeners.delete(listener);
+    };
   }, []);
 
   const addFavorite = useCallback((item: Omit<FavoriteItem, "addedAt">): FavoriteItem[] => {
-    const current = safeParseJSON<FavoriteItem[]>(safeGetItem(STORAGE_KEYS.FAVORITES), []);
-    if (current.some(f => f.slug === item.slug)) return current;
+    const current = getGlobalFavorites();
+    if (globalFavoriteSlugs.has(item.slug)) return current;
     const newItem: FavoriteItem = { ...item, addedAt: Date.now() };
     const updated = [newItem, ...current];
-    safeSetItem(STORAGE_KEYS.FAVORITES, JSON.stringify(updated));
-    setFavorites(updated);
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("storage"));
-    }
+    setGlobalFavorites(updated);
     return updated;
   }, []);
 
   const removeFavorite = useCallback((slug: string): FavoriteItem[] => {
-    const current = safeParseJSON<FavoriteItem[]>(safeGetItem(STORAGE_KEYS.FAVORITES), []);
+    const current = getGlobalFavorites();
     const updated = current.filter(f => f.slug !== slug);
-    safeSetItem(STORAGE_KEYS.FAVORITES, JSON.stringify(updated));
-    setFavorites(updated);
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("storage"));
-    }
+    setGlobalFavorites(updated);
     return updated;
   }, []);
 
   const toggleFavorite = useCallback((item: Omit<FavoriteItem, "addedAt">): FavoriteItem[] => {
-    const current = safeParseJSON<FavoriteItem[]>(safeGetItem(STORAGE_KEYS.FAVORITES), []);
-    const exists = current.some(f => f.slug === item.slug);
+    const current = getGlobalFavorites();
+    const exists = globalFavoriteSlugs.has(item.slug);
     let updated: FavoriteItem[];
     if (exists) {
       updated = current.filter(f => f.slug !== item.slug);
     } else {
       updated = [{ ...item, addedAt: Date.now() }, ...current];
     }
-    safeSetItem(STORAGE_KEYS.FAVORITES, JSON.stringify(updated));
-    setFavorites(updated);
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("storage"));
-    }
+    setGlobalFavorites(updated);
     return updated;
   }, []);
 
   const isFavorite = useCallback(
-    (slug: string) => favorites.some(f => f.slug === slug),
-    [favorites]
+    (slug: string) => globalFavoriteSlugs.has(slug),
+    []
   );
 
   const clearFavorites = useCallback(() => {
     safeRemoveItem(STORAGE_KEYS.FAVORITES);
-    setFavorites([]);
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("storage"));
-    }
+    setGlobalFavorites([]);
   }, []);
 
   const batchUpdateFavorites = useCallback((patches: (Partial<FavoriteItem> & { slug: string })[]) => {
-    const current = safeParseJSON<FavoriteItem[]>(safeGetItem(STORAGE_KEYS.FAVORITES), []);
+    const current = getGlobalFavorites();
     let changed = false;
     const updated = current.map(item => {
       const patch = patches.find(p => p.slug === item.slug);
@@ -384,11 +400,7 @@ export function useFavorites() {
       return { ...item, ...patch };
     });
     if (changed) {
-      safeSetItem(STORAGE_KEYS.FAVORITES, JSON.stringify(updated));
-      setFavorites(updated);
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("storage"));
-      }
+      setGlobalFavorites(updated);
     }
   }, []);
 

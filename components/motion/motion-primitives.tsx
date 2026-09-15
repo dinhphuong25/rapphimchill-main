@@ -90,7 +90,7 @@ export const MotionCard = forwardRef<
               transition: { duration: 0.1 },
             }
       }
-      className={cn("transform-gpu will-change-transform select-none", className)}
+      className={cn("transform-gpu select-none", className)}
       {...props}
     >
       {children}

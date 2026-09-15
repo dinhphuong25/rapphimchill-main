@@ -7,7 +7,6 @@ import { Play, Star, Heart, Film } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFavorites } from "@/hooks/useLocalStorage";
 import { useUserAuth } from "@/context/user-auth-context";
-import { MotionCard } from "@/components/motion/motion-primitives";
 import { getMovieImageCandidates, STATIC_BLUR_DATA_URL } from "@/lib/image-helper";
 
 export interface MovieCardEditorialProps {
@@ -91,9 +90,9 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
   const progressPercent = hasProgress ? Math.min(100, Math.max(2, (movie.currentTime! / movie.duration!) * 100)) : 0;
 
   return (
-    <MotionCard className="group relative flex flex-col h-full select-none" style={{ contentVisibility: "auto", containIntrinsicSize: "200px 300px" }}>
+    <div className="group relative flex flex-col h-full select-none transition-transform duration-200 ease-out hover:-translate-y-1.5 hover:scale-[1.02] active:scale-[0.98]">
       {/* Poster Image Container Wrapper */}
-      <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-cinema-surface border border-white/10 group-hover:border-brand-green/60 transition-[border-color,box-shadow] duration-300 shadow-xl group-hover:shadow-[0_12px_32px_rgba(32,214,107,0.25)] transform-gpu">
+      <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-cinema-surface border border-white/10 group-hover:border-brand-green/60 transition-[border-color,box-shadow] duration-300 shadow-xl group-hover:shadow-[0_12px_32px_rgba(32,214,107,0.25)]">
         
         <Link
           href={watchHref}
@@ -109,6 +108,7 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
             blurDataURL={STATIC_BLUR_DATA_URL}
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
             quality={75}
+            decoding="async"
             onError={handleImageError}
             className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
@@ -152,7 +152,7 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
         )}
 
         {/* Center Hover Play Button */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40 backdrop-blur-[2px]">
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/50">
           <div className="w-12 h-12 rounded-full bg-brand-green flex items-center justify-center text-cinema-bg shadow-[0_0_22px_rgba(32,214,107,0.6)] scale-90 group-hover:scale-100 transition-transform duration-200">
             <Play className="w-5 h-5 fill-cinema-bg ml-0.5" />
           </div>
@@ -231,7 +231,7 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
           {movie.origin_name && <span className="truncate font-sans text-right">{movie.origin_name}</span>}
         </div>
       </div>
-    </MotionCard>
+    </div>
   );
 });
 

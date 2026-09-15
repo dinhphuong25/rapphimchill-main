@@ -106,6 +106,7 @@ const MovieListClient = ({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const lastKeyRef = useRef(currentKey);
+  const isInitialMount = useRef(true);
 
   const proxyFetch = (url: string) =>
     apiCache.fetchWithCache(url, () =>
@@ -168,6 +169,14 @@ const MovieListClient = ({
   };
 
   useEffect(() => {
+    // Skip duplicate background fetch on initial SSR mount
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      if (initialMovies && initialMovies.length > 0) {
+        return;
+      }
+    }
+
     lastKeyRef.current = currentKey;
 
     // Check instant cache first: INSTANT ZERO-LATENCY TAB SWITCHING
@@ -177,8 +186,6 @@ const MovieListClient = ({
       setPageInfo(cached.pagination);
       setLoading(false);
       setIsTransitioning(false);
-      // Revalidate in background silently (Stale-While-Revalidate)
-      fetchMovies(currentKey, true);
       return;
     }
 
