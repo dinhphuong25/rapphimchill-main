@@ -64,7 +64,7 @@ export default function NotificationBanner() {
             <Bell className="w-5 h-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-bold text-white mb-1">Bật thông báo phim mới?</h4>
+            <p className="text-sm font-bold text-white mb-1">Bật thông báo phim mới?</p>
             <p className="text-xs text-white/50 leading-relaxed">
               Nhận thông báo ngay khi có phim mới cập nhật, không bỏ lỡ bộ phim nào!
             </p>

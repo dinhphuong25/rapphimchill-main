@@ -1012,6 +1012,7 @@ function SidebarContent({
                 <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
                 <input
                   type="text"
+                  aria-label="Lọc thể loại phim"
                   style={{ fontSize: "16px" }}
                   value={categorySearchQuery}
                   onChange={(e) => setCategorySearchQuery(e.target.value)}
@@ -1153,6 +1154,7 @@ function SidebarContent({
                 <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
                 <input
                   type="text"
+                  aria-label="Lọc quốc gia phim"
                   style={{ fontSize: "16px" }}
                   value={countrySearchQuery}
                   onChange={(e) => setCountrySearchQuery(e.target.value)}
@@ -1343,6 +1345,7 @@ function SidebarContent({
                 <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
                 <input
                   type="text"
+                  aria-label="Lọc năm phát hành phim"
                   style={{ fontSize: "16px" }}
                   value={yearSearchQuery}
                   onChange={(e) => setYearSearchQuery(e.target.value)}

@@ -47,6 +47,7 @@ export const Top10Card = memo(function Top10Card({ movie, rank }: Top10CardProps
       {/* Overlapping Poster Image */}
       <Link
         href={`/watch?slug=${movie.slug}`}
+        aria-label={`Xem phim ${movie.name} - Top ${rank}`}
         className="relative z-10 w-full aspect-[2/3] rounded-xl overflow-hidden bg-cinema-surface border border-white/10 group-hover:border-brand-green/50 transition-[transform,border-color,box-shadow] duration-300 group-hover:-translate-y-2 group-hover:scale-[1.02] shadow-xl group-hover:shadow-[0_10px_30px_rgba(32,214,107,0.25)] ml-8 transform-gpu"
       >
         {currentSrc ? (
@@ -84,7 +85,7 @@ export const Top10Card = memo(function Top10Card({ movie, rank }: Top10CardProps
 
         {/* Title Overlay */}
         <div className="absolute bottom-2 left-2 right-2 z-10">
-          <h4 className="text-xs font-bold text-white truncate">{movie.name}</h4>
+          <h3 className="text-xs font-bold text-white truncate">{movie.name}</h3>
         </div>
       </Link>
     </div>

@@ -96,6 +96,7 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
         
         <Link
           href={watchHref}
+          aria-label={`Xem phim ${movie.name}`}
           className="absolute inset-0 z-0 block"
         >
         {currentSrc ? (
@@ -219,13 +220,15 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
 
       {/* Info Under Poster */}
       <div className="mt-2.5 flex flex-col">
-        <Link
-          href={watchHref}
-          className="text-xs font-bold text-cinema-text hover:text-brand-green transition-colors line-clamp-1 flex items-center justify-between group/title"
-        >
-          <span className="truncate">{movie.name}</span>
+        <h3 className="text-xs font-bold text-cinema-text hover:text-brand-green transition-colors line-clamp-1 flex items-center justify-between group/title">
+          <Link
+            href={watchHref}
+            className="truncate"
+          >
+            {movie.name}
+          </Link>
           <span className="font-mono text-brand-green opacity-0 group-hover/title:opacity-100 transition-opacity ml-1 shrink-0 text-sm">›</span>
-        </Link>
+        </h3>
         <div className="flex items-center justify-between gap-2 text-[11px] font-mono text-cinema-text-dim mt-0.5">
           <span className="shrink-0">{movie.year || "2025"}</span>
           {movie.origin_name && <span className="truncate font-sans text-right">{movie.origin_name}</span>}

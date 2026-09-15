@@ -16,6 +16,8 @@ import {
   getCachedTopicMovies,
   getCachedFilteredMovies,
 } from "@/lib/data";
+import ReactDOM from "react-dom";
+import { getMovieImageCandidates } from "@/lib/image-helper";
 import { getSiteConfig } from "@/lib/site-config";
 
 type HomeProps = {
@@ -130,6 +132,15 @@ export default async function Home({ searchParams }: HomeProps) {
       ...t,
       movies: topicMoviesList[idx] || [],
     }));
+
+    // Preload hero LCP image directly in initial SSR HTML head
+    const firstHero = (featuredMovies && featuredMovies[0]) || (initialMovies && initialMovies[0]);
+    if (firstHero) {
+      const candidates = getMovieImageCandidates(firstHero, "backdrop");
+      if (candidates && candidates[0]) {
+        ReactDOM.preload(candidates[0], { as: "image", fetchPriority: "high" });
+      }
+    }
   }
 
   const siteConfig = getSiteConfig();
@@ -137,7 +148,7 @@ export default async function Home({ searchParams }: HomeProps) {
   return (
     <>
       {hasFilters ? (
-        <div className="max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-12 xl:px-16 pb-20 pt-16 sm:pt-24">
+        <main className="max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-12 xl:px-16 pb-20 pt-16 sm:pt-24">
           <MovieListClient
             index={index}
             category={category}
@@ -148,7 +159,7 @@ export default async function Home({ searchParams }: HomeProps) {
             initialMovies={initialFilteredMovies}
             initialPageInfo={initialPageInfo}
           />
-        </div>
+        </main>
       ) : (
         <HomeClient
           initialMovies={initialMovies}

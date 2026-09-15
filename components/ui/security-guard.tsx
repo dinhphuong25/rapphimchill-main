@@ -64,7 +64,6 @@ export default function SecurityGuard() {
     // 4. In cảnh báo Console & Thông cáo bản quyền sở hữu trí tuệ
     const runConsoleWarning = () => {
       try {
-        console.clear();
         console.log(
           "%c🎬 HI PHIM - THÔNG CÁO BẢN QUYỀN & SỞ HỮU TRÍ TUỆ",
           "color: #22c55e; font-size: 20px; font-weight: 900; padding: 8px; background: #000; border: 2px solid #22c55e; border-radius: 6px;"

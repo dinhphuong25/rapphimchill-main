@@ -71,6 +71,7 @@ export const MovieSection = memo(function MovieSection({
           <div className="col-span-2 sm:col-span-2 lg:col-span-2 group relative flex flex-col h-full select-none">
             <Link
               href={`/watch?slug=${filteredMovies[0].slug}`}
+              aria-label={`Xem phim tiêu điểm ${filteredMovies[0].name}`}
               className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-cinema-surface border border-brand-green/30 group-hover:border-brand-green/60 transition-[transform,border-color,box-shadow] duration-300 group-hover:-translate-y-2 group-hover:scale-[1.02] shadow-xl group-hover:shadow-[0_10px_30px_rgba(32,214,107,0.25)] block transform-gpu"
             >
               <FeaturedFocusImage movie={filteredMovies[0]} />
@@ -89,12 +90,13 @@ export const MovieSection = memo(function MovieSection({
             </Link>
 
             <div className="mt-3 flex flex-col px-1">
-              <Link
-                href={`/watch?slug=${filteredMovies[0].slug}`}
-                className="text-sm sm:text-base font-bold text-white hover:text-brand-green transition-colors line-clamp-1"
-              >
-                {filteredMovies[0].name}
-              </Link>
+              <h3 className="text-sm sm:text-base font-bold text-white hover:text-brand-green transition-colors line-clamp-1">
+                <Link
+                  href={`/watch?slug=${filteredMovies[0].slug}`}
+                >
+                  {filteredMovies[0].name}
+                </Link>
+              </h3>
               <div className="flex items-center text-xs text-cinema-text-dim mt-1">
                 <span>{filteredMovies[0].year || "2025"}</span>
                 {filteredMovies[0].origin_name && <span className="mx-2 text-white/20">•</span>}

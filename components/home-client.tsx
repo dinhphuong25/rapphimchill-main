@@ -87,7 +87,7 @@ export default function HomeClient({
   }, [initialTopicsWithMovies, topicsData]);
 
   return (
-    <div className="pb-16">
+    <main className="pb-16">
       {/* Hero Section (Asymmetric Editorial Layout) */}
       {heroMoviesList.length > 0 && (
         <HeroSection movies={heroMoviesList} />
@@ -154,6 +154,6 @@ export default function HomeClient({
           />
         )}
       </div>
-    </div>
+    </main>
   );
 }

@@ -19,25 +19,25 @@ export function PWAInstaller() {
     }
 
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', async () => {
-        try {
-          const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-          registration.addEventListener('updatefound', () => {
-            const newWorker = registration.installing;
-            if (newWorker) {
-              newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  if (confirm('Có phiên bản mới! Tải lại trang?')) {
-                    window.location.reload();
-                  }
-                }
-              });
-            }
-          });
-        } catch {
-          // SW registration failed silently
+      const registerSW = () => {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+      };
+
+      if (document.readyState === 'complete') {
+        if ('requestIdleCallback' in window) {
+          (window as any).requestIdleCallback(registerSW, { timeout: 3000 });
+        } else {
+          setTimeout(registerSW, 1500);
         }
-      });
+      } else {
+        window.addEventListener('load', () => {
+          if ('requestIdleCallback' in window) {
+            (window as any).requestIdleCallback(registerSW, { timeout: 3000 });
+          } else {
+            setTimeout(registerSW, 1500);
+          }
+        }, { once: true });
+      }
     }
   }, []);
 
@@ -46,27 +46,33 @@ export function PWAInstaller() {
 
 export function PerformanceMonitor() {
   useEffect(() => {
-    // Only report vitals - no console spam in production
-    import('web-vitals').then(({ onCLS, onINP, onFCP, onLCP, onTTFB }) => {
-      const report = (metric: any) => {
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`[Vitals] ${metric.name}:`, Math.round(metric.value), 'ms');
-        }
-        // GTM integration
-        if (typeof window !== 'undefined' && (window as any).dataLayer) {
-          (window as any).dataLayer.push({
-            event: 'web_vitals',
-            metric_name: metric.name,
-            metric_value: Math.round(metric.name === 'CLS' ? metric.value * 1000 : metric.value),
-          });
-        }
-      };
-      onCLS(report);
-      onINP(report);
-      onFCP(report);
-      onLCP(report);
-      onTTFB(report);
-    });
+    const initVitals = () => {
+      import('web-vitals').then(({ onCLS, onINP, onFCP, onLCP, onTTFB }) => {
+        const report = (metric: any) => {
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`[Vitals] ${metric.name}:`, Math.round(metric.value), 'ms');
+          }
+          if (typeof window !== 'undefined' && (window as any).dataLayer) {
+            (window as any).dataLayer.push({
+              event: 'web_vitals',
+              metric_name: metric.name,
+              metric_value: Math.round(metric.name === 'CLS' ? metric.value * 1000 : metric.value),
+            });
+          }
+        };
+        onCLS(report);
+        onINP(report);
+        onFCP(report);
+        onLCP(report);
+        onTTFB(report);
+      }).catch(() => {});
+    };
+
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(initVitals, { timeout: 4000 });
+    } else {
+      setTimeout(initVitals, 2000);
+    }
   }, []);
 
   return null;

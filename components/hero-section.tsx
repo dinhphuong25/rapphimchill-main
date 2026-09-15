@@ -510,6 +510,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                   <button
                     key={movie.slug}
                     onClick={() => goTo(idx)}
+                    aria-label={`Chọn phim nổi bật ${movie.name}`}
                     className={cn(
                       "relative rounded-2xl overflow-hidden transition-[width,height,opacity,border-color] duration-300 text-left group border shadow-lg shrink-0 active:scale-95",
                       isActive
@@ -544,9 +545,9 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                           <span className="text-[9px] font-black text-brand-green uppercase tracking-widest drop-shadow-md">
                             ĐANG XEM
                           </span>
-                          <h4 className="text-xs font-bold text-white truncate drop-shadow-md">
+                          <p className="text-xs font-bold text-white truncate drop-shadow-md">
                             {movie.name}
-                          </h4>
+                          </p>
                         </div>
                         {/* Auto-Slide Progress Bar */}
                         <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-20">
