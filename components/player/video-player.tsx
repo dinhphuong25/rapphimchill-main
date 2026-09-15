@@ -1806,10 +1806,10 @@ export default function VideoPlayer({
             </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
-            {/* Resolution indicator pill */}
-            <span className="hidden sm:inline-flex text-[10px] font-black text-brand-green bg-brand-green/10 border border-brand-green/25 px-2 py-0.5 rounded-full uppercase tracking-wider select-none">
+            {/* Resolution indicator pill - Tạm ẩn theo yêu cầu */}
+            {/* <span className="hidden sm:inline-flex text-[10px] font-black text-brand-green bg-brand-green/10 border border-brand-green/25 px-2 py-0.5 rounded-full uppercase tracking-wider select-none">
               {quality === -1 ? (currentLevelPlaying >= 0 && qualities[currentLevelPlaying] ? `${qualities[currentLevelPlaying].height}p Auto` : "FHD 1080p") : `${qualities.find(q => q.level === quality)?.height || 1080}p FHD`}
-            </span>
+            </span> */}
 
             {/* PiP & Settings Buttons - Ẩn theo yêu cầu */}
 
