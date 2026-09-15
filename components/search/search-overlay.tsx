@@ -474,6 +474,7 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                 <input
                   ref={inputRef}
                   type="text"
+                  aria-label="Tìm kiếm phim, diễn viên, thể loại"
                   value={query}
                   onChange={(e) => {
                     setQuery(e.target.value);
