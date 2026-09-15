@@ -68,7 +68,7 @@ export const metadata: Metadata = {
   ],
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://hiphim.biz"),
   openGraph: {
-    title: "Hi Phim - Xem Phim Online HD Miễn Phí",
+    title: "Hi Phim - Xem phim theo cách của bạn",
     description:
       "Kho 50,000+ phim bộ, phim lẻ chiếu rạp, anime vietsub mới nhất 2026. Tốc độ cao, chuẩn Full HD/4K, cập nhật liên tục hàng ngày.",
     url: "https://hiphim.biz",
@@ -80,15 +80,15 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "Hi Phim - Xem Phim Online HD Miễn Phí",
+        alt: "Hi Phim - Xem phim theo cách của bạn",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
     site: "@hiphim",
-    title: "Hi Phim - Xem Phim Online HD Miễn Phí",
-    description: "Kho 50,000+ phim HD. Phim bộ, phim lẻ, anime vietsub mới nhất 2026.",
+    title: "Hi Phim - Xem phim theo cách của bạn",
+    description: "Kho 50,000+ phim HD. Phim bộ, phim lẻ chiếu rạp, anime vietsub mới nhất 2026.",
     images: ["/opengraph-image"],
   },
   applicationName: "Hi Phim",
