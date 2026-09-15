@@ -27,7 +27,7 @@ import { getMovieImageCandidates } from "@/lib/image-helper";
 function HeroThumbImage({ movie, isActive }: { movie: any; isActive: boolean }) {
   const [candidateIdx, setCandidateIdx] = useState(0);
   const [hasError, setHasError] = useState(false);
-  const candidates = useMemo(() => getMovieImageCandidates(movie, "thumb"), [movie]);
+  const candidates = useMemo(() => getMovieImageCandidates(movie, "backdrop"), [movie]);
   const src = !hasError && candidates.length > 0 ? candidates[candidateIdx] : null;
 
   if (!src) {

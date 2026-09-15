@@ -19,11 +19,6 @@ const nextConfig: NextConfig = {
     deviceSizes: [360, 480, 640, 768, 1024, 1280, 1440, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [
-      { protocol: "https", hostname: "*.wp.com", pathname: "/**" },
-      { protocol: "https", hostname: "i0.wp.com", pathname: "/**" },
-      { protocol: "https", hostname: "i1.wp.com", pathname: "/**" },
-      { protocol: "https", hostname: "i2.wp.com", pathname: "/**" },
-      { protocol: "https", hostname: "i3.wp.com", pathname: "/**" },
       { protocol: "https", hostname: "phimimg.com", pathname: "/**" },
       { protocol: "https", hostname: "*.phimimg.com", pathname: "/**" },
       { protocol: "https", hostname: "img.ophim.live", pathname: "/**" },

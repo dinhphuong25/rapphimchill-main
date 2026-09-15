@@ -141,15 +141,13 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Hi Phim" />
         <link rel="apple-touch-icon" href="/favicon.png" />
 
-        {/* DNS Preconnect — Tối ưu tối đa 3 điểm kết nối gốc quan trọng nhất (dưới 4 để không bị cảnh báo) */}
-        <link rel="preconnect" href="https://i0.wp.com" crossOrigin="anonymous" />
+        {/* DNS Preconnect — Tối ưu tối đa 2 điểm kết nối gốc quan trọng nhất */}
         <link rel="preconnect" href="https://phimimg.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://phimapi.com" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://i1.wp.com" />
-        <link rel="dns-prefetch" href="https://i2.wp.com" />
         <link rel="dns-prefetch" href="https://phimimg.com" />
         <link rel="dns-prefetch" href="https://phimapi.com" />
         <link rel="dns-prefetch" href="https://img.ophim.live" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://player.phimapi.com" />
         <link rel="dns-prefetch" href="https://s1.phim1280.tv" />
         <link rel="dns-prefetch" href="https://s2.phim1280.tv" />

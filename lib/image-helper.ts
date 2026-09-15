@@ -45,29 +45,6 @@ export function normalizeImageUrl(
 }
 
 /**
- * Tối ưu hóa ảnh phim: Chuyển đổi sang WebP nén siêu nhẹ (từ 1.35MB -> 15KB)
- * qua CDN toàn cầu WordPress Photon với thời gian cache 2 năm tại Edge.
- */
-export function getOptimizedImageUrl(
-  url: string,
-  type: "poster" | "backdrop" | "thumb" = "poster"
-): string {
-  if (!url || typeof url !== "string") return "";
-  if (url.startsWith("data:") || url.endsWith(".svg") || url.includes(".wp.com")) {
-    return url;
-  }
-
-  const isCdn = url.includes("phimimg.com") || url.includes("ophim");
-  if (!isCdn) return url;
-
-  const width = type === "poster" ? 360 : type === "thumb" ? 220 : 1080;
-  const cleanUrl = url.replace(/^https?:\/\//i, "");
-  const hash = cleanUrl.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  const shard = hash % 3;
-  return `https://i${shard}.wp.com/${cleanUrl}?w=${width}&strip=all`;
-}
-
-/**
  * Returns prioritized list of candidate URLs for a movie image.
  * In PhimApi / KKPhim / OPhim:
  * - poster_url is the portrait 2:3 vertical poster (e.g., 600x900, 1000x1500)
@@ -78,7 +55,7 @@ export function getOptimizedImageUrl(
  */
 export function getMovieImageCandidates(
   movie?: { thumb_url?: string | null; poster_url?: string | null } | null,
-  type: "poster" | "backdrop" | "thumb" = "poster"
+  type: "poster" | "backdrop" = "poster"
 ): string[] {
   if (!movie) return [];
 
@@ -112,13 +89,6 @@ export function getMovieImageCandidates(
       if (normalized.includes("danviet.vn") || normalized.includes("i.ex-cdn.com")) {
         continue;
       }
-
-      // Ưu tiên bản WebP tối ưu kích thước siêu nhẹ trước
-      const optimized = getOptimizedImageUrl(normalized, type);
-      if (optimized && optimized !== normalized && !candidates.includes(optimized)) {
-        candidates.push(optimized);
-      }
-
       candidates.push(normalized);
 
       // Add mirror CDN fallback ONLY for known ophim domains that share identical paths
