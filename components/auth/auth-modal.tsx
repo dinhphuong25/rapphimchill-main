@@ -220,7 +220,6 @@ export default function AuthModal() {
                   <input
                     type="email"
                     required
-                    aria-label="Địa chỉ email đăng nhập"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@example.com"
@@ -236,7 +235,6 @@ export default function AuthModal() {
                   <input
                     type="password"
                     required
-                    aria-label="Mật khẩu đăng nhập"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
@@ -288,7 +286,6 @@ export default function AuthModal() {
                   <input
                     type="text"
                     required
-                    aria-label="Họ và tên của bạn"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Họ và tên của bạn"
@@ -307,7 +304,6 @@ export default function AuthModal() {
                   <input
                     type="email"
                     required
-                    aria-label="Email Google đăng ký"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="ten_ban@gmail.com"
@@ -324,7 +320,6 @@ export default function AuthModal() {
                     type="password"
                     required
                     minLength={6}
-                    aria-label="Mật khẩu đăng ký"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
@@ -380,7 +375,6 @@ export default function AuthModal() {
                     inputMode="numeric"
                     required
                     autoFocus
-                    aria-label="Mã xác thực OTP 6 số"
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
                     placeholder="••••••"
