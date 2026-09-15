@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "Hi Phim - Xem phim theo cách của bạn";
+export const alt = "Hi Phim - Xem Phim Online HD Miễn Phí";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
