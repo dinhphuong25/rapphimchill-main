@@ -20,7 +20,7 @@ const getMovie = async (slug: string) => {
       return api.get(slug);
     },
     [`phim-detail-${slug}`],
-    { revalidate: 3600 } // 1 hour caching for movie detail
+    { revalidate: 60, tags: ["movies", `movie-${slug}`] }
   )();
 };
 

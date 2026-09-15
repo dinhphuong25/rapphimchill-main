@@ -16,7 +16,7 @@ const getMovieData = (slug: string) =>
       return api.get(slug);
     },
     [`movie-data-${slug}`],
-    { revalidate: 600, tags: [`movie-${slug}`] }
+    { revalidate: 60, tags: ["movies", `movie-${slug}`] }
   )();
 
 export async function generateMetadata({ searchParams }: any) {

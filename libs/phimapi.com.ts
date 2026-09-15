@@ -34,7 +34,7 @@ export default class PhimApi {
     const url = `${this.apiUrl}/phim/${slug}`;
     const response = await fetch(url, {
       headers: this.fetchHeaders(),
-      next: { revalidate: 600 }, // Cache 10 phút — phục vụ hàng nghìn user tức thì
+      next: { revalidate: 60, tags: ["movies", `movie-${slug}`] },
     });
     if (!response.ok) throw new Error(`API error: ${response.status}`);
     const data = await response.json();
@@ -104,7 +104,7 @@ export default class PhimApi {
     const url = `${this.apiUrl}/v1/api/danh-sach/phim-moi-cap-nhat?page=${index}&limit=${limit}`;
     const response = await fetch(url, {
       headers: this.fetchHeaders(),
-      next: { revalidate: 60 }, // Cache 60s để luôn cập nhật tập mới
+      next: { revalidate: 60, tags: ["new-updates", "movies"] }, // Cache 60s để luôn cập nhật tập mới
     });
     if (!response.ok) throw new Error(`API error: ${response.status}`);
     const data = await response.json();
