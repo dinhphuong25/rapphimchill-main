@@ -17,11 +17,12 @@ export default async function Image() {
           height: "100%",
           display: "flex",
           flexDirection: "column",
-          alignItems: "center",
+          alignItems: "flex-start",
           justifyContent: "center",
-          backgroundColor: "#050807",
+          padding: "72px 88px",
+          backgroundColor: "#06100b",
           backgroundImage:
-            "radial-gradient(circle at 50% 30%, rgba(32, 214, 107, 0.18) 0%, rgba(5, 8, 7, 0.95) 70%)",
+            "radial-gradient(circle at 78% 42%, rgba(32, 214, 107, 0.22) 0%, rgba(6, 16, 11, 0) 38%), linear-gradient(135deg, #06100b 0%, #0a1b12 52%, #030705 100%)",
           fontFamily: "sans-serif",
           position: "relative",
           overflow: "hidden",
@@ -38,7 +39,7 @@ export default async function Image() {
             opacity: 0.05,
             backgroundImage:
               "linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
+            backgroundSize: "48px 48px",
           }}
         />
 
@@ -47,8 +48,8 @@ export default async function Image() {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "8px",
-            padding: "8px 24px",
+            gap: "10px",
+            padding: "8px 18px",
             borderRadius: "9999px",
             backgroundColor: "rgba(32, 214, 107, 0.15)",
             border: "1px solid rgba(32, 214, 107, 0.35)",
@@ -57,10 +58,10 @@ export default async function Image() {
             fontWeight: 800,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            marginBottom: "28px",
+            marginBottom: "26px",
           }}
         >
-          🎬 KHO PHIM ONLINE CHẤT LƯỢNG CAO #1 VIỆT NAM
+          KHO PHIM ONLINE CHẤT LƯỢNG CAO #1 VIỆT NAM
         </div>
 
         {/* Brand Logo & Name */}
@@ -68,8 +69,8 @@ export default async function Image() {
           style={{
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            marginBottom: "20px",
+            justifyContent: "flex-start",
+            marginBottom: "18px",
           }}
         >
           <span
@@ -77,7 +78,7 @@ export default async function Image() {
               fontSize: "76px",
               fontWeight: 900,
               color: "#FFFFFF",
-              letterSpacing: "-0.02em",
+              letterSpacing: "0.01em",
             }}
           >
             Hi
@@ -87,8 +88,8 @@ export default async function Image() {
               fontSize: "76px",
               fontWeight: 900,
               color: "#20D66B",
-              marginLeft: "16px",
-              letterSpacing: "-0.02em",
+              marginLeft: "12px",
+              letterSpacing: "0.01em",
             }}
           >
             Phim
@@ -98,13 +99,13 @@ export default async function Image() {
         {/* Slogan */}
         <div
           style={{
-            fontSize: "28px",
+            fontSize: "25px",
             fontWeight: 600,
             color: "rgba(255, 255, 255, 0.75)",
-            textAlign: "center",
-            maxWidth: "850px",
+            textAlign: "left",
+            maxWidth: "820px",
             lineHeight: 1.4,
-            marginBottom: "36px",
+            marginBottom: "34px",
           }}
         >
           Xem Phim Bộ, Phim Lẻ, Chiếu Rạp & Anime Vietsub Miễn Phí Chuẩn Full HD / 4K
@@ -115,50 +116,50 @@ export default async function Image() {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "16px",
+            gap: "12px",
           }}
         >
           <div
             style={{
               display: "flex",
-              padding: "10px 22px",
-              borderRadius: "14px",
+              padding: "9px 16px",
+              borderRadius: "10px",
               backgroundColor: "rgba(255, 255, 255, 0.06)",
               border: "1px solid rgba(255, 255, 255, 0.12)",
               color: "#FFFFFF",
-              fontSize: "18px",
+              fontSize: "16px",
               fontWeight: 700,
             }}
           >
-            ⚡ Tốc Độ Cao 0.8s
+            TỐC ĐỘ CAO 0.8s
           </div>
           <div
             style={{
               display: "flex",
-              padding: "10px 22px",
-              borderRadius: "14px",
+              padding: "9px 16px",
+              borderRadius: "10px",
               backgroundColor: "rgba(255, 255, 255, 0.06)",
               border: "1px solid rgba(255, 255, 255, 0.12)",
               color: "#FFFFFF",
-              fontSize: "18px",
+              fontSize: "16px",
               fontWeight: 700,
             }}
           >
-            ✨ 50,000+ Tập Phim
+            50,000+ TẬP PHIM
           </div>
           <div
             style={{
               display: "flex",
-              padding: "10px 22px",
-              borderRadius: "14px",
+              padding: "9px 16px",
+              borderRadius: "10px",
               backgroundColor: "rgba(255, 255, 255, 0.06)",
               border: "1px solid rgba(255, 255, 255, 0.12)",
               color: "#FFFFFF",
-              fontSize: "18px",
+              fontSize: "16px",
               fontWeight: 700,
             }}
           >
-            🍿 Không Quảng Cáo
+            KHÔNG QUẢNG CÁO
           </div>
         </div>
 

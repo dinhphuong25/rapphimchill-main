@@ -77,7 +77,7 @@ export const metadata: Metadata = {
     locale: "vi_VN",
     images: [
       {
-        url: "/og-image.png",
+        url: "/opengraph-image",
         width: 1200,
         height: 630,
         alt: "Hi Phim - Xem Phim Online HD Miễn Phí",
@@ -89,7 +89,7 @@ export const metadata: Metadata = {
     site: "@hiphim",
     title: "Hi Phim - Xem Phim Online HD Miễn Phí",
     description: "Kho 50,000+ phim HD. Phim bộ, phim lẻ, anime vietsub mới nhất 2026.",
-    images: ["/og-image.png"],
+    images: ["/opengraph-image"],
   },
   applicationName: "Hi Phim",
   referrer: "origin-when-cross-origin",
