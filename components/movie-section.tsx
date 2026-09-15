@@ -29,7 +29,7 @@ export const MovieSection = memo(function MovieSection({
   if (!filteredMovies || filteredMovies.length === 0) return null;
 
   return (
-    <section className="py-2 select-none">
+    <section className="py-2 select-none" style={{ contentVisibility: "auto", containIntrinsicSize: "auto 450px" }}>
       {/* Editorial Header */}
       <div className="flex items-center justify-between gap-4 mb-5">
         <div className="flex items-center gap-3 min-w-0">
@@ -71,7 +71,6 @@ export const MovieSection = memo(function MovieSection({
           <div className="col-span-2 sm:col-span-2 lg:col-span-2 group relative flex flex-col h-full select-none">
             <Link
               href={`/watch?slug=${filteredMovies[0].slug}`}
-              aria-label={`Xem phim tiêu điểm ${filteredMovies[0].name}`}
               className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-cinema-surface border border-brand-green/30 group-hover:border-brand-green/60 transition-[transform,border-color,box-shadow] duration-300 group-hover:-translate-y-2 group-hover:scale-[1.02] shadow-xl group-hover:shadow-[0_10px_30px_rgba(32,214,107,0.25)] block transform-gpu"
             >
               <FeaturedFocusImage movie={filteredMovies[0]} />

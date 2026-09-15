@@ -19,14 +19,13 @@ import AppShell from "@/components/layout/app-shell";
 import { UserAuthProvider } from "@/context/user-auth-context";
 import AuthModal from "@/components/auth/auth-modal";
 
-// Be Vietnam Pro — font hỗ trợ tiếng Việt tốt nhất, tối ưu tải nhanh
+// Be Vietnam Pro — font hỗ trợ tiếng Việt tốt nhất, sans-serif hiện đại
 const beVietnam = Be_Vietnam_Pro({
-  weight: ["400", "600", "700"],
+  weight: ["400", "500", "600", "700", "900"],
   subsets: ["latin", "vietnamese"],
   variable: "--font-be-vietnam",
   display: "swap",
   preload: true,
-  adjustFontFallback: true,
   fallback: ["system-ui", "-apple-system", "sans-serif"],
 });
 
@@ -141,18 +140,28 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Hi Phim" />
         <link rel="apple-touch-icon" href="/favicon.png" />
 
-        {/* DNS Preconnect — Tối ưu tối đa 2 điểm kết nối gốc quan trọng nhất */}
+        {/* DNS Preconnect — giảm độ trễ kết nối */}
         <link rel="preconnect" href="https://phimimg.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://phimapi.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://phimimg.com" />
-        <link rel="dns-prefetch" href="https://phimapi.com" />
         <link rel="dns-prefetch" href="https://img.ophim.live" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://player.phimapi.com" />
+        <link rel="dns-prefetch" href="https://phimapi.com" />
         <link rel="dns-prefetch" href="https://s1.phim1280.tv" />
         <link rel="dns-prefetch" href="https://s2.phim1280.tv" />
         <link rel="dns-prefetch" href="https://s3.phim1280.tv" />
+        <link rel="dns-prefetch" href="https://s4.phim1280.tv" />
         <link rel="dns-prefetch" href="https://opstream.com" />
+        <link rel="dns-prefetch" href="https://vip.opstream16.com" />
+        <link rel="dns-prefetch" href="https://vip.opstream15.com" />
+        <link rel="dns-prefetch" href="https://vip.opstream14.com" />
+        <link rel="dns-prefetch" href="https://vip.opstream13.com" />
+        <link rel="dns-prefetch" href="https://vip.opstream12.com" />
+        <link rel="dns-prefetch" href="https://vip.opstream11.com" />
+        <link rel="dns-prefetch" href="https://vip.opstream10.com" />
+        <link rel="dns-prefetch" href="https://vip.opstream9.com" />
 
         {/* Facebook App ID */}
         <meta property="fb:app_id" content={process.env.NEXT_PUBLIC_FB_APP_ID || "10000000000000"} />
@@ -165,6 +174,25 @@ export default function RootLayout({
               *,*::before,*::after{box-sizing:border-box}
               html{line-height:1.5;-webkit-text-size-adjust:100%;overflow-x:hidden}
               body{min-height:100dvh;background:#050a0f;color:#f7f8f9;margin:0}
+            `,
+          }}
+        />
+
+        {/* Theme init — blocking để tránh flash */}
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function(){
+                try{
+                  var t=localStorage.getItem('rpc_theme')||'dark';
+                  document.documentElement.classList.toggle('dark',t==='dark');
+                  window.__INITIAL_THEME__=t;
+                }catch(e){
+                  document.documentElement.classList.add('dark');
+                  window.__INITIAL_THEME__='dark';
+                }
+              })();
             `,
           }}
         />
