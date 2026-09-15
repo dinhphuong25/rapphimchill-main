@@ -143,14 +143,22 @@
     overflow: hidden !important;
   }
 
-  /* Ẩn hoàn toàn thanh cuộn bên trong của TẤT CẢ các thành phần phụ khác */
-  *:not(html):not(.search-scroll)::-webkit-scrollbar {
+  /* Ẩn thanh cuộn bên trong của các thành phần phụ */
+  div:not(.search-scroll)::-webkit-scrollbar,
+  nav:not(.search-scroll)::-webkit-scrollbar,
+  aside:not(.search-scroll)::-webkit-scrollbar,
+  section:not(.search-scroll)::-webkit-scrollbar,
+  ul:not(.search-scroll)::-webkit-scrollbar {
     display: none !important;
     width: 0 !important;
     height: 0 !important;
   }
 
-  *:not(html):not(.search-scroll) {
+  div:not(.search-scroll),
+  nav:not(.search-scroll),
+  aside:not(.search-scroll),
+  section:not(.search-scroll),
+  ul:not(.search-scroll) {
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
   }

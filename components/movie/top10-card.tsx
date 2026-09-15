@@ -4,6 +4,7 @@ import { useState, useMemo, memo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Play, Film } from "lucide-react";
+import { useInView } from "react-intersection-observer";
 import { getMovieImageCandidates, STATIC_BLUR_DATA_URL } from "@/lib/image-helper";
 
 interface Top10CardProps {
@@ -21,6 +22,10 @@ interface Top10CardProps {
 export const Top10Card = memo(function Top10Card({ movie, rank }: Top10CardProps) {
   const [candidateIndex, setCandidateIndex] = useState(0);
   const [hasError, setHasError] = useState(false);
+  const { ref: inViewRef, inView } = useInView({
+    triggerOnce: true,
+    rootMargin: "300px 0px",
+  });
 
   const candidates = useMemo(
     () => getMovieImageCandidates(movie, "poster"),
@@ -38,7 +43,7 @@ export const Top10Card = memo(function Top10Card({ movie, rank }: Top10CardProps
   };
 
   return (
-    <div className="group relative flex items-center select-none pl-6 pr-2">
+    <div ref={inViewRef} className="group relative flex items-center select-none pl-6 pr-2">
       {/* Giant Condensed Rank Number behind poster */}
       <span className="absolute left-0 bottom-2 text-7xl sm:text-8xl font-black italic tracking-tighter text-white/12 group-hover:text-brand-green/20 transition-colors pointer-events-none font-mono">
         {rank}
@@ -50,7 +55,7 @@ export const Top10Card = memo(function Top10Card({ movie, rank }: Top10CardProps
         aria-label={`Xem phim ${movie.name} - Top ${rank}`}
         className="relative z-10 w-full aspect-[2/3] rounded-xl overflow-hidden bg-cinema-surface border border-white/10 group-hover:border-brand-green/50 transition-[transform,border-color,box-shadow] duration-300 group-hover:-translate-y-2 group-hover:scale-[1.02] shadow-xl group-hover:shadow-[0_10px_30px_rgba(32,214,107,0.25)] ml-8 transform-gpu"
       >
-        {currentSrc ? (
+        {inView && currentSrc ? (
           <Image
             src={currentSrc}
             alt={movie.name}

@@ -7,6 +7,7 @@ import { Play, Star, Heart, Film } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFavorites } from "@/hooks/useLocalStorage";
 import { useUserAuth } from "@/context/user-auth-context";
+import { useInView } from "react-intersection-observer";
 import { getMovieImageCandidates, STATIC_BLUR_DATA_URL } from "@/lib/image-helper";
 
 export interface MovieCardEditorialProps {
@@ -46,6 +47,13 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
     () => getMovieImageCandidates(movie, "poster"),
     [movie?.thumb_url, movie?.poster_url]
   );
+
+  const { ref: inViewRef, inView } = useInView({
+    triggerOnce: true,
+    rootMargin: "300px 0px",
+    skip: priority,
+  });
+  const shouldLoad = priority || inView;
 
   if (!movie || !movie.slug) return null;
 
@@ -90,7 +98,10 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
   const progressPercent = hasProgress ? Math.min(100, Math.max(2, (movie.currentTime! / movie.duration!) * 100)) : 0;
 
   return (
-    <div className="group relative flex flex-col h-full select-none transition-transform duration-200 ease-out hover:-translate-y-1.5 hover:scale-[1.02] active:scale-[0.98]">
+    <div
+      ref={inViewRef}
+      className="group relative flex flex-col h-full select-none transition-transform duration-200 ease-out hover:-translate-y-1.5 hover:scale-[1.02] active:scale-[0.98]"
+    >
       {/* Poster Image Container Wrapper */}
       <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-cinema-surface border border-white/10 group-hover:border-brand-green/60 transition-[border-color,box-shadow] duration-300 shadow-xl group-hover:shadow-[0_12px_32px_rgba(32,214,107,0.25)]">
         
@@ -99,7 +110,7 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
           aria-label={`Xem phim ${movie.name}`}
           className="absolute inset-0 z-0 block"
         >
-        {currentSrc ? (
+        {shouldLoad && currentSrc ? (
           <Image
             src={currentSrc}
             alt={movie.name}

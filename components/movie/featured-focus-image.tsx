@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import Image from "next/image";
 import { Film } from "lucide-react";
+import { useInView } from "react-intersection-observer";
 import { getMovieImageCandidates, STATIC_BLUR_DATA_URL } from "@/lib/image-helper";
 
 interface FeaturedFocusImageProps {
@@ -16,6 +17,10 @@ interface FeaturedFocusImageProps {
 export default function FeaturedFocusImage({ movie }: FeaturedFocusImageProps) {
   const [candidateIdx, setCandidateIdx] = useState(0);
   const [hasError, setHasError] = useState(false);
+  const { ref: inViewRef, inView } = useInView({
+    triggerOnce: true,
+    rootMargin: "300px 0px",
+  });
 
   const candidates = useMemo(
     () => getMovieImageCandidates(movie, "backdrop"),
@@ -24,9 +29,9 @@ export default function FeaturedFocusImage({ movie }: FeaturedFocusImageProps) {
 
   const src = !hasError && candidates.length > 0 ? candidates[candidateIdx] : null;
 
-  if (!src) {
+  if (!inView || !src) {
     return (
-      <div className="w-full h-full bg-[#0c1310] flex flex-col items-center justify-center p-4 text-center">
+      <div ref={inViewRef} className="w-full h-full bg-[#0c1310] flex flex-col items-center justify-center p-4 text-center">
         <Film className="w-10 h-10 text-brand-green/70 mb-2" />
         <span className="text-sm font-bold text-white/90 line-clamp-1">{movie.name}</span>
       </div>
