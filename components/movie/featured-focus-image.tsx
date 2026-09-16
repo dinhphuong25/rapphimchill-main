@@ -19,7 +19,7 @@ export default function FeaturedFocusImage({ movie }: FeaturedFocusImageProps) {
   const [hasError, setHasError] = useState(false);
   const { ref: inViewRef, inView } = useInView({
     triggerOnce: true,
-    rootMargin: "300px 0px",
+    rootMargin: "80px 0px",
   });
 
   const candidates = useMemo(

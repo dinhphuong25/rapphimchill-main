@@ -57,7 +57,7 @@ export const MovieSection = memo(function MovieSection({
           <div className="flex items-center gap-4 w-max animate-marquee hover:[animation-play-state:paused] transform-gpu will-change-transform">
             {[...filteredMovies.slice(0, 10), ...filteredMovies.slice(0, 10)].map((movie, idx) => (
               <div key={`${movie.slug}-${idx}`} className="w-[180px] sm:w-[210px] shrink-0 transform-gpu">
-                <Top10Card movie={movie} rank={(idx % 10) + 1} />
+                <Top10Card movie={movie} rank={(idx % 10) + 1} lazy={idx >= 6} />
               </div>
             ))}
           </div>

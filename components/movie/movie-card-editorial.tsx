@@ -50,7 +50,7 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
 
   const { ref: inViewRef, inView } = useInView({
     triggerOnce: true,
-    rootMargin: "300px 0px",
+    rootMargin: "80px 0px",
     skip: priority,
   });
   const shouldLoad = priority || inView;

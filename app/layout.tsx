@@ -138,7 +138,9 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Hi Phim" />
         <link rel="apple-touch-icon" href="/favicon.png" />
 
-        {/* DNS Preconnect & Prefetch — Tối ưu cho ảnh và API */}
+        {/* DNS Preconnect & Prefetch — Tối ưu cho ảnh CDN Edge và API */}
+        <link rel="preconnect" href="https://i0.wp.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://i0.wp.com" />
         <link rel="preconnect" href="https://phimimg.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://phimimg.com" />
         <link rel="dns-prefetch" href="https://phimapi.com" />

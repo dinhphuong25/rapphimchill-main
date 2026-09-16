@@ -72,6 +72,10 @@ const config: Config = {
           '0%': { transform: 'translateX(0%)' },
           '100%': { transform: 'translateX(-50%)' },
         },
+        "progress-scale": {
+          "0%": { transform: "scaleX(0)" },
+          "100%": { transform: "scaleX(1)" },
+        },
       },
       animation: {
         "fade-in": "fade-in 0.3s ease-out",
@@ -79,6 +83,7 @@ const config: Config = {
         "hero-zoom": "hero-zoom 7s cubic-bezier(0.16, 1, 0.3, 1) forwards",
         "pulse-glow": "pulse-glow 3s ease-in-out infinite",
         marquee: 'marquee 35s linear infinite',
+        "progress-scale": "progress-scale linear forwards",
       },
     },
   },

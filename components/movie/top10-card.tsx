@@ -17,14 +17,15 @@ interface Top10CardProps {
     quality?: string;
   };
   rank: number; // 1 to 10
+  lazy?: boolean;
 }
 
-export const Top10Card = memo(function Top10Card({ movie, rank }: Top10CardProps) {
+export const Top10Card = memo(function Top10Card({ movie, rank, lazy = false }: Top10CardProps) {
   const [candidateIndex, setCandidateIndex] = useState(0);
   const [hasError, setHasError] = useState(false);
   const { ref: inViewRef, inView } = useInView({
     triggerOnce: true,
-    rootMargin: "300px 0px",
+    rootMargin: "50px 0px",
   });
 
   const candidates = useMemo(

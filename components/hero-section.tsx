@@ -27,7 +27,7 @@ import { getMovieImageCandidates } from "@/lib/image-helper";
 function HeroThumbImage({ movie, isActive }: { movie: any; isActive: boolean }) {
   const [candidateIdx, setCandidateIdx] = useState(0);
   const [hasError, setHasError] = useState(false);
-  const candidates = useMemo(() => getMovieImageCandidates(movie, "backdrop"), [movie]);
+  const candidates = useMemo(() => getMovieImageCandidates(movie, "thumb"), [movie]);
   const src = !hasError && candidates.length > 0 ? candidates[candidateIdx] : null;
 
   if (!src) {
@@ -46,7 +46,8 @@ function HeroThumbImage({ movie, isActive }: { movie: any; isActive: boolean }) 
         fill
         sizes="(max-width: 1024px) 140px, 180px"
         className="object-cover"
-        quality={75}
+        quality={70}
+        loading="lazy"
         onError={() => {
           if (candidateIdx + 1 < candidates.length) {
             setCandidateIdx((i) => i + 1);
@@ -549,13 +550,13 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                             {movie.name}
                           </p>
                         </div>
-                        {/* Auto-Slide Progress Bar */}
-                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-20">
+                        {/* Auto-Slide Progress Bar - GPU Composited (No Reflow) */}
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-20 overflow-hidden">
                           <div
                             key={currentIndex}
                             className={cn(
-                              "h-full bg-brand-green",
-                              !isPaused && "animate-progress"
+                              "h-full w-full bg-brand-green origin-left transform-gpu will-change-transform",
+                              !isPaused && "animate-progress-scale"
                             )}
                             style={{
                               animationDuration: `${AUTO_SLIDE_DURATION}ms`,
