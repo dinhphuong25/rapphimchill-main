@@ -932,15 +932,19 @@ export default function VideoPlayer({
 
         hls.on(HLS.Events.LEVEL_LOADED, (e, data) => {
           setIsLoading(false);
-          if (data?.details?.fragments) {
-            const parsedData = extractAllAdRangesFromFragments(data.details.fragments);
-            if (parsedData.commercialRanges.length > 0) {
-              adRangesRef.current = parsedData.commercialRanges;
-              setAdRanges(parsedData.commercialRanges);
+          try {
+            if (data?.details?.fragments) {
+              const parsedData = extractAllAdRangesFromFragments(data.details.fragments);
+              if (parsedData?.commercialRanges?.length > 0) {
+                adRangesRef.current = parsedData.commercialRanges;
+                setAdRanges(parsedData.commercialRanges);
+              }
+              if (parsedData?.bannerRanges?.length > 0) {
+                bannerRangesRef.current = parsedData.bannerRanges;
+              }
             }
-            if (parsedData.bannerRanges.length > 0) {
-              bannerRangesRef.current = parsedData.bannerRanges;
-            }
+          } catch (err) {
+            console.warn("Non-fatal ad range parse error:", err);
           }
         });
 
@@ -1695,7 +1699,6 @@ export default function VideoPlayer({
         <video 
           ref={videoRef} 
           {...({ autoPictureInPicture: "true" } as any)}
-          crossOrigin="anonymous"
           className="w-full h-full"
           style={{
             ...getVideoTransformStyle(),

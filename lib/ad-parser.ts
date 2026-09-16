@@ -18,8 +18,8 @@ const adRangesCache = new Map<string, ParsedAdData>();
  * These segments contain real film content with gambling text overlays, so they must NOT be skipped.
  * Instead, they trigger the real-time banner shield mask.
  */
-export function isBannerSegment(url: string): boolean {
-  if (!url) return false;
+export function isBannerSegment(url: any): boolean {
+  if (!url || typeof url !== 'string') return false;
   const lower = url.toLowerCase();
   if (lower.includes('convertv8')) return true;
   if (lower.includes('banner_ad')) return true;
@@ -30,15 +30,17 @@ export function isBannerSegment(url: string): boolean {
  * Checks whether a given segment URL/filename matches known standalone commercial video ad clips.
  * (e.g. 15s - 30s dancing girl/slot machine spliced commercials).
  */
-export function isCommercialSegment(url: string, duration?: number): boolean {
-  if (!url) return false;
+export function isCommercialSegment(url: any, duration?: any): boolean {
+  if (!url || typeof url !== 'string') return false;
   const lower = url.toLowerCase();
 
   // Re-encoded film segments with banners are handled by isBannerSegment, do not skip film
   if (lower.includes('convertv8')) return false;
 
+  const numDur = typeof duration === 'number' && !isNaN(duration) ? duration : undefined;
+
   // Standalone spliced commercial video segments
-  if (lower.includes('/v8/') && (lower.includes('segment_') || (duration !== undefined && duration < 6))) {
+  if (lower.includes('/v8/') && (lower.includes('segment_') || (numDur !== undefined && numDur < 6))) {
     return true;
   }
   if (lower.includes('advert') || lower.includes('/ad/') || lower.includes('quangcao') || lower.includes('commercial')) {
@@ -54,7 +56,7 @@ export function isCommercialSegment(url: string, duration?: number): boolean {
 /**
  * Checks whether a segment is any kind of ad (commercial or banner).
  */
-export function isAdSegment(url: string, duration?: number): boolean {
+export function isAdSegment(url: any, duration?: any): boolean {
   return isCommercialSegment(url, duration) || isBannerSegment(url);
 }
 
@@ -62,108 +64,107 @@ export function isAdSegment(url: string, duration?: number): boolean {
  * Parses both commercial and banner ad ranges from m3u8 playlist text.
  */
 export function parseAllAdRangesFromM3U8Text(m3u8Text: string): ParsedAdData {
-  if (!m3u8Text) return { commercialRanges: [], bannerRanges: [] };
+  try {
+    if (!m3u8Text || typeof m3u8Text !== 'string') return { commercialRanges: [], bannerRanges: [] };
 
-  const lines = m3u8Text.split('\n');
-  const segments: Array<{ start: number; end: number; dur: number; seg: string; isDiscontinuity: boolean }> = [];
-  let currentSec = 0;
-  let isAfterDiscontinuity = false;
+    const lines = m3u8Text.split('\n');
+    const segments: Array<{ start: number; end: number; dur: number; seg: string }> = [];
+    let currentSec = 0;
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (line === '#EXT-X-DISCONTINUITY') {
-      isAfterDiscontinuity = true;
-    } else if (line.startsWith('#EXTINF:')) {
-      const dur = parseFloat(line.substring(8));
-      let seg = '';
-      for (let j = i + 1; j < lines.length; j++) {
-        const next = lines[j].trim();
-        if (next && !next.startsWith('#')) {
-          seg = next;
-          break;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.startsWith('#EXTINF:')) {
+        const dur = parseFloat(line.substring(8));
+        let seg = '';
+        for (let j = i + 1; j < lines.length; j++) {
+          const next = lines[j].trim();
+          if (next && !next.startsWith('#')) {
+            seg = next;
+            break;
+          }
         }
-      }
-      if (!isNaN(dur) && dur > 0) {
-        segments.push({
-          start: currentSec,
-          end: currentSec + dur,
-          dur,
-          seg,
-          isDiscontinuity: isAfterDiscontinuity,
-        });
-        currentSec += dur;
-      }
-      isAfterDiscontinuity = false;
-    }
-  }
-
-  // 1. Group commercial ranges
-  const commercialRanges: AdRange[] = [];
-  let inComm = false;
-  let commStart = 0;
-  let commEnd = 0;
-
-  for (let i = 0; i < segments.length; i++) {
-    const s = segments[i];
-    const isComm = isCommercialSegment(s.seg, s.dur);
-
-    if (isComm) {
-      if (!inComm) {
-        inComm = true;
-        commStart = s.start;
-      }
-      commEnd = s.end;
-    } else {
-      if (inComm) {
-        inComm = false;
-        const dur = commEnd - commStart;
-        if (dur >= 4 && dur <= 90) {
-          commercialRanges.push({ start: commStart, end: commEnd, duration: dur, type: 'commercial' });
+        if (!isNaN(dur) && dur > 0) {
+          segments.push({
+            start: currentSec,
+            end: currentSec + dur,
+            dur,
+            seg,
+          });
+          currentSec += dur;
         }
       }
     }
-  }
-  if (inComm) {
-    const dur = commEnd - commStart;
-    if (dur >= 4 && dur <= 90) {
-      commercialRanges.push({ start: commStart, end: commEnd, duration: dur, type: 'commercial' });
-    }
-  }
 
-  // 2. Group banner ranges
-  const bannerRanges: AdRange[] = [];
-  let inBanner = false;
-  let bannerStart = 0;
-  let bannerEnd = 0;
+    // 1. Group commercial ranges
+    const commercialRanges: AdRange[] = [];
+    let inComm = false;
+    let commStart = 0;
+    let commEnd = 0;
 
-  for (let i = 0; i < segments.length; i++) {
-    const s = segments[i];
-    const isBanner = isBannerSegment(s.seg);
+    for (let i = 0; i < segments.length; i++) {
+      const s = segments[i];
+      const isComm = isCommercialSegment(s.seg, s.dur);
 
-    if (isBanner) {
-      if (!inBanner) {
-        inBanner = true;
-        bannerStart = s.start;
-      }
-      bannerEnd = s.end;
-    } else {
-      if (inBanner) {
-        inBanner = false;
-        const dur = bannerEnd - bannerStart;
-        if (dur >= 3) {
-          bannerRanges.push({ start: bannerStart, end: bannerEnd, duration: dur, type: 'banner' });
+      if (isComm) {
+        if (!inComm) {
+          inComm = true;
+          commStart = s.start;
+        }
+        commEnd = s.end;
+      } else {
+        if (inComm) {
+          inComm = false;
+          const dur = commEnd - commStart;
+          if (dur >= 4 && dur <= 90) {
+            commercialRanges.push({ start: commStart, end: commEnd, duration: dur, type: 'commercial' });
+          }
         }
       }
     }
-  }
-  if (inBanner) {
-    const dur = bannerEnd - bannerStart;
-    if (dur >= 3) {
-      bannerRanges.push({ start: bannerStart, end: bannerEnd, duration: dur, type: 'banner' });
+    if (inComm) {
+      const dur = commEnd - commStart;
+      if (dur >= 4 && dur <= 90) {
+        commercialRanges.push({ start: commStart, end: commEnd, duration: dur, type: 'commercial' });
+      }
     }
-  }
 
-  return { commercialRanges, bannerRanges };
+    // 2. Group banner ranges
+    const bannerRanges: AdRange[] = [];
+    let inBanner = false;
+    let bannerStart = 0;
+    let bannerEnd = 0;
+
+    for (let i = 0; i < segments.length; i++) {
+      const s = segments[i];
+      const isBanner = isBannerSegment(s.seg);
+
+      if (isBanner) {
+        if (!inBanner) {
+          inBanner = true;
+          bannerStart = s.start;
+        }
+        bannerEnd = s.end;
+      } else {
+        if (inBanner) {
+          inBanner = false;
+          const dur = bannerEnd - bannerStart;
+          if (dur >= 3) {
+            bannerRanges.push({ start: bannerStart, end: bannerEnd, duration: dur, type: 'banner' });
+          }
+        }
+      }
+    }
+    if (inBanner) {
+      const dur = bannerEnd - bannerStart;
+      if (dur >= 3) {
+        bannerRanges.push({ start: bannerStart, end: bannerEnd, duration: dur, type: 'banner' });
+      }
+    }
+
+    return { commercialRanges, bannerRanges };
+  } catch {
+    return { commercialRanges: [], bannerRanges: [] };
+  }
 }
 
 /**
@@ -177,73 +178,84 @@ export function parseAdRangesFromM3U8Text(m3u8Text: string): AdRange[] {
  * Extracts all ad ranges directly from Hls.js fragment objects (zero network latency).
  */
 export function extractAllAdRangesFromFragments(fragments: any[]): ParsedAdData {
-  if (!Array.isArray(fragments) || fragments.length === 0) return { commercialRanges: [], bannerRanges: [] };
+  try {
+    if (!Array.isArray(fragments) || fragments.length === 0) {
+      return { commercialRanges: [], bannerRanges: [] };
+    }
 
-  const commercialRanges: AdRange[] = [];
-  let inComm = false;
-  let commStart = 0;
-  let commEnd = 0;
+    const commercialRanges: AdRange[] = [];
+    let inComm = false;
+    let commStart = 0;
+    let commEnd = 0;
 
-  const bannerRanges: AdRange[] = [];
-  let inBanner = false;
-  let bannerStart = 0;
-  let bannerEnd = 0;
+    const bannerRanges: AdRange[] = [];
+    let inBanner = false;
+    let bannerStart = 0;
+    let bannerEnd = 0;
 
-  for (let i = 0; i < fragments.length; i++) {
-    const f = fragments[i];
-    const url = f.relurl || f.url || '';
-    const dur = f.duration || 0;
+    for (let i = 0; i < fragments.length; i++) {
+      const f = fragments[i];
+      if (!f || typeof f !== 'object') continue;
 
-    // Commercial check
-    if (isCommercialSegment(url, dur)) {
-      if (!inComm) {
-        inComm = true;
-        commStart = f.start;
+      const url = typeof f.relurl === 'string' && f.relurl 
+        ? f.relurl 
+        : (typeof f.url === 'string' && f.url ? f.url : '');
+      const dur = typeof f.duration === 'number' && !isNaN(f.duration) ? f.duration : 0;
+      const start = typeof f.start === 'number' && !isNaN(f.start) ? f.start : 0;
+
+      // Commercial check
+      if (isCommercialSegment(url, dur)) {
+        if (!inComm) {
+          inComm = true;
+          commStart = start;
+        }
+        commEnd = start + dur;
+      } else {
+        if (inComm) {
+          inComm = false;
+          const duration = commEnd - commStart;
+          if (duration >= 4 && duration <= 90) {
+            commercialRanges.push({ start: commStart, end: commEnd, duration, type: 'commercial' });
+          }
+        }
       }
-      commEnd = f.start + dur;
-    } else {
-      if (inComm) {
-        inComm = false;
-        const duration = commEnd - commStart;
-        if (duration >= 4 && duration <= 90) {
-          commercialRanges.push({ start: commStart, end: commEnd, duration, type: 'commercial' });
+
+      // Banner check
+      if (isBannerSegment(url)) {
+        if (!inBanner) {
+          inBanner = true;
+          bannerStart = start;
+        }
+        bannerEnd = start + dur;
+      } else {
+        if (inBanner) {
+          inBanner = false;
+          const duration = bannerEnd - bannerStart;
+          if (duration >= 3) {
+            bannerRanges.push({ start: bannerStart, end: bannerEnd, duration, type: 'banner' });
+          }
         }
       }
     }
 
-    // Banner check
-    if (isBannerSegment(url)) {
-      if (!inBanner) {
-        inBanner = true;
-        bannerStart = f.start;
-      }
-      bannerEnd = f.start + dur;
-    } else {
-      if (inBanner) {
-        inBanner = false;
-        const duration = bannerEnd - bannerStart;
-        if (duration >= 3) {
-          bannerRanges.push({ start: bannerStart, end: bannerEnd, duration, type: 'banner' });
-        }
+    if (inComm) {
+      const duration = commEnd - commStart;
+      if (duration >= 4 && duration <= 90) {
+        commercialRanges.push({ start: commStart, end: commEnd, duration, type: 'commercial' });
       }
     }
-  }
 
-  if (inComm) {
-    const duration = commEnd - commStart;
-    if (duration >= 4 && duration <= 90) {
-      commercialRanges.push({ start: commStart, end: commEnd, duration, type: 'commercial' });
+    if (inBanner) {
+      const duration = bannerEnd - bannerStart;
+      if (duration >= 3) {
+        bannerRanges.push({ start: bannerStart, end: bannerEnd, duration, type: 'banner' });
+      }
     }
-  }
 
-  if (inBanner) {
-    const duration = bannerEnd - bannerStart;
-    if (duration >= 3) {
-      bannerRanges.push({ start: bannerStart, end: bannerEnd, duration, type: 'banner' });
-    }
+    return { commercialRanges, bannerRanges };
+  } catch {
+    return { commercialRanges: [], bannerRanges: [] };
   }
-
-  return { commercialRanges, bannerRanges };
 }
 
 /**
@@ -257,7 +269,9 @@ export function extractAdRangesFromFragments(fragments: any[]): AdRange[] {
  * Fetches and parses all ad ranges (both commercial and banner) from an m3u8 playlist URL.
  */
 export async function fetchAndParseAllAdRanges(videoUrl: string): Promise<ParsedAdData> {
-  if (!videoUrl || !videoUrl.includes('.m3u8')) return { commercialRanges: [], bannerRanges: [] };
+  if (!videoUrl || typeof videoUrl !== 'string' || !videoUrl.includes('.m3u8')) {
+    return { commercialRanges: [], bannerRanges: [] };
+  }
 
   if (adRangesCache.has(videoUrl)) {
     return adRangesCache.get(videoUrl)!;
