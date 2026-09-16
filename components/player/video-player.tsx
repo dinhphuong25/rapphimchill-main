@@ -147,17 +147,15 @@ export default function VideoPlayer({
   const placeholderRef = useRef<HTMLDivElement>(null);
   const wasAutoPiPRef = useRef(false);
   const lastBufferedRef = useRef<number>(0);
-  // Anti-Ad Banner Shield (Tự động kích hoạt & che dải quảng cáo bài bạc ở mép trên)
-  const [adShieldMode, setAdShieldMode] = useState<'always' | 'auto' | 'off'>('always');
+  // Anti-Ad Banner Shield (Tự động phát hiện & che dải quảng cáo bài bạc ở mép trên - không hiện thông báo phiền)
+  const [adShieldMode, setAdShieldMode] = useState<'auto' | 'always' | 'off'>('auto');
   const [isAdDetected, setIsAdDetected] = useState(false);
-  const [showShieldBadge, setShowShieldBadge] = useState(false);
   const detectorCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const consecutiveDetectionsRef = useRef(0);
   const consecutiveMissesRef = useRef(0);
   const prevFrameLuminanceRef = useRef<Uint8Array | null>(null);
-  const badgeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleSetAdShieldMode = useCallback((mode: 'always' | 'auto' | 'off') => {
+  const handleSetAdShieldMode = useCallback((mode: 'auto' | 'always' | 'off') => {
     setAdShieldMode(mode);
     try {
       localStorage.setItem('cinema_ad_shield', mode);
@@ -243,13 +241,13 @@ export default function VideoPlayer({
         setVideoFit(savedFit);
       }
 
-      // Tự động kích hoạt khiên chắn quảng cáo cờ bạc mặc định ('always')
+      // Tự động kích hoạt khiên chắn quảng cáo cờ bạc ở chế độ thông minh 'auto' (chỉ che khi thực sự có quảng cáo)
       const savedShield = localStorage.getItem('cinema_ad_shield');
-      if (savedShield === 'always' || savedShield === 'auto' || savedShield === 'off') {
-        setAdShieldMode(savedShield);
+      if (savedShield === 'off') {
+        setAdShieldMode('off');
       } else {
-        setAdShieldMode('always');
-        try { localStorage.setItem('cinema_ad_shield', 'always'); } catch (e) {}
+        setAdShieldMode('auto');
+        try { localStorage.setItem('cinema_ad_shield', 'auto'); } catch (e) {}
       }
     } catch (e) {}
   }, []);
@@ -1221,18 +1219,7 @@ export default function VideoPlayer({
     };
   }, []);
 
-  // Show shield badge briefly when switching episodes/movies or toggling mode
-  useEffect(() => {
-    if (adShieldMode !== 'off') {
-      setShowShieldBadge(true);
-      if (badgeTimerRef.current) clearTimeout(badgeTimerRef.current);
-      badgeTimerRef.current = setTimeout(() => setShowShieldBadge(false), 4000);
-    } else {
-      setShowShieldBadge(false);
-    }
-  }, [videoUrl, adShieldMode]);
-
-  // Intelligent Real-Time Ad Banner Detector Loop
+  // Intelligent Real-Time Ad Banner Detector Loop (Tự động phát hiện banner cờ bạc mép trên)
   useEffect(() => {
     if (adShieldMode === 'off') {
       setIsAdDetected(false);
@@ -1244,6 +1231,12 @@ export default function VideoPlayer({
       setIsAdDetected(true);
       return;
     }
+
+    // Chế độ 'auto': bắt đầu ở trạng thái không che, chỉ che khi thực tế quét thấy banner
+    setIsAdDetected(false);
+    consecutiveDetectionsRef.current = 0;
+    consecutiveMissesRef.current = 0;
+    prevFrameLuminanceRef.current = null;
 
     const checkInterval = setInterval(() => {
       const video = videoRef.current;
@@ -1264,8 +1257,8 @@ export default function VideoPlayer({
         }
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         if (ctx) {
-          // Lấy dải mép trên 5% nơi đóng dấu quảng cáo bài bạc
-          const sampleHeight = Math.max(Math.round(vh * 0.05), 10);
+          // Lấy dải mép trên 6% nơi đóng dấu quảng cáo bài bạc
+          const sampleHeight = Math.max(Math.round(vh * 0.06), 12);
           ctx.drawImage(video, 0, 0, vw, sampleHeight, 0, 0, 160, 20);
 
           const imgData = ctx.getImageData(0, 0, 160, 20);
@@ -1319,13 +1312,12 @@ export default function VideoPlayer({
           }
           prevFrameLuminanceRef.current = currentLum;
 
-          // Quảng cáo cờ bạc: chữ có độ tương phản cao, mật độ cạnh chữ dày và cố định
+          // Quảng cáo cờ bạc: chữ có độ tương phản cao, mật độ cạnh chữ dày và cố định qua thời gian
           if (edgeTransitions >= 65 && brightPixels >= 35 && darkPixels >= 35 && isTemporallyStatic) {
             detected = true;
           }
         }
       } catch {
-        // Tuyệt đối không tự suy đoán nếu canvas không đọc được
         detected = false;
       }
 
@@ -1334,32 +1326,23 @@ export default function VideoPlayer({
         consecutiveMissesRef.current = 0;
         // Cần ít nhất 2 lần quét liên tiếp xác nhận có dải quảng cáo tĩnh mới kích hoạt che
         if (consecutiveDetectionsRef.current >= 2) {
-          setIsAdDetected((prev) => {
-            if (!prev) {
-              setShowShieldBadge(true);
-              if (badgeTimerRef.current) clearTimeout(badgeTimerRef.current);
-              badgeTimerRef.current = setTimeout(() => setShowShieldBadge(false), 3000);
-            }
-            return true;
-          });
+          setIsAdDetected(true);
         }
       } else {
         consecutiveMissesRef.current++;
-        // Tắt che ngay lập tức khi không còn quảng cáo
-        if (consecutiveMissesRef.current >= 1) {
+        // Tắt che khi không còn quảng cáo (ít nhất 2 lần quét sạch)
+        if (consecutiveMissesRef.current >= 2) {
           consecutiveDetectionsRef.current = 0;
           prevFrameLuminanceRef.current = null;
           setIsAdDetected(false);
-          setShowShieldBadge(false);
         }
       }
-    }, 1500);
+    }, 1200);
 
     return () => {
       clearInterval(checkInterval);
-      if (badgeTimerRef.current) clearTimeout(badgeTimerRef.current);
     };
-  }, [adShieldMode]);
+  }, [adShieldMode, videoUrl]);
 
   // PiP Storage Sync & Auto-cleanup
   useEffect(() => {
@@ -1631,29 +1614,6 @@ export default function VideoPlayer({
         )}
       >
         <div className="w-full h-full bg-gradient-to-b from-black/95 via-black/85 via-65% to-transparent" />
-
-        {/* Small subtle status badge */}
-        {(adShieldMode === 'always' || isAdDetected) && (
-          <div className={cn(
-            "absolute top-2.5 right-3.5 z-30 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/85 backdrop-blur-md border border-brand-green/40 text-[11px] font-semibold text-brand-green shadow-xl transition-opacity duration-300 pointer-events-auto",
-            showShieldBadge ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-          )}>
-          <ShieldCheck className="w-3.5 h-3.5 text-brand-green animate-pulse" />
-          <span>Đã tự động che QC cờ bạc</span>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleSetAdShieldMode('off');
-              toast.info("Đã tạm tắt che quảng cáo");
-            }}
-            className="ml-1 text-white/50 hover:text-white cursor-pointer p-0.5"
-            title="Tắt che quảng cáo"
-          >
-            <X className="w-3 h-3" />
-          </button>
-        </div>
-        )}
       </div>
 
 
@@ -1845,23 +1805,20 @@ export default function VideoPlayer({
               size="icon"
               onClick={(e) => {
                 e.stopPropagation();
-                const nextMode = adShieldMode === 'off' ? 'always' : 'off';
+                const nextMode = adShieldMode === 'off' ? 'auto' : 'off';
                 handleSetAdShieldMode(nextMode);
-                if (nextMode === 'always') {
-                  toast.success("Đã bật khiên che quảng cáo cờ bạc");
-                } else {
-                  toast.info("Đã tắt khiên che quảng cáo");
-                }
               }}
-              title={adShieldMode !== 'off' ? "Đang bật che QC cờ bạc (Bấm để tắt)" : "Đang tắt che QC (Bấm để bật)"}
+              title={adShieldMode !== 'off' ? "Khiên che QC: Tự động phát hiện (Bấm để tắt)" : "Khiên che QC: Đang tắt (Bấm để bật tự động)"}
               className={cn(
                 "cursor-pointer w-8 h-8 sm:w-9 sm:h-9 transition-colors",
-                adShieldMode !== 'off'
+                (adShieldMode === 'always' || (adShieldMode === 'auto' && isAdDetected))
                   ? "text-brand-green hover:bg-brand-green/15"
+                  : adShieldMode === 'auto'
+                  ? "text-brand-green/70 hover:text-brand-green hover:bg-brand-green/10"
                   : "text-white/40 hover:text-white hover:bg-white/10"
               )}
             >
-              <ShieldCheck className={cn("w-4 h-4 sm:w-5 sm:h-5", adShieldMode !== 'off' && "drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]")} />
+              <ShieldCheck className={cn("w-4 h-4 sm:w-5 sm:h-5", (adShieldMode === 'always' || isAdDetected) && "drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]")} />
             </Button>
 
             {/* Fullscreen Button */}
@@ -2121,13 +2078,6 @@ export default function VideoPlayer({
                   onClick={(e) => {
                     e.stopPropagation();
                     handleSetAdShieldMode(mode);
-                    toast.success(
-                      mode === 'auto'
-                        ? 'Che QC: Tự động khi phát hiện'
-                        : mode === 'always'
-                        ? 'Che QC: Luôn che mép trên'
-                        : 'Che QC: Đã tắt'
-                    );
                   }}
                   className={cn(
                     "px-2 py-0.5 rounded cursor-pointer font-bold transition-all",

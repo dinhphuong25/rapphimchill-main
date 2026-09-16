@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Server, ShieldCheck, X } from "lucide-react";
+import { ArrowLeft, Server, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 
 interface EmbedPlayerProps {
     videoUrl: string;
@@ -18,8 +17,7 @@ const EmbedPlayer = ({
     onSwitchToM3u8,
 }: EmbedPlayerProps) => {
     const [isLoading, setIsLoading] = useState(true);
-    const [adShield, setAdShield] = useState<boolean>(true);
-    const [showBadge, setShowBadge] = useState<boolean>(false);
+    const [adShield, setAdShield] = useState<boolean>(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -30,31 +28,15 @@ const EmbedPlayer = ({
         return () => clearTimeout(timer);
     }, [videoUrl]);
 
-    // Load saved ad shield preference on mount, default to true ('always')
+    // Check if user explicitly set ad shield to 'always'
     useEffect(() => {
         try {
             const saved = localStorage.getItem('cinema_ad_shield');
-            if (saved === 'off') {
-                setAdShield(false);
-            } else {
+            if (saved === 'always') {
                 setAdShield(true);
-                if (!saved) {
-                    localStorage.setItem('cinema_ad_shield', 'always');
-                }
             }
         } catch (e) {}
     }, []);
-
-    // Show shield notification badge on video change or shield activation
-    useEffect(() => {
-        if (adShield) {
-            setShowBadge(true);
-            const timer = setTimeout(() => setShowBadge(false), 4000);
-            return () => clearTimeout(timer);
-        } else {
-            setShowBadge(false);
-        }
-    }, [videoUrl, adShield]);
 
     const toggleAdShield = () => {
         const next = !adShield;
@@ -62,11 +44,6 @@ const EmbedPlayer = ({
         try {
             localStorage.setItem('cinema_ad_shield', next ? 'always' : 'off');
         } catch (e) {}
-        if (next) {
-            toast.success("Đã bật che quảng cáo cờ bạc");
-        } else {
-            toast.info("Đã tắt che quảng cáo cờ bạc");
-        }
     };
 
     const handleBack = () => {
@@ -79,7 +56,7 @@ const EmbedPlayer = ({
 
     return (
         <div className="relative bg-black w-full h-full group select-none">
-            {/* Intelligent Anti-Ad Banner Shield (Tự động che dải quảng cáo bài bạc ở mép trên) */}
+            {/* Intelligent Anti-Ad Banner Shield */}
             <div
                 className={cn(
                     "absolute top-0 left-0 right-0 z-20 pointer-events-none overflow-hidden transition-all duration-300",
@@ -88,30 +65,6 @@ const EmbedPlayer = ({
             >
                 <div className="w-full h-full bg-gradient-to-b from-black/95 via-black/85 via-65% to-transparent" />
             </div>
-
-            {/* Subtle status badge */}
-            {adShield && (
-                <div
-                    className={cn(
-                        "absolute top-16 right-4 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/85 backdrop-blur-md border border-brand-green/40 text-[11px] font-semibold text-brand-green shadow-xl transition-opacity duration-300 pointer-events-auto",
-                        showBadge ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                    )}
-                >
-                    <ShieldCheck className="w-3.5 h-3.5 text-brand-green animate-pulse" />
-                    <span>Đã tự động che QC cờ bạc</span>
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            toggleAdShield();
-                        }}
-                        className="ml-1 text-white/50 hover:text-white cursor-pointer p-0.5"
-                        title="Tắt che quảng cáo"
-                    >
-                        <X className="w-3 h-3" />
-                    </button>
-                </div>
-            )}
 
             {/* Top gradient overlay for hover controls */}
             <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-black/80 to-transparent z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
