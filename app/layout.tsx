@@ -21,7 +21,7 @@ import AuthModal from "@/components/auth/auth-modal";
 
 // Be Vietnam Pro — font hỗ trợ tiếng Việt tốt nhất, sans-serif hiện đại
 const beVietnam = Be_Vietnam_Pro({
-  weight: ["400", "500", "600", "700", "900"],
+  weight: ["400", "600", "700", "900"],
   subsets: ["latin", "vietnamese"],
   variable: "--font-be-vietnam",
   display: "swap",
