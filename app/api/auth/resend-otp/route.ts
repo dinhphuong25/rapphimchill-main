@@ -9,6 +9,9 @@ import {
 
 export const runtime = "nodejs";
 
+const resendCooldownMap = new Map<string, number>();
+const RESEND_COOLDOWN_MS = 60_000; // 60 seconds per email
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -16,6 +19,17 @@ export async function POST(request: Request) {
 
     if (!email) {
       return NextResponse.json({ success: false, error: "Vui lòng cung cấp email" }, { status: 400 });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const now = Date.now();
+    const nextAllowed = resendCooldownMap.get(normalizedEmail) || 0;
+    if (now < nextAllowed) {
+      const waitSeconds = Math.ceil((nextAllowed - now) / 1000);
+      return NextResponse.json(
+        { success: false, error: `Vui lòng đợi ${waitSeconds} giây trước khi yêu cầu mã OTP mới.` },
+        { status: 429 }
+      );
     }
 
     const pending = await getPendingRegistrationPersistent(email) || await getPendingFromCookie(request, email);
@@ -40,6 +54,8 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    resendCooldownMap.set(normalizedEmail, Date.now() + RESEND_COOLDOWN_MS);
 
     const pendingToken = await createPendingRegistrationToken({
       email: pending.email,

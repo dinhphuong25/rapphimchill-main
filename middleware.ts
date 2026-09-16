@@ -8,6 +8,7 @@ import { verifyUserSessionToken } from '@/lib/user-token';
 
 // Blocked user agents (common scraper bots)
 const BLOCKED_USER_AGENTS = [
+    // Common scraper & automated bots
     'httrack',
     'wget',
     'curl',
@@ -18,11 +19,31 @@ const BLOCKED_USER_AGENTS = [
     'libwww-perl',
     'apache-httpclient',
     'http.rb',
+    // AI scrapers
     'gptbot',
     'chatgpt-user',
     'ccbot',
     'anthropic-ai',
     'claude-web',
+    // Penetration & Attack Scanners
+    'sqlmap',
+    'nikto',
+    'masscan',
+    'nmap',
+    'zgrab',
+    'censys',
+    'shodan',
+    'acunetix',
+    'dirbuster',
+    'nuclei',
+    'gobuster',
+    'wpscan',
+    'hydra',
+    'metasploit',
+    'havij',
+    'pangolin',
+    'nessus',
+    'openvas',
 ];
 
 // Blocked paths - prevent access to sensitive files
@@ -62,41 +83,113 @@ function isCacheableAsset(pathname: string): boolean {
 }
 
 // -------------------------------------------------------------
-// IN-MEMORY RATE LIMITER (Hoạt động độc lập trên mỗi Edge Node)
+// MULTI-TIER ANTI-DDOS RATE LIMITER & AUTO-IP JAIL
 // -------------------------------------------------------------
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const ipJailMap = new Map<string, number>(); // ip -> jailExpiresAt
+const violationTracker = new Map<string, { count: number; windowStart: number }>(); // ip -> count of 429s
 
-const RATE_LIMIT_WINDOW_MS = 10000; // 10 seconds
-const MAX_REQUESTS_PER_WINDOW = 150; // Max 150 requests / 10s (~15 req/s) - concurrency & NAT friendly
+const JAIL_DURATION_MS = 600_000; // 10 minutes temporary ban
+const VIOLATION_WINDOW_MS = 60_000; // 1 minute window to track repeated 429 violations
+const MAX_VIOLATIONS_BEFORE_JAIL = 3;
 
-function checkRateLimit(ip: string): boolean {
-    if (ip === 'unknown' || ip === '127.0.0.1' || ip === '::1') return true;
-    const now = Date.now();
+interface RateLimitConfig {
+  windowMs: number;
+  maxRequests: number;
+}
 
-    // Flush old cache entries to keep memory low
-    if (rateLimitMap.size > 5000) {
-        const entriesToDelete: string[] = [];
-        rateLimitMap.forEach((data, key) => {
-            if (data.resetTime < now) entriesToDelete.push(key);
-        });
-        entriesToDelete.forEach(key => rateLimitMap.delete(key));
-        if (rateLimitMap.size > 5000) rateLimitMap.clear();
-    }
+const RATE_LIMITS: Record<string, RateLimitConfig> = {
+  auth: { windowMs: 30_000, maxRequests: 5 }, // 5 req / 30s for Auth/OTP endpoints (brute-force & email flood shield)
+  api_proxy: { windowMs: 10_000, maxRequests: 45 }, // 45 req / 10s for movie API & search (scraping shield)
+  general: { windowMs: 10_000, maxRequests: 120 }, // 120 req / 10s for normal browsing (concurrency & NAT friendly)
+};
 
-    const requestData = rateLimitMap.get(ip);
-    
-    if (!requestData || requestData.resetTime < now) {
-        rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
-        return true;
-    }
+function isIpJailed(ip: string): boolean {
+  if (ip === 'unknown' || ip === '127.0.0.1' || ip === '::1') return false;
+  const expiresAt = ipJailMap.get(ip);
+  if (!expiresAt) return false;
+  if (Date.now() > expiresAt) {
+    ipJailMap.delete(ip);
+    return false;
+  }
+  return true;
+}
 
-    if (requestData.count >= MAX_REQUESTS_PER_WINDOW) {
-        return false;
-    }
+function recordViolation(ip: string) {
+  if (ip === 'unknown' || ip === '127.0.0.1' || ip === '::1') return;
+  const now = Date.now();
+  const entry = violationTracker.get(ip);
+  if (!entry || now - entry.windowStart > VIOLATION_WINDOW_MS) {
+    violationTracker.set(ip, { count: 1, windowStart: now });
+    return;
+  }
+  entry.count++;
+  if (entry.count >= MAX_VIOLATIONS_BEFORE_JAIL) {
+    ipJailMap.set(ip, now + JAIL_DURATION_MS);
+    violationTracker.delete(ip);
+  }
+}
 
-    requestData.count++;
-    rateLimitMap.set(ip, requestData);
-    return true;
+function getRateLimitCategory(pathname: string): 'auth' | 'api_proxy' | 'general' {
+  if (pathname.startsWith('/api/auth/') || pathname === '/api/admin/login') {
+    return 'auth';
+  }
+  if (pathname.startsWith('/api/phim') || pathname.startsWith('/search') || pathname.startsWith('/new-updates')) {
+    return 'api_proxy';
+  }
+  return 'general';
+}
+
+function checkRateLimit(ip: string, category: 'auth' | 'api_proxy' | 'general'): {
+  allowed: boolean;
+  retryAfter: number;
+  limit: number;
+} {
+  if (ip === 'unknown' || ip === '127.0.0.1' || ip === '::1') {
+    return { allowed: true, retryAfter: 0, limit: 999 };
+  }
+  const now = Date.now();
+  const config = RATE_LIMITS[category];
+  const key = `${category}:${ip}`;
+
+  // Flush expired cache entries when map grows
+  if (rateLimitMap.size > 8000) {
+    const entriesToDelete: string[] = [];
+    rateLimitMap.forEach((data, k) => {
+      if (data.resetTime < now) entriesToDelete.push(k);
+    });
+    entriesToDelete.forEach((k) => rateLimitMap.delete(k));
+    if (rateLimitMap.size > 8000) rateLimitMap.clear();
+  }
+
+  const requestData = rateLimitMap.get(key);
+  if (!requestData || requestData.resetTime < now) {
+    rateLimitMap.set(key, { count: 1, resetTime: now + config.windowMs });
+    return { allowed: true, retryAfter: 0, limit: config.maxRequests };
+  }
+
+  if (requestData.count >= config.maxRequests) {
+    const retryAfter = Math.max(1, Math.ceil((requestData.resetTime - now) / 1000));
+    return { allowed: false, retryAfter, limit: config.maxRequests };
+  }
+
+  requestData.count++;
+  rateLimitMap.set(key, requestData);
+  return { allowed: true, retryAfter: 0, limit: config.maxRequests };
+}
+
+// Common malicious URL patterns (Path traversal, SQLi, XSS, Remote File Inclusion)
+const SUSPICIOUS_PATTERNS = [
+  /\.\.\//, // Directory traversal ../
+  /%2e%2e%2f/i, // Encoded ../
+  /(?:union\s+select|select\s+.*\s+from|information_schema)/i, // SQL injection
+  /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/i, // Script injection
+  /javascript:/i, // JavaScript URI scheme
+  /\b(?:etc\/passwd|win\.ini|boot\.ini)\b/i, // Sensitive local files
+];
+
+function containsSuspiciousPayload(urlStr: string): boolean {
+  return SUSPICIOUS_PATTERNS.some((pattern) => pattern.test(urlStr));
 }
 
 export async function middleware(request: NextRequest) {
@@ -108,10 +201,27 @@ export async function middleware(request: NextRequest) {
         request.headers.get('x-real-ip') ||
         'unknown';
 
+    // 0. Auto-IP Jail Check (Immediate rejection for temporarily banned IPs)
+    if (isIpJailed(ip)) {
+      return new NextResponse('Forbidden - IP temporarily jailed due to repeated DDoS abuse', {
+        status: 403,
+        headers: {
+          'Retry-After': '600',
+          'X-Blocked-Reason': 'IP jailed for repeated traffic abuse',
+        },
+      });
+    }
+
     // 1. Restrict HTTP Methods to GET, POST, HEAD, OPTIONS (Block PUT, DELETE, PATCH, TRACE, CONNECT)
     const ALLOWED_METHODS = ['GET', 'POST', 'HEAD', 'OPTIONS'];
     if (!ALLOWED_METHODS.includes(request.method.toUpperCase())) {
         return new NextResponse('Method Not Allowed', { status: 405 });
+    }
+
+    // Require User-Agent on POST requests (automated attack scripts often omit User-Agent)
+    if (request.method === 'POST' && (!userAgent || userAgent.trim() === '')) {
+        recordViolation(ip);
+        return new NextResponse('Forbidden - User Agent Required', { status: 403 });
     }
 
     // Canonical host normalization: redirect www to apex so Google indexes one URL set only.
@@ -121,26 +231,38 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(canonicalUrl, 308);
     }
 
-    // Anti-DDoS Rate Limiting
-    if (ip !== 'unknown' && !checkRateLimit(ip)) {
-        return new NextResponse('Too Many Requests - Anti DDoS Triggered', { 
-            status: 429,
-            headers: {
-                'Retry-After': '10',
-                'X-RateLimit-Limit': MAX_REQUESTS_PER_WINDOW.toString(),
-                'X-RateLimit-Remaining': '0',
-            }
-        });
+    // Malicious payload in URL or Query string
+    if (containsSuspiciousPayload(request.url)) {
+        recordViolation(ip);
+        return new NextResponse('Forbidden - Malicious Payload Detected', { status: 403 });
     }
 
     // Block suspicious paths
     if (isBlockedPath(pathname)) {
+        recordViolation(ip);
         return new NextResponse('Forbidden', { status: 403 });
     }
 
-    // Block known scraper bots
+    // Block known scraper bots & attack tools
     if (isBlockedUserAgent(userAgent)) {
-        return new NextResponse('Forbidden', { status: 403 });
+        recordViolation(ip);
+        return new NextResponse('Forbidden - Automated Scraper / Scanner Blocked', { status: 403 });
+    }
+
+    // Multi-tier Anti-DDoS Rate Limiting
+    const category = getRateLimitCategory(pathname);
+    const rateCheck = checkRateLimit(ip, category);
+    if (!rateCheck.allowed) {
+        recordViolation(ip);
+        return new NextResponse('Too Many Requests - Anti-DDoS Protection Active', { 
+            status: 429,
+            headers: {
+                'Retry-After': rateCheck.retryAfter.toString(),
+                'X-RateLimit-Limit': rateCheck.limit.toString(),
+                'X-RateLimit-Remaining': '0',
+                'X-RateLimit-Category': category,
+            }
+        });
     }
 
     // -------------------------------------------------------------

@@ -83,12 +83,26 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  if (urlParam.length > 512) {
+    return new Response(
+      JSON.stringify({ error: "URL exceeds maximum length" }),
+      { status: 414, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
   let parsedUrl: URL;
   try {
     parsedUrl = new URL(urlParam);
   } catch {
     return new Response(
       JSON.stringify({ error: "Invalid url" }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  if (parsedUrl.protocol !== "https:") {
+    return new Response(
+      JSON.stringify({ error: "Only HTTPS protocol allowed" }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
@@ -100,6 +114,14 @@ export async function GET(req: NextRequest) {
       JSON.stringify({ error: "Forbidden host" }),
       { status: 403, headers: { "Content-Type": "application/json" } }
     );
+  }
+
+  // Sanitize cache-busting params to preserve memoryCache efficiency against cache-busting DDoS attacks
+  const allowedQueryParams = new Set(["page", "limit", "keyword", "sort_field", "sort_type", "sort_lang", "category", "country", "year"]);
+  for (const key of Array.from(parsedUrl.searchParams.keys())) {
+    if (!allowedQueryParams.has(key)) {
+      parsedUrl.searchParams.delete(key);
+    }
   }
 
   const cacheKey = parsedUrl.toString();
