@@ -22,7 +22,6 @@ import {
   Tv,
   ShieldCheck,
   FastForward,
-  Sparkles,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -170,10 +169,6 @@ export default function VideoPlayer({
   const adRangesRef = useRef<AdRange[]>([]);
   const bannerRangesRef = useRef<AdRange[]>([]);
   const [adRanges, setAdRanges] = useState<AdRange[]>([]);
-  const [activeAdRange, setActiveAdRange] = useState<AdRange | null>(null);
-  const [skipNotice, setSkipNotice] = useState<string | null>(null);
-  const skipNoticeTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const lastSkippedAdRef = useRef<number>(-1);
 
   const handleToggleAutoSkipAds = useCallback((enabled: boolean) => {
     setAutoSkipAds(enabled);
@@ -330,7 +325,15 @@ export default function VideoPlayer({
   const skip = useCallback((seconds: number) => {
     if (videoRef.current) {
       const maxDuration = videoRef.current.duration || 999999;
-      const newTime = Math.max(0, Math.min(maxDuration, videoRef.current.currentTime + seconds));
+      let newTime = Math.max(0, Math.min(maxDuration, videoRef.current.currentTime + seconds));
+      if (adRangesRef.current.length > 0) {
+        for (const range of adRangesRef.current) {
+          if (newTime >= range.start - 0.35 && newTime < range.end - 0.1) {
+            newTime = seconds >= 0 ? range.end + 0.15 : Math.max(0, range.start - 0.5);
+            break;
+          }
+        }
+      }
       videoRef.current.currentTime = newTime;
       setCurrentTime(newTime);
       showControlsHandler();
@@ -364,7 +367,16 @@ export default function VideoPlayer({
   }, [showControlsHandler]);
 
   const handleSeekCommit = useCallback((value: number[]) => {
-    const targetTime = value[0];
+    let targetTime = value[0];
+    // Tự động bỏ qua quảng cáo nếu người xem tua trúng vào vùng video quảng cáo cờ bạc
+    if (adRangesRef.current.length > 0) {
+      for (const range of adRangesRef.current) {
+        if (targetTime >= range.start - 0.35 && targetTime < range.end - 0.1) {
+          targetTime = range.end + 0.15;
+          break;
+        }
+      }
+    }
     if (videoRef.current) {
       videoRef.current.currentTime = targetTime;
     }
@@ -607,8 +619,6 @@ export default function VideoPlayer({
     adRangesRef.current = [];
     bannerRangesRef.current = [];
     setAdRanges([]);
-    setActiveAdRange(null);
-    lastSkippedAdRef.current = -1;
 
     if (!videoUrl) return;
 
@@ -618,6 +628,15 @@ export default function VideoPlayer({
         if (data.commercialRanges.length > 0) {
           adRangesRef.current = data.commercialRanges;
           setAdRanges(data.commercialRanges);
+          if (videoRef.current && autoSkipAds) {
+            const current = videoRef.current.currentTime;
+            for (const range of data.commercialRanges) {
+              if (current >= range.start - 0.35 && current < range.end - 0.1) {
+                videoRef.current.currentTime = range.end + 0.15;
+                break;
+              }
+            }
+          }
         }
         if (data.bannerRanges.length > 0) {
           bannerRangesRef.current = data.bannerRanges;
@@ -938,6 +957,15 @@ export default function VideoPlayer({
               if (parsedData?.commercialRanges?.length > 0) {
                 adRangesRef.current = parsedData.commercialRanges;
                 setAdRanges(parsedData.commercialRanges);
+                if (videoRef.current && autoSkipAds) {
+                  const current = videoRef.current.currentTime;
+                  for (const range of parsedData.commercialRanges) {
+                    if (current >= range.start - 0.35 && current < range.end - 0.1) {
+                      videoRef.current.currentTime = range.end + 0.15;
+                      break;
+                    }
+                  }
+                }
               }
               if (parsedData?.bannerRanges?.length > 0) {
                 bannerRangesRef.current = parsedData.bannerRanges;
@@ -1074,35 +1102,15 @@ export default function VideoPlayer({
         setHasRenderedFirstFrame(true);
       }
 
-      // Auto-Skip Video Ads: Tự động tua bỏ qua đoạn video quảng cáo cờ bạc
+      // Auto-Skip Video Ads: Tự động tua qua ngay lập tức, không chờ, không hiện nút, không hiện thông báo
       if (autoSkipAds && adRangesRef.current.length > 0 && !isSeekingRef.current) {
         for (const range of adRangesRef.current) {
-          if (cur >= range.start - 0.25 && cur < range.end - 0.35) {
-            const rangeKey = Math.round(range.start);
-            if (lastSkippedAdRef.current !== rangeKey) {
-              lastSkippedAdRef.current = rangeKey;
-              video.currentTime = range.end + 0.15;
-              const durationSec = Math.round(range.duration);
-              setSkipNotice(`Đã tự động bỏ qua video quảng cáo cờ bạc (${durationSec}s)`);
-              if (skipNoticeTimerRef.current) clearTimeout(skipNoticeTimerRef.current);
-              skipNoticeTimerRef.current = setTimeout(() => setSkipNotice(null), 3500);
-              return;
-            }
+          if (cur >= range.start - 0.35 && cur < range.end - 0.1) {
+            video.currentTime = range.end + 0.15;
+            return;
           }
         }
       }
-
-      // Nhận diện nếu đang trong vùng quảng cáo để hiện nút "Bỏ qua quảng cáo"
-      let currentActiveRange: AdRange | null = null;
-      if (adRangesRef.current.length > 0) {
-        for (const range of adRangesRef.current) {
-          if (cur >= range.start && cur < range.end) {
-            currentActiveRange = range;
-            break;
-          }
-        }
-      }
-      setActiveAdRange(currentActiveRange);
 
       // Tự động kích hoạt khiên che banner ngay lập tức nếu đang trong phân đoạn banner (convertv8)
       if (adShieldMode === 'auto' && bannerRangesRef.current.length > 0) {
@@ -1877,31 +1885,7 @@ export default function VideoPlayer({
         </div>
       )}
 
-      {/* Floating Skip Ad Button (Hiển thị khi đang phát trúng đoạn video quảng cáo) */}
-      {activeAdRange && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (videoRef.current) {
-              videoRef.current.currentTime = activeAdRange.end + 0.15;
-              setActiveAdRange(null);
-            }
-          }}
-          className="absolute bottom-16 sm:bottom-20 right-4 sm:right-6 z-[55] flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 bg-black/90 hover:bg-black text-brand-green border border-brand-green/60 rounded-xl text-xs sm:text-sm font-bold shadow-[0_10px_35px_rgba(0,0,0,0.9)] backdrop-blur-md cursor-pointer transition-all hover:scale-105 active:scale-95 animate-in fade-in slide-in-from-bottom-3 duration-300 pointer-events-auto"
-        >
-          <FastForward className="w-4 h-4 sm:w-5 sm:h-5 text-brand-green fill-brand-green animate-pulse" />
-          <span>Bỏ qua quảng cáo ({Math.max(1, Math.round(activeAdRange.end - currentTime))}s) ⏩</span>
-        </button>
-      )}
 
-      {/* Auto-Skip Feedback Pill Notification */}
-      {skipNotice && (
-        <div className="absolute bottom-16 sm:bottom-20 left-1/2 -translate-x-1/2 z-[55] flex items-center gap-2 px-4 py-2 bg-black/90 backdrop-blur-md border border-brand-green/50 rounded-full text-xs sm:text-sm text-brand-green font-semibold shadow-2xl animate-in fade-in zoom-in-95 duration-300 pointer-events-none">
-          <Sparkles className="w-4 h-4 text-brand-green animate-pulse" />
-          <span>{skipNotice}</span>
-        </div>
-      )}
 
       {/* Bottom controls bar */}
       <div 
