@@ -29,7 +29,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { AdRange, fetchAndParseAdRanges, extractAdRangesFromFragments } from "@/lib/ad-parser";
+import { AdRange, fetchAndParseAllAdRanges, extractAllAdRangesFromFragments } from "@/lib/ad-parser";
 export type VideoFitMode = 'contain' | 'cover' | 'fill' | '4:3' | '21:9';
 
 interface VideoPlayerProps {
@@ -168,6 +168,7 @@ export default function VideoPlayer({
   // Auto-Skip Video Ads (Tự động phát hiện & bỏ qua các đoạn video clip quảng cáo nổ hũ/cá độ chèn cắt ngang phim)
   const [autoSkipAds, setAutoSkipAds] = useState<boolean>(true);
   const adRangesRef = useRef<AdRange[]>([]);
+  const bannerRangesRef = useRef<AdRange[]>([]);
   const [adRanges, setAdRanges] = useState<AdRange[]>([]);
   const [activeAdRange, setActiveAdRange] = useState<AdRange | null>(null);
   const [skipNotice, setSkipNotice] = useState<string | null>(null);
@@ -601,9 +602,10 @@ export default function VideoPlayer({
   useEffect(() => { videoUrlRef.current = videoUrl; }, [videoUrl]);
   useEffect(() => { posterRef.current = poster; }, [poster]);
 
-  // Tự động phân tích luồng phát m3u8 để trích xuất dải thời gian các video quảng cáo cờ bạc
+  // Tự động phân tích luồng phát m3u8 để trích xuất dải thời gian các video quảng cáo cờ bạc & banner che
   useEffect(() => {
     adRangesRef.current = [];
+    bannerRangesRef.current = [];
     setAdRanges([]);
     setActiveAdRange(null);
     lastSkippedAdRef.current = -1;
@@ -611,10 +613,15 @@ export default function VideoPlayer({
     if (!videoUrl) return;
 
     let isCancelled = false;
-    fetchAndParseAdRanges(videoUrl).then((ranges) => {
-      if (!isCancelled && ranges.length > 0) {
-        adRangesRef.current = ranges;
-        setAdRanges(ranges);
+    fetchAndParseAllAdRanges(videoUrl).then((data) => {
+      if (!isCancelled) {
+        if (data.commercialRanges.length > 0) {
+          adRangesRef.current = data.commercialRanges;
+          setAdRanges(data.commercialRanges);
+        }
+        if (data.bannerRanges.length > 0) {
+          bannerRangesRef.current = data.bannerRanges;
+        }
       }
     });
 
@@ -926,10 +933,13 @@ export default function VideoPlayer({
         hls.on(HLS.Events.LEVEL_LOADED, (e, data) => {
           setIsLoading(false);
           if (data?.details?.fragments) {
-            const parsedRanges = extractAdRangesFromFragments(data.details.fragments);
-            if (parsedRanges.length > 0) {
-              adRangesRef.current = parsedRanges;
-              setAdRanges(parsedRanges);
+            const parsedData = extractAllAdRangesFromFragments(data.details.fragments);
+            if (parsedData.commercialRanges.length > 0) {
+              adRangesRef.current = parsedData.commercialRanges;
+              setAdRanges(parsedData.commercialRanges);
+            }
+            if (parsedData.bannerRanges.length > 0) {
+              bannerRangesRef.current = parsedData.bannerRanges;
             }
           }
         });
@@ -1089,6 +1099,20 @@ export default function VideoPlayer({
         }
       }
       setActiveAdRange(currentActiveRange);
+
+      // Tự động kích hoạt khiên che banner ngay lập tức nếu đang trong phân đoạn banner (convertv8)
+      if (adShieldMode === 'auto' && bannerRangesRef.current.length > 0) {
+        let inBannerRange = false;
+        for (const range of bannerRangesRef.current) {
+          if (cur >= range.start - 0.5 && cur <= range.end + 0.5) {
+            inBannerRange = true;
+            break;
+          }
+        }
+        if (inBannerRange) {
+          setIsAdDetected(true);
+        }
+      }
 
 
       // Throttle UI currentTime state updates to ~250ms to save CPU & avoid frame drops on mobile
@@ -1341,25 +1365,25 @@ export default function VideoPlayer({
         if (!canvas) {
           canvas = document.createElement('canvas');
           canvas.width = 160;
-          canvas.height = 20;
+          canvas.height = 36;
           detectorCanvasRef.current = canvas;
         }
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         if (ctx) {
-          // Lấy dải mép trên 6% nơi đóng dấu quảng cáo bài bạc
-          const sampleHeight = Math.max(Math.round(vh * 0.06), 12);
-          ctx.drawImage(video, 0, 0, vw, sampleHeight, 0, 0, 160, 20);
+          // Lấy dải mép trên 22% nơi đóng dấu quảng cáo bài bạc (kể cả phim tỉ lệ 2.35:1 có letterbox)
+          const sampleHeight = Math.max(Math.round(vh * 0.22), 36);
+          ctx.drawImage(video, 0, 0, vw, sampleHeight, 0, 0, 160, 36);
 
-          const imgData = ctx.getImageData(0, 0, 160, 20);
+          const imgData = ctx.getImageData(0, 0, 160, 36);
           const data = imgData.data;
 
-          const currentLum = new Uint8Array(160 * 20);
+          const currentLum = new Uint8Array(160 * 36);
           let edgeTransitions = 0;
           let brightPixels = 0;
           let darkPixels = 0;
 
-          // Quét ma trận điểm ảnh ngang
-          for (let y = 2; y < 18; y++) {
+          // Quét ma trận điểm ảnh ngang từ hàng 2 đến 34
+          for (let y = 2; y < 35; y++) {
             let prevLum = -1;
             for (let x = 4; x < 156; x++) {
               const idx = (y * 160 + x) * 4;
@@ -1369,12 +1393,12 @@ export default function VideoPlayer({
               const lum = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
               currentLum[y * 160 + x] = lum;
 
-              if (lum > 185) brightPixels++;
-              if (lum < 50) darkPixels++;
+              if (lum > 135) brightPixels++;
+              if (lum < 55) darkPixels++;
 
               if (prevLum >= 0) {
                 const diff = Math.abs(lum - prevLum);
-                if (diff > 55) edgeTransitions++;
+                if (diff > 45) edgeTransitions++;
               }
               prevLum = lum;
             }
@@ -1387,22 +1411,27 @@ export default function VideoPlayer({
             let diffSum = 0;
             let comparedPixels = 0;
             for (let i = 0; i < currentLum.length; i += 4) {
-              if (currentLum[i] > 160 || currentLum[i] < 60) {
+              if (currentLum[i] > 130 || currentLum[i] < 50) {
                 diffSum += Math.abs(currentLum[i] - prevLum[i]);
                 comparedPixels++;
               }
             }
-            if (comparedPixels > 30) {
+            if (comparedPixels > 25) {
               const avgDiff = diffSum / comparedPixels;
-              if (avgDiff < 14) {
+              if (avgDiff < 18) {
                 isTemporallyStatic = true;
               }
+            }
+          } else {
+            // Lần quét đầu tiên chưa có prevLum: nếu mật độ nét chữ cao vượt trội thì tính là tĩnh
+            if (edgeTransitions >= 150 && brightPixels >= 60) {
+              isTemporallyStatic = true;
             }
           }
           prevFrameLuminanceRef.current = currentLum;
 
           // Quảng cáo cờ bạc: chữ có độ tương phản cao, mật độ cạnh chữ dày và cố định qua thời gian
-          if (edgeTransitions >= 65 && brightPixels >= 35 && darkPixels >= 35 && isTemporallyStatic) {
+          if (edgeTransitions >= 70 && brightPixels >= 35 && darkPixels >= 40 && isTemporallyStatic) {
             detected = true;
           }
         }
@@ -1410,11 +1439,22 @@ export default function VideoPlayer({
         detected = false;
       }
 
+      // Check thêm phân đoạn banner đã xác định từ m3u8 playlist (đảm bảo độ tin cậy 100%)
+      if (!detected && bannerRangesRef.current.length > 0) {
+        const cur = video.currentTime;
+        for (const range of bannerRangesRef.current) {
+          if (cur >= range.start - 0.5 && cur <= range.end + 0.5) {
+            detected = true;
+            break;
+          }
+        }
+      }
+
       if (detected) {
         consecutiveDetectionsRef.current++;
         consecutiveMissesRef.current = 0;
-        // Cần ít nhất 2 lần quét liên tiếp xác nhận có dải quảng cáo tĩnh mới kích hoạt che
-        if (consecutiveDetectionsRef.current >= 2) {
+        // Kích hoạt mượt mà ngay lập tức khi phát hiện quảng cáo
+        if (consecutiveDetectionsRef.current >= 1) {
           setIsAdDetected(true);
         }
       } else {
@@ -1426,7 +1466,7 @@ export default function VideoPlayer({
           setIsAdDetected(false);
         }
       }
-    }, 1200);
+    }, 800);
 
     return () => {
       clearInterval(checkInterval);
@@ -1655,6 +1695,7 @@ export default function VideoPlayer({
         <video 
           ref={videoRef} 
           {...({ autoPictureInPicture: "true" } as any)}
+          crossOrigin="anonymous"
           className="w-full h-full"
           style={{
             ...getVideoTransformStyle(),
@@ -1698,11 +1739,11 @@ export default function VideoPlayer({
         className={cn(
           "absolute top-0 left-0 right-0 z-[28] transition-all duration-500 overflow-hidden pointer-events-none",
           (adShieldMode === 'always' || (adShieldMode === 'auto' && isAdDetected))
-            ? "opacity-100 h-10 sm:h-12 md:h-14 lg:h-16" 
+            ? "opacity-100 h-[25%] sm:h-[24%]" 
             : "opacity-0 h-0"
         )}
       >
-        <div className="w-full h-full bg-gradient-to-b from-black/95 via-black/85 via-65% to-transparent" />
+        <div className="w-full h-full bg-gradient-to-b from-black/98 via-black/95 via-80% to-transparent" />
       </div>
 
 

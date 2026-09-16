@@ -60,10 +60,10 @@ const EmbedPlayer = ({
             <div
                 className={cn(
                     "absolute top-0 left-0 right-0 z-20 pointer-events-none overflow-hidden transition-all duration-300",
-                    adShield ? "opacity-100 h-10 sm:h-12 md:h-14 lg:h-16" : "opacity-0 h-0"
+                    adShield ? "opacity-100 h-[25%] sm:h-[24%]" : "opacity-0 h-0"
                 )}
             >
-                <div className="w-full h-full bg-gradient-to-b from-black/95 via-black/85 via-65% to-transparent" />
+                <div className="w-full h-full bg-gradient-to-b from-black/98 via-black/95 via-80% to-transparent" />
             </div>
 
             {/* Top gradient overlay for hover controls */}

@@ -2,29 +2,48 @@ export interface AdRange {
   start: number;
   end: number;
   duration: number;
+  type?: 'commercial' | 'banner';
+}
+
+export interface ParsedAdData {
+  commercialRanges: AdRange[]; // Standalone commercial clips to auto-skip
+  bannerRanges: AdRange[];     // Burned-in banner watermark ranges to auto-mask
 }
 
 // In-memory cache for parsed m3u8 ad ranges to prevent re-fetching
-const adRangesCache = new Map<string, AdRange[]>();
+const adRangesCache = new Map<string, ParsedAdData>();
 
 /**
- * Checks whether a given segment URL/filename matches known third-party casino/gambling ad patterns.
+ * Checks whether a given segment URL/filename is a re-encoded film segment with a burned-in banner.
+ * These segments contain real film content with gambling text overlays, so they must NOT be skipped.
+ * Instead, they trigger the real-time banner shield mask.
  */
-export function isAdSegment(url: string, duration?: number): boolean {
+export function isBannerSegment(url: string): boolean {
+  if (!url) return false;
+  const lower = url.toLowerCase();
+  if (lower.includes('convertv8')) return true;
+  if (lower.includes('banner_ad')) return true;
+  return false;
+}
+
+/**
+ * Checks whether a given segment URL/filename matches known standalone commercial video ad clips.
+ * (e.g. 15s - 30s dancing girl/slot machine spliced commercials).
+ */
+export function isCommercialSegment(url: string, duration?: number): boolean {
   if (!url) return false;
   const lower = url.toLowerCase();
 
-  // 1. Specific paths used by pirate syndicates (KKPhim, Ophim, NguonC, etc.)
-  if (lower.includes('convertv8')) return true;
-  if (lower.includes('/v8/')) return true;
-  if (lower.includes('segment_') && (duration === undefined || duration < 8)) return true;
+  // Re-encoded film segments with banners are handled by isBannerSegment, do not skip film
+  if (lower.includes('convertv8')) return false;
 
-  // 2. Generic commercial keywords
-  if (lower.includes('advert') || lower.includes('banner_ad') || lower.includes('/ad/') || lower.includes('quangcao')) {
+  // Standalone spliced commercial video segments
+  if (lower.includes('/v8/') && (lower.includes('segment_') || (duration !== undefined && duration < 6))) {
     return true;
   }
-
-  // 3. Known casino sponsor subdomains or filenames
+  if (lower.includes('advert') || lower.includes('/ad/') || lower.includes('quangcao') || lower.includes('commercial')) {
+    return true;
+  }
   if (lower.includes('9922') || lower.includes('okvip') || lower.includes('shbet') || lower.includes('789bet')) {
     return true;
   }
@@ -33,10 +52,17 @@ export function isAdSegment(url: string, duration?: number): boolean {
 }
 
 /**
- * Parses ad ranges from m3u8 playlist text.
+ * Checks whether a segment is any kind of ad (commercial or banner).
  */
-export function parseAdRangesFromM3U8Text(m3u8Text: string): AdRange[] {
-  if (!m3u8Text) return [];
+export function isAdSegment(url: string, duration?: number): boolean {
+  return isCommercialSegment(url, duration) || isBannerSegment(url);
+}
+
+/**
+ * Parses both commercial and banner ad ranges from m3u8 playlist text.
+ */
+export function parseAllAdRangesFromM3U8Text(m3u8Text: string): ParsedAdData {
+  if (!m3u8Text) return { commercialRanges: [], bannerRanges: [] };
 
   const lines = m3u8Text.split('\n');
   const segments: Array<{ start: number; end: number; dur: number; seg: string; isDiscontinuity: boolean }> = [];
@@ -71,91 +97,167 @@ export function parseAdRangesFromM3U8Text(m3u8Text: string): AdRange[] {
     }
   }
 
-  const adRanges: AdRange[] = [];
-  let inAd = false;
-  let adStart = 0;
-  let adEnd = 0;
+  // 1. Group commercial ranges
+  const commercialRanges: AdRange[] = [];
+  let inComm = false;
+  let commStart = 0;
+  let commEnd = 0;
 
   for (let i = 0; i < segments.length; i++) {
     const s = segments[i];
-    const isAd = isAdSegment(s.seg, s.dur);
+    const isComm = isCommercialSegment(s.seg, s.dur);
 
-    if (isAd) {
-      if (!inAd) {
-        inAd = true;
-        adStart = s.start;
+    if (isComm) {
+      if (!inComm) {
+        inComm = true;
+        commStart = s.start;
       }
-      adEnd = s.end;
+      commEnd = s.end;
     } else {
-      if (inAd) {
-        inAd = false;
-        const dur = adEnd - adStart;
+      if (inComm) {
+        inComm = false;
+        const dur = commEnd - commStart;
         if (dur >= 4 && dur <= 90) {
-          adRanges.push({ start: adStart, end: adEnd, duration: dur });
+          commercialRanges.push({ start: commStart, end: commEnd, duration: dur, type: 'commercial' });
         }
       }
     }
   }
-
-  if (inAd) {
-    const dur = adEnd - adStart;
+  if (inComm) {
+    const dur = commEnd - commStart;
     if (dur >= 4 && dur <= 90) {
-      adRanges.push({ start: adStart, end: adEnd, duration: dur });
+      commercialRanges.push({ start: commStart, end: commEnd, duration: dur, type: 'commercial' });
     }
   }
 
-  return adRanges;
+  // 2. Group banner ranges
+  const bannerRanges: AdRange[] = [];
+  let inBanner = false;
+  let bannerStart = 0;
+  let bannerEnd = 0;
+
+  for (let i = 0; i < segments.length; i++) {
+    const s = segments[i];
+    const isBanner = isBannerSegment(s.seg);
+
+    if (isBanner) {
+      if (!inBanner) {
+        inBanner = true;
+        bannerStart = s.start;
+      }
+      bannerEnd = s.end;
+    } else {
+      if (inBanner) {
+        inBanner = false;
+        const dur = bannerEnd - bannerStart;
+        if (dur >= 3) {
+          bannerRanges.push({ start: bannerStart, end: bannerEnd, duration: dur, type: 'banner' });
+        }
+      }
+    }
+  }
+  if (inBanner) {
+    const dur = bannerEnd - bannerStart;
+    if (dur >= 3) {
+      bannerRanges.push({ start: bannerStart, end: bannerEnd, duration: dur, type: 'banner' });
+    }
+  }
+
+  return { commercialRanges, bannerRanges };
 }
 
 /**
- * Extracts ad ranges directly from Hls.js fragment objects (zero network latency).
+ * Parses commercial ad ranges from m3u8 playlist text (backwards compatible).
  */
-export function extractAdRangesFromFragments(fragments: any[]): AdRange[] {
-  if (!Array.isArray(fragments) || fragments.length === 0) return [];
+export function parseAdRangesFromM3U8Text(m3u8Text: string): AdRange[] {
+  return parseAllAdRangesFromM3U8Text(m3u8Text).commercialRanges;
+}
 
-  const adRanges: AdRange[] = [];
-  let inAd = false;
-  let adStart = 0;
-  let adEnd = 0;
+/**
+ * Extracts all ad ranges directly from Hls.js fragment objects (zero network latency).
+ */
+export function extractAllAdRangesFromFragments(fragments: any[]): ParsedAdData {
+  if (!Array.isArray(fragments) || fragments.length === 0) return { commercialRanges: [], bannerRanges: [] };
+
+  const commercialRanges: AdRange[] = [];
+  let inComm = false;
+  let commStart = 0;
+  let commEnd = 0;
+
+  const bannerRanges: AdRange[] = [];
+  let inBanner = false;
+  let bannerStart = 0;
+  let bannerEnd = 0;
 
   for (let i = 0; i < fragments.length; i++) {
     const f = fragments[i];
     const url = f.relurl || f.url || '';
     const dur = f.duration || 0;
-    const isAd = isAdSegment(url, dur);
 
-    if (isAd) {
-      if (!inAd) {
-        inAd = true;
-        adStart = f.start;
+    // Commercial check
+    if (isCommercialSegment(url, dur)) {
+      if (!inComm) {
+        inComm = true;
+        commStart = f.start;
       }
-      adEnd = f.start + dur;
+      commEnd = f.start + dur;
     } else {
-      if (inAd) {
-        inAd = false;
-        const duration = adEnd - adStart;
+      if (inComm) {
+        inComm = false;
+        const duration = commEnd - commStart;
         if (duration >= 4 && duration <= 90) {
-          adRanges.push({ start: adStart, end: adEnd, duration });
+          commercialRanges.push({ start: commStart, end: commEnd, duration, type: 'commercial' });
+        }
+      }
+    }
+
+    // Banner check
+    if (isBannerSegment(url)) {
+      if (!inBanner) {
+        inBanner = true;
+        bannerStart = f.start;
+      }
+      bannerEnd = f.start + dur;
+    } else {
+      if (inBanner) {
+        inBanner = false;
+        const duration = bannerEnd - bannerStart;
+        if (duration >= 3) {
+          bannerRanges.push({ start: bannerStart, end: bannerEnd, duration, type: 'banner' });
         }
       }
     }
   }
 
-  if (inAd) {
-    const duration = adEnd - adStart;
+  if (inComm) {
+    const duration = commEnd - commStart;
     if (duration >= 4 && duration <= 90) {
-      adRanges.push({ start: adStart, end: adEnd, duration });
+      commercialRanges.push({ start: commStart, end: commEnd, duration, type: 'commercial' });
     }
   }
 
-  return adRanges;
+  if (inBanner) {
+    const duration = bannerEnd - bannerStart;
+    if (duration >= 3) {
+      bannerRanges.push({ start: bannerStart, end: bannerEnd, duration, type: 'banner' });
+    }
+  }
+
+  return { commercialRanges, bannerRanges };
 }
 
 /**
- * Fetches and parses an m3u8 playlist URL, resolving master playlists if necessary.
+ * Extracts commercial ad ranges directly from Hls.js fragment objects (backwards compatible).
  */
-export async function fetchAndParseAdRanges(videoUrl: string): Promise<AdRange[]> {
-  if (!videoUrl || !videoUrl.includes('.m3u8')) return [];
+export function extractAdRangesFromFragments(fragments: any[]): AdRange[] {
+  return extractAllAdRangesFromFragments(fragments).commercialRanges;
+}
+
+/**
+ * Fetches and parses all ad ranges (both commercial and banner) from an m3u8 playlist URL.
+ */
+export async function fetchAndParseAllAdRanges(videoUrl: string): Promise<ParsedAdData> {
+  if (!videoUrl || !videoUrl.includes('.m3u8')) return { commercialRanges: [], bannerRanges: [] };
 
   if (adRangesCache.has(videoUrl)) {
     return adRangesCache.get(videoUrl)!;
@@ -168,7 +270,7 @@ export async function fetchAndParseAdRanges(videoUrl: string): Promise<AdRange[]
     const res = await fetch(videoUrl, { signal: controller.signal });
     clearTimeout(timeout);
 
-    if (!res.ok) return [];
+    if (!res.ok) return { commercialRanges: [], bannerRanges: [] };
 
     const text = await res.text();
     let targetText = text;
@@ -190,10 +292,18 @@ export async function fetchAndParseAdRanges(videoUrl: string): Promise<AdRange[]
       }
     }
 
-    const ranges = parseAdRangesFromM3U8Text(targetText);
-    adRangesCache.set(videoUrl, ranges);
-    return ranges;
+    const data = parseAllAdRangesFromM3U8Text(targetText);
+    adRangesCache.set(videoUrl, data);
+    return data;
   } catch {
-    return [];
+    return { commercialRanges: [], bannerRanges: [] };
   }
+}
+
+/**
+ * Fetches and parses commercial ad ranges from an m3u8 playlist URL (backwards compatible).
+ */
+export async function fetchAndParseAdRanges(videoUrl: string): Promise<AdRange[]> {
+  const data = await fetchAndParseAllAdRanges(videoUrl);
+  return data.commercialRanges;
 }
