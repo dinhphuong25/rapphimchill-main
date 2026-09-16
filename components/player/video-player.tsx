@@ -1103,7 +1103,7 @@ export default function VideoPlayer({
       }
 
       // Auto-Skip Video Ads: Tự động tua qua ngay lập tức, không chờ, không hiện nút, không hiện thông báo
-      if (autoSkipAds && adRangesRef.current.length > 0 && !isSeekingRef.current) {
+      if (adRangesRef.current.length > 0 && !isSeekingRef.current) {
         for (const range of adRangesRef.current) {
           if (cur >= range.start - 0.35 && cur < range.end - 0.1) {
             video.currentTime = range.end + 0.15;
@@ -1250,11 +1250,24 @@ export default function VideoPlayer({
       onErrorRef.current?.(err);
     };
 
+    const checkAndSkipIfInAdRange = () => {
+      if (adRangesRef.current.length > 0 && video) {
+        const cur = video.currentTime;
+        for (const range of adRangesRef.current) {
+          if (cur >= range.start - 0.35 && cur < range.end - 0.1) {
+            video.currentTime = range.end + 0.15;
+            break;
+          }
+        }
+      }
+    };
+
     const onPlayEvent = () => {
       setIsPlaying(true);
       setHasRenderedFirstFrame(true);
       setIsSlowNetwork(false);
       hideLoading();
+      checkAndSkipIfInAdRange();
     };
     const onPauseEvent = () => {
       setIsPlaying(false);
@@ -1269,11 +1282,16 @@ export default function VideoPlayer({
       }
     };
 
+    const onSeekedEvent = () => {
+      checkAndSkipIfInAdRange();
+    };
+
     video.addEventListener('canplay', hideLoading);
     video.addEventListener('canplaythrough', hideLoading);
     video.addEventListener('loadeddata', hideLoading);
     video.addEventListener('playing', hideLoading);
     video.addEventListener('timeupdate', onTimeUpdate);
+    video.addEventListener('seeked', onSeekedEvent);
     video.addEventListener('ended', onEndedEvent);
     video.addEventListener('play', onPlayEvent);
     video.addEventListener('pause', onPauseEvent);
@@ -1288,6 +1306,7 @@ export default function VideoPlayer({
       }
       video.removeEventListener('play', onPlayEvent);
       video.removeEventListener('pause', onPauseEvent);
+      video.removeEventListener('seeked', onSeekedEvent);
       video.removeEventListener('canplay', hideLoading);
       video.removeEventListener('canplaythrough', hideLoading);
       video.removeEventListener('loadeddata', hideLoading);
