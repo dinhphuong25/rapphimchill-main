@@ -10,7 +10,7 @@ interface LiveStatusProps {
 }
 
 export default function LiveStatus({ lastUpdated, isRefreshing, onRefresh }: LiveStatusProps) {
-    const [timeAgo, setTimeAgo] = useState<string>("");
+    const [timeAgo, setTimeAgo] = useState<string>("vừa xong");
 
     useEffect(() => {
         if (!lastUpdated) return;
@@ -40,19 +40,30 @@ export default function LiveStatus({ lastUpdated, isRefreshing, onRefresh }: Liv
     }, [lastUpdated]);
 
     return (
-        <div className="flex items-center gap-2 text-xs text-gray-400">
-            <div className={`w-2 h-2 rounded-full ${isRefreshing ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'}`} />
-            <span>
-                {isRefreshing ? "Đang cập nhật..." : `Cập nhật ${timeAgo}`}
+        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] backdrop-blur-md text-xs text-white/75 shadow-sm transition-all duration-200">
+            {isRefreshing ? (
+                <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
+                </span>
+            ) : (
+                <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-green/80 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-green"></span>
+                </span>
+            )}
+            <span className="font-medium tracking-tight">
+                {isRefreshing ? "Đang đồng bộ..." : `Cập nhật trực tiếp • ${timeAgo}`}
             </span>
             {onRefresh && (
                 <button
                     onClick={onRefresh}
                     disabled={isRefreshing}
-                    className="p-1 rounded-full hover:bg-white/10 transition-colors disabled:opacity-50"
-                    title="Làm mới dữ liệu"
+                    className="p-1 -mr-1 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors disabled:opacity-40"
+                    title="Làm mới phim mới nhất"
+                    aria-label="Làm mới dữ liệu"
                 >
-                    <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`w-3 h-3 ${isRefreshing ? "animate-spin text-amber-400" : ""}`} />
                 </button>
             )}
         </div>

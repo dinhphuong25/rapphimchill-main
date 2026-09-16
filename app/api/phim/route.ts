@@ -104,7 +104,9 @@ export async function GET(req: NextRequest) {
   const now = Date.now();
   const cached = memoryCache.get(cacheKey);
   const isNewUpdates = parsedUrl.pathname.includes("phim-moi-cap-nhat") || parsedUrl.search.includes("phim-moi-cap-nhat");
-  const currentTTL = isNewUpdates ? 60_000 : MEMORY_CACHE_TTL;
+  const isMovieDetail = parsedUrl.pathname.startsWith("/phim/");
+  const isRealtime = isNewUpdates || isMovieDetail;
+  const currentTTL = isRealtime ? 60_000 : MEMORY_CACHE_TTL;
 
   // 1. Return from In-Memory Cache if fresh
   if (cached && now - cached.timestamp < currentTTL) {
@@ -112,7 +114,7 @@ export async function GET(req: NextRequest) {
     return new Response(cached.data, {
       headers: {
         "Content-Type": "application/json; charset=utf-8",
-        "Cache-Control": isNewUpdates 
+        "Cache-Control": isRealtime 
           ? "public, s-maxage=60, stale-while-revalidate=120"
           : "public, s-maxage=3600, stale-while-revalidate=86400",
         "X-Cache": "HIT-MEMORY",
@@ -168,7 +170,7 @@ export async function GET(req: NextRequest) {
     return new Response(jsonString, {
       headers: {
         "Content-Type": "application/json; charset=utf-8",
-        "Cache-Control": isNewUpdates 
+        "Cache-Control": isRealtime 
           ? "public, s-maxage=60, stale-while-revalidate=120"
           : "public, s-maxage=3600, stale-while-revalidate=86400",
         "X-Cache": "MISS-UPSTREAM",

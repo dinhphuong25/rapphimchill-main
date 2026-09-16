@@ -203,6 +203,14 @@ function resolveInitialWatchState(
 
 export default function Description({ movie, serverData }: any) {
   const [playerMode, setPlayerMode] = useState<'m3u8' | 'embed'>('m3u8');
+  const [currentServerData, setCurrentServerData] = useState<any[]>(() => serverData || []);
+  const [newestEpisodeIndices, setNewestEpisodeIndices] = useState<Record<number, boolean>>({});
+
+  useEffect(() => {
+    if (Array.isArray(serverData) && serverData.length > 0) {
+      setCurrentServerData(serverData);
+    }
+  }, [serverData]);
   
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState<{
     server: number;
@@ -339,9 +347,9 @@ export default function Description({ movie, serverData }: any) {
 
   // Load completed episodes from storage on server change
   useEffect(() => {
-    if (typeof window === "undefined" || !movie?.slug || !serverData) return;
+    if (typeof window === "undefined" || !movie?.slug || !currentServerData) return;
     const serverIndex = currentEpisodeIndex?.server || 0;
-    const episodes = serverData[serverIndex]?.server_data || [];
+    const episodes = currentServerData[serverIndex]?.server_data || [];
     const completedMap: Record<number, boolean> = {};
     episodes.forEach((_: any, idx: number) => {
       if (localStorage.getItem(`completedEp_${movie.slug}_${serverIndex}_${idx}`) === "true") {
@@ -349,7 +357,7 @@ export default function Description({ movie, serverData }: any) {
       }
     });
     setCompletedEpisodes(completedMap);
-  }, [movie?.slug, serverData, currentEpisodeIndex?.server]);
+  }, [movie?.slug, currentServerData, currentEpisodeIndex?.server]);
 
   const clearEpisodeProgress = useCallback((serverIndex: number, episodeIndex: number) => {
     localStorage.removeItem(getEpisodeProgressKey(serverIndex, episodeIndex));
@@ -369,7 +377,7 @@ export default function Description({ movie, serverData }: any) {
     const newResumeTime = Number.isFinite(savedEpProgress) && savedEpProgress > 0 ? savedEpProgress : 0;
     setResumeTime(newResumeTime);
 
-    const epData = serverData?.[serverIndex]?.server_data?.[episodeIndex];
+    const epData = currentServerData?.[serverIndex]?.server_data?.[episodeIndex];
     const epName = epData?.name || `Tập ${episodeIndex + 1}`;
     const epSlug = epData?.slug || "";
 
@@ -407,18 +415,89 @@ export default function Description({ movie, serverData }: any) {
     if (user && Array.isArray(updated) && updated.length > 0) {
       updateServerData({ history: updated });
     }
-  }, [serverData, movie?.slug, getEpisodeProgressKey, updateHistoryProgress, updateServerData, user]);
+  }, [currentServerData, movie?.slug, getEpisodeProgressKey, updateHistoryProgress, updateServerData, user]);
 
   const handleServerChange = (serverIndex: number) => {
     const epIndex = 0;
-    if (serverData && serverData[serverIndex]?.server_data?.length > 0) {
-      const firstEpisode = serverData[serverIndex].server_data[0];
+    if (currentServerData && currentServerData[serverIndex]?.server_data?.length > 0) {
+      const firstEpisode = currentServerData[serverIndex].server_data[0];
       const link = playerMode === 'm3u8' ? firstEpisode?.link_m3u8 : firstEpisode?.link_embed;
       if (link) {
         handleSelectEpisode(link, serverIndex, epIndex);
       }
     }
   };
+
+  // Real-time episode check in background for ongoing series
+  const lastSyncCheckRef = useRef<number>(Date.now());
+  const isSyncingRef = useRef<boolean>(false);
+
+  const checkNewEpisodes = useCallback(async () => {
+    if (!movie?.slug || isSyncingRef.current) return;
+    isSyncingRef.current = true;
+    try {
+      const res = await fetch(`/api/phim?url=${encodeURIComponent(`https://phimapi.com/phim/${movie.slug}`)}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const freshServers = data?.episodes || [];
+      if (Array.isArray(freshServers) && freshServers.length > 0) {
+        const curServerIdx = currentEpisodeIndex?.server || 0;
+        const currentEpCount = currentServerData[curServerIdx]?.server_data?.length || 0;
+        const freshEpCount = freshServers[curServerIdx]?.server_data?.length || 0;
+
+        if (freshEpCount > currentEpCount) {
+          setCurrentServerData(freshServers);
+          const newIndices: Record<number, boolean> = {};
+          for (let i = currentEpCount; i < freshEpCount; i++) {
+            newIndices[i] = true;
+          }
+          setNewestEpisodeIndices(newIndices);
+
+          const newestEp = freshServers[curServerIdx]?.server_data?.[freshEpCount - 1];
+          const newEpName = newestEp?.name || `Tập ${freshEpCount}`;
+          toast.success(`🎉 Đã có ${newEpName} mới!`, {
+            description: "Danh sách tập đã tự động cập nhật.",
+            action: {
+              label: "Xem ngay",
+              onClick: () => {
+                const link = playerMode === 'm3u8' ? newestEp?.link_m3u8 : newestEp?.link_embed;
+                if (link) {
+                  handleSelectEpisode(link, curServerIdx, freshEpCount - 1);
+                }
+              },
+            },
+            duration: 9000,
+          });
+        }
+      }
+    } catch {
+      // Non-blocking background sync
+    } finally {
+      isSyncingRef.current = false;
+      lastSyncCheckRef.current = Date.now();
+    }
+  }, [movie?.slug, currentServerData, currentEpisodeIndex?.server, playerMode, handleSelectEpisode]);
+
+  // Periodic check every 60s & on tab visibility change
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        checkNewEpisodes();
+      }
+    }, 60000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible" && Date.now() - lastSyncCheckRef.current > 60000) {
+        checkNewEpisodes();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [checkNewEpisodes]);
 
   // Client-side synchronization on initial load (URL query or local storage)
   useEffect(() => {
@@ -578,29 +657,29 @@ export default function Description({ movie, serverData }: any) {
     }
 
     // Background Prefetch next episode at 70% duration
-    if (duration > 0 && currentTime > duration * 0.7 && serverData && currentEpisodeIndex) {
-      const nextEp = serverData[server]?.server_data?.[episode + 1];
+    if (duration > 0 && currentTime > duration * 0.7 && currentServerData && currentEpisodeIndex) {
+      const nextEp = currentServerData[server]?.server_data?.[episode + 1];
       if (nextEp?.link_m3u8 && prefetchedNextRef.current !== nextEp.link_m3u8) {
         prefetchedNextRef.current = nextEp.link_m3u8;
         fetch(nextEp.link_m3u8, { mode: 'no-cors' }).catch(() => {});
       }
     }
-  }, [currentEpisodeIndex, playerMode, getEpisodeProgressKey, markEpisodeCompleted, updateProgress, updateHistoryProgress, updateServerData, movie, serverData, user, isUserBanned]);
+  }, [currentEpisodeIndex, playerMode, getEpisodeProgressKey, markEpisodeCompleted, updateProgress, updateHistoryProgress, updateServerData, movie, currentServerData, user, isUserBanned]);
 
   const handleNextEpisode = useCallback(() => {
-    if (!serverData || !currentEpisodeIndex) return;
+    if (!currentServerData || !currentEpisodeIndex) return;
     clearEpisodeProgress(currentEpisodeIndex.server, currentEpisodeIndex.episode);
     const { server, episode } = currentEpisodeIndex;
-    const currentServer = serverData[server];
+    const currentServer = currentServerData[server];
     if (!currentServer) return;
     let nextEpisodeIndex = episode + 1;
     let nextServerIndex = server;
     if (nextEpisodeIndex >= currentServer.server_data.length) {
       nextServerIndex = server + 1;
       nextEpisodeIndex = 0;
-      if (nextServerIndex >= serverData.length) return;
+      if (nextServerIndex >= currentServerData.length) return;
     }
-    const nextServer = serverData[nextServerIndex];
+    const nextServer = currentServerData[nextServerIndex];
     if (!nextServer || !nextServer.server_data) return;
     const nextEpisode = nextServer.server_data[nextEpisodeIndex];
     if (nextEpisode) {
@@ -608,20 +687,20 @@ export default function Description({ movie, serverData }: any) {
       handleSelectEpisode(link, nextServerIndex, nextEpisodeIndex);
       toast.info(`Đã chuyển sang ${nextEpisode.name}`);
     }
-  }, [serverData, currentEpisodeIndex, clearEpisodeProgress, playerMode, handleSelectEpisode]);
+  }, [currentServerData, currentEpisodeIndex, clearEpisodeProgress, playerMode, handleSelectEpisode]);
 
   const handlePrevEpisode = useCallback(() => {
-    if (!serverData || !currentEpisodeIndex) return;
+    if (!currentServerData || !currentEpisodeIndex) return;
     const { server, episode } = currentEpisodeIndex;
     if (episode > 0) {
-      const prevEpisode = serverData[server]?.server_data?.[episode - 1];
+      const prevEpisode = currentServerData[server]?.server_data?.[episode - 1];
       if (prevEpisode) {
         const link = playerMode === 'm3u8' ? prevEpisode.link_m3u8 : prevEpisode.link_embed;
         handleSelectEpisode(link, server, episode - 1);
         toast.info(`Đã chuyển sang ${prevEpisode.name}`);
       }
     } else if (server > 0) {
-      const prevServer = serverData[server - 1];
+      const prevServer = currentServerData[server - 1];
       if (prevServer?.server_data?.length > 0) {
         const lastIdx = prevServer.server_data.length - 1;
         const prevEpisode = prevServer.server_data[lastIdx];
@@ -632,7 +711,7 @@ export default function Description({ movie, serverData }: any) {
         }
       }
     }
-  }, [serverData, currentEpisodeIndex, playerMode, handleSelectEpisode]);
+  }, [currentServerData, currentEpisodeIndex, playerMode, handleSelectEpisode]);
 
   // Global hotkeys for N (Next) and P (Prev)
   useEffect(() => {
@@ -652,41 +731,41 @@ export default function Description({ movie, serverData }: any) {
   }, [handleNextEpisode, handlePrevEpisode]);
 
   const hasNextEpisode = () => {
-    if (!serverData || !currentEpisodeIndex) return false;
+    if (!currentServerData || !currentEpisodeIndex) return false;
     const { server, episode } = currentEpisodeIndex;
-    const currentServer = serverData[server];
+    const currentServer = currentServerData[server];
     if (!currentServer || !currentServer.server_data) return false;
     
     if (episode + 1 < currentServer.server_data.length) return true;
-    if (server + 1 < serverData.length && serverData[server + 1]?.server_data?.length > 0) return true;
+    if (server + 1 < currentServerData.length && currentServerData[server + 1]?.server_data?.length > 0) return true;
     return false;
   };
 
   const hasPrevEpisode = () => {
-    if (!serverData || !currentEpisodeIndex) return false;
+    if (!currentServerData || !currentEpisodeIndex) return false;
     const { server, episode } = currentEpisodeIndex;
     if (episode > 0) return true;
-    if (server > 0 && serverData[server - 1]?.server_data?.length > 0) return true;
+    if (server > 0 && currentServerData[server - 1]?.server_data?.length > 0) return true;
     return false;
   };
 
   const handleSwitchToM3u8 = useCallback(() => {
     setPlayerMode('m3u8');
-    if (currentEpisodeIndex && serverData) {
-      const currentEpisode = serverData[currentEpisodeIndex.server]?.server_data?.[currentEpisodeIndex.episode];
+    if (currentEpisodeIndex && currentServerData) {
+      const currentEpisode = currentServerData[currentEpisodeIndex.server]?.server_data?.[currentEpisodeIndex.episode];
       if (currentEpisode?.link_m3u8) setCurrentEpisodeUrl(currentEpisode.link_m3u8);
     }
     toast.info("Đã chuyển sang Máy chủ Mặc định (HLS)");
-  }, [currentEpisodeIndex, serverData]);
+  }, [currentEpisodeIndex, currentServerData]);
 
   const handleSwitchToEmbed = useCallback(() => {
     setPlayerMode('embed');
-    if (currentEpisodeIndex && serverData) {
-      const currentEpisode = serverData[currentEpisodeIndex.server]?.server_data?.[currentEpisodeIndex.episode];
+    if (currentEpisodeIndex && currentServerData) {
+      const currentEpisode = currentServerData[currentEpisodeIndex.server]?.server_data?.[currentEpisodeIndex.episode];
       if (currentEpisode?.link_embed) setCurrentEpisodeUrl(currentEpisode.link_embed);
     }
     toast.info("Đã chuyển sang Máy chủ Dự phòng (VIP Embed)");
-  }, [currentEpisodeIndex, serverData]);
+  }, [currentEpisodeIndex, currentServerData]);
 
   const handleEnded = useCallback(() => {
     if (currentEpisodeIndex) {
@@ -696,8 +775,8 @@ export default function Description({ movie, serverData }: any) {
 
   const currentEpName =
     currentEpisodeIndex &&
-    serverData?.[currentEpisodeIndex.server]?.server_data?.[currentEpisodeIndex.episode]?.name
-      ? serverData[currentEpisodeIndex.server].server_data[currentEpisodeIndex.episode].name
+    currentServerData?.[currentEpisodeIndex.server]?.server_data?.[currentEpisodeIndex.episode]?.name
+      ? currentServerData[currentEpisodeIndex.server].server_data[currentEpisodeIndex.episode].name
       : "";
 
   if (!movie || !movie.slug) return null;
@@ -767,7 +846,7 @@ export default function Description({ movie, serverData }: any) {
                   <PlayerErrorBoundary
                     onReset={() => {
                       setPlayerMode('m3u8');
-                      const ep = serverData?.[currentEpisodeIndex?.server || 0]?.server_data?.[currentEpisodeIndex?.episode || 0];
+                      const ep = currentServerData?.[currentEpisodeIndex?.server || 0]?.server_data?.[currentEpisodeIndex?.episode || 0];
                       if (ep?.link_m3u8) setCurrentEpisodeUrl(ep.link_m3u8);
                     }}
                     onSwitchToEmbed={() => {
@@ -791,7 +870,7 @@ export default function Description({ movie, serverData }: any) {
                 ) : (
                   <EmbedPlayer
                     videoUrl={
-                      (currentEpisodeIndex && serverData?.[currentEpisodeIndex.server]?.server_data?.[currentEpisodeIndex.episode]?.link_embed) ||
+                      (currentEpisodeIndex && currentServerData?.[currentEpisodeIndex.server]?.server_data?.[currentEpisodeIndex.episode]?.link_embed) ||
                       (currentEpisodeUrl.includes('.m3u8')
                         ? `https://player.phimapi.com/player/?url=${encodeURIComponent(currentEpisodeUrl)}`
                         : currentEpisodeUrl)
@@ -808,7 +887,7 @@ export default function Description({ movie, serverData }: any) {
           {/* Mobile Server Selector & Episode List (Directly after player & toolbar on mobile/tablet) */}
           <div className="w-full lg:hidden">
             <Episode
-              serverData={serverData}
+              serverData={currentServerData}
               currentServerIndex={currentEpisodeIndex?.server || 0}
               currentEpisodeIndex={currentEpisodeIndex?.episode || 0}
               onSelectEpisode={handleSelectEpisode}
@@ -818,6 +897,7 @@ export default function Description({ movie, serverData }: any) {
               onPlayerModeChange={(mode) => setPlayerMode(mode)}
               movieSlug={movie.slug}
               completedEpisodes={completedEpisodes}
+              newestEpisodeIndices={newestEpisodeIndices}
             >
               {favoriteButton}
             </Episode>
@@ -827,7 +907,7 @@ export default function Description({ movie, serverData }: any) {
         {/* Desktop Right Sidebar Episode List */}
         <div className="hidden lg:flex w-full lg:w-[380px] 2xl:w-[420px] shrink-0 flex-col gap-4">
           <Episode
-            serverData={serverData}
+            serverData={currentServerData}
             currentServerIndex={currentEpisodeIndex?.server || 0}
             currentEpisodeIndex={currentEpisodeIndex?.episode || 0}
             onSelectEpisode={handleSelectEpisode}
@@ -837,6 +917,7 @@ export default function Description({ movie, serverData }: any) {
             onPlayerModeChange={(mode) => setPlayerMode(mode)}
             movieSlug={movie.slug}
             completedEpisodes={completedEpisodes}
+            newestEpisodeIndices={newestEpisodeIndices}
           >
             {favoriteButton}
           </Episode>

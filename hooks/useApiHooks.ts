@@ -10,8 +10,8 @@ interface NewUpdatesData {
 }
 
 const API_BASE = "https://phimapi.com";
-const REFRESH_INTERVAL = 300000; // 5 minutes (tránh spam server khi 100k users online)
-const CACHE_TTL = 120000; // 2 minutes client-side cache
+const REFRESH_INTERVAL = 60000; // 60s auto-refresh for real-time freshness
+const CACHE_TTL = 60000; // 1 minute client-side cache
 
 // Route all fetches through /api/phim proxy for server-side caching
 function proxyUrl(url: string): string {
@@ -59,14 +59,15 @@ async function fetchNewUpdates(): Promise<any[]> {
     const cacheKey = "new-updates-v2";
     return apiCache.fetchWithCache(cacheKey, async () => {
         const data = await proxyFetch(`${API_BASE}/danh-sach/phim-moi-cap-nhat-v2?page=1&limit=30`);
-        const movies = data.items || [];
-        const qualityOrder: { [key: string]: number } = { FHD: 1, HD: 2, SD: 3, CAM: 4 };
-        movies.sort((a: any, b: any) => {
-            const qA = qualityOrder[a.quality?.toUpperCase()] || 5;
-            const qB = qualityOrder[b.quality?.toUpperCase()] || 5;
-            return qA - qB;
-        });
-        return movies.slice(0, 20);
+        const items = data.items || [];
+        const cdnDomain = "https://phimimg.com";
+        // Preserve 100% upstream chronological order for instant newest updates
+        const normalized = items.map((item: any) => ({
+            ...item,
+            thumb_url: item.thumb_url?.startsWith("http") ? item.thumb_url : `${cdnDomain}/${item.thumb_url?.replace(/^\//, "")}`,
+            poster_url: item.poster_url?.startsWith("http") ? item.poster_url : `${cdnDomain}/${item.poster_url?.replace(/^\//, "")}`,
+        }));
+        return normalized.slice(0, 24);
     }, CACHE_TTL);
 }
 
@@ -159,7 +160,7 @@ export function useNewUpdates(initialMovies: any[] = [], initialHeroMovie: any =
                 apiCache.delete("new-updates-v2");
                 fetchData(true);
             }
-        }, 60000);
+        }, REFRESH_INTERVAL);
 
         return () => clearInterval(interval);
     }, [fetchData]);
@@ -169,7 +170,7 @@ export function useNewUpdates(initialMovies: any[] = [], initialHeroMovie: any =
         const handleVisibility = () => {
             if (document.visibilityState === "visible" && lastUpdated) {
                 const elapsed = Date.now() - lastUpdated.getTime();
-                if (elapsed > 60000 && !fetchInProgress.current) {
+                if (elapsed > REFRESH_INTERVAL && !fetchInProgress.current) {
                     apiCache.delete("new-updates-v2");
                     fetchData(true);
                 }
