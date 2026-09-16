@@ -20,7 +20,6 @@ import {
   Settings,
   Check,
   Tv,
-  ShieldCheck,
   FastForward,
   X,
 } from "lucide-react";
@@ -256,14 +255,9 @@ export default function VideoPlayer({
         setVideoFit(savedFit);
       }
 
-      // Tự động kích hoạt khiên chắn quảng cáo cờ bạc ở chế độ thông minh 'auto' (chỉ che khi thực sự có quảng cáo)
-      const savedShield = localStorage.getItem('cinema_ad_shield');
-      if (savedShield === 'off') {
-        setAdShieldMode('off');
-      } else {
-        setAdShieldMode('auto');
-        try { localStorage.setItem('cinema_ad_shield', 'auto'); } catch (e) {}
-      }
+      // Khiên chắn quảng cáo cờ bạc luôn cố định ở chế độ thông minh 'auto' (tự động phát hiện & che khi có quảng cáo, không cho tắt)
+      setAdShieldMode('auto');
+      try { localStorage.setItem('cinema_ad_shield', 'auto'); } catch (e) {}
 
       // Tải cấu hình tự động bỏ qua video quảng cáo cờ bạc (mặc định luôn BẬT)
       const savedAutoSkip = localStorage.getItem('cinema_auto_skip_ads');
@@ -1978,27 +1972,6 @@ export default function VideoPlayer({
 
             {/* PiP & Settings Buttons - Ẩn theo yêu cầu */}
 
-            {/* Quick 1-Click Anti-Ad Banner Shield Toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                const nextMode = adShieldMode === 'off' ? 'auto' : 'off';
-                handleSetAdShieldMode(nextMode);
-              }}
-              title={adShieldMode !== 'off' ? "Khiên che QC: Tự động phát hiện (Bấm để tắt)" : "Khiên che QC: Đang tắt (Bấm để bật tự động)"}
-              className={cn(
-                "cursor-pointer w-8 h-8 sm:w-9 sm:h-9 transition-colors",
-                (adShieldMode === 'always' || (adShieldMode === 'auto' && isAdDetected))
-                  ? "text-brand-green hover:bg-brand-green/15"
-                  : adShieldMode === 'auto'
-                  ? "text-brand-green/70 hover:text-brand-green hover:bg-brand-green/10"
-                  : "text-white/40 hover:text-white hover:bg-white/10"
-              )}
-            >
-              <ShieldCheck className={cn("w-4 h-4 sm:w-5 sm:h-5", (adShieldMode === 'always' || isAdDetected) && "drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]")} />
-            </Button>
 
             {/* Fullscreen Button */}
             <Button 
@@ -2243,54 +2216,6 @@ export default function VideoPlayer({
             </div>
           )}
 
-          {/* Quick Anti-Ad Banner Shield Controller */}
-          <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between px-1 text-xs shrink-0">
-            <span className="flex items-center gap-1.5 text-white/80 font-medium">
-              <ShieldCheck className={cn("w-3.5 h-3.5", adShieldMode !== 'off' ? "text-brand-green" : "text-white/40")} />
-              Che QC cờ bạc
-            </span>
-            <div className="flex items-center gap-1 bg-white/5 p-0.5 rounded-lg border border-white/10 text-[10px]">
-              {(['auto', 'always', 'off'] as const).map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSetAdShieldMode(mode);
-                  }}
-                  className={cn(
-                    "px-2 py-0.5 rounded cursor-pointer font-bold transition-all",
-                    adShieldMode === mode ? "bg-brand-green text-black" : "text-white/60 hover:text-white"
-                  )}
-                >
-                  {mode === 'auto' ? 'Tự động' : mode === 'always' ? 'Luôn che' : 'Tắt'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Quick Auto-Skip Video Ads Controller */}
-          <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between px-1 text-xs shrink-0">
-            <span className="flex items-center gap-1.5 text-white/80 font-medium">
-              <FastForward className={cn("w-3.5 h-3.5", autoSkipAds ? "text-brand-green" : "text-white/40")} />
-              Tự bỏ qua video QC
-            </span>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleToggleAutoSkipAds(!autoSkipAds);
-              }}
-              className={cn(
-                "px-2.5 py-0.5 rounded-lg border text-[10px] font-bold cursor-pointer transition-all",
-                autoSkipAds
-                  ? "bg-brand-green/20 text-brand-green border-brand-green/40 shadow-[0_0_10px_rgba(34,197,94,0.2)]"
-                  : "bg-white/5 text-white/50 border-white/10 hover:text-white"
-              )}
-            >
-              {autoSkipAds ? "BẬT" : "TẮT"}
-            </button>
-          </div>
         </div>
       )}
     </div>
