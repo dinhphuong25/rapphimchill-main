@@ -107,7 +107,8 @@ export async function GET(req: NextRequest) {
   const cached = memoryCache.get(cacheKey);
   const isNewUpdates = parsedUrl.pathname.includes("phim-moi-cap-nhat") || parsedUrl.search.includes("phim-moi-cap-nhat");
   const isMovieDetail = parsedUrl.pathname.startsWith("/phim/");
-  const isRealtime = isNewUpdates || isMovieDetail;
+  const isSearch = parsedUrl.pathname.includes("tim-kiem");
+  const isRealtime = isNewUpdates || isMovieDetail || isSearch;
   const currentTTL = isRealtime ? 60_000 : MEMORY_CACHE_TTL;
 
   // 1. Return from In-Memory Cache if fresh
@@ -200,11 +201,115 @@ export async function GET(req: NextRequest) {
           }
         }
 
+        // If primary failed or returned error, and it's a search request, fallback to NguonC
+        if ((!res || !res.ok) && isSearch) {
+          const keyword = parsedUrl.searchParams.get("keyword") || "";
+          const page = parsedUrl.searchParams.get("page") || "1";
+          if (keyword) {
+            try {
+              const fbUrl = `https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(keyword)}&page=${page}`;
+              const fbRes = await fetch(fbUrl, {
+                headers: {
+                  "User-Agent":
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                  Accept: "application/json",
+                },
+              });
+              if (fbRes.ok) {
+                const fbData = await fbRes.json();
+                if (fbData.status === "success" && Array.isArray(fbData.items)) {
+                  const mapped = {
+                    status: "success",
+                    message: "fallback",
+                    data: {
+                      items: fbData.items.map((it: any) => ({
+                        _id: it.id || it.slug,
+                        name: it.name,
+                        slug: it.slug,
+                        origin_name: it.original_name || it.name,
+                        thumb_url: it.thumb_url,
+                        poster_url: it.poster_url || it.thumb_url,
+                        year: it.created ? new Date(it.created).getFullYear() : 2026,
+                        quality: it.quality || "HD",
+                        lang: it.language || "Vietsub",
+                        episode_current: it.current_episode || "Full",
+                        time: it.time || "",
+                        category: [],
+                        country: [],
+                      })),
+                      params: {
+                        pagination: {
+                          totalItems: fbData.paginate?.total_items || fbData.items.length,
+                          totalItemsPerPage: fbData.paginate?.items_per_page || 10,
+                          currentPage: fbData.paginate?.current_page || parseInt(page),
+                          totalPages: fbData.paginate?.total_page || 1,
+                        },
+                      },
+                      APP_DOMAIN_CDN_IMAGE: "https://phimimg.com",
+                    },
+                  };
+                  return JSON.stringify(mapped);
+                }
+              }
+            } catch {}
+          }
+        }
+
         if (!res || !res.ok) {
           throw lastError || new Error(`Upstream returned ${res?.status || 500}`);
         }
 
         const data = await res.json();
+
+        // If movie detail returned { status: false }, attempt NguonC fallback
+        if (isMovieDetail && (!data?.status || !data?.movie?.slug)) {
+          const slug = parsedUrl.pathname.replace(/^\/phim\//, "").replace(/\/$/, "");
+          if (slug) {
+            try {
+              const fbUrl = `https://phim.nguonc.com/api/film/${slug}`;
+              const fbRes = await fetch(fbUrl, {
+                headers: {
+                  "User-Agent":
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                  Accept: "application/json",
+                },
+              });
+              if (fbRes.ok) {
+                const fbData = await fbRes.json();
+                if (fbData.movie && fbData.movie.slug) {
+                  const mapped = {
+                    status: true,
+                    msg: "success (fallback)",
+                    movie: {
+                      name: fbData.movie.name,
+                      slug: fbData.movie.slug,
+                      origin_name: fbData.movie.original_name,
+                      content: fbData.movie.description,
+                      thumb_url: fbData.movie.thumb_url,
+                      poster_url: fbData.movie.poster_url,
+                      year: fbData.movie.created ? new Date(fbData.movie.created).getFullYear() : 2026,
+                      episode_current: fbData.movie.current_episode,
+                      quality: fbData.movie.quality || "HD",
+                      lang: fbData.movie.language || "Vietsub",
+                    },
+                    episodes: (fbData.movie.episodes || []).map((s: any) => ({
+                      server_name: s.server_name || "Dự Phòng (NguonC)",
+                      server_data: (s.items || []).map((it: any) => ({
+                        name: it.name?.startsWith("Tập") ? it.name : `Tập ${it.name}`,
+                        slug: it.slug,
+                        filename: it.name,
+                        link_embed: it.embed,
+                        link_m3u8: "",
+                      })),
+                    })),
+                  };
+                  return JSON.stringify(mapped);
+                }
+              }
+            } catch {}
+          }
+        }
+
         return JSON.stringify(data);
       })()
         .catch((err) => {

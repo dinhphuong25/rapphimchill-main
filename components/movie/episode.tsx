@@ -73,8 +73,10 @@ export default function Episode({
     if (targetEpisode) {
       if (mode === "m3u8" && targetEpisode.link_m3u8) {
         onSelectEpisode(targetEpisode.link_m3u8, index, epIndex);
-      } else if (mode === "embed" && targetEpisode.link_embed) {
+      } else if (targetEpisode.link_embed) {
         onSelectEpisode(targetEpisode.link_embed, index, epIndex);
+      } else if (targetEpisode.link_m3u8) {
+        onSelectEpisode(targetEpisode.link_m3u8, index, epIndex);
       }
     }
     onServerChange(index);
@@ -272,7 +274,7 @@ export default function Episode({
                       key={`${currentServerIndex}-${originalIndex}`}
                       onClick={() =>
                         handleEpisodeChange(
-                          playerMode === "m3u8" ? episode.link_m3u8 : episode.link_embed,
+                          (playerMode === "m3u8" && episode.link_m3u8) ? episode.link_m3u8 : (episode.link_embed || episode.link_m3u8),
                           currentServerIndex,
                           originalIndex
                         )

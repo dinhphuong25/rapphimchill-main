@@ -33,6 +33,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "i0.wp.com", pathname: "/**" },
       { protocol: "https", hostname: "i1.wp.com", pathname: "/**" },
       { protocol: "https", hostname: "i2.wp.com", pathname: "/**" },
+      { protocol: "https", hostname: "phim.nguonc.com", pathname: "/**" },
+      { protocol: "https", hostname: "*.nguonc.com", pathname: "/**" },
     ],
     formats: ["image/avif", "image/webp"],
     qualities: [50, 70, 75, 80, 85],

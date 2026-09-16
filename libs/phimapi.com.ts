@@ -19,6 +19,36 @@ function normalizeItems(items: any[], cdnDomain: string): any[] {
   }));
 }
 
+function normalizeSearchKey(str: string | undefined): string {
+  if (!str) return "";
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function mapNguonCToMovieListItem(item: any): MovieListItem {
+  const year = item.created ? new Date(item.created).getFullYear() : (item.year || 2026);
+  const isSeries = item.total_episodes && item.total_episodes > 1;
+  return {
+    _id: item.id || item.slug,
+    name: item.name || "",
+    slug: item.slug,
+    origin_name: item.original_name || item.name || "",
+    type: (isSeries ? "series" : "single") as any,
+    thumb_url: normalizeImageUrl(item.thumb_url),
+    poster_url: normalizeImageUrl(item.poster_url || item.thumb_url),
+    year: isNaN(year) ? 2026 : year,
+    quality: item.quality || "HD",
+    lang: item.language || "Vietsub",
+    episode_current: item.current_episode || "Full",
+    category: [],
+    country: [],
+    modified: item.modified ? { time: item.modified } : undefined,
+  };
+}
+
 export default class PhimApi {
   private apiUrl = "https://phimapi.com";
   private defaultCdnDomain = "https://phimimg.com";
@@ -39,6 +69,9 @@ export default class PhimApi {
       });
       if (!response.ok) throw new Error(`API error: ${response.status}`);
       const data = await response.json();
+      if (!data?.status || !data?.movie?.slug) {
+        throw new Error("Movie not found in primary API");
+      }
 
       // Normalize movie image URLs
       const cdnDomain = this.defaultCdnDomain;
@@ -194,15 +227,98 @@ export default class PhimApi {
   }
 
   async search(query: string, index: number = 1): Promise<[MovieListItem[], Pagination | null]> {
-    const url = `${this.apiUrl}/v1/api/tim-kiem?keyword=${encodeURIComponent(query)}&limit=20&page=${index}`;
-    const response = await fetch(url, {
-      headers: this.fetchHeaders(),
-      next: { revalidate: 3600 },
-    });
-    if (!response.ok) throw new Error(`API error: ${response.status}`);
-    const data = await response.json();
-    const cdnDomain = data?.data?.APP_DOMAIN_CDN_IMAGE || this.defaultCdnDomain;
-    return [normalizeItems(data?.data?.items || [], cdnDomain), data?.data?.params?.pagination || null];
+    const trimmed = query?.trim() || "";
+    if (!trimmed) return [[], null];
+
+    const kkUrl = `${this.apiUrl}/v1/api/tim-kiem?keyword=${encodeURIComponent(trimmed)}&limit=20&page=${index}`;
+    const nguoncUrl = `https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(trimmed)}&page=${index}`;
+
+    // Execute in parallel with 4-second timeout to prevent any slow provider from blocking user
+    const [kkResult, nguoncResult] = await Promise.allSettled([
+      fetch(kkUrl, {
+        headers: this.fetchHeaders(),
+        signal: AbortSignal.timeout(4000),
+        next: { revalidate: 1800 },
+      }).then(async (res) => {
+        if (!res.ok) throw new Error(`KKPhim search error: ${res.status}`);
+        return res.json();
+      }),
+      fetch(nguoncUrl, {
+        headers: {
+          "User-Agent": USER_AGENT,
+          Accept: "application/json",
+        },
+        signal: AbortSignal.timeout(4000),
+        next: { revalidate: 1800 },
+      }).then(async (res) => {
+        if (!res.ok) throw new Error(`NguonC search error: ${res.status}`);
+        return res.json();
+      }),
+    ]);
+
+    let kkItems: MovieListItem[] = [];
+    let kkPagination: Pagination | null = null;
+    if (kkResult.status === "fulfilled" && kkResult.value?.data?.items) {
+      const data = kkResult.value;
+      const cdnDomain = data?.data?.APP_DOMAIN_CDN_IMAGE || this.defaultCdnDomain;
+      kkItems = normalizeItems(data?.data?.items || [], cdnDomain);
+      kkPagination = data?.data?.params?.pagination || null;
+    }
+
+    let nguoncItems: MovieListItem[] = [];
+    let nguoncPagination: Pagination | null = null;
+    if (
+      nguoncResult.status === "fulfilled" &&
+      nguoncResult.value?.status === "success" &&
+      Array.isArray(nguoncResult.value?.items)
+    ) {
+      const data = nguoncResult.value;
+      nguoncItems = data.items.map(mapNguonCToMovieListItem);
+      if (data.paginate) {
+        nguoncPagination = {
+          totalItems: data.paginate.total_items || nguoncItems.length,
+          totalItemsPerPage: data.paginate.items_per_page || 10,
+          currentPage: data.paginate.current_page || index,
+          totalPages: data.paginate.total_page || 1,
+        };
+      }
+    }
+
+    // Merge & Deduplicate by slug and normalized title
+    const merged: MovieListItem[] = [];
+    const seenSlugs = new Set<string>();
+    const seenTitles = new Set<string>();
+
+    for (const item of kkItems) {
+      if (item.slug && !seenSlugs.has(item.slug)) {
+        seenSlugs.add(item.slug);
+        const normTitle = normalizeSearchKey(item.name);
+        if (normTitle) seenTitles.add(normTitle);
+        merged.push(item);
+      }
+    }
+
+    for (const item of nguoncItems) {
+      if (!item.slug || seenSlugs.has(item.slug)) continue;
+      const normTitle = normalizeSearchKey(item.name);
+      if (normTitle && seenTitles.has(normTitle)) continue;
+
+      seenSlugs.add(item.slug);
+      if (normTitle) seenTitles.add(normTitle);
+      merged.push(item);
+    }
+
+    // Calculate unified pagination
+    const totalItems = (kkPagination?.totalItems || 0) + (nguoncPagination?.totalItems || 0);
+    const totalPages = Math.max(kkPagination?.totalPages || 1, nguoncPagination?.totalPages || 1, 1);
+    const mergedPagination: Pagination = {
+      currentPage: index,
+      totalItems: totalItems > 0 ? totalItems : merged.length,
+      totalItemsPerPage: 20,
+      totalPages: totalPages,
+    };
+
+    return [merged, mergedPagination];
   }
 
   async byCategory(slug: string, index: number = 1): Promise<[MovieListItem[], Pagination]> {

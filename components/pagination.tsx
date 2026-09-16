@@ -12,13 +12,22 @@ import {
 import { usePathname, useSearchParams } from "next/navigation";
 import React from "react";
 
-export default React.memo(function PaginationComponent() {
+interface PaginationProps {
+  initialPageInfo?: any;
+}
+
+export default React.memo(function PaginationComponent({ initialPageInfo }: PaginationProps = {}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isMobile, setIsMobile] = React.useState(false);
-  const [pageInfo, setPageInfo] = React.useState<any>(null);
+  const [pageInfo, setPageInfo] = React.useState<any>(initialPageInfo || null);
 
   React.useEffect(() => {
+    if (initialPageInfo) {
+      setPageInfo(initialPageInfo);
+      return;
+    }
+
     const checkMobile = () => {
       if (typeof window !== "undefined") {
         setIsMobile(window.matchMedia("(max-width: 640px)").matches);
@@ -27,10 +36,16 @@ export default React.memo(function PaginationComponent() {
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  }, [initialPageInfo]);
 
   React.useEffect(() => {
+    if (initialPageInfo) {
+      setPageInfo(initialPageInfo);
+      return;
+    }
+
     const index = Number(searchParams.get("index")) || 1;
+    const query = searchParams.get("query");
     const category = searchParams.get("category");
     const topic = searchParams.get("topic");
     const typeList = searchParams.get("typeList");
@@ -58,6 +73,8 @@ export default React.memo(function PaginationComponent() {
       if (category) url += `&category=${category}`;
       if (country) url += `&country=${country}`;
       if (year) url += `&year=${year}`;
+    } else if (query) {
+      url = `https://phimapi.com/v1/api/tim-kiem?keyword=${encodeURIComponent(query)}&page=${index}`;
     } else if (category) {
       url = `https://phimapi.com/v1/api/the-loai/${category}?page=${index}`;
     } else if (country) {
@@ -74,16 +91,16 @@ export default React.memo(function PaginationComponent() {
       .then((res) => res.json())
       .then((data) => {
         // Handle different response structures
-        if (hasAdvancedFilters || category || topic) {
-          setPageInfo(data.data.params.pagination);
+        if (hasAdvancedFilters || category || topic || query) {
+          setPageInfo(data?.data?.params?.pagination || data?.pagination || null);
         } else {
-          setPageInfo(data.pagination);
+          setPageInfo(data?.pagination || data?.data?.params?.pagination || null);
         }
       })
       .catch(() => {
         setPageInfo(null);
       });
-  }, [searchParams]);
+  }, [searchParams, initialPageInfo]);
 
   const createQueryString = (page: number) => {
     const params = new URLSearchParams(searchParams.toString());

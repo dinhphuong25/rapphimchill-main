@@ -387,35 +387,103 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
     const timer = setTimeout(async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(
-          `https://phimapi.com/v1/api/tim-kiem?keyword=${encodeURIComponent(
-            trimmed
-          )}&limit=18`,
-          { signal: controller.signal }
-        );
-        if (res.ok) {
-          const data = await res.json();
+        const [kkRes, nguoncRes] = await Promise.allSettled([
+          fetch(
+            `https://phimapi.com/v1/api/tim-kiem?keyword=${encodeURIComponent(
+              trimmed
+            )}&limit=18`,
+            { signal: controller.signal }
+          ).then(async (r) => (r.ok ? r.json() : null)),
+          fetch(
+            `https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(
+              trimmed
+            )}&page=1`,
+            {
+              signal: controller.signal,
+              headers: { "User-Agent": "Mozilla/5.0", Accept: "application/json" },
+            }
+          ).then(async (r) => (r.ok ? r.json() : null)),
+        ]);
+
+        let kkItems: any[] = [];
+        let kkTotal = 0;
+        if (kkRes.status === "fulfilled" && kkRes.value?.data?.items) {
+          const data = kkRes.value;
           const items = data.data?.items || [];
-          const total = data.data?.params?.pagination?.totalItems || items.length;
+          kkTotal = data.data?.params?.pagination?.totalItems || items.length;
           const cdnDomain =
             data.data?.APP_DOMAIN_CDN_IMAGE || "https://phimimg.com";
-          const normalized = items.map((item: any) => ({
+          kkItems = items.map((item: any) => ({
             ...item,
             thumb_url: normalizeImageUrl(item.thumb_url, cdnDomain),
             poster_url: normalizeImageUrl(item.poster_url, cdnDomain),
           }));
+        }
 
-          searchCache.set(cacheKey, { items: normalized, total });
-          if (searchCache.size > 60) {
-            const firstKey = searchCache.keys().next().value;
-            if (firstKey) searchCache.delete(firstKey);
-          }
-
-          startTransition(() => {
-            setResults(normalized);
-            setTotalItems(total);
+        let nguoncItems: any[] = [];
+        let nguoncTotal = 0;
+        if (
+          nguoncRes.status === "fulfilled" &&
+          nguoncRes.value?.status === "success" &&
+          Array.isArray(nguoncRes.value?.items)
+        ) {
+          const data = nguoncRes.value;
+          nguoncTotal = data.paginate?.total_items || data.items.length;
+          nguoncItems = data.items.map((item: any) => {
+            const year = item.created ? new Date(item.created).getFullYear() : (item.year || 2026);
+            return {
+              _id: item.id || item.slug,
+              name: item.name,
+              slug: item.slug,
+              origin_name: item.original_name || item.name,
+              thumb_url: normalizeImageUrl(item.thumb_url),
+              poster_url: normalizeImageUrl(item.poster_url || item.thumb_url),
+              year: isNaN(year) ? 2026 : year,
+              quality: item.quality || "HD",
+              lang: item.language || "Vietsub",
+              episode_current: item.current_episode || "Full",
+              category: [],
+              country: [],
+            };
           });
         }
+
+        // Merge & deduplicate by slug and normalized name
+        const merged: any[] = [];
+        const seenSlugs = new Set<string>();
+        const seenTitles = new Set<string>();
+
+        for (const item of kkItems) {
+          if (item.slug && !seenSlugs.has(item.slug)) {
+            seenSlugs.add(item.slug);
+            const key = item.name?.toLowerCase().trim();
+            if (key) seenTitles.add(key);
+            merged.push(item);
+          }
+        }
+
+        for (const item of nguoncItems) {
+          if (!item.slug || seenSlugs.has(item.slug)) continue;
+          const key = item.name?.toLowerCase().trim();
+          if (key && seenTitles.has(key)) continue;
+
+          seenSlugs.add(item.slug);
+          if (key) seenTitles.add(key);
+          merged.push(item);
+        }
+
+        const total = (kkTotal || 0) + (nguoncTotal || 0);
+
+        searchCache.set(cacheKey, { items: merged, total: total || merged.length });
+        if (searchCache.size > 60) {
+          const firstKey = searchCache.keys().next().value;
+          if (firstKey) searchCache.delete(firstKey);
+        }
+
+        startTransition(() => {
+          setResults(merged);
+          setTotalItems(total || merged.length);
+        });
       } catch (err: any) {
         if (err.name !== "AbortError") {
           startTransition(() => {
@@ -426,7 +494,7 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
       } finally {
         setIsLoading(false);
       }
-    }, 250);
+    }, 200);
 
     return () => clearTimeout(timer);
   }, [query]);

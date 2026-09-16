@@ -138,7 +138,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         {movies && movies.length > 0 && (
           <div className="mt-16 flex justify-center">
             <div className="bg-cinema-surface rounded-2xl p-4 border border-white/10 shadow-none">
-              <Pagination />
+              <Pagination initialPageInfo={pageInfo} />
             </div>
           </div>
         )}
