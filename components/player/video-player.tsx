@@ -21,12 +21,15 @@ import {
   Check,
   Tv,
   ShieldCheck,
+  FastForward,
+  Sparkles,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { AdRange, fetchAndParseAdRanges, extractAdRangesFromFragments } from "@/lib/ad-parser";
 export type VideoFitMode = 'contain' | 'cover' | 'fill' | '4:3' | '21:9';
 
 interface VideoPlayerProps {
@@ -162,6 +165,22 @@ export default function VideoPlayer({
     } catch (e) {}
   }, []);
 
+  // Auto-Skip Video Ads (Tự động phát hiện & bỏ qua các đoạn video clip quảng cáo nổ hũ/cá độ chèn cắt ngang phim)
+  const [autoSkipAds, setAutoSkipAds] = useState<boolean>(true);
+  const adRangesRef = useRef<AdRange[]>([]);
+  const [adRanges, setAdRanges] = useState<AdRange[]>([]);
+  const [activeAdRange, setActiveAdRange] = useState<AdRange | null>(null);
+  const [skipNotice, setSkipNotice] = useState<string | null>(null);
+  const skipNoticeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSkippedAdRef = useRef<number>(-1);
+
+  const handleToggleAutoSkipAds = useCallback((enabled: boolean) => {
+    setAutoSkipAds(enabled);
+    try {
+      localStorage.setItem('cinema_auto_skip_ads', String(enabled));
+    } catch (e) {}
+  }, []);
+
 
 
   // Auto Unmute Helper - immediately unmute and restore audio whenever called
@@ -248,6 +267,17 @@ export default function VideoPlayer({
       } else {
         setAdShieldMode('auto');
         try { localStorage.setItem('cinema_ad_shield', 'auto'); } catch (e) {}
+      }
+
+      // Tải cấu hình tự động bỏ qua video quảng cáo cờ bạc (mặc định luôn BẬT)
+      const savedAutoSkip = localStorage.getItem('cinema_auto_skip_ads');
+      if (savedAutoSkip === 'false') {
+        setAutoSkipAds(false);
+      } else {
+        setAutoSkipAds(true);
+        if (!savedAutoSkip) {
+          try { localStorage.setItem('cinema_auto_skip_ads', 'true'); } catch (e) {}
+        }
       }
     } catch (e) {}
   }, []);
@@ -571,6 +601,28 @@ export default function VideoPlayer({
   useEffect(() => { videoUrlRef.current = videoUrl; }, [videoUrl]);
   useEffect(() => { posterRef.current = poster; }, [poster]);
 
+  // Tự động phân tích luồng phát m3u8 để trích xuất dải thời gian các video quảng cáo cờ bạc
+  useEffect(() => {
+    adRangesRef.current = [];
+    setAdRanges([]);
+    setActiveAdRange(null);
+    lastSkippedAdRef.current = -1;
+
+    if (!videoUrl) return;
+
+    let isCancelled = false;
+    fetchAndParseAdRanges(videoUrl).then((ranges) => {
+      if (!isCancelled && ranges.length > 0) {
+        adRangesRef.current = ranges;
+        setAdRanges(ranges);
+      }
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [videoUrl]);
+
   // Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -871,8 +923,15 @@ export default function VideoPlayer({
           setIsLoading(false);
         });
 
-        hls.on(HLS.Events.LEVEL_LOADED, () => {
+        hls.on(HLS.Events.LEVEL_LOADED, (e, data) => {
           setIsLoading(false);
+          if (data?.details?.fragments) {
+            const parsedRanges = extractAdRangesFromFragments(data.details.fragments);
+            if (parsedRanges.length > 0) {
+              adRangesRef.current = parsedRanges;
+              setAdRanges(parsedRanges);
+            }
+          }
         });
 
         hls.on(HLS.Events.LEVEL_SWITCHED, (e, data) => {
@@ -1000,6 +1059,36 @@ export default function VideoPlayer({
       if (cur > 0.1 && !hasRenderedFirstFrame) {
         setHasRenderedFirstFrame(true);
       }
+
+      // Auto-Skip Video Ads: Tự động tua bỏ qua đoạn video quảng cáo cờ bạc
+      if (autoSkipAds && adRangesRef.current.length > 0 && !isSeekingRef.current) {
+        for (const range of adRangesRef.current) {
+          if (cur >= range.start - 0.25 && cur < range.end - 0.35) {
+            const rangeKey = Math.round(range.start);
+            if (lastSkippedAdRef.current !== rangeKey) {
+              lastSkippedAdRef.current = rangeKey;
+              video.currentTime = range.end + 0.15;
+              const durationSec = Math.round(range.duration);
+              setSkipNotice(`Đã tự động bỏ qua video quảng cáo cờ bạc (${durationSec}s)`);
+              if (skipNoticeTimerRef.current) clearTimeout(skipNoticeTimerRef.current);
+              skipNoticeTimerRef.current = setTimeout(() => setSkipNotice(null), 3500);
+              return;
+            }
+          }
+        }
+      }
+
+      // Nhận diện nếu đang trong vùng quảng cáo để hiện nút "Bỏ qua quảng cáo"
+      let currentActiveRange: AdRange | null = null;
+      if (adRangesRef.current.length > 0) {
+        for (const range of adRangesRef.current) {
+          if (cur >= range.start && cur < range.end) {
+            currentActiveRange = range;
+            break;
+          }
+        }
+      }
+      setActiveAdRange(currentActiveRange);
 
 
       // Throttle UI currentTime state updates to ~250ms to save CPU & avoid frame drops on mobile
@@ -1744,12 +1833,55 @@ export default function VideoPlayer({
         </div>
       )}
 
+      {/* Floating Skip Ad Button (Hiển thị khi đang phát trúng đoạn video quảng cáo) */}
+      {activeAdRange && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (videoRef.current) {
+              videoRef.current.currentTime = activeAdRange.end + 0.15;
+              setActiveAdRange(null);
+            }
+          }}
+          className="absolute bottom-16 sm:bottom-20 right-4 sm:right-6 z-[55] flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 bg-black/90 hover:bg-black text-brand-green border border-brand-green/60 rounded-xl text-xs sm:text-sm font-bold shadow-[0_10px_35px_rgba(0,0,0,0.9)] backdrop-blur-md cursor-pointer transition-all hover:scale-105 active:scale-95 animate-in fade-in slide-in-from-bottom-3 duration-300 pointer-events-auto"
+        >
+          <FastForward className="w-4 h-4 sm:w-5 sm:h-5 text-brand-green fill-brand-green animate-pulse" />
+          <span>Bỏ qua quảng cáo ({Math.max(1, Math.round(activeAdRange.end - currentTime))}s) ⏩</span>
+        </button>
+      )}
+
+      {/* Auto-Skip Feedback Pill Notification */}
+      {skipNotice && (
+        <div className="absolute bottom-16 sm:bottom-20 left-1/2 -translate-x-1/2 z-[55] flex items-center gap-2 px-4 py-2 bg-black/90 backdrop-blur-md border border-brand-green/50 rounded-full text-xs sm:text-sm text-brand-green font-semibold shadow-2xl animate-in fade-in zoom-in-95 duration-300 pointer-events-none">
+          <Sparkles className="w-4 h-4 text-brand-green animate-pulse" />
+          <span>{skipNotice}</span>
+        </div>
+      )}
+
       {/* Bottom controls bar */}
       <div 
         onClick={(e) => e.stopPropagation()}
         className={cn("absolute bottom-0 left-0 right-0 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/50 to-transparent transition-opacity duration-300 z-50 pointer-events-none", showControls ? "opacity-100" : "opacity-0")}
       >
-        <div className="px-4 pb-0 pointer-events-auto">
+        <div className="px-4 pb-0 pointer-events-auto relative">
+          {/* Ad range markers on timeline */}
+          {duration > 0 && adRanges.length > 0 && (
+            <div className="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-1 pointer-events-none overflow-hidden z-0">
+              {adRanges.map((range, idx) => {
+                const leftPercent = Math.max(0, Math.min(100, (range.start / duration) * 100));
+                const widthPercent = Math.max(0.5, Math.min(100 - leftPercent, (range.duration / duration) * 100));
+                return (
+                  <div
+                    key={idx}
+                    className="absolute top-0 bottom-0 bg-amber-400/70 rounded-full"
+                    style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}
+                    title={`Video quảng cáo (${Math.round(range.duration)}s)`}
+                  />
+                );
+              })}
+            </div>
+          )}
           <Slider 
             value={[seekTime !== null ? seekTime : currentTime]} 
             min={0} 
@@ -1757,7 +1889,7 @@ export default function VideoPlayer({
             step={1}
             onValueChange={handleSeekChange} 
             onValueCommit={handleSeekCommit} 
-            className="py-4 cursor-pointer" 
+            className="py-4 cursor-pointer relative z-10" 
           />
         </div>
         <div className="px-4 pb-4 flex items-center justify-between gap-4 pointer-events-auto">
@@ -2088,6 +2220,29 @@ export default function VideoPlayer({
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Quick Auto-Skip Video Ads Controller */}
+          <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between px-1 text-xs shrink-0">
+            <span className="flex items-center gap-1.5 text-white/80 font-medium">
+              <FastForward className={cn("w-3.5 h-3.5", autoSkipAds ? "text-brand-green" : "text-white/40")} />
+              Tự bỏ qua video QC
+            </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleAutoSkipAds(!autoSkipAds);
+              }}
+              className={cn(
+                "px-2.5 py-0.5 rounded-lg border text-[10px] font-bold cursor-pointer transition-all",
+                autoSkipAds
+                  ? "bg-brand-green/20 text-brand-green border-brand-green/40 shadow-[0_0_10px_rgba(34,197,94,0.2)]"
+                  : "bg-white/5 text-white/50 border-white/10 hover:text-white"
+              )}
+            >
+              {autoSkipAds ? "BẬT" : "TẮT"}
+            </button>
           </div>
         </div>
       )}
