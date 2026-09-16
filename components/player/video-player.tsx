@@ -147,8 +147,8 @@ export default function VideoPlayer({
   const placeholderRef = useRef<HTMLDivElement>(null);
   const wasAutoPiPRef = useRef(false);
   const lastBufferedRef = useRef<number>(0);
-  // Anti-Ad Banner Shield (Tự động phát hiện & che dải quảng cáo bài bạc ở mép trên)
-  const [adShieldMode, setAdShieldMode] = useState<'auto' | 'always' | 'off'>('auto');
+  // Anti-Ad Banner Shield (Tự động kích hoạt & che dải quảng cáo bài bạc ở mép trên)
+  const [adShieldMode, setAdShieldMode] = useState<'always' | 'auto' | 'off'>('always');
   const [isAdDetected, setIsAdDetected] = useState(false);
   const [showShieldBadge, setShowShieldBadge] = useState(false);
   const detectorCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -156,6 +156,13 @@ export default function VideoPlayer({
   const consecutiveMissesRef = useRef(0);
   const prevFrameLuminanceRef = useRef<Uint8Array | null>(null);
   const badgeTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleSetAdShieldMode = useCallback((mode: 'always' | 'auto' | 'off') => {
+    setAdShieldMode(mode);
+    try {
+      localStorage.setItem('cinema_ad_shield', mode);
+    } catch (e) {}
+  }, []);
 
 
 
@@ -234,6 +241,15 @@ export default function VideoPlayer({
       const savedFit = localStorage.getItem('cinema_video_fit') as VideoFitMode;
       if (savedFit && ['contain', 'cover', 'fill', '4:3', '21:9'].includes(savedFit)) {
         setVideoFit(savedFit);
+      }
+
+      // Tự động kích hoạt khiên chắn quảng cáo cờ bạc mặc định ('always')
+      const savedShield = localStorage.getItem('cinema_ad_shield');
+      if (savedShield === 'always' || savedShield === 'auto' || savedShield === 'off') {
+        setAdShieldMode(savedShield);
+      } else {
+        setAdShieldMode('always');
+        try { localStorage.setItem('cinema_ad_shield', 'always'); } catch (e) {}
       }
     } catch (e) {}
   }, []);
@@ -1205,11 +1221,21 @@ export default function VideoPlayer({
     };
   }, []);
 
+  // Show shield badge briefly when switching episodes/movies or toggling mode
+  useEffect(() => {
+    if (adShieldMode !== 'off') {
+      setShowShieldBadge(true);
+      if (badgeTimerRef.current) clearTimeout(badgeTimerRef.current);
+      badgeTimerRef.current = setTimeout(() => setShowShieldBadge(false), 4000);
+    } else {
+      setShowShieldBadge(false);
+    }
+  }, [videoUrl, adShieldMode]);
+
   // Intelligent Real-Time Ad Banner Detector Loop
   useEffect(() => {
     if (adShieldMode === 'off') {
       setIsAdDetected(false);
-      setShowShieldBadge(false);
       consecutiveDetectionsRef.current = 0;
       prevFrameLuminanceRef.current = null;
       return;
@@ -1600,16 +1626,16 @@ export default function VideoPlayer({
         className={cn(
           "absolute top-0 left-0 right-0 z-[28] transition-all duration-500 overflow-hidden pointer-events-none",
           (adShieldMode === 'always' || (adShieldMode === 'auto' && isAdDetected))
-            ? "opacity-100 h-9 sm:h-11 md:h-12" 
+            ? "opacity-100 h-10 sm:h-12 md:h-14 lg:h-16" 
             : "opacity-0 h-0"
         )}
       >
-        <div className="w-full h-full bg-gradient-to-b from-black via-black/85 via-65% to-transparent" />
+        <div className="w-full h-full bg-gradient-to-b from-black/95 via-black/85 via-65% to-transparent" />
 
         {/* Small subtle status badge */}
         {(adShieldMode === 'always' || isAdDetected) && (
           <div className={cn(
-            "absolute top-2.5 right-3.5 z-30 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-md border border-brand-green/30 text-[11px] font-semibold text-brand-green shadow-xl transition-opacity duration-300 pointer-events-auto",
+            "absolute top-2.5 right-3.5 z-30 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/85 backdrop-blur-md border border-brand-green/40 text-[11px] font-semibold text-brand-green shadow-xl transition-opacity duration-300 pointer-events-auto",
             showShieldBadge ? "opacity-100" : "opacity-0 group-hover:opacity-100"
           )}>
           <ShieldCheck className="w-3.5 h-3.5 text-brand-green animate-pulse" />
@@ -1618,7 +1644,7 @@ export default function VideoPlayer({
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              setAdShieldMode('off');
+              handleSetAdShieldMode('off');
               toast.info("Đã tạm tắt che quảng cáo");
             }}
             className="ml-1 text-white/50 hover:text-white cursor-pointer p-0.5"
@@ -1812,6 +1838,31 @@ export default function VideoPlayer({
             </span> */}
 
             {/* PiP & Settings Buttons - Ẩn theo yêu cầu */}
+
+            {/* Quick 1-Click Anti-Ad Banner Shield Toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                const nextMode = adShieldMode === 'off' ? 'always' : 'off';
+                handleSetAdShieldMode(nextMode);
+                if (nextMode === 'always') {
+                  toast.success("Đã bật khiên che quảng cáo cờ bạc");
+                } else {
+                  toast.info("Đã tắt khiên che quảng cáo");
+                }
+              }}
+              title={adShieldMode !== 'off' ? "Đang bật che QC cờ bạc (Bấm để tắt)" : "Đang tắt che QC (Bấm để bật)"}
+              className={cn(
+                "cursor-pointer w-8 h-8 sm:w-9 sm:h-9 transition-colors",
+                adShieldMode !== 'off'
+                  ? "text-brand-green hover:bg-brand-green/15"
+                  : "text-white/40 hover:text-white hover:bg-white/10"
+              )}
+            >
+              <ShieldCheck className={cn("w-4 h-4 sm:w-5 sm:h-5", adShieldMode !== 'off' && "drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]")} />
+            </Button>
 
             {/* Fullscreen Button */}
             <Button 
@@ -2069,7 +2120,7 @@ export default function VideoPlayer({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setAdShieldMode(mode);
+                    handleSetAdShieldMode(mode);
                     toast.success(
                       mode === 'auto'
                         ? 'Che QC: Tự động khi phát hiện'

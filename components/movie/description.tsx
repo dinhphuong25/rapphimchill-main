@@ -248,6 +248,14 @@ export default function Description({ movie, serverData }: any) {
     return resolved.resumeTime;
   });
 
+  // Sync document.title with the active movie name and episode on client-side
+  useEffect(() => {
+    if (typeof window === "undefined" || !movie?.name) return;
+    const epName = currentServerData?.[currentEpisodeIndex.server]?.server_data?.[currentEpisodeIndex.episode]?.name;
+    const epSuffix = epName ? ` - Tập ${epName}` : "";
+    document.title = `${movie.name}${epSuffix} - Xem phim HD chất lượng cao | Hi Phim`;
+  }, [movie?.name, currentEpisodeIndex, currentServerData]);
+
   const [completedEpisodes, setCompletedEpisodes] = useState<Record<number, boolean>>({});
   const { user, checkAuthOrPrompt, updateServerData } = useUserAuth();
   const { updateProgress } = useContinueWatching();
