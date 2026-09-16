@@ -67,17 +67,17 @@ export const getCachedFeaturedMovie = unstable_cache(
   { revalidate: 3600, tags: ["featured-movie"] }
 );
 
-/** New updates cached 60 seconds for instant fresh movies */
+/** New updates cached 60 seconds for instant fresh movies - Multi-page deep fetch */
 export const getCachedNewUpdates = unstable_cache(
   async () => {
     try {
-      const [movies] = await api.newAdding(1);
+      const [movies] = await api.newAddingMultiPage(2, 24);
       return (movies as any[]) ?? [];
     } catch {
       return [];
     }
   },
-  ["new-updates-v4"],
+  ["new-updates-v5"],
   { revalidate: 60, tags: ["new-updates"] }
 );
 

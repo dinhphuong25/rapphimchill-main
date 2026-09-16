@@ -52,37 +52,53 @@ async function handleAutoUpdate(req: NextRequest) {
       console.warn("revalidateTag warning:", tagErr);
     }
 
-    // 3. Fetch fresh new movies directly from upstream without caching
-    const upstreamUrl = "https://phimapi.com/danh-sach/phim-moi-cap-nhat-v2?page=1&limit=30";
-    const res = await fetch(upstreamUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) HiPhimAutoUpdater/2.0",
-        Accept: "application/json",
-      },
-      cache: "no-store",
-    });
+    // 3. Multi-source deep fetch: scan pages 1 & 2 directly from upstream
+    const [res1, res2] = await Promise.allSettled([
+      fetch("https://phimapi.com/danh-sach/phim-moi-cap-nhat-v2?page=1&limit=30", {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) HiPhimAutoUpdater/3.0",
+          Accept: "application/json",
+        },
+        cache: "no-store",
+      }),
+      fetch("https://phimapi.com/danh-sach/phim-moi-cap-nhat-v2?page=2&limit=30", {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) HiPhimAutoUpdater/3.0",
+          Accept: "application/json",
+        },
+        cache: "no-store",
+      }),
+    ]);
 
-    let freshMoviesCount = 0;
+    const rawItems: any[] = [];
+    if (res1.status === "fulfilled" && res1.value.ok) {
+      try {
+        const d1 = await res1.value.json();
+        if (Array.isArray(d1?.items)) rawItems.push(...d1.items);
+      } catch {}
+    }
+    if (res2.status === "fulfilled" && res2.value.ok) {
+      try {
+        const d2 = await res2.value.json();
+        if (Array.isArray(d2?.items)) rawItems.push(...d2.items);
+      } catch {}
+    }
+
+    const seenSlugs = new Set<string>();
     const updatedMovies: { slug: string; name: string; episode?: string }[] = [];
 
-    if (res.ok) {
-      const data = await res.json();
-      const items = data?.items || [];
-      freshMoviesCount = items.length;
+    for (const m of rawItems.slice(0, 40)) {
+      if (m?.slug && !seenSlugs.has(m.slug)) {
+        seenSlugs.add(m.slug);
+        try {
+          revalidateTag(`movie-${m.slug}`, { expire: 0 });
+        } catch {}
 
-      // Bust cache tag for every newly updated movie and pre-warm
-      for (const m of items.slice(0, 20)) {
-        if (m?.slug) {
-          try {
-            revalidateTag(`movie-${m.slug}`, { expire: 0 });
-          } catch {}
-
-          updatedMovies.push({
-            slug: m.slug,
-            name: m.name,
-            episode: m.episode_current || undefined,
-          });
-        }
+        updatedMovies.push({
+          slug: m.slug,
+          name: m.name,
+          episode: m.episode_current || undefined,
+        });
       }
     }
 
@@ -95,7 +111,7 @@ async function handleAutoUpdate(req: NextRequest) {
       executionTimeMs: durationMs,
       revalidatedPaths: ["/", "/new-updates", "/recently", "/favorites", "/watch"],
       revalidatedTags: ["new-updates", "featured-movies", "movies", "topic-movies"],
-      freshMoviesFound: freshMoviesCount,
+      freshMoviesFound: updatedMovies.length,
       latestUpdates: updatedMovies,
     });
   } catch (error: any) {

@@ -32,25 +32,74 @@ export default class PhimApi {
 
   async get(slug: string): Promise<{ movie: Movie; server: MovieEpisode[] }> {
     const url = `${this.apiUrl}/phim/${slug}`;
-    const response = await fetch(url, {
-      headers: this.fetchHeaders(),
-      next: { revalidate: 60, tags: ["movies", `movie-${slug}`] },
-    });
-    if (!response.ok) throw new Error(`API error: ${response.status}`);
-    const data = await response.json();
+    try {
+      const response = await fetch(url, {
+        headers: this.fetchHeaders(),
+        next: { revalidate: 60, tags: ["movies", `movie-${slug}`] },
+      });
+      if (!response.ok) throw new Error(`API error: ${response.status}`);
+      const data = await response.json();
 
-    // Normalize movie image URLs
-    const cdnDomain = this.defaultCdnDomain;
-    const movie = {
-      ...data.movie,
-      thumb_url: normalizeCdnUrl(data.movie?.thumb_url, cdnDomain),
-      poster_url: normalizeCdnUrl(data.movie?.poster_url, cdnDomain),
-    };
+      // Normalize movie image URLs
+      const cdnDomain = this.defaultCdnDomain;
+      const movie = {
+        ...data.movie,
+        thumb_url: normalizeCdnUrl(data.movie?.thumb_url, cdnDomain),
+        poster_url: normalizeCdnUrl(data.movie?.poster_url, cdnDomain),
+      };
 
-    return {
-      movie,
-      server: data.episodes || [],
-    };
+      return {
+        movie,
+        server: data.episodes || [],
+      };
+    } catch (primaryErr) {
+      // Automatic Multi-Source Fallback to NguonC if primary source fails or times out
+      try {
+        const fallbackUrl = `https://phim.nguonc.com/api/film/${slug}`;
+        const fbRes = await fetch(fallbackUrl, {
+          headers: {
+            "User-Agent": USER_AGENT,
+            Accept: "application/json",
+          },
+          next: { revalidate: 60, tags: ["movies", `movie-${slug}`] },
+        });
+        if (fbRes.ok) {
+          const fbData = await fbRes.json();
+          const fbMovie = fbData.movie;
+          if (fbMovie && fbMovie.slug) {
+            const mappedMovie = {
+              name: fbMovie.name,
+              slug: fbMovie.slug,
+              origin_name: fbMovie.original_name,
+              content: fbMovie.description,
+              thumb_url: fbMovie.thumb_url,
+              poster_url: fbMovie.poster_url,
+              year: fbMovie.created ? new Date(fbMovie.created).getFullYear() : 2026,
+              episode_current: fbMovie.current_episode,
+              quality: fbMovie.quality || "HD",
+              lang: fbMovie.language || "Vietsub",
+            };
+            const mappedServer: MovieEpisode[] = (fbMovie.episodes || []).map((s: any) => ({
+              server_name: s.server_name || "Dự Phòng (NguonC)",
+              server_data: (s.items || []).map((it: any) => ({
+                name: it.name?.startsWith("Tập") ? it.name : `Tập ${it.name}`,
+                slug: it.slug,
+                filename: it.name,
+                link_embed: it.embed,
+                link_m3u8: "",
+              })),
+            }));
+            return {
+              movie: mappedMovie as any,
+              server: mappedServer,
+            };
+          }
+        }
+      } catch {
+        // Fallback error ignored, throw primary error
+      }
+      throw primaryErr;
+    }
   }
 
   listTopics(): Array<{ name: string; slug: string }> {
@@ -112,6 +161,36 @@ export default class PhimApi {
     const items = data?.data?.items || data?.items || [];
     const pagination = data?.data?.params?.pagination || data?.pagination;
     return [normalizeItems(items, cdnDomain), pagination];
+  }
+
+  async newAddingMultiPage(pages: number = 2, limitPerPage: number = 24): Promise<[MovieListItem[], Pagination]> {
+    const fetchPage = (page: number) =>
+      this.newAdding(page, limitPerPage).catch(() => [[], null] as [MovieListItem[], any]);
+
+    const results = await Promise.all(
+      Array.from({ length: pages }, (_, i) => fetchPage(i + 1))
+    );
+
+    const mergedItems: MovieListItem[] = [];
+    const seenSlugs = new Set<string>();
+
+    for (const [items] of results) {
+      for (const item of items) {
+        if (item?.slug && !seenSlugs.has(item.slug)) {
+          seenSlugs.add(item.slug);
+          mergedItems.push(item);
+        }
+      }
+    }
+
+    const firstPagination = results[0]?.[1] || {
+      currentPage: 1,
+      totalPage: pages,
+      totalItems: mergedItems.length,
+      itemsPerPage: limitPerPage * pages,
+    };
+
+    return [mergedItems, firstPagination];
   }
 
   async search(query: string, index: number = 1): Promise<[MovieListItem[], Pagination | null]> {

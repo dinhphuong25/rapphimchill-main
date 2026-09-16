@@ -93,7 +93,9 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  if (!parsedUrl.hostname.endsWith("phimapi.com")) {
+  const ALLOWED_HOSTS = ["phimapi.com", "phim.nguonc.com"];
+  const isAllowedHost = ALLOWED_HOSTS.some((h) => parsedUrl.hostname.endsWith(h));
+  if (!isAllowedHost) {
     return new Response(
       JSON.stringify({ error: "Forbidden host" }),
       { status: 403, headers: { "Content-Type": "application/json" } }
@@ -129,16 +131,77 @@ export async function GET(req: NextRequest) {
 
     if (!pendingFetch) {
       pendingFetch = (async () => {
-        const res = await fetch(parsedUrl.toString(), {
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            Accept: "application/json",
-          },
-        });
+        let res: Response | null = null;
+        let lastError: any = null;
 
-        if (!res.ok) {
-          throw new Error(`Upstream returned ${res.status}`);
+        // Try primary fetch with 6s timeout
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 6000);
+          res = await fetch(parsedUrl.toString(), {
+            signal: controller.signal,
+            headers: {
+              "User-Agent":
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+              Accept: "application/json",
+            },
+          });
+          clearTimeout(timer);
+        } catch (err) {
+          lastError = err;
+        }
+
+        // If primary failed or returned error, and it's a movie detail request, fallback to NguonC
+        if ((!res || !res.ok) && isMovieDetail) {
+          const slug = parsedUrl.pathname.replace(/^\/phim\//, "").replace(/\/$/, "");
+          if (slug) {
+            try {
+              const fbUrl = `https://phim.nguonc.com/api/film/${slug}`;
+              const fbRes = await fetch(fbUrl, {
+                headers: {
+                  "User-Agent":
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                  Accept: "application/json",
+                },
+              });
+              if (fbRes.ok) {
+                const fbData = await fbRes.json();
+                if (fbData.movie && fbData.movie.slug) {
+                  const mapped = {
+                    status: true,
+                    msg: "success (fallback)",
+                    movie: {
+                      name: fbData.movie.name,
+                      slug: fbData.movie.slug,
+                      origin_name: fbData.movie.original_name,
+                      content: fbData.movie.description,
+                      thumb_url: fbData.movie.thumb_url,
+                      poster_url: fbData.movie.poster_url,
+                      year: fbData.movie.created ? new Date(fbData.movie.created).getFullYear() : 2026,
+                      episode_current: fbData.movie.current_episode,
+                      quality: fbData.movie.quality || "HD",
+                      lang: fbData.movie.language || "Vietsub",
+                    },
+                    episodes: (fbData.movie.episodes || []).map((s: any) => ({
+                      server_name: s.server_name || "Dự Phòng (NguonC)",
+                      server_data: (s.items || []).map((it: any) => ({
+                        name: it.name?.startsWith("Tập") ? it.name : `Tập ${it.name}`,
+                        slug: it.slug,
+                        filename: it.name,
+                        link_embed: it.embed,
+                        link_m3u8: "",
+                      })),
+                    })),
+                  };
+                  return JSON.stringify(mapped);
+                }
+              }
+            } catch {}
+          }
+        }
+
+        if (!res || !res.ok) {
+          throw lastError || new Error(`Upstream returned ${res?.status || 500}`);
         }
 
         const data = await res.json();

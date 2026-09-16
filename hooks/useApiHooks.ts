@@ -56,18 +56,34 @@ async function fetchFeaturedMovie(): Promise<any | null> {
 }
 
 async function fetchNewUpdates(): Promise<any[]> {
-    const cacheKey = "new-updates-v2";
+    const cacheKey = "new-updates-deep";
     return apiCache.fetchWithCache(cacheKey, async () => {
-        const data = await proxyFetch(`${API_BASE}/danh-sach/phim-moi-cap-nhat-v2?page=1&limit=30`);
-        const items = data.items || [];
+        // Deep multi-page parallel fetch (Page 1 + Page 2)
+        const [res1, res2] = await Promise.allSettled([
+            proxyFetch(`${API_BASE}/danh-sach/phim-moi-cap-nhat-v2?page=1&limit=30`),
+            proxyFetch(`${API_BASE}/danh-sach/phim-moi-cap-nhat-v2?page=2&limit=30`),
+        ]);
+
+        const items1 = res1.status === "fulfilled" && Array.isArray(res1.value?.items) ? res1.value.items : [];
+        const items2 = res2.status === "fulfilled" && Array.isArray(res2.value?.items) ? res2.value.items : [];
+        const rawItems = [...items1, ...items2];
+
         const cdnDomain = "https://phimimg.com";
-        // Preserve 100% upstream chronological order for instant newest updates
-        const normalized = items.map((item: any) => ({
-            ...item,
-            thumb_url: item.thumb_url?.startsWith("http") ? item.thumb_url : `${cdnDomain}/${item.thumb_url?.replace(/^\//, "")}`,
-            poster_url: item.poster_url?.startsWith("http") ? item.poster_url : `${cdnDomain}/${item.poster_url?.replace(/^\//, "")}`,
-        }));
-        return normalized.slice(0, 24);
+        const seen = new Set<string>();
+        const normalized: any[] = [];
+
+        for (const item of rawItems) {
+            if (item?.slug && !seen.has(item.slug)) {
+                seen.add(item.slug);
+                normalized.push({
+                    ...item,
+                    thumb_url: item.thumb_url?.startsWith("http") ? item.thumb_url : `${cdnDomain}/${item.thumb_url?.replace(/^\//, "")}`,
+                    poster_url: item.poster_url?.startsWith("http") ? item.poster_url : `${cdnDomain}/${item.poster_url?.replace(/^\//, "")}`,
+                });
+            }
+        }
+
+        return normalized.slice(0, 48);
     }, CACHE_TTL);
 }
 
@@ -137,6 +153,7 @@ export function useNewUpdates(initialMovies: any[] = [], initialHeroMovie: any =
 
     const refresh = useCallback(() => {
         // Clear cache before refreshing
+        apiCache.delete("new-updates-deep");
         apiCache.delete("new-updates-v2");
         fetchData(true);
     }, [fetchData]);
@@ -157,6 +174,7 @@ export function useNewUpdates(initialMovies: any[] = [], initialHeroMovie: any =
     useEffect(() => {
         const interval = setInterval(() => {
             if (document.visibilityState === "visible" && !fetchInProgress.current) {
+                apiCache.delete("new-updates-deep");
                 apiCache.delete("new-updates-v2");
                 fetchData(true);
             }
@@ -171,6 +189,7 @@ export function useNewUpdates(initialMovies: any[] = [], initialHeroMovie: any =
             if (document.visibilityState === "visible" && lastUpdated) {
                 const elapsed = Date.now() - lastUpdated.getTime();
                 if (elapsed > REFRESH_INTERVAL && !fetchInProgress.current) {
+                    apiCache.delete("new-updates-deep");
                     apiCache.delete("new-updates-v2");
                     fetchData(true);
                 }
