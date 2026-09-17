@@ -135,8 +135,12 @@ const nextConfig: NextConfig = {
         headers: [{ key: "Cache-Control", value: "no-store, no-cache, must-revalidate, private, max-age=0" }],
       },
       {
+        source: "/api/phim",
+        headers: [{ key: "Cache-Control", value: "public, s-maxage=1800, max-age=300, stale-while-revalidate=86400" }],
+      },
+      {
         source: "/api/phim/:path*",
-        headers: [{ key: "Cache-Control", value: "public, max-age=300, stale-while-revalidate=600" }],
+        headers: [{ key: "Cache-Control", value: "public, s-maxage=1800, max-age=300, stale-while-revalidate=86400" }],
       },
       {
         source: "/(.*)",

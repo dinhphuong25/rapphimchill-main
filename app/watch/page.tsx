@@ -1,3 +1,6 @@
+// Cache the watch page at Vercel Edge for 10 minutes (eliminates massive Node.js Serverless CPU usage)
+export const revalidate = 600;
+
 import PhimApi from "@/libs/phimapi.com";
 import Description from "@/components/movie/description";
 import { MovieStructuredData, BreadcrumbStructuredData } from "@/components/seo/structured-data";
@@ -16,7 +19,7 @@ const getMovieData = (slug: string) =>
       return api.get(slug);
     },
     [`movie-data-${slug}`],
-    { revalidate: 60, tags: ["movies", `movie-${slug}`] }
+    { revalidate: 1800, tags: ["movies", `movie-${slug}`] }
   )();
 
 export async function generateMetadata({ searchParams }: any) {
@@ -33,6 +36,16 @@ export async function generateMetadata({ searchParams }: any) {
     const posterUrl = normalizeImageUrl(movie.poster_url);
     const thumbUrl = normalizeImageUrl(movie.thumb_url);
 
+    const ogParams = new URLSearchParams({
+      title: movie.name || '',
+      origin_name: movie.origin_name || '',
+      year: String(movie.year || ''),
+      quality: movie.quality || 'Full HD',
+      ep: movie.episode_current || '',
+      poster: thumbUrl || posterUrl || '',
+    });
+    const dynamicOgUrl = `https://hiphim.biz/api/og?${ogParams.toString()}`;
+
     return {
       title: `${movie.name} - Xem phim HD chất lượng cao | Hi Phim`,
       description: movie.content
@@ -40,13 +53,28 @@ export async function generateMetadata({ searchParams }: any) {
         : `Xem phim ${movie.name} HD chất lượng cao miễn phí tại Hi Phim.`,
       openGraph: {
         title: `${movie.name} - Xem phim HD chất lượng cao`,
+        description: movie.content
+          ? movie.content.substring(0, 160) + "..."
+          : `Xem phim ${movie.name} HD chất lượng cao miễn phí tại Hi Phim.`,
         url: watchUrl,
-        images: posterUrl ? [{ url: posterUrl, width: 300, height: 450 }] : [],
+        siteName: "Hi Phim",
+        images: [
+          {
+            url: dynamicOgUrl,
+            width: 1200,
+            height: 630,
+            alt: `${movie.name} - Hi Phim`,
+          },
+          ...(posterUrl ? [{ url: posterUrl, width: 300, height: 450, alt: movie.name }] : []),
+        ],
       },
       twitter: {
         card: "summary_large_image",
         title: `${movie.name} - Xem phim HD`,
-        images: [thumbUrl || posterUrl].filter(Boolean),
+        description: movie.content
+          ? movie.content.substring(0, 160) + "..."
+          : `Xem phim ${movie.name} HD chất lượng cao miễn phí tại Hi Phim.`,
+        images: [dynamicOgUrl],
       },
       alternates: { canonical: canonicalUrl },
     };

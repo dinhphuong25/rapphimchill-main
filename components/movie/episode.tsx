@@ -214,7 +214,7 @@ export default function Episode({
               Danh sách tập
             </h4>
             <span className="text-white/40 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-white/5 rounded-full border border-white/10">
-              {allEpisodes.length} tập
+              {allEpisodes.length === 1 && !allEpisodes[0]?.name?.trim() && !allEpisodes[0]?.link_m3u8 && !allEpisodes[0]?.link_embed ? "Trailer" : `${allEpisodes.length} tập`}
             </span>
           </div>
 
@@ -268,6 +268,10 @@ export default function Episode({
 
                   const isWatched = mounted && Boolean(completedEpisodes?.[originalIndex]);
                   const isNew = Boolean(newestEpisodeIndices?.[originalIndex]);
+                  const rawEpName = episode.name?.trim();
+                  const epDisplayName = rawEpName
+                    ? rawEpName.replace(/(\d+)/g, (match) => String(parseInt(match, 10)))
+                    : (allEpisodes.length === 1 ? "Trailer" : `Tập ${originalIndex + 1}`);
 
                   return (
                     <button
@@ -289,7 +293,7 @@ export default function Episode({
                           ? "bg-white/5 text-brand-green/90 border-brand-green/20 hover:bg-white/10"
                           : "bg-[#222222] text-white/70 border-transparent hover:bg-[#2a2a2a] hover:text-white"
                       )}
-                      title={episode.name}
+                      title={epDisplayName}
                     >
                       {/* Equalizer Playing Indicator for active episode */}
                       {isActive ? (
@@ -318,9 +322,7 @@ export default function Episode({
                             : "text-white/80 group-hover:text-white"
                         )}
                       >
-                        {episode.name.replace(/(\d+)/g, (match) =>
-                          String(parseInt(match, 10))
-                        )}
+                        {epDisplayName}
                       </span>
                     </button>
                   );

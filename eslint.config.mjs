@@ -16,6 +16,7 @@ export default [
   {
     ignores: [
       ".next/**",
+      ".open-next/**",
       "out/**",
       "build/**",
       "node_modules/**",

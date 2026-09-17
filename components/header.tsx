@@ -47,7 +47,7 @@ export default function Header({}: HeaderProps) {
           "left-0 lg:left-[225px]" // Aligns next to Left Sidebar
         )}
       >
-        <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-8 lg:px-12 xl:px-16 flex items-center justify-center lg:justify-end h-full">
+        <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-8 lg:px-12 xl:px-16 flex items-center justify-between lg:justify-end h-full">
           {/* Mobile Brand Name on Left (Only visible on mobile screens) */}
           <Link
             href="/"
@@ -71,20 +71,25 @@ export default function Header({}: HeaderProps) {
             {/* Search Trigger Button */}
             <button
               onClick={() => setShowSearchOverlay(true)}
-              className="relative flex items-center justify-between w-36 xs:w-48 sm:w-56 md:w-64 h-9 sm:h-11 pl-2.5 sm:pl-2.5 pr-2.5 sm:pr-3.5 rounded-full bg-[#0d1410]/95 hover:bg-[#121c17] border border-brand-green/35 hover:border-brand-green/80 backdrop-blur-xl text-white transition-all duration-300 cursor-pointer group shadow-[0_4px_24px_rgba(0,0,0,0.7),0_0_15px_rgba(32,214,107,0.18)] hover:shadow-[0_0_30px_rgba(32,214,107,0.4)] active:scale-95 shrink-0 overflow-hidden"
+              className="relative flex items-center justify-center sm:justify-between w-9 h-9 sm:w-56 md:w-64 sm:h-11 p-0 sm:pl-2.5 sm:pr-3.5 rounded-full bg-[#0d1410]/95 hover:bg-[#121c17] border border-brand-green/35 hover:border-brand-green/80 backdrop-blur-xl text-white transition-all duration-300 cursor-pointer group shadow-[0_4px_24px_rgba(0,0,0,0.7),0_0_15px_rgba(32,214,107,0.18)] hover:shadow-[0_0_30px_rgba(32,214,107,0.4)] active:scale-95 shrink-0 overflow-hidden"
               aria-label="Tìm kiếm phim"
             >
               {/* Subtle Ambient Hover Glow */}
               <div className="absolute inset-0 bg-gradient-to-r from-brand-green/10 via-transparent to-brand-green/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
 
-              <div className="flex items-center gap-1.5 sm:gap-2.5 z-10 min-w-0">
+              {/* Mobile (< sm): Compact Icon Only */}
+              <div className="flex sm:hidden items-center justify-center z-10 text-brand-green group-hover:text-white transition-colors">
+                <Search className="w-4 h-4" />
+              </div>
+
+              {/* Desktop / Tablet (>= sm): Full Search Pill */}
+              <div className="hidden sm:flex items-center gap-2.5 z-10 min-w-0">
                 {/* Glowing Search Icon Badge */}
-                <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-brand-green/15 border border-brand-green/35 flex items-center justify-center text-brand-green shrink-0 group-hover:bg-brand-green group-hover:text-black group-hover:shadow-[0_0_12px_rgba(32,214,107,0.6)] transition-all duration-200">
-                  <Search className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5" />
+                <div className="w-7 h-7 rounded-full bg-brand-green/15 border border-brand-green/35 flex items-center justify-center text-brand-green shrink-0 group-hover:bg-brand-green group-hover:text-black group-hover:shadow-[0_0_12px_rgba(32,214,107,0.6)] transition-all duration-200">
+                  <Search className="w-3.5 h-3.5" />
                 </div>
-                <span className="text-white/85 group-hover:text-white font-medium text-xs sm:text-[13px] whitespace-nowrap">
-                  <span className="xs:hidden">Tìm kiếm</span>
-                  <span className="hidden xs:inline">Tìm kiếm phim</span>
+                <span className="text-white/85 group-hover:text-white font-medium text-[13px] whitespace-nowrap">
+                  Tìm kiếm phim
                 </span>
               </div>
 

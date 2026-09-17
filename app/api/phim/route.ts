@@ -5,7 +5,7 @@ export const runtime = "edge";
 
 // Rate limiting: in-memory store per Edge worker node
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT = 180; // Allow 180 requests per minute per IP (high-concurrency friendly for NAT/shared networks)
+const RATE_LIMIT = 300; // Allow 300 requests per minute per IP (high-concurrency friendly for NAT/shared networks)
 const RATE_WINDOW = 60_000; // 1 minute
 
 function isRateLimited(ip: string): boolean {
@@ -130,8 +130,20 @@ export async function GET(req: NextRequest) {
   const isNewUpdates = parsedUrl.pathname.includes("phim-moi-cap-nhat") || parsedUrl.search.includes("phim-moi-cap-nhat");
   const isMovieDetail = parsedUrl.pathname.startsWith("/phim/");
   const isSearch = parsedUrl.pathname.includes("tim-kiem");
-  const isRealtime = isNewUpdates || isMovieDetail || isSearch;
-  const currentTTL = isRealtime ? 60_000 : MEMORY_CACHE_TTL;
+
+  let currentTTL = MEMORY_CACHE_TTL;
+  let edgeCacheControl = "public, s-maxage=86400, max-age=3600, stale-while-revalidate=604800";
+
+  if (isNewUpdates) {
+    currentTTL = 300_000; // 5 mins in-memory
+    edgeCacheControl = "public, s-maxage=300, max-age=60, stale-while-revalidate=600";
+  } else if (isMovieDetail) {
+    currentTTL = 1800_000; // 30 mins in-memory (movies don't change every minute!)
+    edgeCacheControl = "public, s-maxage=1800, max-age=300, stale-while-revalidate=86400";
+  } else if (isSearch) {
+    currentTTL = 600_000; // 10 mins in-memory
+    edgeCacheControl = "public, s-maxage=600, max-age=120, stale-while-revalidate=1200";
+  }
 
   // 1. Return from In-Memory Cache if fresh
   if (cached && now - cached.timestamp < currentTTL) {
@@ -139,9 +151,7 @@ export async function GET(req: NextRequest) {
     return new Response(cached.data, {
       headers: {
         "Content-Type": "application/json; charset=utf-8",
-        "Cache-Control": isRealtime 
-          ? "public, s-maxage=60, stale-while-revalidate=120"
-          : "public, s-maxage=3600, stale-while-revalidate=86400",
+        "Cache-Control": edgeCacheControl,
         "X-Cache": "HIT-MEMORY",
         Vary: "Accept-Encoding",
       },
@@ -360,9 +370,7 @@ export async function GET(req: NextRequest) {
     return new Response(jsonString, {
       headers: {
         "Content-Type": "application/json; charset=utf-8",
-        "Cache-Control": isRealtime 
-          ? "public, s-maxage=60, stale-while-revalidate=120"
-          : "public, s-maxage=3600, stale-while-revalidate=86400",
+        "Cache-Control": edgeCacheControl,
         "X-Cache": "MISS-UPSTREAM",
         Vary: "Accept-Encoding",
       },

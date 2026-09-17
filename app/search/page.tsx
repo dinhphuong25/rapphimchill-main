@@ -1,8 +1,8 @@
+export const revalidate = 600; // Cache search results at Edge for 10 minutes
 import PhimApi from "@/libs/phimapi.com";
 import { MovieCardEditorial } from "@/components/movie/movie-card-editorial";
 import AdvancedSearchFilter from "@/components/movie/advanced-search-filter";
 import Pagination from "@/components/pagination";
-import ScrollToTop from "@/components/ui/scroll-to-top";
 import { Search, Film } from "lucide-react";
 import Link from "next/link";
 import { getCachedCategories, getCachedCountries } from "@/lib/data";
@@ -143,7 +143,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           </div>
         )}
       </div>
-      <ScrollToTop />
     </>
   );
 }

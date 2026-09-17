@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import MovieRecommendations from "./movie-recommendations";
 import PlayerErrorBoundary from "../player/player-error-boundary";
+import UnreleasedMovieOverlay from "../player/unreleased-movie-overlay";
 import { normalizeImageUrl } from "@/lib/image-helper";
 
 const VideoPlayer = dynamic(() => import("../player/video-player"), {
@@ -264,6 +265,7 @@ export default function Description({ movie, serverData }: any) {
   const prefetchedNextRef = useRef<string | null>(null);
   const lastSavedProgressRef = useRef<number>(0);
   const initialResolvedRef = useRef<boolean>(false);
+  const cloudSyncedRef = useRef<boolean>(false);
 
   const isUserPermanentlyBanned = Boolean(user?.isLocked);
   const isUserTemporarilyBanned = Boolean(user?.bannedUntil && user.bannedUntil > Date.now());
@@ -458,8 +460,10 @@ export default function Description({ movie, serverData }: any) {
   const lastSyncCheckRef = useRef<number>(Date.now());
   const isSyncingRef = useRef<boolean>(false);
 
+  const isSeriesOngoing = movie?.status === "ongoing" && movie?.type !== "single" && movie?.episode_total !== 1;
+
   const checkNewEpisodes = useCallback(async () => {
-    if (!movie?.slug || isSyncingRef.current) return;
+    if (!movie?.slug || isSyncingRef.current || !isSeriesOngoing) return;
     isSyncingRef.current = true;
     try {
       const res = await fetch(`/api/phim?url=${encodeURIComponent(`https://phimapi.com/phim/${movie.slug}`)}`);
@@ -502,18 +506,21 @@ export default function Description({ movie, serverData }: any) {
       isSyncingRef.current = false;
       lastSyncCheckRef.current = Date.now();
     }
-  }, [movie?.slug, currentServerData, currentEpisodeIndex?.server, playerMode, handleSelectEpisode]);
+  }, [movie?.slug, isSeriesOngoing, currentServerData, currentEpisodeIndex?.server, playerMode, handleSelectEpisode]);
 
-  // Periodic check every 60s & on tab visibility change
+  // Periodic check only for ONGOING series every 30 minutes (eliminates thousands of useless Vercel invocations)
   useEffect(() => {
+    if (!isSeriesOngoing) return;
+
+    const SYNC_INTERVAL = 1800_000; // 30 minutes
     const timer = setInterval(() => {
       if (document.visibilityState === "visible") {
         checkNewEpisodes();
       }
-    }, 60000);
+    }, SYNC_INTERVAL);
 
     const handleVisibility = () => {
-      if (document.visibilityState === "visible" && Date.now() - lastSyncCheckRef.current > 60000) {
+      if (document.visibilityState === "visible" && Date.now() - lastSyncCheckRef.current > SYNC_INTERVAL) {
         checkNewEpisodes();
       }
     };
@@ -523,7 +530,7 @@ export default function Description({ movie, serverData }: any) {
       clearInterval(timer);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [checkNewEpisodes]);
+  }, [checkNewEpisodes, isSeriesOngoing]);
 
   // Client-side synchronization on initial load (URL query or local storage)
   useEffect(() => {
@@ -557,6 +564,109 @@ export default function Description({ movie, serverData }: any) {
       }
     } catch {}
   }, [movie?.slug, serverData, playerMode]);
+
+  // Cloud Resume Playback: Synchronize watch progress from Neon DB / User Account across devices
+  useEffect(() => {
+    if (typeof window === "undefined" || !user || !movie?.slug || !serverData || cloudSyncedRef.current) return;
+
+    // If the URL explicitly specified ep or t query params, respect user's explicit link
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has("ep") && urlParams.has("t")) {
+      cloudSyncedRef.current = true;
+      return;
+    }
+
+    const cloudHistory = user.history;
+    if (!Array.isArray(cloudHistory) || cloudHistory.length === 0) return;
+
+    const cloudItem = cloudHistory.find((item: any) => item.slug === movie.slug);
+    if (!cloudItem) return;
+
+    const sv = typeof cloudItem.serverIndex === "number" && cloudItem.serverIndex >= 0 && cloudItem.serverIndex < serverData.length
+      ? cloudItem.serverIndex
+      : 0;
+    const episodes = serverData[sv]?.server_data || [];
+    const epIdx = typeof cloudItem.episodeIndex === "number" && cloudItem.episodeIndex >= 0 && cloudItem.episodeIndex < episodes.length
+      ? cloudItem.episodeIndex
+      : 0;
+    const cloudTime = typeof cloudItem.currentTime === "number" && cloudItem.currentTime > 0
+      ? cloudItem.currentTime
+      : 0;
+
+    // Compare with local device progress
+    let localTime = 0;
+    try {
+      const localProgress = Number(localStorage.getItem(`watchProgress_${movie.slug}_${sv}_${epIdx}`) || 0);
+      if (Number.isFinite(localProgress) && localProgress > 0) localTime = localProgress;
+    } catch {}
+
+    // If cloud has valid progress and local is empty or cloud is ahead by >10s
+    if (cloudTime > 5 && (!localTime || cloudTime > localTime + 10)) {
+      cloudSyncedRef.current = true;
+      const targetEp = episodes[epIdx];
+      const link = playerMode === 'm3u8' 
+        ? (targetEp?.link_m3u8 || targetEp?.link_embed || "") 
+        : (targetEp?.link_embed || targetEp?.link_m3u8 || "");
+      
+      if (link) {
+        setCurrentEpisodeIndex({ server: sv, episode: epIdx });
+        setCurrentEpisodeUrl(link);
+        setResumeTime(cloudTime);
+        
+        try {
+          localStorage.setItem(`watchProgress_${movie.slug}_${sv}_${epIdx}`, String(Math.floor(cloudTime)));
+        } catch {}
+
+        const minutes = Math.floor(cloudTime / 60);
+        const seconds = Math.floor(cloudTime % 60);
+        const timeStr = minutes > 0 ? `${minutes}p${seconds.toString().padStart(2, '0')}s` : `${seconds}s`;
+        const epLabel = targetEp?.name ? `Tập ${targetEp.name}` : `Tập ${epIdx + 1}`;
+        
+        toast.success(`☁️ Tiếp tục xem từ tài khoản: ${epLabel} (${timeStr})`, {
+          duration: 4500,
+        });
+      }
+    }
+  }, [user, movie?.slug, serverData, playerMode]);
+
+  // Immediate flush of latest progress to Cloud on tab switch / window leave
+  useEffect(() => {
+    if (!user || !movie?.slug) return;
+    const flushToCloud = () => {
+      const curTime = lastSavedProgressRef.current;
+      if (curTime > 5 && currentEpisodeIndex && serverData) {
+        const { server, episode } = currentEpisodeIndex;
+        const epData = serverData[server]?.server_data?.[episode];
+        const epName = epData?.name || `Tập ${episode + 1}`;
+        const epSlug = epData?.slug || "";
+
+        const updated = updateHistoryProgress(movie.slug, {
+          serverIndex: server,
+          episodeIndex: episode,
+          episodeName: epName,
+          episodeSlug: epSlug,
+          currentTime: curTime,
+        });
+        if (Array.isArray(updated) && updated.length > 0) {
+          updateServerData({ history: updated });
+        }
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        flushToCloud();
+      }
+    };
+
+    window.addEventListener("beforeunload", flushToCloud);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      window.removeEventListener("beforeunload", flushToCloud);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      flushToCloud();
+    };
+  }, [user, movie?.slug, currentEpisodeIndex, serverData, updateHistoryProgress, updateServerData]);
 
   // Save movie to recently watched only for authenticated account
   useEffect(() => {
@@ -799,11 +909,26 @@ export default function Description({ movie, serverData }: any) {
     }
   }, [currentEpisodeIndex, markEpisodeCompleted]);
 
-  const currentEpName =
+  const isTrailerStatus = Boolean(
+    movie?.episode_current?.toLowerCase().includes("trailer") ||
+    movie?.status === "trailer" ||
+    movie?.episode_current?.toLowerCase().includes("sắp chiếu")
+  );
+
+  const hasPlayableStream = Boolean(
+    currentEpisodeUrl && currentEpisodeUrl.trim() !== ""
+  );
+
+  // Unreleased when either it's explicitly a trailer/upcoming movie OR there is no stream available
+  const isUnreleasedMovie = isTrailerStatus || !hasPlayableStream;
+
+  const rawEpName =
     currentEpisodeIndex &&
-    currentServerData?.[currentEpisodeIndex.server]?.server_data?.[currentEpisodeIndex.episode]?.name
-      ? currentServerData[currentEpisodeIndex.server].server_data[currentEpisodeIndex.episode].name
-      : "";
+    currentServerData?.[currentEpisodeIndex.server]?.server_data?.[currentEpisodeIndex.episode]?.name;
+
+  const currentEpName = rawEpName?.trim()
+    ? rawEpName
+    : (isTrailerStatus ? "Trailer" : "");
 
   if (!movie || !movie.slug) return null;
 
@@ -815,6 +940,8 @@ export default function Description({ movie, serverData }: any) {
         movieName={movie.name}
         movieSlug={movie.slug}
         currentEpName={currentEpName}
+        currentTime={lastSavedProgressRef.current || resumeTime || 0}
+        episodeIndex={currentEpisodeIndex?.episode ?? 0}
       />
 
       {/* 2-Column Cinema Layout */}
@@ -830,7 +957,7 @@ export default function Description({ movie, serverData }: any) {
 
             <Card className={cn(
               "border border-white/10 overflow-hidden w-full rounded-2xl lg:rounded-3xl bg-black relative z-10",
-              isUserBanned ? "min-h-[430px] sm:min-h-[500px]" : "aspect-video"
+              isUserBanned ? "min-h-[430px] sm:min-h-[500px]" : isUnreleasedMovie ? "min-h-[380px] sm:min-h-[480px] aspect-video" : "aspect-video"
             )}>
               <CardContent className="p-0 h-full w-full">
                 {isUserBanned ? (
@@ -868,6 +995,12 @@ export default function Description({ movie, serverData }: any) {
                       Quay Về Trang Chủ
                     </Link>
                   </div>
+                ) : isUnreleasedMovie ? (
+                  <UnreleasedMovieOverlay
+                    movie={movie}
+                    isFavorite={isFav}
+                    onToggleFavorite={handleToggleFavorite}
+                  />
                 ) : playerMode === 'm3u8' ? (
                   <PlayerErrorBoundary
                     onReset={() => {

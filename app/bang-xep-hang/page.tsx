@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import RankingClient from "@/components/ranking/ranking-client";
 import { getCachedAllRankings } from "@/lib/data";
-import ScrollToTop from "@/components/ui/scroll-to-top";
 
 export const revalidate = 900; // 15 minutes ISR cache
 
@@ -35,7 +34,6 @@ export default async function RankingPage() {
       <main className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 pt-24 pb-20">
         <RankingClient initialData={rankingsData} />
       </main>
-      <ScrollToTop />
     </>
   );
 }

@@ -1,4 +1,4 @@
-// Security & Performance Middleware for Next.js
+// Security & Performance Proxy for Next.js 16+
 // Protects against common attacks and optimizes performance
 
 import { NextResponse } from 'next/server';
@@ -83,15 +83,9 @@ function isCacheableAsset(pathname: string): boolean {
 }
 
 // -------------------------------------------------------------
-// MULTI-TIER ANTI-DDOS RATE LIMITER & AUTO-IP JAIL
+// MULTI-TIER ANTI-DDOS RATE LIMITER (NAT & 4G FRIENDLY, NO IP JAIL)
 // -------------------------------------------------------------
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-const ipJailMap = new Map<string, number>(); // ip -> jailExpiresAt
-const violationTracker = new Map<string, { count: number; windowStart: number }>(); // ip -> count of 429s
-
-const JAIL_DURATION_MS = 600_000; // 10 minutes temporary ban
-const VIOLATION_WINDOW_MS = 60_000; // 1 minute window to track repeated 429 violations
-const MAX_VIOLATIONS_BEFORE_JAIL = 3;
 
 interface RateLimitConfig {
   windowMs: number;
@@ -99,36 +93,10 @@ interface RateLimitConfig {
 }
 
 const RATE_LIMITS: Record<string, RateLimitConfig> = {
-  auth: { windowMs: 30_000, maxRequests: 5 }, // 5 req / 30s for Auth/OTP endpoints (brute-force & email flood shield)
-  api_proxy: { windowMs: 10_000, maxRequests: 45 }, // 45 req / 10s for movie API & search (scraping shield)
-  general: { windowMs: 10_000, maxRequests: 120 }, // 120 req / 10s for normal browsing (concurrency & NAT friendly)
+  auth: { windowMs: 30_000, maxRequests: 20 }, // 20 req / 30s for Auth/OTP endpoints (brute-force & email flood shield)
+  api_proxy: { windowMs: 10_000, maxRequests: 150 }, // 150 req / 10s for movie API & search (scraping shield, high concurrency friendly)
+  general: { windowMs: 10_000, maxRequests: 300 }, // 300 req / 10s for normal browsing (NAT / 4G shared IP friendly)
 };
-
-function isIpJailed(ip: string): boolean {
-  if (ip === 'unknown' || ip === '127.0.0.1' || ip === '::1') return false;
-  const expiresAt = ipJailMap.get(ip);
-  if (!expiresAt) return false;
-  if (Date.now() > expiresAt) {
-    ipJailMap.delete(ip);
-    return false;
-  }
-  return true;
-}
-
-function recordViolation(ip: string) {
-  if (ip === 'unknown' || ip === '127.0.0.1' || ip === '::1') return;
-  const now = Date.now();
-  const entry = violationTracker.get(ip);
-  if (!entry || now - entry.windowStart > VIOLATION_WINDOW_MS) {
-    violationTracker.set(ip, { count: 1, windowStart: now });
-    return;
-  }
-  entry.count++;
-  if (entry.count >= MAX_VIOLATIONS_BEFORE_JAIL) {
-    ipJailMap.set(ip, now + JAIL_DURATION_MS);
-    violationTracker.delete(ip);
-  }
-}
 
 function getRateLimitCategory(pathname: string): 'auth' | 'api_proxy' | 'general' {
   if (pathname.startsWith('/api/auth/') || pathname === '/api/admin/login') {
@@ -192,7 +160,7 @@ function containsSuspiciousPayload(urlStr: string): boolean {
   return SUSPICIOUS_PATTERNS.some((pattern) => pattern.test(urlStr));
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const userAgent = request.headers.get('user-agent');
     const ip =
@@ -201,27 +169,21 @@ export async function middleware(request: NextRequest) {
         request.headers.get('x-real-ip') ||
         'unknown';
 
-    // 0. Auto-IP Jail Check (Immediate rejection for temporarily banned IPs)
-    if (isIpJailed(ip)) {
-      return new NextResponse('Forbidden - IP temporarily jailed due to repeated DDoS abuse', {
-        status: 403,
-        headers: {
-          'Retry-After': '600',
-          'X-Blocked-Reason': 'IP jailed for repeated traffic abuse',
-        },
-      });
-    }
-
     // 1. Restrict HTTP Methods to GET, POST, HEAD, OPTIONS (Block PUT, DELETE, PATCH, TRACE, CONNECT)
     const ALLOWED_METHODS = ['GET', 'POST', 'HEAD', 'OPTIONS'];
     if (!ALLOWED_METHODS.includes(request.method.toUpperCase())) {
-        return new NextResponse('Method Not Allowed', { status: 405 });
+        return new NextResponse('Method Not Allowed', { 
+            status: 405,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        });
     }
 
     // Require User-Agent on POST requests (automated attack scripts often omit User-Agent)
     if (request.method === 'POST' && (!userAgent || userAgent.trim() === '')) {
-        recordViolation(ip);
-        return new NextResponse('Forbidden - User Agent Required', { status: 403 });
+        return new NextResponse('Forbidden - User Agent Required', { 
+            status: 403,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        });
     }
 
     // Canonical host normalization: redirect www to apex so Google indexes one URL set only.
@@ -233,30 +195,36 @@ export async function middleware(request: NextRequest) {
 
     // Malicious payload in URL or Query string
     if (containsSuspiciousPayload(request.url)) {
-        recordViolation(ip);
-        return new NextResponse('Forbidden - Malicious Payload Detected', { status: 403 });
+        return new NextResponse('Forbidden - Malicious Payload Detected', { 
+            status: 403,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        });
     }
 
     // Block suspicious paths
     if (isBlockedPath(pathname)) {
-        recordViolation(ip);
-        return new NextResponse('Forbidden', { status: 403 });
+        return new NextResponse('Forbidden', { 
+            status: 403,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        });
     }
 
     // Block known scraper bots & attack tools
     if (isBlockedUserAgent(userAgent)) {
-        recordViolation(ip);
-        return new NextResponse('Forbidden - Automated Scraper / Scanner Blocked', { status: 403 });
+        return new NextResponse('Forbidden - Automated Scraper / Scanner Blocked', { 
+            status: 403,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        });
     }
 
-    // Multi-tier Anti-DDoS Rate Limiting
+    // Multi-tier Anti-DDoS Rate Limiting (Soft limit per window, no persistent IP jail)
     const category = getRateLimitCategory(pathname);
     const rateCheck = checkRateLimit(ip, category);
     if (!rateCheck.allowed) {
-        recordViolation(ip);
         return new NextResponse('Too Many Requests - Anti-DDoS Protection Active', { 
             status: 429,
             headers: {
+                'Content-Type': 'text/plain; charset=utf-8',
                 'Retry-After': rateCheck.retryAfter.toString(),
                 'X-RateLimit-Limit': rateCheck.limit.toString(),
                 'X-RateLimit-Remaining': '0',
@@ -438,7 +406,7 @@ export async function middleware(request: NextRequest) {
     return response;
 }
 
-// Configure which paths the middleware runs on
+// Configure which paths the proxy runs on
 export const config = {
     matcher: [
         /*

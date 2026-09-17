@@ -1,10 +1,9 @@
-// ISR: trang chủ được cache tĩnh 60s, TTFB cực nhanh sau lần đầu
-export const revalidate = 60;
+// ISR: trang chủ được cache tĩnh 300s (5 phút), tiết kiệm CPU và băng thông Origin
+export const revalidate = 300;
 
 import MovieListClient from "@/components/movie/movie-list-client";
 import HomeClient from "@/components/home-client";
 import dynamic from "next/dynamic";
-import ScrollToTop from "@/components/ui/scroll-to-top";
 
 const Footer = dynamic(() => import("@/components/footer"), { ssr: true });
 
@@ -171,7 +170,6 @@ export default async function Home({ searchParams }: HomeProps) {
       )}
 
       {!hasFilters && <Footer customFooterText={siteConfig.customFooterText} />}
-      <ScrollToTop />
     </>
   );
 }

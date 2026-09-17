@@ -80,19 +80,13 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
     : "";
   const watchHref = `/watch?slug=${movie.slug}${epParam}${timeParam}`;
 
-  const badgeText = useMemo(() => {
-    if (movie.episodeName) {
-      return movie.currentTime && movie.currentTime > 5 ? `Đang xem: ${movie.episodeName}` : movie.episodeName;
-    }
-    if (typeof movie.episodeIndex === "number" && movie.episodeIndex >= 0) {
-      const epTitle = `Tập ${movie.episodeIndex + 1}`;
-      return movie.currentTime && movie.currentTime > 5 ? `Đang xem: ${epTitle}` : epTitle;
-    }
-    if (movie.episode_current && movie.episode_current !== "Full") {
-      return movie.episode_current;
-    }
-    return null;
-  }, [movie.episodeName, movie.episodeIndex, movie.currentTime, movie.episode_current]);
+  const badgeText = movie.episodeName
+    ? (movie.currentTime && movie.currentTime > 5 ? `Đang xem: ${movie.episodeName}` : movie.episodeName)
+    : typeof movie.episodeIndex === "number" && movie.episodeIndex >= 0
+    ? (movie.currentTime && movie.currentTime > 5 ? `Đang xem: Tập ${movie.episodeIndex + 1}` : `Tập ${movie.episodeIndex + 1}`)
+    : movie.episode_current && movie.episode_current !== "Full"
+    ? movie.episode_current
+    : null;
 
   const hasProgress = Boolean(movie.duration && movie.currentTime && movie.currentTime > 5 && movie.duration > 0);
   const progressPercent = hasProgress ? Math.min(100, Math.max(2, (movie.currentTime! / movie.duration!) * 100)) : 0;

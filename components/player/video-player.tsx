@@ -176,6 +176,34 @@ export default function VideoPlayer({
     } catch (e) {}
   }, []);
 
+  const handleCancelCountdown = useCallback(() => {
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+    setCountdown(null);
+  }, []);
+
+  const handlePlayNextImmediately = useCallback(() => {
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+    setCountdown(null);
+    onNextEpisodeRef.current?.();
+  }, []);
+
+  useEffect(() => {
+    if (countdown === null) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleCancelCountdown();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [countdown, handleCancelCountdown]);
+
 
 
   // Auto Unmute Helper - immediately unmute and restore audio whenever called
@@ -700,7 +728,10 @@ export default function VideoPlayer({
   // HLS/Video Setup
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !videoUrl) return;
+    if (!video || !videoUrl) {
+      setIsLoading(false);
+      return;
+    }
     setError(null); 
     setIsLoading(true);
     retryCountRef.current = 0;
@@ -1853,12 +1884,69 @@ export default function VideoPlayer({
       )}
 
       {countdown !== null && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-[60] backdrop-blur-md">
-          <h3 className="text-2xl font-bold text-white mb-2">Tập tiếp theo sau</h3>
-          <div className="text-6xl font-black text-primary mb-8 animate-pulse">{countdown}s</div>
-          <div className="flex gap-4">
-            <Button variant="outline" onClick={() => { if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current); setCountdown(null); }} className="rounded-full px-8">Hủy</Button>
-            <Button className="bg-primary text-black font-bold rounded-full px-8" onClick={onNextEpisode}>Phát ngay</Button>
+        <div 
+          onClick={(e) => e.stopPropagation()}
+          className="absolute inset-0 z-[60] flex flex-col items-center justify-center bg-black/85 backdrop-blur-md px-4 text-center animate-in fade-in duration-200 select-none"
+        >
+          {/* Cinema Hub */}
+          <div className="relative flex flex-col items-center max-w-sm w-full p-6 sm:p-8 rounded-3xl bg-[#0c130e]/95 border border-brand-green/30 shadow-[0_0_50px_rgba(32,214,107,0.18)]">
+            {/* SVG Progress Ring */}
+            <div className="relative w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center mb-5">
+              <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="42"
+                  stroke="rgba(255, 255, 255, 0.1)"
+                  strokeWidth="6"
+                  fill="transparent"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="42"
+                  stroke="#20d66b"
+                  strokeWidth="6"
+                  strokeDasharray={264}
+                  strokeDashoffset={264 - (264 * (countdown / 5))}
+                  strokeLinecap="round"
+                  fill="transparent"
+                  className="transition-all duration-1000 ease-linear"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-3xl sm:text-4xl font-black text-white font-mono tracking-tighter drop-shadow-[0_0_12px_rgba(32,214,107,0.6)]">
+                  {countdown}
+                </span>
+                <span className="text-[10px] text-brand-green uppercase tracking-widest font-bold">giây</span>
+              </div>
+            </div>
+
+            <h3 className="text-base sm:text-lg font-bold text-white mb-1.5 line-clamp-1">
+              Tự động chuyển tập tiếp theo
+            </h3>
+            <p className="text-xs text-white/60 mb-6 line-clamp-1">
+              {movieName ? `Phim: ${movieName}` : "Tập tiếp theo sẽ tự động phát sau ít giây..."}
+            </p>
+
+            <div className="flex items-center gap-3 w-full">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCancelCountdown}
+                className="flex-1 py-2.5 h-auto text-xs sm:text-sm font-semibold rounded-xl bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border-white/10 transition-all cursor-pointer"
+              >
+                Hủy
+              </Button>
+              <Button
+                type="button"
+                onClick={handlePlayNextImmediately}
+                className="flex-1 py-2.5 h-auto text-xs sm:text-sm font-bold rounded-xl bg-brand-green hover:bg-brand-green/90 text-black shadow-[0_0_20px_rgba(32,214,107,0.35)] transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <FastForward className="w-3.5 h-3.5 fill-black" />
+                <span>Phát ngay</span>
+              </Button>
+            </div>
           </div>
         </div>
       )}

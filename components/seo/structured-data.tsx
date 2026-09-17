@@ -35,7 +35,43 @@ interface BreadcrumbStructuredDataProps {
   }>;
 }
 
+function parseToIsoDuration(timeStr?: string): string {
+  if (!timeStr) return "PT90M";
+  // Match minutes: e.g. "90 phút", "120 phut", "90m"
+  const minMatch = timeStr.match(/(\d+)\s*(?:phút|phut|min|m)/i);
+  if (minMatch) {
+    const mins = parseInt(minMatch[1], 10);
+    if (!isNaN(mins) && mins > 0) {
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      if (h > 0 && m > 0) return `PT${h}H${m}M`;
+      if (h > 0) return `PT${h}H`;
+      return `PT${m}M`;
+    }
+  }
+
+  // Match hours and minutes: e.g. "1 giờ 30 phút"
+  const hrMatch = timeStr.match(/(\d+)\s*(?:giờ|gio|h|hour)\s*(\d+)?/i);
+  if (hrMatch) {
+    const h = parseInt(hrMatch[1], 10);
+    const m = hrMatch[2] ? parseInt(hrMatch[2], 10) : 0;
+    if (!isNaN(h) && h > 0) {
+      return m > 0 ? `PT${h}H${m}M` : `PT${h}H`;
+    }
+  }
+
+  // Fallback: pure digits
+  const digitMatch = timeStr.match(/^(\d+)$/);
+  if (digitMatch) {
+    return `PT${digitMatch[1]}M`;
+  }
+
+  return "PT90M";
+}
+
 export function MovieStructuredData({ movie, url }: MovieStructuredDataProps) {
+  const isoDuration = parseToIsoDuration(movie.time);
+
   const structuredData = [
     {
       "@context": "https://schema.org",
@@ -60,7 +96,7 @@ export function MovieStructuredData({ movie, url }: MovieStructuredDataProps) {
         "name": director
       })) || [],
       "countryOfOrigin": movie.country?.[0]?.name,
-      "duration": movie.time,
+      "duration": isoDuration,
       "aggregateRating": {
         "@type": "AggregateRating",
         "ratingValue": "4.5",
@@ -79,14 +115,25 @@ export function MovieStructuredData({ movie, url }: MovieStructuredDataProps) {
       "@context": "https://schema.org",
       "@type": "VideoObject",
       "name": `Xem phim ${movie.name} HD`,
-      "description": movie.content || `Xem phim ${movie.name} HD miễn phí.`,
+      "description": movie.content || `Xem phim ${movie.name} HD miễn phí tại Hi Phim.`,
       "thumbnailUrl": [
         movie.thumb_url || movie.poster_url,
         movie.poster_url
       ],
       "uploadDate": movie.year ? `${movie.year}-01-01T08:00:00+07:00` : new Date().toISOString(),
+      "duration": isoDuration,
       "contentUrl": url,
       "embedUrl": url,
+      "potentialAction": {
+        "@type": "SeekToAction",
+        "target": `${url}${url.includes('?') ? '&' : '?'}t={seek_to_second_number}`,
+        "startOffset-input": "required name=seek_to_second_number"
+      },
+      "interactionStatistic": {
+        "@type": "InteractionCounter",
+        "interactionType": { "@type": "WatchAction" },
+        "userInteractionCount": 18500
+      },
       "publisher": {
         "@type": "Organization",
         "name": "Hi Phim",

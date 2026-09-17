@@ -1,5 +1,5 @@
+export const revalidate = 300; // Cache 5 minutes at Edge CDN
 import MovieListClient from "@/components/movie/movie-list-client";
-import ScrollToTop from "@/components/ui/scroll-to-top";
 
 type NewUpdatesProps = {
   searchParams: Promise<{
@@ -27,7 +27,6 @@ export default async function NewUpdatesPage({ searchParams }: NewUpdatesProps) 
       <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 pt-24 pb-20">
         <MovieListClient index={index} />
       </div>
-      <ScrollToTop />
     </>
   );
 }

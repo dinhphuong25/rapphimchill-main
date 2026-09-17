@@ -65,7 +65,7 @@ export default class PhimApi {
     try {
       const response = await fetch(url, {
         headers: this.fetchHeaders(),
-        next: { revalidate: 60, tags: ["movies", `movie-${slug}`] },
+        next: { revalidate: 1800, tags: ["movies", `movie-${slug}`] },
       });
       if (!response.ok) throw new Error(`API error: ${response.status}`);
       const data = await response.json();
@@ -94,7 +94,7 @@ export default class PhimApi {
             "User-Agent": USER_AGENT,
             Accept: "application/json",
           },
-          next: { revalidate: 60, tags: ["movies", `movie-${slug}`] },
+          next: { revalidate: 1800, tags: ["movies", `movie-${slug}`] },
         });
         if (fbRes.ok) {
           const fbData = await fbRes.json();

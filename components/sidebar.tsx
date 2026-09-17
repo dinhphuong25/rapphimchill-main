@@ -21,6 +21,8 @@ import {
   Menu,
   Sparkles,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   Layers,
   Search,
   Check,
@@ -61,6 +63,74 @@ const NAV_PERSONAL = [
   { href: "/favorites", label: "Phim Yêu Thích", icon: Heart },
 ];
 
+function ModalScrollButton({
+  scrollRef,
+  className,
+}: {
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+  className?: string;
+}) {
+  const [isScrolledDown, setIsScrolledDown] = useState(false);
+  const [hasScroll, setHasScroll] = useState(false);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const checkScroll = () => {
+      setHasScroll(el.scrollHeight > el.clientHeight + 30);
+      setIsScrolledDown(el.scrollTop > 80);
+    };
+
+    const timer = setTimeout(checkScroll, 120);
+    el.addEventListener("scroll", checkScroll, { passive: true });
+    window.addEventListener("resize", checkScroll);
+    return () => {
+      clearTimeout(timer);
+      el.removeEventListener("scroll", checkScroll);
+      window.removeEventListener("resize", checkScroll);
+    };
+  }, [scrollRef]);
+
+  const handleToggleScroll = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const el = scrollRef.current;
+    if (!el) return;
+    if (isScrolledDown) {
+      el.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      el.scrollBy({ top: 320, behavior: "smooth" });
+    }
+  };
+
+  if (!hasScroll) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={handleToggleScroll}
+      aria-label={isScrolledDown ? "Cuộn lên đầu trang" : "Cuộn xuống xem thêm"}
+      title={isScrolledDown ? "Cuộn lên đầu trang" : "Cuộn xuống xem thêm"}
+      className={cn(
+        "absolute right-4 sm:right-6 bottom-14 sm:bottom-16 z-30",
+        "w-9 h-9 sm:w-10 sm:h-10 rounded-full",
+        "bg-[#111c15]/95 hover:bg-brand-green border border-brand-green/50 hover:border-brand-green",
+        "text-brand-green hover:text-black",
+        "shadow-[0_4px_25px_rgba(0,0,0,0.9),0_0_15px_rgba(32,214,107,0.35)]",
+        "flex items-center justify-center transition-all duration-200 active:scale-95 cursor-pointer group backdrop-blur-md",
+        className
+      )}
+    >
+      {isScrolledDown ? (
+        <ChevronUp className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
+      ) : (
+        <ChevronDown className="w-5 h-5 group-hover:translate-y-0.5 transition-transform animate-bounce" />
+      )}
+    </button>
+  );
+}
+
 function SidebarContent({
   categories: propCategories = [],
   countries: propCountries = [],
@@ -75,6 +145,11 @@ function SidebarContent({
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Scroll container refs for selection modals
+  const categoriesScrollRef = useRef<HTMLDivElement>(null);
+  const countriesScrollRef = useRef<HTMLDivElement>(null);
+  const yearsScrollRef = useRef<HTMLDivElement>(null);
 
   const handleManualSync = async () => {
     setIsSyncing(true);
@@ -1027,7 +1102,10 @@ function SidebarContent({
             </div>
 
             {/* Categories Interactive Grid */}
-            <div className="relative z-10 flex-1 overflow-y-auto pr-1 custom-scrollbar overscroll-contain -webkit-overflow-scrolling-touch">
+            <div
+              ref={categoriesScrollRef}
+              className="relative z-10 flex-1 overflow-y-auto pr-1 modal-scroll custom-scrollbar overscroll-contain -webkit-overflow-scrolling-touch"
+            >
               {filteredCategories.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-2.5 pb-4">
                   {filteredCategories.map((cat, idx) => {
@@ -1070,6 +1148,9 @@ function SidebarContent({
                 </div>
               )}
             </div>
+
+            {/* Scroll Button for Easy Browsing */}
+            <ModalScrollButton scrollRef={categoriesScrollRef} />
 
             {/* Modal Bottom Action / Hint */}
             <div className="relative z-10 pt-2.5 mt-2 border-t border-white/10 flex items-center justify-between text-xs text-white/40 shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
@@ -1169,7 +1250,10 @@ function SidebarContent({
             </div>
 
             {/* Countries Interactive Grid */}
-            <div className="relative z-10 flex-1 overflow-y-auto pr-1 custom-scrollbar space-y-4 overscroll-contain -webkit-overflow-scrolling-touch">
+            <div
+              ref={countriesScrollRef}
+              className="relative z-10 flex-1 overflow-y-auto pr-1 modal-scroll custom-scrollbar space-y-4 overscroll-contain -webkit-overflow-scrolling-touch"
+            >
               {!countrySearchQuery.trim() && (
                 <div>
                   <span className="text-[11px] font-bold text-white/50 uppercase tracking-widest block mb-2 flex items-center gap-2">
@@ -1262,6 +1346,9 @@ function SidebarContent({
                 )}
               </div>
             </div>
+
+            {/* Scroll Button for Easy Browsing */}
+            <ModalScrollButton scrollRef={countriesScrollRef} />
 
             {/* Modal Bottom Action / Hint */}
             <div className="relative z-10 pt-2.5 mt-2 border-t border-white/10 flex items-center justify-between text-xs text-white/40 shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
@@ -1374,7 +1461,10 @@ function SidebarContent({
             </div>
 
             {/* Years Interactive Content */}
-            <div className="relative z-10 flex-1 overflow-y-auto pr-1 custom-scrollbar space-y-3.5 sm:space-y-4 overscroll-contain -webkit-overflow-scrolling-touch">
+            <div
+              ref={yearsScrollRef}
+              className="relative z-10 flex-1 overflow-y-auto pr-1 modal-scroll custom-scrollbar space-y-3.5 sm:space-y-4 overscroll-contain -webkit-overflow-scrolling-touch"
+            >
               {!yearSearchQuery.trim() && (
                 <div>
                   <span className="text-[10px] sm:text-[11px] font-bold text-white/50 uppercase tracking-widest block mb-2 flex items-center gap-1.5 sm:gap-2">
@@ -1463,6 +1553,9 @@ function SidebarContent({
                 )}
               </div>
             </div>
+
+            {/* Scroll Button for Easy Browsing */}
+            <ModalScrollButton scrollRef={yearsScrollRef} />
 
             {/* Modal Bottom Action / Hint */}
             <div className="relative z-10 pt-2.5 sm:pt-3 mt-1.5 sm:mt-2 border-t border-white/10 flex items-center justify-between text-xs text-white/40 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
