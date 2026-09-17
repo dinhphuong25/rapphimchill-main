@@ -50,7 +50,7 @@ export default function UserMenu() {
 
   if (loading) {
     return (
-      <div className="w-9 sm:w-28 h-10 sm:h-11 rounded-full bg-white/5 animate-pulse shrink-0" />
+      <div className="w-9 sm:w-28 h-9 sm:h-10 rounded-full bg-white/5 animate-pulse shrink-0" />
     );
   }
 
@@ -60,10 +60,10 @@ export default function UserMenu() {
       <button
         type="button"
         onClick={() => openAuthModal("login")}
-        className="pointer-events-auto flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 h-10 sm:h-11 rounded-full bg-[#111714]/80 backdrop-blur-md hover:bg-white/[0.08] border border-white/10 hover:border-brand-green/40 hover:shadow-[0_0_20px_rgba(32,214,107,0.2)] text-white/80 hover:text-white transition-all duration-300 text-xs sm:text-sm font-medium group active:scale-95 shrink-0"
+        className="pointer-events-auto flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 h-9 sm:h-10 rounded-full bg-[#111714]/80 backdrop-blur-md hover:bg-white/[0.08] border border-white/10 hover:border-brand-green/40 hover:shadow-[0_0_20px_rgba(32,214,107,0.2)] text-white/80 hover:text-white transition-all duration-300 text-xs font-medium group active:scale-95 shrink-0"
         aria-label="Đăng nhập tài khoản"
       >
-        <User className="w-4 h-4 text-white/60 group-hover:text-brand-green transition-colors shrink-0" />
+        <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white/60 group-hover:text-brand-green transition-colors shrink-0" />
         <span className="font-semibold">Đăng Nhập</span>
       </button>
     );
@@ -79,7 +79,7 @@ export default function UserMenu() {
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "flex items-center gap-1.5 sm:gap-2 h-9 sm:h-11 pl-1.5 pr-2 sm:pr-3 rounded-full bg-[#111714]/90 backdrop-blur-md border border-white/15 hover:border-brand-green/60 text-white transition-all duration-300 group active:scale-95",
+          "flex items-center gap-1.5 sm:gap-2 h-9 sm:h-10 pl-1.5 pr-2 sm:pr-3 rounded-full bg-[#111714]/90 backdrop-blur-md border border-white/15 hover:border-brand-green/60 text-white transition-all duration-300 group active:scale-95",
           isSuperAdmin && "border-amber-400/50 hover:border-amber-400/80 shadow-[0_0_15px_rgba(251,191,36,0.2)]",
           isOpen && "border-brand-green shadow-[0_0_20px_rgba(32,214,107,0.3)]"
         )}
@@ -87,7 +87,7 @@ export default function UserMenu() {
       >
         {/* Circular Avatar */}
         <div className={cn(
-          "w-6 h-6 sm:w-8 sm:h-8 rounded-full font-black text-[11px] sm:text-sm flex items-center justify-center shrink-0 relative",
+          "w-6 h-6 sm:w-7 sm:h-7 rounded-full font-black text-[11px] sm:text-xs flex items-center justify-center shrink-0 relative",
           isSuperAdmin
             ? "bg-gradient-to-tr from-amber-400 via-emerald-400 to-brand-green text-black shadow-[0_0_12px_rgba(251,191,36,0.5)] ring-1.5 sm:ring-2 ring-amber-400/50"
             : "bg-gradient-to-tr from-brand-green to-emerald-300 text-black shadow-[0_0_10px_rgba(32,214,107,0.4)]"
