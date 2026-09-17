@@ -9,7 +9,6 @@ import HydrationFix from "@/components/ui/hydration-fix";
 import { SplashScreen } from "@/components/ui/splash-screen";
 import { PWAInstaller, PerformanceMonitor } from "@/components/pwa-init";
 import SecurityGuard from "@/components/ui/security-guard";
-import PipWrapper from "@/components/player/pip-wrapper";
 import NotificationBanner from "@/components/ui/notification-banner";
 import SpeculationRules from "@/components/seo/speculation-rules";
 import { Toaster } from "sonner";
@@ -221,9 +220,6 @@ export default function RootLayout({
         {/* Lazy-init sau khi page load */}
         <PWAInstaller />
         <PerformanceMonitor />
-
-        {/* Global PiP player — persist across navigation */}
-        <PipWrapper />
 
         {/* PWA Notification prompt */}
         <NotificationBanner />

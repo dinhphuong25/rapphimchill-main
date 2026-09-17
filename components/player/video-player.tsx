@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import HLS from 'hls.js';
-import { pipStore } from "@/lib/pip-store";
 import {
   Play,
   Pause,
@@ -146,9 +145,6 @@ export default function VideoPlayer({
   const slowNetworkTimerRef = useRef<NodeJS.Timeout | null>(null);
   const settingsMenuRef = useRef<HTMLDivElement | null>(null);
   const waitingTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [isFloatingPiP, setIsFloatingPiP] = useState(false);
-  const placeholderRef = useRef<HTMLDivElement>(null);
-  const wasAutoPiPRef = useRef(false);
   const lastBufferedRef = useRef<number>(0);
   // Anti-Ad Banner Shield (Tự động phát hiện & che dải quảng cáo bài bạc ở mép trên - không hiện thông báo phiền)
   const [adShieldMode, setAdShieldMode] = useState<'auto' | 'always' | 'off'>('auto');
@@ -595,19 +591,6 @@ export default function VideoPlayer({
     }
   }, [videoFit, containerAspect]);
 
-  const togglePiP = useCallback(async () => {
-    const video = videoRef.current;
-    if (!video) return;
-    try {
-      if (document.pictureInPictureElement) {
-        await document.exitPictureInPicture();
-      } else if (document.pictureInPictureEnabled && (video as any).requestPictureInPicture) {
-        await (video as any).requestPictureInPicture();
-      }
-    } catch (err) {
-      console.warn("PiP error:", err);
-    }
-  }, []);
 
   const handleBack = useCallback(() => {
     if (typeof window !== "undefined" && window.history.length > 1) router.back();
@@ -1107,19 +1090,6 @@ export default function VideoPlayer({
   useEffect(() => {
     const video = videoRef.current;
     return () => {
-      // 1. Kích hoạt PiP toàn cục nếu người dùng rời khỏi trang xem phim khi đang phát
-      const savedTime = currentTimeRef.current || video?.currentTime || 0;
-      const wasPlaying = isPlayingRef.current || (video && !video.paused);
-      if (wasPlaying && savedTime > 0 && videoUrlRef.current && movieSlugRef.current) {
-        pipStore.set({
-          videoUrl: videoUrlRef.current,
-          movieName: movieNameRef.current || '',
-          movieSlug: movieSlugRef.current,
-          poster: posterRef.current,
-          currentTime: savedTime,
-        });
-      }
-
       // 2. Dọn dẹp tài nguyên HLS và video
       if (hlsRef.current) {
         hlsRef.current.destroy();
@@ -1312,10 +1282,10 @@ export default function VideoPlayer({
       hideLoading();
       checkAndSkipIfInAdRange();
 
-      // Kích hoạt cờ autoPictureInPicture cho Chromium và MediaSession state
+      // Đảm bảo không bật Picture-in-Picture và cập nhật MediaSession state
       try {
-        (video as any).autoPictureInPicture = true;
-        video.setAttribute('autopictureinpicture', '');
+        video.disablePictureInPicture = true;
+        video.removeAttribute('autopictureinpicture');
         if ('mediaSession' in navigator) {
           navigator.mediaSession.playbackState = 'playing';
         }
@@ -1562,120 +1532,18 @@ export default function VideoPlayer({
     };
   }, [adShieldMode, videoUrl]);
 
-  // PiP Storage Sync & Auto-cleanup
-  useEffect(() => {
-    // Khi người dùng vào trang xem phim, xóa PiP toàn cục để trình phát chính tiếp quản
-    if (pipStore.get()) {
-      pipStore.set(null);
-    }
-  }, []);
-
-  // Tự động bật PiP khi chuyển tab/ẩn trình duyệt, tự tắt PiP quay lại video khi mở lại tab
+  // Vô hiệu hóa triệt để Picture-in-Picture (tránh tự bật khi đổi tab hoặc cuộn)
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
-
-    // Kích hoạt tính năng Auto Picture-in-Picture của Chromium
-    try {
-      (video as any).autoPictureInPicture = true;
-      video.setAttribute("autopictureinpicture", "");
-    } catch {}
-
-    // Đăng ký MediaSession enterpictureinpicture action handler (yêu cầu của Chromium để auto PiP hoạt động bền bỉ mọi lần chuyển tab)
-    if ("mediaSession" in navigator) {
+    if (video) {
       try {
-        navigator.mediaSession.setActionHandler("enterpictureinpicture" as any, async () => {
-          if (document.pictureInPictureEnabled && !document.pictureInPictureElement) {
-            try {
-              await video.requestPictureInPicture();
-              wasAutoPiPRef.current = true;
-            } catch (err) {
-              console.warn("Auto PiP via MediaSession error:", err);
-            }
-          }
-        });
+        video.disablePictureInPicture = true;
+        video.removeAttribute("autopictureinpicture");
       } catch {}
     }
-
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState === "hidden") {
-        const isActivelyPlaying = !video.paused && !video.ended && video.currentTime > 0;
-        if (isActivelyPlaying) {
-          if (document.pictureInPictureEnabled && !document.pictureInPictureElement) {
-            try {
-              await (video as any).requestPictureInPicture();
-              wasAutoPiPRef.current = true;
-            } catch {}
-          }
-        }
-      } else if (document.visibilityState === "visible") {
-        if (wasAutoPiPRef.current && document.pictureInPictureElement === video) {
-          try {
-            await document.exitPictureInPicture();
-          } catch {}
-          wasAutoPiPRef.current = false;
-        }
-      }
-    };
-
-    const handleLeavePiP = () => {
-      wasAutoPiPRef.current = false;
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    video.addEventListener("leavepictureinpicture", handleLeavePiP);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      video.removeEventListener("leavepictureinpicture", handleLeavePiP);
-      if ("mediaSession" in navigator) {
-        try {
-          navigator.mediaSession.setActionHandler("enterpictureinpicture" as any, null);
-        } catch {}
-      }
-    };
-  }, []);
-
-  // Tự động bật PiP (native hoặc góc nổi) khi cuộn khỏi màn hình, tự động về vị trí cũ khi cuộn quay lại
-  useEffect(() => {
-    const video = videoRef.current;
-    const target = placeholderRef.current || containerRef.current;
-    if (!video || !target) return;
-
-    const observer = new IntersectionObserver(
-      async ([entry]) => {
-        // Rời khỏi tầm nhìn khi đang phát video -> Tự động bật PiP
-        if (!entry.isIntersecting && entry.intersectionRatio < 0.15) {
-          if (!video.paused && !video.ended && video.currentTime > 0) {
-            if (document.pictureInPictureEnabled && !document.pictureInPictureElement) {
-              try {
-                await (video as any).requestPictureInPicture();
-                wasAutoPiPRef.current = true;
-                return;
-              } catch {}
-            }
-            // Dự phòng: Thu nhỏ thành cửa sổ PiP nổi ở góc dưới phải màn hình
-            setIsFloatingPiP(true);
-          }
-        } else if (entry.isIntersecting && entry.intersectionRatio > 0.35) {
-          // Quay lại khung nhìn -> Tự động khôi phục về vị trí ban đầu
-          if (wasAutoPiPRef.current && document.pictureInPictureElement === video) {
-            try {
-              await document.exitPictureInPicture();
-            } catch {}
-            wasAutoPiPRef.current = false;
-          }
-          setIsFloatingPiP(false);
-        }
-      },
-      { threshold: [0.1, 0.35] }
-    );
-
-    observer.observe(target);
-
-    return () => {
-      observer.disconnect();
-    };
+    if (typeof document !== "undefined" && document.pictureInPictureElement) {
+      document.exitPictureInPicture().catch(() => {});
+    }
   }, []);
 
   // Smart Click / Touch
@@ -1745,69 +1613,31 @@ export default function VideoPlayer({
   };
 
   return (
-    <>
-      {/* Khung giữ chỗ khi video tự động thu nhỏ xuống góc dưới để trang không bị giật layout */}
-      {isFloatingPiP && !isFullscreen && (
-        <div
-          ref={placeholderRef}
-          className="w-full aspect-video rounded-xl lg:rounded-2xl bg-[#080d0a] border border-dashed border-brand-green/30 flex flex-col items-center justify-center text-white/50 text-xs select-none gap-2 p-4"
-        >
-          <div className="flex items-center gap-2 text-brand-green font-semibold">
-            <span className="w-2 h-2 rounded-full bg-brand-green animate-pulse" />
-            <span>Đang phát ở chế độ thu nhỏ Picture-in-Picture</span>
-          </div>
-          <button
-            onClick={() => {
-              setIsFloatingPiP(false);
-              placeholderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }}
-            className="text-[11px] font-bold text-brand-green/90 hover:text-white underline cursor-pointer"
-          >
-            Cuộn lên để quay lại khung phát chính
-          </button>
-        </div>
-      )}
-
-      <div 
-        ref={containerRef} 
-        className={cn(
-          "relative bg-black group overflow-hidden select-none w-full aspect-video rounded-xl lg:rounded-2xl shadow-2xl touch-manipulation", 
-          isFullscreen && "fixed inset-0 z-[99999] w-screen h-[100dvh] rounded-none aspect-auto",
-          isFloatingPiP && !isFullscreen && "fixed bottom-5 right-5 z-[9999] w-[300px] sm:w-[380px] aspect-video rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.95)] border-2 border-brand-green/60 animate-in fade-in zoom-in-95 duration-200"
-        )} 
-        style={{ transform: "translateZ(0)" }}
-        onMouseMove={showControlsHandler} 
-        onMouseLeave={() => isPlaying && setShowControls(false)}
-        onTouchStart={attemptUnmute}
-        onPointerDown={attemptUnmute}
-      >
-        {/* Nút quay về khung phát chính khi ở chế độ PiP nổi */}
-        {isFloatingPiP && !isFullscreen && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsFloatingPiP(false);
-              placeholderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }}
-            className="absolute top-2 left-2 z-[60] bg-black/85 hover:bg-brand-green hover:text-black text-white text-[11px] font-bold px-2.5 py-1 rounded-md border border-white/20 shadow-lg flex items-center gap-1 transition-all cursor-pointer"
-            title="Quay lại vị trí khung phát chính"
-          >
-            <span>↖ Quay lại</span>
-          </button>
-        )}
-
-        <video 
-          ref={(el) => {
-            (videoRef as any).current = el;
-            if (el) {
-              try {
-                (el as any).autoPictureInPicture = true;
-                el.setAttribute("autopictureinpicture", "");
-              } catch {}
-            }
-          }} 
-          {...({ autoPictureInPicture: "true" } as any)}
-          className="w-full h-full"
+    <div 
+      ref={containerRef} 
+      className={cn(
+        "relative bg-black group overflow-hidden select-none w-full aspect-video rounded-xl lg:rounded-2xl shadow-2xl touch-manipulation", 
+        isFullscreen && "fixed inset-0 z-[99999] w-screen h-[100dvh] rounded-none aspect-auto"
+      )} 
+      style={{ transform: "translateZ(0)" }}
+      onMouseMove={showControlsHandler} 
+      onMouseLeave={() => isPlaying && setShowControls(false)}
+      onTouchStart={attemptUnmute}
+      onPointerDown={attemptUnmute}
+    >
+      <video 
+        ref={(el) => {
+          (videoRef as any).current = el;
+          if (el) {
+            try {
+              el.disablePictureInPicture = true;
+              el.removeAttribute("autopictureinpicture");
+            } catch {}
+          }
+        }} 
+        disablePictureInPicture={true}
+        controlsList="nodownload noplaybackrate nopictureinpicture"
+        className="w-full h-full"
           style={{
             ...getVideoTransformStyle(),
             backfaceVisibility: "hidden",
@@ -2363,6 +2193,5 @@ export default function VideoPlayer({
         </div>
       )}
     </div>
-    </>
   );
 }
