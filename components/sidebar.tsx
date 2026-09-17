@@ -1263,7 +1263,7 @@ function SidebarContent({
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
                     {sortedCountries.slice(0, 8).map((c) => {
                       const active = currentCountry === c.slug;
-                      const code = c.code || getCountryCode(c.slug);
+                      const code = c.code || getCountryCode(c.slug) || getCountryCode(c.name);
                       return (
                         <button
                           key={c.slug}
@@ -1282,7 +1282,11 @@ function SidebarContent({
                             <img
                               src={`https://flagcdn.com/w80/${code.toLowerCase()}.png`}
                               alt={c.name}
+                              loading="lazy"
                               className="w-7 sm:w-8 h-5 sm:h-5.5 object-cover rounded-[3px] group-hover:scale-110 transition-transform"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                              }}
                             />
                           )}
                           <span className="text-xs sm:text-sm font-bold truncate w-full">
@@ -1305,7 +1309,7 @@ function SidebarContent({
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 pb-4">
                     {filteredCountries.map((c) => {
                       const active = currentCountry === c.slug;
-                      const code = c.code || getCountryCode(c.slug);
+                      const code = c.code || getCountryCode(c.slug) || getCountryCode(c.name);
                       return (
                         <button
                           key={c.slug}
@@ -1325,7 +1329,11 @@ function SidebarContent({
                               <img
                                 src={`https://flagcdn.com/w40/${code.toLowerCase()}.png`}
                                 alt={c.name}
+                                loading="lazy"
                                 className="w-5 h-3.5 object-cover rounded-[2px] opacity-80 group-hover:opacity-100 shrink-0"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                }}
                               />
                             )}
                             <span className="text-xs font-semibold truncate">
