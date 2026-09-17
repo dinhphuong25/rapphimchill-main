@@ -119,6 +119,7 @@ export default function VideoPlayer({
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
+  const [isAutoplayMuted, setIsAutoplayMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -208,31 +209,41 @@ export default function VideoPlayer({
   const attemptUnmute = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
-    if (!video.muted && !autoplayMutedRef.current) return;
+    if (!video.muted && !autoplayMutedRef.current) {
+      setIsAutoplayMuted(false);
+      return;
+    }
 
     video.muted = false;
     const targetVolume = lastNonZeroVolumeRef.current > 0 ? lastNonZeroVolumeRef.current : 1;
     try { video.volume = targetVolume; } catch (e) {}
     setVolume(targetVolume);
     setIsMuted(false);
+    setIsAutoplayMuted(false);
     autoplayMutedRef.current = false;
+    try {
+      const p = video.play();
+      if (p !== undefined) p.catch(() => {});
+    } catch (e) {}
     try { localStorage.setItem('cinema_muted', 'false'); } catch (e) {}
   }, []);
 
   // Global user interaction listener to unmute cleanly on first gesture if restricted
   useEffect(() => {
+    const onUserInteraction = () => {
+      hasUserInteractedRef.current = true;
+      attemptUnmute();
+      if (videoRef.current && !videoRef.current.muted && !autoplayMutedRef.current) {
+        cleanupListeners();
+      }
+    };
+
     const cleanupListeners = () => {
       window.removeEventListener('click', onUserInteraction, { capture: true });
       window.removeEventListener('pointerdown', onUserInteraction, { capture: true });
       window.removeEventListener('touchstart', onUserInteraction, { capture: true });
       window.removeEventListener('touchend', onUserInteraction, { capture: true });
       window.removeEventListener('keydown', onUserInteraction, { capture: true });
-    };
-
-    const onUserInteraction = () => {
-      hasUserInteractedRef.current = true;
-      attemptUnmute();
-      cleanupListeners();
     };
 
     window.addEventListener('click', onUserInteraction, { capture: true });
@@ -320,6 +331,7 @@ export default function VideoPlayer({
         // Always play unmuted with full sound on user action
         videoRef.current.muted = false;
         setIsMuted(false);
+        setIsAutoplayMuted(false);
         autoplayMutedRef.current = false;
         await videoRef.current.play();
       } else {
@@ -329,6 +341,9 @@ export default function VideoPlayer({
       console.warn("Play/Pause error:", err);
       if (err.name === 'NotAllowedError') {
         videoRef.current.muted = true;
+        setIsMuted(true);
+        setIsAutoplayMuted(true);
+        autoplayMutedRef.current = true;
         try {
           await videoRef.current.play();
         } catch (e) {
@@ -369,13 +384,14 @@ export default function VideoPlayer({
       videoRef.current.muted = newVolume === 0;
       if (newVolume > 0) {
         lastNonZeroVolumeRef.current = newVolume;
-        localStorage.setItem('cinema_volume', String(newVolume));
-        localStorage.setItem('cinema_muted', 'false');
+        try { localStorage.setItem('cinema_volume', String(newVolume)); } catch (e) {}
+        try { localStorage.setItem('cinema_muted', 'false'); } catch (e) {}
       } else {
-        localStorage.setItem('cinema_muted', 'true');
+        try { localStorage.setItem('cinema_muted', 'true'); } catch (e) {}
       }
       setVolume(newVolume);
       setIsMuted(newVolume === 0);
+      setIsAutoplayMuted(false);
       autoplayMutedRef.current = false;
     }
   }, []);
@@ -413,18 +429,25 @@ export default function VideoPlayer({
       const nextMuted = !videoRef.current.muted;
       videoRef.current.muted = nextMuted;
       setIsMuted(nextMuted);
+      setIsAutoplayMuted(false);
+      autoplayMutedRef.current = false;
       if (nextMuted) {
         if (videoRef.current.volume > 0) {
           lastNonZeroVolumeRef.current = videoRef.current.volume;
         }
         setVolume(0);
+        try { localStorage.setItem('cinema_muted', 'true'); } catch (e) {}
       } else {
         const restoredVolume = Math.max(0.1, lastNonZeroVolumeRef.current || 1);
         videoRef.current.volume = restoredVolume;
         setVolume(restoredVolume);
-        localStorage.setItem('cinema_volume', String(restoredVolume));
+        try { localStorage.setItem('cinema_volume', String(restoredVolume)); } catch (e) {}
+        try { localStorage.setItem('cinema_muted', 'false'); } catch (e) {}
+        try {
+          const p = videoRef.current.play();
+          if (p !== undefined) p.catch(() => {});
+        } catch (e) {}
       }
-      autoplayMutedRef.current = false;
     }
   }, []);
 
@@ -749,6 +772,7 @@ export default function VideoPlayer({
       if (userAlreadyInteracted) {
         video.muted = false;
         setIsMuted(false);
+        setIsAutoplayMuted(false);
         autoplayMutedRef.current = false;
         const p = video.play();
         if (p !== undefined) {
@@ -758,6 +782,7 @@ export default function VideoPlayer({
             console.warn("Play blocked despite interaction, falling back to muted autoplay:", err);
             video.muted = true;
             setIsMuted(true);
+            setIsAutoplayMuted(true);
             autoplayMutedRef.current = true;
             video.play().then(() => setIsLoading(false)).catch(() => setIsLoading(false));
           });
@@ -771,10 +796,12 @@ export default function VideoPlayer({
             setIsLoading(false);
             video.muted = false;
             setIsMuted(false);
+            setIsAutoplayMuted(false);
             autoplayMutedRef.current = false;
           }).catch(() => {
             video.muted = true;
             setIsMuted(true);
+            setIsAutoplayMuted(true);
             autoplayMutedRef.current = true;
             video.play().then(() => setIsLoading(false)).catch(() => setIsLoading(false));
           });
@@ -1654,7 +1681,6 @@ export default function VideoPlayer({
           poster={poster} 
           playsInline 
           preload="auto" 
-          autoPlay={autoplay}
           muted={isMuted}
         />
 
@@ -1689,10 +1715,50 @@ export default function VideoPlayer({
 
 
       <div className="absolute inset-0 flex z-10">
-        <div className="w-[35%] h-full z-20 cursor-pointer" onClick={(e) => handleSmartClick(e, 'left')} />
-        <div className="w-[30%] h-full z-20 cursor-pointer" onClick={(e) => handleSmartClick(e, 'center')} />
-        <div className="w-[35%] h-full z-20 cursor-pointer" onClick={(e) => handleSmartClick(e, 'right')} />
+        <div 
+          className="w-[35%] h-full z-20 cursor-pointer" 
+          onClick={(e) => handleSmartClick(e, 'left')} 
+          onTouchStart={attemptUnmute}
+          onPointerDown={attemptUnmute}
+        />
+        <div 
+          className="w-[30%] h-full z-20 cursor-pointer" 
+          onClick={(e) => handleSmartClick(e, 'center')} 
+          onTouchStart={attemptUnmute}
+          onPointerDown={attemptUnmute}
+        />
+        <div 
+          className="w-[35%] h-full z-20 cursor-pointer" 
+          onClick={(e) => handleSmartClick(e, 'right')} 
+          onTouchStart={attemptUnmute}
+          onPointerDown={attemptUnmute}
+        />
       </div>
+
+      {/* Floating Unmute Button when browser policy forced muted playback */}
+      {isAutoplayMuted && (
+        <div className="absolute top-4 left-4 sm:top-5 sm:left-5 z-40 pointer-events-auto animate-in fade-in slide-in-from-top-2 duration-300">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              attemptUnmute();
+            }}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              attemptUnmute();
+            }}
+            className="group flex items-center gap-2.5 bg-black/85 hover:bg-brand-green hover:text-black text-white px-4 py-2 sm:px-4.5 sm:py-2.5 rounded-full border border-brand-green/60 shadow-[0_4px_25px_rgba(0,0,0,0.8)] text-xs sm:text-sm font-bold transition-all cursor-pointer active:scale-95 backdrop-blur-md"
+          >
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-green opacity-75 group-hover:bg-black" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-brand-green group-hover:bg-black" />
+            </span>
+            <VolumeX className="w-4 h-4 text-brand-green group-hover:text-black shrink-0 transition-colors" />
+            <span className="tracking-wide">Chạm để bật âm thanh 🔊</span>
+          </button>
+        </div>
+      )}
 
       {skipAnimation && (
         <div key={skipAnimation.id} className={cn("absolute top-0 bottom-0 flex items-center justify-center w-[30%] z-30 bg-white/5 pointer-events-none animate-in fade-in zoom-in duration-300", skipAnimation.side === 'left' ? "left-0 rounded-r-full" : "right-0 rounded-l-full")} onAnimationEnd={() => setSkipAnimation(null)}>
