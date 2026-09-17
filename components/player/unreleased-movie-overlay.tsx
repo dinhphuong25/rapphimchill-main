@@ -1,6 +1,5 @@
 "use client";
 
-import { Film, Sparkles } from "lucide-react";
 import { normalizeImageUrl } from "@/lib/image-helper";
 
 interface UnreleasedMovieOverlayProps {
@@ -45,14 +44,12 @@ export default function UnreleasedMovieOverlay({
       <div className="relative z-10 max-w-lg w-full mx-auto px-4 py-6 text-center flex flex-col items-center justify-center">
         <div className="w-full bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-2xl p-5 sm:p-6 shadow-2xl">
           <div className="flex items-center justify-center gap-2 text-brand-green text-xs sm:text-sm font-bold uppercase tracking-wider mb-2.5">
-            <Sparkles className="w-4 h-4 shrink-0 animate-spin [animation-duration:6s]" />
             <span>Thông Báo Từ Hệ Thống</span>
           </div>
           <p className="text-xs sm:text-sm text-white/85 leading-relaxed max-w-md mx-auto">
             Phim hiện tại mới chỉ có thông tin giới thiệu hoặc bản phát hành chính thức chưa được nhà sản xuất công bố trên hệ thống phát trực tuyến.
           </p>
-          <div className="mt-3.5 pt-3.5 border-t border-white/[0.08] text-[11px] sm:text-xs text-white/50 flex items-center justify-center gap-1.5">
-            <Film className="w-3.5 h-3.5 text-brand-green/80 shrink-0" />
+          <div className="mt-3.5 pt-3.5 border-t border-white/[0.08] text-[11px] sm:text-xs text-white/50 flex items-center justify-center text-center">
             <span>Bản phim đầy đủ chuẩn FHD/4K sẽ tự động cập nhật ngay khi được phát hành.</span>
           </div>
         </div>
