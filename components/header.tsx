@@ -71,7 +71,7 @@ export default function Header({}: HeaderProps) {
             {/* Search Trigger Button - Compact & Sleek */}
             <button
               onClick={() => setShowSearchOverlay(true)}
-              className="relative flex items-center justify-center sm:justify-between w-9 h-9 sm:w-44 md:w-48 lg:w-52 sm:h-10 p-0 sm:pl-2 sm:pr-2.5 rounded-full bg-[#0d1410]/95 hover:bg-[#121c17] border border-brand-green/35 hover:border-brand-green/80 backdrop-blur-xl text-white transition-all duration-300 cursor-pointer group shadow-[0_4px_24px_rgba(0,0,0,0.7),0_0_15px_rgba(32,214,107,0.18)] hover:shadow-[0_0_30px_rgba(32,214,107,0.4)] active:scale-95 shrink-0 overflow-hidden"
+              className="relative flex items-center justify-center sm:justify-between w-9 h-9 sm:w-44 md:w-48 lg:w-52 sm:h-10 p-0 sm:pl-2 sm:pr-2.5 rounded-full bg-[#0B100E]/90 hover:bg-[#111714] border border-white/10 hover:border-brand-green/50 backdrop-blur-xl text-white transition-all duration-300 cursor-pointer group shadow-[0_4px_24px_rgba(0,0,0,0.7)] active:scale-95 shrink-0 overflow-hidden"
               aria-label="Tìm kiếm phim"
             >
               {/* Subtle Ambient Hover Glow */}

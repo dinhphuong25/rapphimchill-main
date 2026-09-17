@@ -364,7 +364,7 @@ function SidebarContent({
         className="lg:hidden fixed left-2.5 right-2.5 sm:left-auto sm:right-auto sm:w-[440px] bottom-[max(0.35rem,calc(env(safe-area-inset-bottom)-6px))] z-[110] max-w-[450px] mx-auto pointer-events-auto select-none"
         style={{ contain: "layout style", isolation: "isolate" }}
       >
-        <div className="h-16 px-1.5 py-1.5 rounded-full bg-[#131A16]/90 backdrop-blur-xl border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)] flex items-center justify-around">
+        <div className="h-16 px-1.5 py-1.5 rounded-full bg-[#0B100E]/90 backdrop-blur-2xl border border-white/[0.08] shadow-[0_12px_36px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.05)] flex items-center justify-around">
           {/* Tab 1: Trang Chủ */}
           {(() => {
             const active =
@@ -386,8 +386,8 @@ function SidebarContent({
                 className={cn(
                   "flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none min-w-0",
                   active
-                    ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold"
-                    : "border border-transparent text-white/60 hover:text-white"
+                    ? "bg-brand-green/[0.08] border border-brand-green/20 text-brand-green font-medium"
+                    : "border border-transparent text-white/50 hover:text-white/80"
                 )}
                 aria-label="Trang Chủ"
               >
@@ -412,8 +412,8 @@ function SidebarContent({
                 className={cn(
                   "flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none min-w-0",
                   active
-                    ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold"
-                    : "border border-transparent text-white/60 hover:text-white"
+                    ? "bg-brand-green/[0.08] border border-brand-green/20 text-brand-green font-medium"
+                    : "border border-transparent text-white/50 hover:text-white/80"
                 )}
                 aria-label="Chiếu Rạp"
               >
@@ -438,8 +438,8 @@ function SidebarContent({
                 className={cn(
                   "flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none min-w-0",
                   active
-                    ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold"
-                    : "border border-transparent text-white/60 hover:text-white"
+                    ? "bg-brand-green/[0.08] border border-brand-green/20 text-brand-green font-medium"
+                    : "border border-transparent text-white/50 hover:text-white/80"
                 )}
                 aria-label="Lịch Sử Xem"
               >
@@ -464,8 +464,8 @@ function SidebarContent({
                 className={cn(
                   "flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none min-w-0",
                   active
-                    ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold"
-                    : "border border-transparent text-white/60 hover:text-white"
+                    ? "bg-brand-green/[0.08] border border-brand-green/20 text-brand-green font-medium"
+                    : "border border-transparent text-white/50 hover:text-white/80"
                 )}
                 aria-label="Phim Yêu Thích"
               >
@@ -497,8 +497,8 @@ function SidebarContent({
                 className={cn(
                   "relative flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none min-w-0 cursor-pointer",
                   active
-                    ? "bg-brand-green/15 border border-brand-green/35 text-brand-green font-bold"
-                    : "border border-transparent text-white/60 hover:text-white"
+                    ? "bg-brand-green/[0.08] border border-brand-green/20 text-brand-green font-medium"
+                    : "border border-transparent text-white/50 hover:text-white/80"
                 )}
                 aria-label="Danh Mục"
               >
@@ -536,7 +536,7 @@ function SidebarContent({
       {/* Mobile Account Floating Sheet */}
       {isAccountOpen && (
         <div
-          className="lg:hidden fixed left-1/2 -translate-x-1/2 bottom-[max(4.5rem,calc(env(safe-area-inset-bottom)+4rem))] z-[130] w-[calc(100%-24px)] max-w-[390px] max-h-[calc(100dvh-5.5rem)] overflow-y-auto overscroll-contain bg-[#0d1310]/95 backdrop-blur-2xl border border-white/15 rounded-3xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_30px_rgba(32,214,107,0.15)] animate-in fade-in slide-in-from-bottom-5 duration-200 pointer-events-auto select-none"
+          className="lg:hidden fixed left-1/2 -translate-x-1/2 bottom-[max(4.5rem,calc(env(safe-area-inset-bottom)+4rem))] z-[130] w-[calc(100%-24px)] max-w-[390px] max-h-[calc(100dvh-5.5rem)] overflow-y-auto overscroll-contain bg-[#0B100E]/95 backdrop-blur-2xl border border-white/[0.08] rounded-3xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.85)] animate-in fade-in slide-in-from-bottom-5 duration-200 pointer-events-auto select-none"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Top Pill Handle */}
