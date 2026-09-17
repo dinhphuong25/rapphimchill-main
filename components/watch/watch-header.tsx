@@ -28,7 +28,7 @@ export default function WatchHeader({
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <Button
                 onClick={() => {
-                  if (window.history.length > 1) {
+                  if (typeof window !== "undefined" && window.history.length > 1) {
                     router.back();
                   } else {
                     router.push("/");
@@ -36,14 +36,14 @@ export default function WatchHeader({
                 }}
                 variant="ghost"
                 size="sm"
-                className="text-white/80 hover:text-white hover:bg-white/10 rounded-xl px-2.5 sm:px-3 py-2 flex items-center gap-1.5 sm:gap-2 border border-white/10 shrink-0 cursor-pointer"
+                className="text-white/85 hover:text-white hover:bg-white/10 rounded-xl px-2.5 sm:px-3 py-1.5 sm:py-2 flex items-center gap-1.5 sm:gap-2 border border-white/10 shrink-0 cursor-pointer shadow-sm active:scale-95"
                 title="Quay lại"
               >
-                <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-green" />
-                <span className="text-xs font-bold hidden sm:inline">Trở về</span>
+                <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-green shrink-0" />
+                <span className="text-xs font-bold whitespace-nowrap">Trở về</span>
               </Button>
 
-              <div className="h-4 w-px bg-white/10 hidden sm:block shrink-0" />
+              <div className="h-4 w-px bg-white/10 shrink-0" />
 
               {/* Breadcrumb info */}
               <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 text-xs sm:text-sm">
