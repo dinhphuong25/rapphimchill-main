@@ -933,7 +933,7 @@ export default function Description({ movie, serverData }: any) {
   if (!movie || !movie.slug) return null;
 
   return (
-    <div className="w-full flex flex-col gap-5 sm:gap-6 z-10 relative">
+    <div className="w-full flex flex-col gap-3.5 sm:gap-6 z-10 relative">
       
       {/* Standalone Cinema Header */}
       <WatchHeader
@@ -945,10 +945,10 @@ export default function Description({ movie, serverData }: any) {
       />
 
       {/* 2-Column Cinema Layout */}
-      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start w-full max-w-[1600px] mx-auto pt-2">
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 items-start w-full max-w-[1600px] mx-auto pt-1 sm:pt-2">
         
         {/* Left Primary Stage: Video Player — sticky on desktop */}
-        <div className="flex-1 w-full min-w-0 flex flex-col gap-6 lg:sticky lg:top-[60px]">
+        <div className="flex-1 w-full min-w-0 flex flex-col gap-4 sm:gap-6 lg:sticky lg:top-[60px]">
           
           {/* Video Player Container with Dynamic OLED Backlight Glow */}
           <div className="relative group/player w-full">

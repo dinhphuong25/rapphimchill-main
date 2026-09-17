@@ -163,7 +163,7 @@ async function WatchContent({ slug }: { slug: string }) {
       <div className="fixed inset-0 z-0 bg-gradient-to-b from-cinema-bg/80 via-cinema-bg/95 to-cinema-bg pointer-events-none" />
 
       {/* Main Cinema Page Layout - Full-width Standalone Cinema View */}
-      <main className="relative z-10 min-h-screen flex flex-col w-full">
+      <main className="relative z-10 min-h-0 sm:min-h-screen flex flex-col w-full">
         <MovieStructuredData
           movie={movie}
           url={`https://hiphim.biz/watch?slug=${slug}`}
@@ -171,7 +171,7 @@ async function WatchContent({ slug }: { slug: string }) {
         <BreadcrumbStructuredData items={structuredBreadcrumbItems} />
 
         {/* Main Watch Container */}
-        <div className="flex-1 w-full max-w-[1920px] mx-auto pb-16 px-3 sm:px-6 lg:px-8 xl:px-10 flex flex-col">
+        <div className="w-full max-w-[1920px] mx-auto pb-3 sm:pb-16 px-3 sm:px-6 lg:px-8 xl:px-10 flex flex-col">
           <Description movie={movie} serverData={server} slug={slug} thumb_url={movie.thumb_url} />
         </div>
       </main>
