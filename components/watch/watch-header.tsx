@@ -21,10 +21,10 @@ export default function WatchHeader({
 
   return (
     <>
-      <div className="sticky top-0 z-40 w-full max-w-[1800px] mx-auto transition-all shrink-0">
+      <div className="sticky top-0 z-40 w-full max-w-[1600px] mx-auto transition-all shrink-0">
         <header className="w-full bg-[#0a0a0a]/90 backdrop-blur-2xl border-x border-b border-white/10 rounded-b-2xl sm:rounded-b-3xl px-3 sm:px-6 py-2.5 shadow-2xl relative">
-          <div className="flex items-center justify-between gap-3">
-            {/* Left: Back button */}
+          <div className="flex items-center justify-between gap-2 sm:gap-4 w-full">
+            {/* Left: Back button (Far left corner) */}
             <Button
               onClick={() => {
                 if (typeof window !== "undefined" && window.history.length > 1) {
@@ -42,23 +42,24 @@ export default function WatchHeader({
               <span className="text-xs font-bold whitespace-nowrap">Trở về</span>
             </Button>
 
-            {/* Right: Breadcrumb info */}
-            <div className="flex items-center justify-end gap-1.5 sm:gap-2 min-w-0 text-xs sm:text-sm">
+            {/* Right: Breadcrumb info (Far right corner) */}
+            <div className="flex items-center justify-end gap-1.5 sm:gap-2 min-w-0 text-xs sm:text-sm ml-auto text-right">
               <Link
                 href="/"
                 className="text-white/50 hover:text-brand-green transition-colors flex items-center gap-1 shrink-0"
+                title="Trang chủ"
               >
                 <Home className="w-3.5 h-3.5" />
                 <span className="hidden md:inline">Trang chủ</span>
               </Link>
               <span className="text-white/30 shrink-0">/</span>
-              <span className="text-white/90 font-semibold truncate max-w-[140px] xs:max-w-[200px] sm:max-w-[340px] md:max-w-[500px] lg:max-w-[750px]">
+              <span className="text-white/90 font-semibold truncate max-w-[120px] xs:max-w-[180px] sm:max-w-[320px] md:max-w-[500px] lg:max-w-[750px]">
                 {movieName}
               </span>
               {currentEpName && (
                 <>
                   <span className="text-white/30 shrink-0">/</span>
-                  <span className="text-brand-green font-bold truncate max-w-[75px] sm:max-w-[130px] shrink-0">
+                  <span className="text-brand-green font-bold truncate max-w-[70px] sm:max-w-[130px] shrink-0">
                     {currentEpName}
                   </span>
                 </>
