@@ -78,6 +78,8 @@ export default function VideoPlayer({
   const movieSlugRef = useRef(movieSlug);
   const videoUrlRef = useRef(videoUrl);
   const posterRef = useRef(poster);
+  const isPlayingRef = useRef<boolean>(false);
+  const currentTimeRef = useRef<number>(0);
   
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -1103,15 +1105,29 @@ export default function VideoPlayer({
 
   // Full resource cleanup only when VideoPlayer unmounts from page
   useEffect(() => {
+    const video = videoRef.current;
     return () => {
+      // 1. Kích hoạt PiP toàn cục nếu người dùng rời khỏi trang xem phim khi đang phát
+      const savedTime = currentTimeRef.current || video?.currentTime || 0;
+      const wasPlaying = isPlayingRef.current || (video && !video.paused);
+      if (wasPlaying && savedTime > 0 && videoUrlRef.current && movieSlugRef.current) {
+        pipStore.set({
+          videoUrl: videoUrlRef.current,
+          movieName: movieNameRef.current || '',
+          movieSlug: movieSlugRef.current,
+          poster: posterRef.current,
+          currentTime: savedTime,
+        });
+      }
+
+      // 2. Dọn dẹp tài nguyên HLS và video
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
-      const v = videoRef.current;
-      if (v) {
-        v.removeAttribute('src');
-        v.load();
+      if (video) {
+        video.removeAttribute('src');
+        video.load();
       }
     };
   }, []);
@@ -1122,6 +1138,7 @@ export default function VideoPlayer({
     if (!video) return;
     const onTimeUpdate = () => {
       const cur = video.currentTime;
+      currentTimeRef.current = cur;
       const now = performance.now();
       if (cur > 0.1 && !hasRenderedFirstFrame) {
         setHasRenderedFirstFrame(true);
@@ -1288,15 +1305,31 @@ export default function VideoPlayer({
     };
 
     const onPlayEvent = () => {
+      isPlayingRef.current = true;
       setIsPlaying(true);
       setHasRenderedFirstFrame(true);
       setIsSlowNetwork(false);
       hideLoading();
       checkAndSkipIfInAdRange();
+
+      // Kích hoạt cờ autoPictureInPicture cho Chromium và MediaSession state
+      try {
+        (video as any).autoPictureInPicture = true;
+        video.setAttribute('autopictureinpicture', '');
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.playbackState = 'playing';
+        }
+      } catch {}
     };
     const onPauseEvent = () => {
+      isPlayingRef.current = false;
       setIsPlaying(false);
       hideLoading();
+      try {
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.playbackState = 'paused';
+        }
+      } catch {}
       if (waitingTimerRef.current) {
         clearTimeout(waitingTimerRef.current);
         waitingTimerRef.current = null;
@@ -1531,23 +1564,10 @@ export default function VideoPlayer({
 
   // PiP Storage Sync & Auto-cleanup
   useEffect(() => {
-    // Khi người dùng quay lại trang xem phim, xóa PiP toàn cục để trình phát chính tiếp quản
+    // Khi người dùng vào trang xem phim, xóa PiP toàn cục để trình phát chính tiếp quản
     if (pipStore.get()) {
       pipStore.set(null);
     }
-
-    return () => {
-      const v = videoRef.current;
-      if (v && !v.paused && v.currentTime > 3 && videoUrlRef.current && movieSlugRef.current) {
-        pipStore.set({
-          videoUrl: videoUrlRef.current,
-          movieName: movieNameRef.current || '',
-          movieSlug: movieSlugRef.current,
-          poster: posterRef.current,
-          currentTime: v.currentTime,
-        });
-      }
-    };
   }, []);
 
   // Tự động bật PiP khi chuyển tab/ẩn trình duyệt, tự tắt PiP quay lại video khi mở lại tab
@@ -1555,9 +1575,32 @@ export default function VideoPlayer({
     const video = videoRef.current;
     if (!video) return;
 
+    // Kích hoạt tính năng Auto Picture-in-Picture của Chromium
+    try {
+      (video as any).autoPictureInPicture = true;
+      video.setAttribute("autopictureinpicture", "");
+    } catch {}
+
+    // Đăng ký MediaSession enterpictureinpicture action handler (yêu cầu của Chromium để auto PiP hoạt động bền bỉ mọi lần chuyển tab)
+    if ("mediaSession" in navigator) {
+      try {
+        navigator.mediaSession.setActionHandler("enterpictureinpicture" as any, async () => {
+          if (document.pictureInPictureEnabled && !document.pictureInPictureElement) {
+            try {
+              await video.requestPictureInPicture();
+              wasAutoPiPRef.current = true;
+            } catch (err) {
+              console.warn("Auto PiP via MediaSession error:", err);
+            }
+          }
+        });
+      } catch {}
+    }
+
     const handleVisibilityChange = async () => {
       if (document.visibilityState === "hidden") {
-        if (!video.paused && !video.ended && video.currentTime > 0) {
+        const isActivelyPlaying = !video.paused && !video.ended && video.currentTime > 0;
+        if (isActivelyPlaying) {
           if (document.pictureInPictureEnabled && !document.pictureInPictureElement) {
             try {
               await (video as any).requestPictureInPicture();
@@ -1585,6 +1628,11 @@ export default function VideoPlayer({
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       video.removeEventListener("leavepictureinpicture", handleLeavePiP);
+      if ("mediaSession" in navigator) {
+        try {
+          navigator.mediaSession.setActionHandler("enterpictureinpicture" as any, null);
+        } catch {}
+      }
     };
   }, []);
 
@@ -1749,7 +1797,15 @@ export default function VideoPlayer({
         )}
 
         <video 
-          ref={videoRef} 
+          ref={(el) => {
+            (videoRef as any).current = el;
+            if (el) {
+              try {
+                (el as any).autoPictureInPicture = true;
+                el.setAttribute("autopictureinpicture", "");
+              } catch {}
+            }
+          }} 
           {...({ autoPictureInPicture: "true" } as any)}
           className="w-full h-full"
           style={{
