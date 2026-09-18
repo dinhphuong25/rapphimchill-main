@@ -103,7 +103,7 @@ export default function ReportModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div 
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-[460px] bg-[#0d120f] border border-brand-green/30 rounded-2xl p-4 sm:p-5 shadow-[0_10px_50px_rgba(0,0,0,0.8)] text-white"
+        className="relative w-full max-w-[460px] max-h-[92vh] overflow-y-auto custom-scrollbar bg-[#0d120f] border border-brand-green/30 rounded-2xl p-4 sm:p-5 shadow-[0_10px_50px_rgba(0,0,0,0.8)] text-white"
       >
         {/* Header */}
         <div className="flex items-center justify-between gap-3 mb-3 pb-2.5 border-b border-white/10">
@@ -134,7 +134,7 @@ export default function ReportModal({
             <label className="text-[11px] font-semibold text-white/70 uppercase tracking-wider">
               Chọn sự cố bạn đang gặp:
             </label>
-            <div className="space-y-1.5 max-h-[240px] overflow-y-auto pr-1 pb-0.5 custom-scrollbar">
+            <div className="space-y-1.5">
               {ISSUE_OPTIONS.map((option) => {
                 const Icon = option.icon;
                 const isSelected = selectedIssue === option.id;
