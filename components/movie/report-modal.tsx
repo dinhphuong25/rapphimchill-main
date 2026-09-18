@@ -134,7 +134,7 @@ export default function ReportModal({
             <label className="text-[11px] font-semibold text-white/70 uppercase tracking-wider">
               Chọn sự cố bạn đang gặp:
             </label>
-            <div className="space-y-1.5 max-h-[210px] overflow-y-auto pr-1">
+            <div className="space-y-1.5 max-h-[240px] overflow-y-auto pr-1 pb-0.5 custom-scrollbar">
               {ISSUE_OPTIONS.map((option) => {
                 const Icon = option.icon;
                 const isSelected = selectedIssue === option.id;
@@ -162,8 +162,8 @@ export default function ReportModal({
           </div>
 
           {/* Description */}
-          <div className="space-y-1">
-            <label className="text-[11px] font-medium text-white/70">
+          <div className="space-y-1.5 pt-2.5">
+            <label className="text-[11px] font-medium text-white/70 block">
               Ghi chú thêm (tùy chọn):
             </label>
             <textarea
@@ -172,7 +172,7 @@ export default function ReportModal({
               placeholder="Ví dụ: Bị đứng từ phút 15:20, đã tải lại nhưng không xem được..."
               rows={2}
               maxLength={500}
-              className="w-full text-xs bg-black/50 border border-white/15 rounded-xl px-3 py-1.5 text-white placeholder:text-white/30 focus:outline-none focus:border-brand-green transition-colors resize-none h-14"
+              className="w-full text-xs bg-black/50 border border-white/15 rounded-xl px-3 py-2 text-white placeholder:text-white/30 focus:outline-none focus:border-brand-green transition-colors resize-none h-16"
             />
           </div>
 

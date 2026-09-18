@@ -17,7 +17,7 @@ interface State {
   error: Error | null;
 }
 
-export default class PlayerErrorBoundary extends Component<Props, State> {
+export class PlayerErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -84,3 +84,5 @@ export default class PlayerErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
+
+export default PlayerErrorBoundary;

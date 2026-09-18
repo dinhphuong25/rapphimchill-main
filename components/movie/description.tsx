@@ -12,11 +12,13 @@ import { useUserAuth } from "@/context/user-auth-context";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Link from "next/link";
-import PlayerErrorBoundary from "../player/player-error-boundary";
+import PlayerErrorBoundary, { PlayerErrorBoundary as PlayerErrorBoundaryNamed } from "@/components/player/player-error-boundary";
 import UnreleasedMovieOverlay from "../player/unreleased-movie-overlay";
 import { normalizeImageUrl } from "@/lib/image-helper";
 import ReportModal from "./report-modal";
 import MovieRating from "./movie-rating";
+
+const SafePlayerErrorBoundary: any = PlayerErrorBoundary || PlayerErrorBoundaryNamed || (({ children }: any) => <>{children}</>);
 
 const VideoPlayer = dynamic(() => import("../player/video-player"), {
   ssr: false,
@@ -1021,7 +1023,7 @@ export default function Description({ movie, serverData }: any) {
                     onToggleFavorite={handleToggleFavorite}
                   />
                 ) : playerMode === 'm3u8' ? (
-                  <PlayerErrorBoundary
+                  <SafePlayerErrorBoundary
                     onReset={() => {
                       setPlayerMode('m3u8');
                       const ep = currentServerData?.[currentEpisodeIndex?.server || 0]?.server_data?.[currentEpisodeIndex?.episode || 0];
@@ -1044,7 +1046,7 @@ export default function Description({ movie, serverData }: any) {
                       onNextEpisode={handleNextEpisode}
                       onEnded={handleEnded}
                     />
-                  </PlayerErrorBoundary>
+                  </SafePlayerErrorBoundary>
                 ) : (
                   <EmbedPlayer
                     videoUrl={
