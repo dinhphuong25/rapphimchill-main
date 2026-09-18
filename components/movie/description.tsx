@@ -16,7 +16,6 @@ import PlayerErrorBoundary, { PlayerErrorBoundary as PlayerErrorBoundaryNamed } 
 import UnreleasedMovieOverlay from "../player/unreleased-movie-overlay";
 import { normalizeImageUrl } from "@/lib/image-helper";
 import ReportModal from "./report-modal";
-import MovieRating from "./movie-rating";
 
 const SafePlayerErrorBoundary: any = PlayerErrorBoundary || PlayerErrorBoundaryNamed || (({ children }: any) => <>{children}</>);
 
@@ -1103,11 +1102,6 @@ export default function Description({ movie, serverData }: any) {
           </Episode>
         </div>
 
-      </div>
-
-      {/* Community Rating */}
-      <div className="w-full max-w-[1600px] mx-auto">
-        <MovieRating slug={movie.slug} movieName={movie.name} />
       </div>
 
       {/* Broken Episode Report Modal */}
