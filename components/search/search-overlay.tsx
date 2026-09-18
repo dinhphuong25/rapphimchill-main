@@ -535,9 +535,6 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                 onSubmit={handleSubmit}
                 className="flex items-center gap-2.5 sm:gap-4 flex-1 mr-2 sm:mr-4"
               >
-                <span className="font-mono text-xl sm:text-3xl font-black text-brand-green select-none">
-                  &gt;
-                </span>
                 <Search className="w-5 h-5 sm:w-7 sm:h-7 text-brand-green shrink-0" />
                 <input
                   ref={inputRef}
