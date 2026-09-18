@@ -16,6 +16,9 @@ import MovieRecommendations from "./movie-recommendations";
 import PlayerErrorBoundary from "../player/player-error-boundary";
 import UnreleasedMovieOverlay from "../player/unreleased-movie-overlay";
 import { normalizeImageUrl } from "@/lib/image-helper";
+import ReportModal from "./report-modal";
+import MovieRating from "./movie-rating";
+import MovieInfoSection from "./movie-info-section";
 
 const VideoPlayer = dynamic(() => import("../player/video-player"), {
   ssr: false,
@@ -338,6 +341,8 @@ export default function Description({ movie, serverData }: any) {
     }
   }, [checkAuthOrPrompt, isFav, movie, toggleFavorite, updateServerData, user]);
 
+  const [showReportModal, setShowReportModal] = useState(false);
+
   const favoriteButton = (
     <button
       onClick={handleToggleFavorite}
@@ -359,6 +364,22 @@ export default function Description({ movie, serverData }: any) {
       />
       <span>{isFav ? "Đã Thêm Vào Yêu Thích" : "Thêm Vào Phim Yêu Thích"}</span>
     </button>
+  );
+
+  const actionButtons = (
+    <div className="w-full flex items-center justify-center gap-2 max-w-[360px] mx-auto">
+      {favoriteButton}
+      <button
+        type="button"
+        onClick={() => setShowReportModal(true)}
+        className="py-2 px-3 rounded-xl bg-[#222222] hover:bg-[#2a2a2a] text-white/80 hover:text-amber-400 border border-transparent hover:border-amber-400/30 flex items-center justify-center gap-1.5 text-xs font-semibold transition-all cursor-pointer active:scale-95 shadow-sm shrink-0"
+        title="Báo lỗi nếu video không xem được, mất tiếng hoặc sai tập"
+      >
+        <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+        <span className="hidden sm:inline">Báo lỗi tập</span>
+        <span className="sm:hidden">Báo lỗi</span>
+      </button>
+    </div>
   );
 
   const getEpisodeProgressKey = useCallback((serverIndex: number, episodeIndex: number) => {
@@ -1058,7 +1079,7 @@ export default function Description({ movie, serverData }: any) {
               completedEpisodes={completedEpisodes}
               newestEpisodeIndices={newestEpisodeIndices}
             >
-              {favoriteButton}
+              {actionButtons}
             </Episode>
           </div>
         </div>
@@ -1078,11 +1099,36 @@ export default function Description({ movie, serverData }: any) {
             completedEpisodes={completedEpisodes}
             newestEpisodeIndices={newestEpisodeIndices}
           >
-            {favoriteButton}
+            {actionButtons}
           </Episode>
         </div>
 
       </div>
+
+      {/* Community Rating */}
+      <div className="w-full max-w-[1600px] mx-auto">
+        <MovieRating slug={movie.slug} movieName={movie.name} />
+      </div>
+
+      {/* Movie Information & Clickable Cast/Director */}
+      <div className="w-full max-w-[1600px] mx-auto">
+        <MovieInfoSection movie={movie} />
+      </div>
+
+      {/* Recommendations: Phim tương tự */}
+      <div className="w-full max-w-[1600px] mx-auto pt-2">
+        <MovieRecommendations currentMovie={movie} limit={10} />
+      </div>
+
+      {/* Broken Episode Report Modal */}
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        movieSlug={movie.slug}
+        movieName={movie.name}
+        episodeName={currentEpName}
+        serverName={currentServerData?.[currentEpisodeIndex?.server || 0]?.server_name}
+      />
     </div>
   );
 }

@@ -64,9 +64,14 @@ import type { SiteConfig } from "@/lib/site-config";
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<
-    "overview" | "featured" | "announcement" | "maintenance" | "cache" | "settings" | "security" | "users"
+    "overview" | "featured" | "announcement" | "maintenance" | "cache" | "settings" | "security" | "users" | "reports"
   >("overview");
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+
+  // Reports Management state
+  const [reportsList, setReportsList] = useState<any[]>([]);
+  const [isLoadingReports, setIsLoadingReports] = useState(false);
+  const [reportFilter, setReportFilter] = useState<"all" | "pending" | "resolved">("all");
 
   const [config, setConfig] = useState<SiteConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -329,7 +334,58 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const switchTab = (tab: "overview" | "featured" | "announcement" | "maintenance" | "cache" | "settings" | "security" | "users") => {
+  const fetchReports = async () => {
+    setIsLoadingReports(true);
+    try {
+      const res = await fetch("/api/report");
+      const data = await res.json();
+      if (data.success) {
+        setReportsList(data.reports || []);
+      }
+    } catch {
+      toast.error("Không thể tải danh sách báo lỗi phim!");
+    } finally {
+      setIsLoadingReports(false);
+    }
+  };
+
+  const handleToggleReportStatus = async (id: string, currentStatus: "pending" | "resolved") => {
+    const nextStatus = currentStatus === "pending" ? "resolved" : "pending";
+    try {
+      const res = await fetch("/api/report", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status: nextStatus }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setReportsList((prev) =>
+          prev.map((r) => (r.id === id ? { ...r, status: nextStatus } : r))
+        );
+        toast.success(nextStatus === "resolved" ? "Đã đánh dấu đã sửa lỗi!" : "Đã chuyển về chờ xử lý.");
+      }
+    } catch {
+      toast.error("Lỗi khi cập nhật trạng thái báo cáo.");
+    }
+  };
+
+  const handleDeleteReport = async (id: string) => {
+    if (!confirm("Bạn có chắc chắn muốn xóa báo cáo này không?")) return;
+    try {
+      const res = await fetch(`/api/report?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setReportsList((prev) => prev.filter((r) => r.id !== id));
+        toast.success("Đã xóa báo cáo thành công.");
+      }
+    } catch {
+      toast.error("Lỗi khi xóa báo cáo.");
+    }
+  };
+
+  const switchTab = (tab: "overview" | "featured" | "announcement" | "maintenance" | "cache" | "settings" | "security" | "users" | "reports") => {
     setActiveTab(tab);
     setIsMobileDrawerOpen(false);
     if (typeof window !== "undefined") {
@@ -340,6 +396,9 @@ export default function AdminDashboardPage() {
     if (tab === "users" && usersList.length === 0) {
       fetchUsers();
     }
+    if (tab === "reports") {
+      fetchReports();
+    }
   };
 
   // Load config on mount
@@ -347,11 +406,12 @@ export default function AdminDashboardPage() {
     fetchConfig();
     checkApiHealth();
     fetchUsers();
+    fetchReports();
 
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const tab = params.get("tab");
-      const validTabs = ["overview", "featured", "announcement", "maintenance", "cache", "settings", "security", "users"];
+      const validTabs = ["overview", "featured", "announcement", "maintenance", "cache", "settings", "security", "users", "reports"];
       if (tab && validTabs.includes(tab)) {
         setActiveTab(tab as any);
       }
@@ -782,6 +842,29 @@ export default function AdminDashboardPage() {
                     <Database className="w-4 h-4" />
                     <span>Bộ Nhớ Đệm & Sync</span>
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => switchTab("reports")}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      activeTab === "reports"
+                        ? "bg-brand-green text-black shadow-[0_0_15px_rgba(34,197,94,0.3)]"
+                        : "text-white/70 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    <AlertTriangle className="w-4 h-4 text-amber-400" />
+                    <span>Báo Lỗi Phim</span>
+                    {reportsList.filter((r) => r.status === "pending").length > 0 && (
+                      <span
+                        className={`ml-auto text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                          activeTab === "reports"
+                            ? "bg-black/30 text-black"
+                            : "bg-amber-500/25 text-amber-400 border border-amber-500/30 animate-pulse"
+                        }`}
+                      >
+                        {reportsList.filter((r) => r.status === "pending").length}
+                      </span>
+                    )}
+                  </button>
                 </div>
 
                 {/* Group 3: TRUYỀN THÔNG */}
@@ -952,6 +1035,23 @@ export default function AdminDashboardPage() {
             >
               <Database className="w-4 h-4" />
               <span>Bộ Nhớ Đệm & Sync</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => switchTab("reports")}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === "reports"
+                  ? "bg-brand-green/20 text-brand-green border border-brand-green/40 shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
+                  : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
+              }`}
+            >
+              <AlertTriangle className="w-4 h-4 text-amber-400" />
+              <span>Báo Lỗi Phim</span>
+              {reportsList.filter((r) => r.status === "pending").length > 0 && (
+                <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-mono font-bold border border-amber-500/30">
+                  {reportsList.filter((r) => r.status === "pending").length}
+                </span>
+              )}
             </button>
           </div>
 
@@ -3203,6 +3303,182 @@ export default function AdminDashboardPage() {
                         Sau
                       </button>
                     </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* ======================================================== */}
+          {/* TAB 9: QUẢN LÝ BÁO LỖI PHIM & LINK HỎNG                  */}
+          {/* ======================================================== */}
+          {activeTab === "reports" && (() => {
+            const filteredReports = reportsList.filter((r) => {
+              if (reportFilter === "all") return true;
+              return r.status === reportFilter;
+            });
+            const pendingCount = reportsList.filter((r) => r.status === "pending").length;
+            const resolvedCount = reportsList.filter((r) => r.status === "resolved").length;
+
+            return (
+              <div className="space-y-6">
+                {/* Header Card */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-2xl bg-white/[0.03] border border-white/10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                      <AlertTriangle className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg sm:text-xl font-black text-white">Quản Lý Báo Lỗi Phim</h2>
+                      <p className="text-xs text-white/50">
+                        Theo dõi và xử lý kịp thời các sự cố đường truyền, mất tiếng, sai tập do khán giả báo cáo
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-start sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={fetchReports}
+                      disabled={isLoadingReports}
+                      className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/80 border border-white/10 text-xs font-bold flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isLoadingReports ? "animate-spin" : ""}`} />
+                      <span>Làm mới</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filter Tabs */}
+                <div className="flex items-center gap-2">
+                  {[
+                    { id: "all", label: "Tất cả", count: reportsList.length },
+                    { id: "pending", label: "Chờ xử lý", count: pendingCount },
+                    { id: "resolved", label: "Đã sửa", count: resolvedCount },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setReportFilter(tab.id as any)}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                        reportFilter === tab.id
+                          ? "bg-brand-green text-black shadow-[0_0_15px_rgba(34,197,94,0.3)]"
+                          : "bg-white/5 text-white/70 hover:text-white hover:bg-white/10 border border-white/5"
+                      }`}
+                    >
+                      <span>{tab.label}</span>
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                        reportFilter === tab.id ? "bg-black/20 text-black" : "bg-white/10 text-white/60"
+                      }`}>
+                        {tab.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Reports List */}
+                {filteredReports.length === 0 ? (
+                  <div className="p-10 text-center rounded-2xl bg-white/[0.02] border border-white/10">
+                    <CheckCircle2 className="w-10 h-10 text-brand-green mx-auto mb-2 opacity-80" />
+                    <p className="text-sm font-bold text-white">Tuyệt vời! Không có báo cáo lỗi nào trong mục này.</p>
+                    <p className="text-xs text-white/50 mt-1">Toàn bộ các tập phim đều đang phát ổn định.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {filteredReports.map((report) => {
+                      const isPending = report.status === "pending";
+                      return (
+                        <div
+                          key={report.id}
+                          className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+                            isPending
+                              ? "bg-[#14100c] border-amber-500/25 shadow-[0_0_20px_rgba(245,158,11,0.05)]"
+                              : "bg-white/[0.02] border-white/10 opacity-75"
+                          }`}
+                        >
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                            {/* Left: Movie & Issue Info */}
+                            <div className="space-y-1.5 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                                  isPending
+                                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                                    : "bg-brand-green/20 text-brand-green border border-brand-green/30"
+                                }`}>
+                                  {isPending ? "Chờ xử lý" : "Đã khắc phục"}
+                                </span>
+
+                                <span className="text-xs font-mono text-white/40">
+                                  {formatRelativeTime(report.createdAt)}
+                                </span>
+
+                                {report.serverName && (
+                                  <span className="text-[11px] text-white/60 bg-white/5 px-2 py-0.5 rounded border border-white/10">
+                                    Máy chủ: {report.serverName}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-sm sm:text-base font-bold text-white truncate">
+                                  {report.movieName}
+                                </h4>
+                                {report.episodeName && (
+                                  <span className="text-xs font-bold text-brand-green bg-brand-green/10 px-2 py-0.5 rounded-md border border-brand-green/20 shrink-0">
+                                    {report.episodeName}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-start gap-2 pt-1 text-xs">
+                                <span className="font-semibold text-amber-400 shrink-0">Sự cố:</span>
+                                <span className="text-white/90 font-medium">{report.issueType}</span>
+                              </div>
+
+                              {report.description && (
+                                <p className="text-xs text-white/60 italic bg-black/40 p-2.5 rounded-xl border border-white/5 mt-1">
+                                  &ldquo;{report.description}&rdquo;
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Right: Actions */}
+                            <div className="flex items-center gap-2 shrink-0 self-start md:self-center">
+                              <Link
+                                href={`/watch?slug=${encodeURIComponent(report.movieSlug)}`}
+                                target="_blank"
+                                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/80 border border-white/10 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5 text-brand-green" />
+                                <span>Mở xem thử</span>
+                              </Link>
+
+                              <button
+                                type="button"
+                                onClick={() => handleToggleReportStatus(report.id, report.status)}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 ${
+                                  isPending
+                                    ? "bg-brand-green hover:bg-brand-green-hover text-black shadow-[0_0_15px_rgba(34,197,94,0.3)]"
+                                    : "bg-white/10 hover:bg-white/15 text-white"
+                                }`}
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                <span>{isPending ? "Đánh dấu đã sửa" : "Đổi sang chờ xử lý"}</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteReport(report.id)}
+                                className="p-2 rounded-xl bg-white/5 hover:bg-red-500/20 text-white/50 hover:text-red-400 border border-white/10 hover:border-red-500/30 transition-colors cursor-pointer"
+                                title="Xóa báo cáo"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

@@ -21,6 +21,9 @@ import {
   Tv,
   FastForward,
   X,
+  Sun,
+  Subtitles,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -28,6 +31,58 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { AdRange, fetchAndParseAllAdRanges, extractAllAdRangesFromFragments } from "@/lib/ad-parser";
 export type VideoFitMode = 'contain' | 'cover' | 'fill' | '4:3' | '21:9';
+
+export interface SubtitleCue {
+  id: number;
+  start: number;
+  end: number;
+  text: string;
+}
+
+function parseSubtitles(content: string): SubtitleCue[] {
+  const normalized = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const blocks = normalized.split(/\n\n+/);
+  const cues: SubtitleCue[] = [];
+  let idCounter = 0;
+
+  for (const block of blocks) {
+    const lines = block.trim().split('\n');
+    if (!lines.length) continue;
+
+    const timeIndex = lines.findIndex((l) => l.includes('-->'));
+    if (timeIndex === -1) continue;
+
+    const timeLine = lines[timeIndex];
+    const [startStr, endStr] = timeLine.split('-->').map((s) => s.trim());
+    if (!startStr || !endStr) continue;
+
+    const parseTime = (t: string) => {
+      const clean = t.replace(',', '.').trim();
+      const parts = clean.split(':');
+      if (parts.length === 3) {
+        return parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2]);
+      } else if (parts.length === 2) {
+        return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
+      }
+      return 0;
+    };
+
+    const start = parseTime(startStr);
+    const end = parseTime(endStr);
+    const textLines = lines.slice(timeIndex + 1).join('\n').replace(/<[^>]+>/g, '').trim();
+
+    if (textLines && end > start) {
+      cues.push({
+        id: ++idCounter,
+        start,
+        end,
+        text: textLines,
+      });
+    }
+  }
+
+  return cues;
+}
 
 interface VideoPlayerProps {
   videoUrl: string;
@@ -136,10 +191,41 @@ export default function VideoPlayer({
     id: number;
   } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<'quality' | 'speed' | 'filter' | 'fit'>('quality');
+  const [settingsTab, setSettingsTab] = useState<'quality' | 'speed' | 'sub' | 'filter' | 'fit'>('quality');
   const [videoFit, setVideoFit] = useState<VideoFitMode>('contain');
   const [containerAspect, setContainerAspect] = useState<number>(16 / 9);
   const [visualFilter, setVisualFilter] = useState<'normal' | 'oled' | 'vivid' | 'bright'>('normal');
+
+  // Mobile Touch Gestures & Screen Brightness
+  const [brightness, setBrightness] = useState<number>(100);
+  const [gestureHUD, setGestureHUD] = useState<{
+    type: 'brightness' | 'volume' | 'seek';
+    value: number;
+    delta?: number;
+  } | null>(null);
+  const gestureHUDTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const touchStartRef = useRef<{
+    x: number;
+    y: number;
+    time: number;
+    zone: 'left' | 'center' | 'right';
+    startBrightness: number;
+    startVolume: number;
+    startTime: number;
+    lockedGesture: 'brightness' | 'volume' | 'seek' | null;
+  } | null>(null);
+  const targetSeekRef = useRef<number | null>(null);
+
+  // Auto-Failover Buffer Recovery
+  const stallCountRef = useRef<number>(0);
+  const failoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // External Subtitles (.SRT / .VTT)
+  const [customCues, setCustomCues] = useState<SubtitleCue[]>([]);
+  const [subtitleEnabled, setSubtitleEnabled] = useState<boolean>(true);
+  const [subtitleSize, setSubtitleSize] = useState<'sm' | 'md' | 'lg'>('md');
+  const [subtitleBg, setSubtitleBg] = useState<'transparent' | 'dim' | 'black'>('dim');
+  const subtitleFileInputRef = useRef<HTMLInputElement | null>(null);
   const [currentLevelPlaying, setCurrentLevelPlaying] = useState<number>(-1);
   const [isSlowNetwork, setIsSlowNetwork] = useState(false);
   const [hasRenderedFirstFrame, setHasRenderedFirstFrame] = useState(false);
@@ -1244,8 +1330,29 @@ export default function VideoPlayer({
         }
       }, 3000);
 
+      // Smart Auto-Failover: If stalled for > 6.5s continuously
+      if (failoverTimeoutRef.current) clearTimeout(failoverTimeoutRef.current);
+      failoverTimeoutRef.current = setTimeout(() => {
+        if (video.paused) return;
+        stallCountRef.current += 1;
+        if (hlsRef.current) {
+          try {
+            hlsRef.current.recoverMediaError();
+          } catch {}
+        }
+        if (stallCountRef.current >= 2 && onSwitchToEmbedRef.current) {
+          toast.info("Đường truyền chính gặp sự cố, tự động chuyển sang Máy chủ Dự phòng...");
+          onSwitchToEmbedRef.current();
+        }
+      }, 6500);
+
       const clearWaiting = () => {
         clearTimeout(stallTimeout);
+        if (failoverTimeoutRef.current) {
+          clearTimeout(failoverTimeoutRef.current);
+          failoverTimeoutRef.current = null;
+        }
+        stallCountRef.current = 0;
         if (slowNetworkTimerRef.current) {
           clearTimeout(slowNetworkTimerRef.current);
           slowNetworkTimerRef.current = null;
@@ -1555,10 +1662,116 @@ export default function VideoPlayer({
     }
   }, []);
 
+  // Subtitle Upload Handler (.SRT / .VTT)
+  const handleSubtitleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+      const cues = parseSubtitles(text);
+      if (cues.length === 0) {
+        toast.error("Không tìm thấy dòng phụ đề hợp lệ (.srt hoặc .vtt).");
+        return;
+      }
+      setCustomCues(cues);
+      setSubtitleEnabled(true);
+      toast.success(`Đã tải thành công ${cues.length} câu phụ đề (${file.name})!`);
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  // Mobile Touch Gestures (Brightness left edge, Volume right edge, Horizontal Scrub Seek)
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    attemptUnmute();
+    if (e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const relX = (touch.clientX - rect.left) / rect.width;
+    const zone: 'left' | 'center' | 'right' = relX < 0.35 ? 'left' : relX > 0.65 ? 'right' : 'center';
+
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: Date.now(),
+      zone,
+      startBrightness: brightness,
+      startVolume: videoRef.current ? videoRef.current.volume : volume,
+      startTime: videoRef.current ? videoRef.current.currentTime : 0,
+      lockedGesture: null,
+    };
+    targetSeekRef.current = null;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!touchStartRef.current || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const deltaX = touch.clientX - touchStartRef.current.x;
+    const deltaY = touchStartRef.current.y - touch.clientY; // positive = dragging UP
+
+    // Gesture detection threshold
+    if (!touchStartRef.current.lockedGesture) {
+      if (Math.abs(deltaY) > 12 && Math.abs(deltaY) > Math.abs(deltaX)) {
+        if (touchStartRef.current.zone === 'left') {
+          touchStartRef.current.lockedGesture = 'brightness';
+        } else if (touchStartRef.current.zone === 'right') {
+          touchStartRef.current.lockedGesture = 'volume';
+        }
+      } else if (Math.abs(deltaX) > 18 && Math.abs(deltaX) > Math.abs(deltaY)) {
+        touchStartRef.current.lockedGesture = 'seek';
+      }
+    }
+
+    if (!touchStartRef.current.lockedGesture) return;
+
+    if (gestureHUDTimerRef.current) clearTimeout(gestureHUDTimerRef.current);
+
+    if (touchStartRef.current.lockedGesture === 'brightness') {
+      const step = (deltaY / (rect.height * 0.7)) * 100;
+      const nextBrightness = Math.round(Math.min(150, Math.max(30, touchStartRef.current.startBrightness + step)));
+      setBrightness(nextBrightness);
+      setGestureHUD({ type: 'brightness', value: nextBrightness });
+    } else if (touchStartRef.current.lockedGesture === 'volume') {
+      const step = deltaY / (rect.height * 0.7);
+      const nextVol = Math.min(1, Math.max(0, touchStartRef.current.startVolume + step));
+      setVolume(nextVol);
+      if (videoRef.current) videoRef.current.volume = nextVol;
+      if (nextVol > 0 && isMuted) setIsMuted(false);
+      setGestureHUD({ type: 'volume', value: Math.round(nextVol * 100) });
+    } else if (touchStartRef.current.lockedGesture === 'seek') {
+      const seekSec = Math.round((deltaX / rect.width) * 90);
+      const targetTime = Math.min(duration, Math.max(0, touchStartRef.current.startTime + seekSec));
+      targetSeekRef.current = targetTime;
+      setGestureHUD({ type: 'seek', value: targetTime, delta: seekSec });
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartRef.current?.lockedGesture === 'seek' && targetSeekRef.current !== null) {
+      handleSeekCommit([targetSeekRef.current]);
+    }
+    touchStartRef.current = null;
+    targetSeekRef.current = null;
+
+    if (gestureHUDTimerRef.current) clearTimeout(gestureHUDTimerRef.current);
+    gestureHUDTimerRef.current = setTimeout(() => {
+      setGestureHUD(null);
+    }, 700);
+  };
+
   // Smart Click / Touch
   const handleSmartClick = (e: React.MouseEvent<HTMLDivElement>, side: 'left' | 'right' | 'center') => {
     e.stopPropagation();
     attemptUnmute();
+    if (gestureHUD) return;
 
     // If video is currently paused, tapping or clicking anywhere starts playback immediately (SYNCHRONOUS for mobile gesture permission)
     if (videoRef.current?.paused) {
@@ -1650,13 +1863,19 @@ export default function VideoPlayer({
           style={{
             ...getVideoTransformStyle(),
             backfaceVisibility: "hidden",
-            filter: visualFilter === 'oled' 
-              ? 'contrast(1.20) saturate(1.24) brightness(0.96)' 
-              : visualFilter === 'vivid' 
-              ? 'contrast(1.10) saturate(1.42) brightness(1.02)' 
-              : visualFilter === 'bright'
-              ? 'contrast(1.08) saturate(1.12) brightness(1.15)'
-              : 'none',
+            filter: (() => {
+              const base = visualFilter === 'oled' 
+                ? 'contrast(1.20) saturate(1.24) brightness(0.96)' 
+                : visualFilter === 'vivid' 
+                ? 'contrast(1.10) saturate(1.42) brightness(1.02)' 
+                : visualFilter === 'bright'
+                ? 'contrast(1.08) saturate(1.12) brightness(1.15)'
+                : '';
+              if (brightness !== 100) {
+                return (base ? `${base} ` : '') + `brightness(${brightness / 100})`;
+              }
+              return base || 'none';
+            })(),
             transition: "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), filter 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
             willChange: "transform, filter",
           }}
@@ -1696,7 +1915,12 @@ export default function VideoPlayer({
       </div>
 
 
-      <div className="absolute inset-0 flex z-10">
+      <div 
+        className="absolute inset-0 flex z-10 touch-none"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         <div 
           className="w-[35%] h-full z-20 cursor-pointer" 
           onClick={(e) => handleSmartClick(e, 'left')} 
@@ -1725,6 +1949,84 @@ export default function VideoPlayer({
           </div>
         </div>
       )}
+
+      {/* Mobile Touch Gesture HUD Overlay */}
+      {gestureHUD && (
+        <div className="absolute inset-0 flex items-center justify-center z-[58] pointer-events-none select-none">
+          <div className="flex flex-col items-center gap-2 p-4 sm:p-5 rounded-2xl bg-black/85 backdrop-blur-xl border border-white/20 shadow-2xl min-w-[130px] animate-in fade-in zoom-in-95 duration-150">
+            {gestureHUD.type === 'brightness' && (
+              <>
+                <Sun className="w-8 h-8 text-amber-400" />
+                <span className="text-xs font-bold text-white/85 uppercase tracking-wider">Độ sáng</span>
+                <div className="w-24 h-2 bg-white/20 rounded-full overflow-hidden mt-1">
+                  <div 
+                    className="h-full bg-amber-400 rounded-full transition-all duration-75" 
+                    style={{ width: `${Math.min(100, Math.max(0, ((gestureHUD.value - 30) / 120) * 100))}%` }}
+                  />
+                </div>
+                <span className="text-xs font-black text-white font-mono">{gestureHUD.value}%</span>
+              </>
+            )}
+
+            {gestureHUD.type === 'volume' && (
+              <>
+                {gestureHUD.value === 0 ? (
+                  <VolumeX className="w-8 h-8 text-red-400" />
+                ) : (
+                  <Volume2 className="w-8 h-8 text-brand-green" />
+                )}
+                <span className="text-xs font-bold text-white/85 uppercase tracking-wider">Âm lượng</span>
+                <div className="w-24 h-2 bg-white/20 rounded-full overflow-hidden mt-1">
+                  <div 
+                    className="h-full bg-brand-green rounded-full transition-all duration-75" 
+                    style={{ width: `${gestureHUD.value}%` }}
+                  />
+                </div>
+                <span className="text-xs font-black text-white font-mono">{gestureHUD.value}%</span>
+              </>
+            )}
+
+            {gestureHUD.type === 'seek' && (
+              <>
+                {gestureHUD.delta !== undefined && gestureHUD.delta >= 0 ? (
+                  <FastForward className="w-8 h-8 text-brand-green" />
+                ) : (
+                  <SkipBack className="w-8 h-8 text-amber-400" />
+                )}
+                <span className="text-base font-black text-white font-mono">
+                  {gestureHUD.delta !== undefined && gestureHUD.delta >= 0 ? `+${gestureHUD.delta}s` : `${gestureHUD.delta}s`}
+                </span>
+                <span className="text-xs text-white/70 font-mono">
+                  {formatTime(gestureHUD.value)} / {formatTime(duration)}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* External Subtitle Display Overlay */}
+      {subtitleEnabled && customCues.length > 0 && (() => {
+        const active = customCues.find(c => currentTime >= c.start && currentTime <= c.end);
+        if (!active) return null;
+        return (
+          <div className="absolute bottom-16 sm:bottom-20 inset-x-0 flex justify-center items-center pointer-events-none z-30 px-4 text-center">
+            <span
+              className={cn(
+                "inline-block font-semibold text-white leading-snug rounded-lg px-3 py-1.5 shadow-md transition-all whitespace-pre-line select-none",
+                subtitleSize === 'sm' && "text-xs sm:text-sm",
+                subtitleSize === 'md' && "text-sm sm:text-base md:text-lg",
+                subtitleSize === 'lg' && "text-base sm:text-lg md:text-xl font-bold",
+                subtitleBg === 'transparent' && "bg-transparent drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]",
+                subtitleBg === 'dim' && "bg-black/75 backdrop-blur-xs",
+                subtitleBg === 'black' && "bg-black/95 border border-white/20"
+              )}
+            >
+              {active.text}
+            </span>
+          </div>
+        );
+      })()}
 
       {shortcutFeedback && (
         <div key={shortcutFeedback.id} className="absolute inset-0 flex items-center justify-center z-[55] pointer-events-none">
@@ -2010,7 +2312,7 @@ export default function VideoPlayer({
           </div>
 
           {/* Tab selector */}
-          <div className="grid grid-cols-4 gap-1 p-1 bg-white/5 rounded-xl mb-2 text-[11px] font-semibold shrink-0">
+          <div className="grid grid-cols-5 gap-1 p-1 bg-white/5 rounded-xl mb-2 text-[11px] font-semibold shrink-0">
             <button
               onClick={() => setSettingsTab('quality')}
               className={cn("py-1 rounded-lg transition-all cursor-pointer", settingsTab === 'quality' ? "bg-brand-green text-black font-bold shadow" : "text-white/70 hover:text-white")}
@@ -2022,6 +2324,12 @@ export default function VideoPlayer({
               className={cn("py-1 rounded-lg transition-all cursor-pointer", settingsTab === 'speed' ? "bg-brand-green text-black font-bold shadow" : "text-white/70 hover:text-white")}
             >
               Tốc độ
+            </button>
+            <button
+              onClick={() => setSettingsTab('sub')}
+              className={cn("py-1 rounded-lg transition-all cursor-pointer", settingsTab === 'sub' ? "bg-brand-green text-black font-bold shadow" : "text-white/70 hover:text-white")}
+            >
+              Phụ đề
             </button>
             <button
               onClick={() => setSettingsTab('filter')}
@@ -2091,6 +2399,109 @@ export default function VideoPlayer({
                   {rate === 1 ? "1.0x Chuẩn" : `${rate}x`}
                 </button>
               ))}
+            </div>
+          )}
+
+          {/* Tab Content: Subtitles */}
+          {settingsTab === 'sub' && (
+            <div className="flex flex-col gap-2 flex-1 min-h-0 overflow-y-auto pr-1 py-1">
+              <input
+                type="file"
+                ref={subtitleFileInputRef}
+                accept=".srt,.vtt,.txt"
+                className="hidden"
+                onChange={handleSubtitleUpload}
+              />
+              
+              {/* Upload Subtitle Button */}
+              <button
+                type="button"
+                onClick={() => subtitleFileInputRef.current?.click()}
+                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-brand-green/15 hover:bg-brand-green/25 border border-brand-green/40 text-brand-green text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>{customCues.length > 0 ? "Tải file phụ đề khác (.srt, .vtt)" : "Tải phụ đề từ máy (.srt, .vtt)"}</span>
+              </button>
+
+              {customCues.length > 0 && (
+                <>
+                  {/* Toggle Subtitles On/Off */}
+                  <div className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/10 text-xs">
+                    <span className="text-white/80 font-medium">Hiện phụ đề ({customCues.length} câu)</span>
+                    <button
+                      type="button"
+                      onClick={() => setSubtitleEnabled(!subtitleEnabled)}
+                      className={cn(
+                        "w-10 h-5 rounded-full transition-colors relative cursor-pointer",
+                        subtitleEnabled ? "bg-brand-green" : "bg-white/20"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-3.5 h-3.5 rounded-full bg-white transition-transform absolute top-0.5",
+                        subtitleEnabled ? "left-5.5" : "left-0.5"
+                      )} />
+                    </button>
+                  </div>
+
+                  {/* Subtitle Font Size */}
+                  <div className="space-y-1">
+                    <span className="text-[11px] text-white/60 font-semibold uppercase tracking-wider">Cỡ chữ phụ đề:</span>
+                    <div className="grid grid-cols-3 gap-1">
+                      {[
+                        { id: 'sm', label: 'Nhỏ' },
+                        { id: 'md', label: 'Vừa' },
+                        { id: 'lg', label: 'Lớn' },
+                      ].map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setSubtitleSize(item.id as any)}
+                          className={cn(
+                            "py-1 rounded-lg text-xs font-medium transition-all cursor-pointer",
+                            subtitleSize === item.id
+                              ? "bg-brand-green text-black font-bold shadow"
+                              : "bg-white/5 hover:bg-white/10 text-white/70"
+                          )}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Subtitle Background */}
+                  <div className="space-y-1">
+                    <span className="text-[11px] text-white/60 font-semibold uppercase tracking-wider">Nền phụ đề:</span>
+                    <div className="grid grid-cols-3 gap-1">
+                      {[
+                        { id: 'transparent', label: 'Trong suốt' },
+                        { id: 'dim', label: 'Mờ tối' },
+                        { id: 'black', label: 'Đen đậm' },
+                      ].map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setSubtitleBg(item.id as any)}
+                          className={cn(
+                            "py-1 rounded-lg text-xs font-medium transition-all cursor-pointer",
+                            subtitleBg === item.id
+                              ? "bg-brand-green text-black font-bold shadow"
+                              : "bg-white/5 hover:bg-white/10 text-white/70"
+                          )}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {customCues.length === 0 && (
+                <p className="text-[11px] text-white/50 text-center px-2 py-2 leading-relaxed">
+                  Bạn có thể tải file phụ đề định dạng .srt hoặc .vtt từ máy để khớp với video đang phát.
+                </p>
+              )}
             </div>
           )}
 
