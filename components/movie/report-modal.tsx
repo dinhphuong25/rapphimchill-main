@@ -103,17 +103,17 @@ export default function ReportModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div 
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-lg bg-[#0d120f] border border-brand-green/30 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-[0_10px_50px_rgba(0,0,0,0.8)] text-white"
+        className="relative w-full max-w-[460px] bg-[#0d120f] border border-brand-green/30 rounded-2xl p-4 sm:p-5 shadow-[0_10px_50px_rgba(0,0,0,0.8)] text-white"
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-3 mb-4 pb-3 border-b border-white/10">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-              <AlertTriangle className="w-5 h-5" />
+        <div className="flex items-center justify-between gap-3 mb-3 pb-2.5 border-b border-white/10">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+              <AlertTriangle className="w-4 h-4" />
             </div>
-            <div>
-              <h3 className="text-base sm:text-lg font-bold text-white">Báo lỗi tập phim</h3>
-              <p className="text-xs text-white/60 line-clamp-1">
+            <div className="min-w-0">
+              <h3 className="text-sm sm:text-base font-bold text-white leading-tight">Báo lỗi tập phim</h3>
+              <p className="text-[11px] text-white/60 truncate">
                 {movieName} {episodeName ? `• ${episodeName}` : ""}
               </p>
             </div>
@@ -121,20 +121,20 @@ export default function ReportModal({
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="p-1 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0"
             aria-label="Đóng"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-white/80 uppercase tracking-wider">
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-semibold text-white/70 uppercase tracking-wider">
               Chọn sự cố bạn đang gặp:
             </label>
-            <div className="space-y-1.5 max-h-[260px] overflow-y-auto pr-1">
+            <div className="space-y-1.5 max-h-[210px] overflow-y-auto pr-1">
               {ISSUE_OPTIONS.map((option) => {
                 const Icon = option.icon;
                 const isSelected = selectedIssue === option.id;
@@ -143,18 +143,18 @@ export default function ReportModal({
                     key={option.id}
                     type="button"
                     onClick={() => setSelectedIssue(option.id)}
-                    className={`w-full flex items-start gap-3 p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border text-left transition-all cursor-pointer ${
                       isSelected
-                        ? "bg-brand-green/10 border-brand-green/60 text-white shadow-[0_0_15px_rgba(32,214,107,0.15)]"
+                        ? "bg-brand-green/10 border-brand-green/60 text-white shadow-[0_0_12px_rgba(32,214,107,0.12)]"
                         : "bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/15 text-white/75"
                     }`}
                   >
-                    <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${isSelected ? "text-brand-green" : "text-white/50"}`} />
+                    <Icon className={`w-4 h-4 shrink-0 ${isSelected ? "text-brand-green" : "text-white/50"}`} />
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs sm:text-sm font-semibold leading-tight">{option.label}</p>
-                      <p className="text-[11px] text-white/50 mt-0.5">{option.desc}</p>
+                      <p className="text-xs sm:text-[13px] font-medium leading-tight">{option.label}</p>
+                      <p className="text-[10.5px] text-white/45 truncate mt-0.5">{option.desc}</p>
                     </div>
-                    {isSelected && <Check className="w-4 h-4 text-brand-green shrink-0 mt-0.5" />}
+                    {isSelected && <Check className="w-3.5 h-3.5 text-brand-green shrink-0" />}
                   </button>
                 );
               })}
@@ -162,8 +162,8 @@ export default function ReportModal({
           </div>
 
           {/* Description */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-white/80">
+          <div className="space-y-1">
+            <label className="text-[11px] font-medium text-white/70">
               Ghi chú thêm (tùy chọn):
             </label>
             <textarea
@@ -172,29 +172,29 @@ export default function ReportModal({
               placeholder="Ví dụ: Bị đứng từ phút 15:20, đã tải lại nhưng không xem được..."
               rows={2}
               maxLength={500}
-              className="w-full text-xs sm:text-sm bg-black/50 border border-white/15 rounded-xl px-3 py-2 text-white placeholder:text-white/30 focus:outline-none focus:border-brand-green transition-colors resize-none"
+              className="w-full text-xs bg-black/50 border border-white/15 rounded-xl px-3 py-1.5 text-white placeholder:text-white/30 focus:outline-none focus:border-brand-green transition-colors resize-none h-14"
             />
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-white/10">
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
             <Button
               type="button"
               variant="ghost"
               onClick={onClose}
               disabled={isSubmitting}
-              className="text-xs sm:text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-xl"
+              className="h-8 text-xs text-white/70 hover:text-white hover:bg-white/10 rounded-lg px-3"
             >
               Hủy
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-brand-green hover:bg-brand-green-hover text-black font-bold text-xs sm:text-sm rounded-xl px-4 py-2 flex items-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(32,214,107,0.3)] active:scale-95 transition-all"
+              className="h-8 bg-brand-green hover:bg-brand-green-hover text-black font-bold text-xs rounded-lg px-3.5 flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(32,214,107,0.25)] active:scale-95 transition-all"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   <span>Đang gửi...</span>
                 </>
               ) : (
