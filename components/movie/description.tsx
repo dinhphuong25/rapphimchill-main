@@ -12,13 +12,11 @@ import { useUserAuth } from "@/context/user-auth-context";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Link from "next/link";
-import MovieRecommendations from "./movie-recommendations";
 import PlayerErrorBoundary from "../player/player-error-boundary";
 import UnreleasedMovieOverlay from "../player/unreleased-movie-overlay";
 import { normalizeImageUrl } from "@/lib/image-helper";
 import ReportModal from "./report-modal";
 import MovieRating from "./movie-rating";
-import MovieInfoSection from "./movie-info-section";
 
 const VideoPlayer = dynamic(() => import("../player/video-player"), {
   ssr: false,
@@ -1108,16 +1106,6 @@ export default function Description({ movie, serverData }: any) {
       {/* Community Rating */}
       <div className="w-full max-w-[1600px] mx-auto">
         <MovieRating slug={movie.slug} movieName={movie.name} />
-      </div>
-
-      {/* Movie Information & Clickable Cast/Director */}
-      <div className="w-full max-w-[1600px] mx-auto">
-        <MovieInfoSection movie={movie} />
-      </div>
-
-      {/* Recommendations: Phim tương tự */}
-      <div className="w-full max-w-[1600px] mx-auto pt-2">
-        <MovieRecommendations currentMovie={movie} limit={10} />
       </div>
 
       {/* Broken Episode Report Modal */}
