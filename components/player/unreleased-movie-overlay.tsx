@@ -40,19 +40,17 @@ export default function UnreleasedMovieOverlay({
       <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-brand-green/30 to-transparent" />
       <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-brand-green/20 to-transparent" />
 
-      {/* Informative Explanation Card Only */}
-      <div className="relative z-10 max-w-lg w-full mx-auto px-4 py-6 text-center flex flex-col items-center justify-center">
-        <div className="w-full bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-2xl p-5 sm:p-6 shadow-2xl">
-          <div className="flex items-center justify-center gap-2 text-brand-green text-xs sm:text-sm font-bold uppercase tracking-wider mb-2.5">
-            <span>Thông Báo Từ Hệ Thống</span>
-          </div>
-          <p className="text-xs sm:text-sm text-white/85 leading-relaxed max-w-md mx-auto">
-            Phim hiện tại mới chỉ có thông tin giới thiệu hoặc bản phát hành chính thức chưa được nhà sản xuất công bố trên hệ thống phát trực tuyến.
-          </p>
-          <div className="mt-3.5 pt-3.5 border-t border-white/[0.08] text-[11px] sm:text-xs text-white/50 flex items-center justify-center text-center">
-            <span>Bản phim đầy đủ chuẩn FHD/4K sẽ tự động cập nhật ngay khi được phát hành.</span>
-          </div>
-        </div>
+      {/* Direct In-Player Notification Content (No Box/Card) */}
+      <div className="relative z-10 max-w-2xl w-full mx-auto px-4 sm:px-6 py-6 text-center flex flex-col items-center justify-center gap-3 sm:gap-4">
+        <h3 className="text-brand-green text-base sm:text-lg md:text-xl font-black uppercase tracking-widest drop-shadow-[0_0_16px_rgba(32,214,107,0.35)]">
+          Thông Báo Từ Hệ Thống
+        </h3>
+        <p className="text-sm sm:text-base md:text-lg lg:text-xl text-white/90 font-medium leading-relaxed max-w-xl mx-auto">
+          Phim hiện tại mới chỉ có thông tin giới thiệu hoặc bản phát hành chính thức chưa được nhà sản xuất công bố trên hệ thống phát trực tuyến.
+        </p>
+        <p className="text-xs sm:text-sm md:text-base text-white/50 font-normal max-w-lg mx-auto pt-1">
+          Bản phim đầy đủ chuẩn FHD/4K sẽ tự động cập nhật ngay khi được phát hành.
+        </p>
       </div>
     </div>
   );
