@@ -1130,14 +1130,14 @@ export default function VideoPlayer({
           autoStartLoad: true,
           startPosition: targetStartPosition,
           
-          backBufferLength: 10,
-          maxBufferLength: isMobile ? 20 : 25,
-          maxMaxBufferLength: isMobile ? 40 : 50,
-          maxBufferSize: isMobile ? 24 * 1024 * 1024 : 36 * 1024 * 1024,
-          maxBufferHole: 2.5,
+          backBufferLength: 15,
+          maxBufferLength: isMobile ? 35 : 60,
+          maxMaxBufferLength: isMobile ? 70 : 120,
+          maxBufferSize: isMobile ? 32 * 1024 * 1024 : 64 * 1024 * 1024,
+          maxBufferHole: 8.5,
           highBufferWatchdogPeriod: 1,
-          nudgeOffset: 0.2,
-          nudgeMaxRetry: 10,
+          nudgeOffset: 0.25,
+          nudgeMaxRetry: 25,
           
           startLevel: -1,
           capLevelToPlayerSize: true,
@@ -1151,13 +1151,13 @@ export default function VideoPlayer({
           manifestLoadingRetryDelay: 800,
           levelLoadingMaxRetry: 3,
           levelLoadingRetryDelay: 800,
-          fragLoadingMaxRetry: 3,
+          fragLoadingMaxRetry: 4,
           fragLoadingRetryDelay: 1000,
-          fragLoadingMaxRetryTimeout: 12_000,
+          fragLoadingMaxRetryTimeout: 25_000,
           
-          manifestLoadingTimeOut: 8_000,
-          levelLoadingTimeOut: 8_000,
-          fragLoadingTimeOut: 10_000,
+          manifestLoadingTimeOut: 12_000,
+          levelLoadingTimeOut: 12_000,
+          fragLoadingTimeOut: 20_000,
           
           xhrSetup: (xhr) => {
             xhr.withCredentials = false;
@@ -1261,13 +1261,13 @@ export default function VideoPlayer({
                 }
                 for (let i = 0; i < v.buffered.length; i++) {
                   const start = v.buffered.start(i);
-                  if (start > cur && start - cur <= 3.5) {
-                    v.currentTime = start + 0.05;
+                  if (start > cur && start - cur <= 8.5) {
+                    v.currentTime = start + 0.02;
                     return;
                   }
                 }
               }
-              v.currentTime += 0.25;
+              v.currentTime += 0.5;
             }
             return;
           }
@@ -1488,9 +1488,9 @@ export default function VideoPlayer({
           if (cur >= start - 0.1 && end - cur >= 0.4) {
             return;
           }
-          // Smart micro-gap auto-skip: If playback hits a timestamp gap across splice/discontinuity up to 3.5s, jump it immediately!
-          if (start > cur && start - cur <= 3.5) {
-            video.currentTime = start + 0.05;
+          // Smart micro-gap auto-skip: If playback hits a timestamp gap across splice/discontinuity up to 8.5s, jump it immediately!
+          if (start > cur && start - cur <= 8.5) {
+            video.currentTime = start + 0.02;
             return;
           }
         }
@@ -1511,7 +1511,7 @@ export default function VideoPlayer({
         }
       }, 4000);
 
-      // Safe recovery: if stalled for 2.5s, trigger HLS load or nudge playhead past hole
+      // Safe recovery: if stalled for 2.0s, trigger HLS load or nudge playhead past hole
       const stallTimeout = setTimeout(() => {
         if (video.paused) return;
         if (hlsRef.current) {
@@ -1523,7 +1523,7 @@ export default function VideoPlayer({
               return;
             }
           }
-          video.currentTime += 0.25;
+          video.currentTime += 0.5;
         } else {
           try {
             if (video.buffered.length > 0 && video.currentTime < video.buffered.start(0)) {
