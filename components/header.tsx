@@ -8,6 +8,7 @@ import { Search, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SearchOverlay from "@/components/search/search-overlay";
 import UserMenu from "@/components/auth/user-menu";
+import BrandLogo from "@/components/ui/brand-logo";
 import { preconnect } from "react-dom";
 
 interface HeaderProps {
@@ -49,7 +50,7 @@ export default function Header({}: HeaderProps) {
       >
         <div className="w-full max-w-[1700px] mx-auto px-3 sm:px-6 lg:pl-8 lg:pr-5 xl:pl-10 xl:pr-6 2xl:pr-8 flex items-center justify-between lg:justify-end h-full">
           {/* Mobile Left Group: Category Button [⊞] + Brand Logo */}
-          <div className="lg:hidden flex items-center gap-2 pointer-events-auto shrink-0">
+          <div className="lg:hidden flex items-center gap-2 sm:gap-2.5 pointer-events-auto shrink-0">
             <button
               type="button"
               onClick={() => {
@@ -57,28 +58,19 @@ export default function Header({}: HeaderProps) {
                   window.dispatchEvent(new CustomEvent("open-mobile-explore"));
                 }
               }}
-              className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-xl bg-[#0B100E]/90 hover:bg-[#151c18] border border-white/10 hover:border-brand-green/40 flex items-center justify-center text-brand-green active:scale-95 transition-all shadow-[0_4px_16px_rgba(0,0,0,0.6)] cursor-pointer"
+              className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/80 hover:text-brand-green active:scale-90 transition-all cursor-pointer -ml-1"
               aria-label="Mở danh mục Khám Phá"
               title="Khám phá danh mục"
             >
-              <LayoutGrid className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
+              <LayoutGrid className="w-5 h-5" />
             </button>
 
             <Link
               href="/"
-              className="flex items-center py-1 select-none group shrink-0"
+              className="flex items-center select-none group shrink-0"
               aria-label="Về trang chủ Hi Phim"
             >
-              <div className="relative w-24 sm:w-28 h-7 sm:h-8 select-none transition-transform group-hover:scale-105">
-                <Image
-                  src="/logo.png"
-                  alt="Hi Phim"
-                  fill
-                  priority
-                  className="object-contain object-left drop-shadow-[0_0_12px_rgba(32,214,107,0.35)]"
-                  sizes="120px"
-                />
-              </div>
+              <BrandLogo size="md" />
             </Link>
           </div>
 

@@ -43,6 +43,7 @@ import { cn } from "@/lib/utils";
 import { sortCountriesByPopularity, getCountryCode } from "@/lib/countries";
 import { instantMovieStore } from "@/lib/instant-movie-store";
 import MobileExploreSheet from "@/components/navigation/mobile-explore-sheet";
+import BrandLogo from "@/components/ui/brand-logo";
 
 interface SidebarProps {
   categories?: { slug: string; name: string }[];
@@ -806,17 +807,8 @@ function SidebarContent({
       >
         {/* Sidebar Header / Brand Name */}
         <div className="h-16 lg:h-12 px-4 flex items-center justify-between border-b border-white/8 shrink-0">
-          <Link href="/" className="flex items-center overflow-hidden group py-1" aria-label="Về trang chủ Hi Phim">
-            <div className="relative flex items-center h-8 lg:h-7.5">
-              <Image
-                src="/logo.png"
-                alt="Hi Phim"
-                width={120}
-                height={48}
-                priority
-                className="h-8 lg:h-7.5 w-auto object-contain drop-shadow-[0_0_12px_rgba(32,214,107,0.3)] group-hover:drop-shadow-[0_0_18px_rgba(32,214,107,0.55)] group-hover:scale-105 transition-all duration-300"
-              />
-            </div>
+          <Link href="/" className="flex items-center overflow-hidden select-none py-1 group" aria-label="Về trang chủ Hi Phim">
+            <BrandLogo size="md" />
           </Link>
 
           {/* Close Button — Mobile */}

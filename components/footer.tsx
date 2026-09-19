@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import BrandLogo from "@/components/ui/brand-logo";
 import { Heart } from "lucide-react";
 
 interface FooterProps {
@@ -15,13 +15,7 @@ export default function Footer({}: FooterProps = {}) {
         {/* Bên Trái (Desktop only): Logo & Slogan */}
         <div className="hidden sm:flex flex-col items-start text-left gap-1 min-w-0">
           <div className="flex items-center gap-2">
-            <Image
-              src="/logo.png"
-              alt="Hi Phim"
-              width={100}
-              height={40}
-              className="h-6 sm:h-7 w-auto object-contain drop-shadow-[0_0_10px_rgba(32,214,107,0.35)]"
-            />
+            <BrandLogo size="sm" />
           </div>
 
           <p className="text-[11px] sm:text-[12px] text-white/60 leading-normal">
