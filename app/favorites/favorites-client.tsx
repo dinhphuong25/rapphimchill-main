@@ -78,7 +78,11 @@ export default function FavoritesClient({ categories, countries }: FavoritesClie
   };
 
   if (!hydrated || authLoading) {
-    return null;
+    return (
+      <div className="w-full max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-12 xl:px-16 pt-20 sm:pt-24 lg:pt-28 pb-20 flex items-center justify-center min-h-[50vh]">
+        <div className="w-8 h-8 rounded-full border-2 border-brand-green/20 border-t-brand-green animate-spin" />
+      </div>
+    );
   }
 
   // If not logged in, require authentication

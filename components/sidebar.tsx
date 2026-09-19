@@ -162,7 +162,7 @@ function SidebarContent({
     router.prefetch("/favorites");
   }, [router]);
 
-  const handleBottomNavNavigate = (href: string) => {
+  const handleBottomNavNavigate = (href: string, e?: React.MouseEvent) => {
     setIsMobileOpen(false);
     setIsAccountOpen(false);
     setIsExploreOpen(false);
@@ -171,7 +171,15 @@ function SidebarContent({
     setCountrySearchQuery("");
     setYearSearchQuery("");
 
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
+
     navigateToTab(href);
+
+    if (pathname === href && !hasActiveFilters) {
+      if (e) e.preventDefault();
+    }
   };
 
   // Listen for Escape key to close modal
@@ -333,17 +341,22 @@ function SidebarContent({
       {/* ======================================================== */}
       <nav
         aria-label="Điều hướng chính"
-        className="lg:hidden fixed left-2.5 right-2.5 sm:left-auto sm:right-auto sm:w-[440px] bottom-[max(0.65rem,calc(env(safe-area-inset-bottom)+0.35rem))] z-[110] max-w-[450px] mx-auto pointer-events-auto select-none touch-manipulation"
-        style={{ contain: "layout style", isolation: "isolate" }}
+        className="lg:hidden fixed left-2.5 right-2.5 sm:left-auto sm:right-auto sm:w-[440px] z-[140] max-w-[450px] mx-auto pointer-events-auto select-none touch-manipulation"
+        style={{
+          bottom: "max(0.75rem, calc(env(safe-area-inset-bottom) + 0.35rem))",
+          contain: "layout style",
+          isolation: "isolate",
+        }}
       >
         <div className="h-16 px-1.5 py-1.5 rounded-full bg-[#0B100E]/95 backdrop-blur-2xl border border-white/[0.08] shadow-[0_12px_36px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.05)] flex items-center justify-between touch-manipulation">
           {/* Tab 1: Trang Chủ */}
           {(() => {
             const active = currentActiveTab === "/";
             return (
-              <button
-                type="button"
-                onClick={() => handleBottomNavNavigate("/")}
+              <Link
+                href="/"
+                prefetch={true}
+                onClick={(e) => handleBottomNavNavigate("/", e)}
                 className="flex-1 h-12 flex items-center justify-center relative select-none touch-manipulation cursor-pointer active:scale-95 transition-transform duration-75"
                 style={{ WebkitTapHighlightColor: "transparent" }}
                 aria-label="Trang Chủ"
@@ -361,7 +374,7 @@ function SidebarContent({
                     Trang chủ
                   </span>
                 </div>
-              </button>
+              </Link>
             );
           })()}
 
@@ -369,9 +382,10 @@ function SidebarContent({
           {(() => {
             const active = currentActiveTab === "/recently";
             return (
-              <button
-                type="button"
-                onClick={() => handleBottomNavNavigate("/recently")}
+              <Link
+                href="/recently"
+                prefetch={true}
+                onClick={(e) => handleBottomNavNavigate("/recently", e)}
                 className="flex-1 h-12 flex items-center justify-center relative select-none touch-manipulation cursor-pointer active:scale-95 transition-transform duration-75"
                 style={{ WebkitTapHighlightColor: "transparent" }}
                 aria-label="Lịch Sử Xem"
@@ -389,7 +403,7 @@ function SidebarContent({
                     Lịch sử
                   </span>
                 </div>
-              </button>
+              </Link>
             );
           })()}
 
@@ -397,9 +411,10 @@ function SidebarContent({
           {(() => {
             const active = currentActiveTab === "/favorites";
             return (
-              <button
-                type="button"
-                onClick={() => handleBottomNavNavigate("/favorites")}
+              <Link
+                href="/favorites"
+                prefetch={true}
+                onClick={(e) => handleBottomNavNavigate("/favorites", e)}
                 className="flex-1 h-12 flex items-center justify-center relative select-none touch-manipulation cursor-pointer active:scale-95 transition-transform duration-75"
                 style={{ WebkitTapHighlightColor: "transparent" }}
                 aria-label="Phim Yêu Thích"
@@ -417,7 +432,7 @@ function SidebarContent({
                     Yêu thích
                   </span>
                 </div>
-              </button>
+              </Link>
             );
           })()}
 
@@ -427,9 +442,7 @@ function SidebarContent({
             return (
               <button
                 type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
+                onClick={() => {
                   setIsExploreOpen(false);
                   setIsMobileOpen(false);
                   setActiveModal(null);
@@ -472,23 +485,15 @@ function SidebarContent({
       {isAccountOpen && (
         <div
           className="lg:hidden fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setIsAccountOpen(false);
-          }}
-          onTouchEnd={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setIsAccountOpen(false);
-          }}
+          onClick={() => setIsAccountOpen(false)}
         />
       )}
 
       {/* Mobile Account Floating Sheet */}
       {isAccountOpen && (
         <div
-          className="lg:hidden fixed left-1/2 -translate-x-1/2 bottom-[max(4.5rem,calc(env(safe-area-inset-bottom)+4rem))] z-[130] w-[calc(100%-24px)] max-w-[390px] max-h-[calc(100dvh-5.5rem)] overflow-y-auto overscroll-contain bg-[#0B100E]/95 backdrop-blur-2xl border border-white/[0.08] rounded-3xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.85)] animate-in fade-in slide-in-from-bottom-5 duration-200 pointer-events-auto select-none"
+          className="lg:hidden fixed left-1/2 -translate-x-1/2 z-[130] w-[calc(100%-24px)] max-w-[390px] max-h-[calc(100dvh-5.5rem)] overflow-y-auto overscroll-contain bg-[#0B100E]/95 backdrop-blur-2xl border border-white/[0.08] rounded-3xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.85)] animate-in fade-in slide-in-from-bottom-5 duration-200 pointer-events-auto select-none"
+          style={{ bottom: "max(5rem, calc(env(safe-area-inset-bottom) + 4.5rem))" }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Top Pill Handle */}
@@ -777,41 +782,15 @@ function SidebarContent({
             {NAV_MAIN.map((item) => {
               const active = isLinkActive(item.href, item.typeList);
               const Icon = item.icon;
-              if (item.href === "/") {
-                return (
-                  <button
-                    type="button"
-                    key={item.href}
-                    onClick={() => {
-                      setIsMobileOpen(false);
-                      navigateToTab("/");
-                    }}
-                    className={cn(
-                      "w-full relative flex items-center gap-3 lg:gap-2 px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-colors duration-150 group overflow-hidden text-left cursor-pointer",
-                      active
-                        ? "bg-gradient-to-r from-brand-green/20 via-brand-green/10 to-transparent text-brand-green font-bold shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
-                        : "text-white/60 hover:text-white hover:bg-white/5"
-                    )}
-                    aria-current={active ? "page" : undefined}
-                  >
-                    {active && (
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 lg:h-3.5 bg-brand-green rounded-r-full shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
-                    )}
-                    <Icon className={cn("w-[18px] h-[18px] lg:w-4 lg:h-4 shrink-0 transition-transform group-hover:scale-110", active ? "text-brand-green" : "text-white/60 group-hover:text-white")} />
-                    <span className="truncate">{item.label}</span>
-                  </button>
-                );
-              }
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   scroll={false}
+                  prefetch={true}
                   onClick={() => {
                     setIsMobileOpen(false);
-                    if (activeTab && activeTab !== "/") {
-                      navigateToTab("/");
-                    }
+                    navigateToTab(item.href);
                   }}
                   onMouseEnter={() => {
                     if (item.typeList) instantMovieStore.prefetch(item.typeList);
@@ -974,9 +953,10 @@ function SidebarContent({
               const active = currentActiveTab === item.href;
               const Icon = item.icon;
               return (
-                <button
-                  type="button"
+                <Link
                   key={item.href}
+                  href={item.href}
+                  prefetch={true}
                   onClick={() => {
                     setIsMobileOpen(false);
                     navigateToTab(item.href);
@@ -994,7 +974,7 @@ function SidebarContent({
                   )}
                   <Icon className={cn("w-[18px] h-[18px] lg:w-4 lg:h-4 shrink-0 transition-transform group-hover:scale-110", active ? "text-brand-green" : "text-white/60 group-hover:text-white")} />
                   <span className="truncate">{item.label}</span>
-                </button>
+                </Link>
               );
             })}
           </div>
