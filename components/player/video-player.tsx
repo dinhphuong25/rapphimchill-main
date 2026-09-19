@@ -419,10 +419,10 @@ export default function VideoPlayer({
   const showControlsHandler = useCallback(() => {
     setShowControls(true);
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-    if (videoRef.current && !videoRef.current.paused && countdown === null && !showSettings) {
+    if (videoRef.current && !videoRef.current.paused && !isLoading && countdown === null && !showSettings) {
       controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 3000);
     }
-  }, [countdown, showSettings]);
+  }, [countdown, showSettings, isLoading]);
 
   const togglePlay = useCallback(async () => {
     if (!videoRef.current) return;
@@ -863,7 +863,7 @@ export default function VideoPlayer({
     video.playsInline = true;
     try { video.crossOrigin = "anonymous"; } catch (e) {}
 
-    // Helper for fast, non-blocking playback start - Always keep sound unmuted
+    // Helper for fast, non-blocking playback start - Always keep sound unmuted when allowed
     const playWithAutoplayFallback = () => {
       clearInitialWatchdogs();
       setIsLoading(false);
@@ -873,7 +873,7 @@ export default function VideoPlayer({
       const targetVol = savedVol > 0 ? savedVol : 1;
       try { video.volume = targetVol; } catch (e) {}
 
-      // Always guarantee unmuted sound
+      // Always attempt unmuted sound first
       video.muted = false;
       setIsMuted(false);
       setIsAutoplayMuted(false);
@@ -892,12 +892,25 @@ export default function VideoPlayer({
           console.warn("Autoplay without sound restriction notice:", err);
           clearInitialWatchdogs();
           setIsLoading(false);
-          // Crucial: NEVER mute the video when browser policy restricts initial play!
-          // Maintain unmuted state so user receives full audio on interaction or tap.
-          video.muted = false;
-          setIsMuted(false);
-          setIsAutoplayMuted(false);
-          autoplayMutedRef.current = false;
+          // If browser policy rejects unmuted autoplay, immediately begin muted autoplay
+          // so video frames start streaming immediately without stall.
+          // Any user click/touch across the screen will immediately restore full audio via attemptUnmute!
+          if (err?.name === 'NotAllowedError') {
+            video.muted = true;
+            setIsMuted(true);
+            setIsAutoplayMuted(true);
+            autoplayMutedRef.current = true;
+            video.play().then(() => {
+              clearInitialWatchdogs();
+              setIsLoading(false);
+            }).catch(() => {
+              video.muted = false;
+              setIsMuted(false);
+              setIsAutoplayMuted(false);
+              autoplayMutedRef.current = false;
+              setShowControls(true);
+            });
+          }
         });
       }
     };
@@ -972,12 +985,23 @@ export default function VideoPlayer({
           setIsLoading(false);
           setIsSlowNetwork(false);
           setHasRenderedFirstFrame(true);
+          if (video.buffered.length > 0) {
+            const firstStart = video.buffered.start(0);
+            if (video.currentTime < firstStart && firstStart > 0.05 && firstStart < 5) {
+              try { video.currentTime = firstStart + 0.02; } catch (e) {}
+            }
+          }
         };
 
         const handleMetadata = () => {
           setIsLoading(false);
           if (targetStartPosition > 0 && Math.abs(video.currentTime - targetStartPosition) > 1) {
             try { video.currentTime = targetStartPosition; } catch (e) {}
+          } else if (video.buffered.length > 0) {
+            const firstStart = video.buffered.start(0);
+            if (video.currentTime < firstStart && firstStart > 0.05 && firstStart < 5) {
+              try { video.currentTime = firstStart + 0.02; } catch (e) {}
+            }
           }
         };
 
@@ -1029,10 +1053,10 @@ export default function VideoPlayer({
           maxBufferLength: isMobile ? 60 : 90,
           maxMaxBufferLength: isMobile ? 120 : 180,
           maxBufferSize: isMobile ? 48 * 1024 * 1024 : 96 * 1024 * 1024,
-          maxBufferHole: 0.8,
-          highBufferWatchdogPeriod: 2,
-          nudgeOffset: 0.1,
-          nudgeMaxRetry: 15,
+          maxBufferHole: 3.5,
+          highBufferWatchdogPeriod: 1,
+          nudgeOffset: 0.2,
+          nudgeMaxRetry: 20,
           
           startLevel: -1,
           capLevelToPlayerSize: isMobile,
@@ -1071,6 +1095,17 @@ export default function VideoPlayer({
             .sort((a, b) => b.height - a.height);
           setQualities(availableQualities);
           playWithAutoplayFallback();
+        });
+
+        // Auto-align video playhead to first buffered audio/video sample if stream starts at non-zero PTS (e.g. 1.48s VTVgo capture offset)
+        hls.on(HLS.Events.BUFFER_APPENDED, () => {
+          const v = videoRef.current;
+          if (v && v.buffered.length > 0) {
+            const firstStart = v.buffered.start(0);
+            if (v.currentTime < firstStart && firstStart > 0.05 && firstStart < 5) {
+              try { v.currentTime = firstStart + 0.02; } catch (e) {}
+            }
+          }
         });
 
         hls.on(HLS.Events.FRAG_LOADED, () => {
@@ -1117,9 +1152,32 @@ export default function VideoPlayer({
         });
 
         hls.on(HLS.Events.ERROR, (e, data) => {
-          if (data.details === HLS.ErrorDetails.BUFFER_STALLED_ERROR) {
+          if (
+            data.details === HLS.ErrorDetails.BUFFER_STALLED_ERROR ||
+            data.details === HLS.ErrorDetails.BUFFER_NUDGE_ON_STALL ||
+            data.details === HLS.ErrorDetails.BUFFER_SEEK_OVER_HOLE
+          ) {
             setIsSlowNetwork(true);
             if (hlsRef.current) hlsRef.current.startLoad();
+            const v = videoRef.current;
+            if (v && !v.paused) {
+              if (v.buffered.length > 0) {
+                const cur = v.currentTime;
+                const firstStart = v.buffered.start(0);
+                if (cur < firstStart && firstStart < 5) {
+                  v.currentTime = firstStart + 0.02;
+                  return;
+                }
+                for (let i = 0; i < v.buffered.length; i++) {
+                  const start = v.buffered.start(i);
+                  if (start > cur && start - cur <= 3.5) {
+                    v.currentTime = start + 0.05;
+                    return;
+                  }
+                }
+              }
+              v.currentTime += 0.25;
+            }
             return;
           }
           if (data.fatal) {
@@ -1322,9 +1380,16 @@ export default function VideoPlayer({
       // If paused or ended, NEVER show waiting/loading spinner!
       if (video.paused || video.ended) return;
 
-      // Smart buffer check: If playback has buffer ahead, do NOT stall
+      // Smart buffer check: auto-jump start gap and discontinuity gaps
       if (video.buffered.length > 0) {
         const cur = video.currentTime;
+        const firstStart = video.buffered.start(0);
+        // If playhead is behind the first available media frame (e.g. 1.48s start offset from VTV capture)
+        if (cur < firstStart && firstStart < 5) {
+          video.currentTime = firstStart + 0.02;
+          return;
+        }
+
         for (let i = 0; i < video.buffered.length; i++) {
           const start = video.buffered.start(i);
           const end = video.buffered.end(i);
@@ -1332,8 +1397,8 @@ export default function VideoPlayer({
           if (cur >= start - 0.1 && end - cur >= 0.4) {
             return;
           }
-          // Smart micro-gap auto-skip: If playback hits a tiny timestamp gap in stream, jump it immediately!
-          if (start > cur && start - cur <= 0.8) {
+          // Smart micro-gap auto-skip: If playback hits a timestamp gap across splice/discontinuity up to 3.5s, jump it immediately!
+          if (start > cur && start - cur <= 3.5) {
             video.currentTime = start + 0.05;
             return;
           }
@@ -1355,24 +1420,31 @@ export default function VideoPlayer({
         }
       }, 4000);
 
-      // Safe recovery: if stalled for 3s, trigger HLS load or resume without seek loops
+      // Safe recovery: if stalled for 2.5s, trigger HLS load or nudge playhead past hole
       const stallTimeout = setTimeout(() => {
         if (video.paused) return;
         if (hlsRef.current) {
           hlsRef.current.startLoad();
-          if (video.currentTime > 0) {
-            video.currentTime += 0.1;
+          if (video.buffered.length > 0) {
+            const firstStart = video.buffered.start(0);
+            if (video.currentTime < firstStart && firstStart < 5) {
+              video.currentTime = firstStart + 0.02;
+              return;
+            }
           }
+          video.currentTime += 0.25;
         } else {
           try {
-            if (video.readyState >= 2) {
+            if (video.buffered.length > 0 && video.currentTime < video.buffered.start(0)) {
+              video.currentTime = video.buffered.start(0) + 0.02;
+            } else if (video.readyState >= 2) {
               video.play().catch(() => {});
             }
           } catch (e) {
             console.warn("Native recovery play failed:", e);
           }
         }
-      }, 3000);
+      }, 2500);
 
       // Smart Auto-Failover: If stalled for > 6.5s continuously
       if (failoverTimeoutRef.current) clearTimeout(failoverTimeoutRef.current);
