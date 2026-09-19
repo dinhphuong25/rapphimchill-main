@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import dynamic from "next/dynamic";
 import Episode from "./episode";
 import WatchHeader from "../watch/watch-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,24 +18,8 @@ import ReportModal from "./report-modal";
 
 const SafePlayerErrorBoundary: any = PlayerErrorBoundary || PlayerErrorBoundaryNamed || (({ children }: any) => <>{children}</>);
 
-const VideoPlayer = dynamic(() => import("../player/video-player"), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full aspect-video bg-black/90 flex flex-col items-center justify-center text-white/70 rounded-2xl border border-white/10 shadow-2xl">
-      <div className="w-14 h-14 border-4 border-brand-green/30 border-t-brand-green rounded-full animate-spin mb-4 shadow-[0_0_20px_rgba(34,197,94,0.4)]" />
-      <span className="text-sm font-bold tracking-wider text-brand-green animate-pulse uppercase">Đang nạp trình phát Video 4K...</span>
-    </div>
-  ),
-});
-
-const EmbedPlayer = dynamic(() => import("../player/embed-player"), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full aspect-video bg-black/90 flex items-center justify-center text-white/70 text-sm rounded-2xl border border-white/10">
-      Đang nạp máy chủ dự phòng...
-    </div>
-  ),
-});
+import VideoPlayer from "../player/video-player";
+import EmbedPlayer from "../player/embed-player";
 
 interface ResolvedInitialWatch {
   serverIndex: number;

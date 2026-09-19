@@ -186,9 +186,6 @@ async function WatchContent({ slug, ep, sv }: { slug: string; ep?: string; sv?: 
           <link rel="preconnect" href={orig} crossOrigin="anonymous" />
         </Fragment>
       ))}
-      {targetM3u8 && (
-        <link rel="preload" href={targetM3u8} as="fetch" crossOrigin="anonymous" />
-      )}
       {/* Dynamic Blurred Background - Chỉ hiện trên desktop để tối ưu GPU mobile */}
       <div 
         className="fixed inset-0 z-0 opacity-25 scale-105 pointer-events-none hidden sm:block will-change-transform"

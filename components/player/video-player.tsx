@@ -24,6 +24,7 @@ import {
   Sun,
   Subtitles,
   Upload,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -266,6 +267,7 @@ export default function VideoPlayer({
   const [autoSkipAds, setAutoSkipAds] = useState<boolean>(true);
   const adRangesRef = useRef<AdRange[]>([]);
   const bannerRangesRef = useRef<AdRange[]>([]);
+  const hasExtractedFromHlsRef = useRef<boolean>(false);
   const [adRanges, setAdRanges] = useState<AdRange[]>([]);
 
   const handleToggleAutoSkipAds = useCallback((enabled: boolean) => {
@@ -468,11 +470,23 @@ export default function VideoPlayer({
       }
       videoRef.current.currentTime = newTime;
       setCurrentTime(newTime);
+      let isBuffered = false;
+      const b = videoRef.current.buffered;
+      for (let i = 0; i < b.length; i++) {
+        if (newTime >= b.start(i) && newTime <= b.end(i) - 0.5) {
+          isBuffered = true;
+          break;
+        }
+      }
+      if (!isBuffered) {
+        setIsLoading(true);
+      }
+      if (hlsRef.current) {
+        hlsRef.current.startLoad(newTime);
+      }
       showControlsHandler();
     }
   }, [showControlsHandler]);
-
-
 
   const handleVolumeChange = useCallback((value: number[]) => {
     const newVolume = value[0];
@@ -512,9 +526,23 @@ export default function VideoPlayer({
     }
     if (videoRef.current) {
       videoRef.current.currentTime = targetTime;
+      let isBuffered = false;
+      const b = videoRef.current.buffered;
+      for (let i = 0; i < b.length; i++) {
+        if (targetTime >= b.start(i) && targetTime <= b.end(i) - 0.5) {
+          isBuffered = true;
+          break;
+        }
+      }
+      if (!isBuffered) {
+        setIsLoading(true);
+      }
     }
     setCurrentTime(targetTime);
     setSeekTime(null);
+    if (hlsRef.current) {
+      hlsRef.current.startLoad(targetTime);
+    }
     setTimeout(() => {
       isSeekingRef.current = false;
     }, 250);
@@ -741,12 +769,41 @@ export default function VideoPlayer({
   useEffect(() => { videoUrlRef.current = videoUrl; }, [videoUrl]);
   useEffect(() => { posterRef.current = poster; }, [poster]);
 
+  // DNS preconnect and prefetch video CDN origin to eliminate connection handshake latency without transferring heavy video data
+  useEffect(() => {
+    if (!videoUrl || typeof document === 'undefined') return;
+    try {
+      const parsed = new URL(videoUrl);
+      const origin = parsed.origin;
+      if (origin && origin.startsWith('http')) {
+        let preconnect = document.querySelector(`link[rel="preconnect"][data-origin="${origin}"]`);
+        if (!preconnect) {
+          preconnect = document.createElement('link');
+          preconnect.setAttribute('rel', 'preconnect');
+          preconnect.setAttribute('href', origin);
+          preconnect.setAttribute('crossorigin', '');
+          preconnect.setAttribute('data-origin', origin);
+          document.head.appendChild(preconnect);
+        }
+        let dnsPrefetch = document.querySelector(`link[rel="dns-prefetch"][data-origin="${origin}"]`);
+        if (!dnsPrefetch) {
+          dnsPrefetch = document.createElement('link');
+          dnsPrefetch.setAttribute('rel', 'dns-prefetch');
+          dnsPrefetch.setAttribute('href', origin);
+          dnsPrefetch.setAttribute('data-origin', origin);
+          document.head.appendChild(dnsPrefetch);
+        }
+      }
+    } catch {}
+  }, [videoUrl]);
+
   // Tự động phân tích luồng phát m3u8 để trích xuất dải thời gian các video quảng cáo cờ bạc & banner che
   // Tối ưu băng thông: Nếu Hls.js đang chạy, LEVEL_LOADED sẽ trích xuất trực tiếp từ RAM mà không tốn request mạng.
-  // Chỉ chạy fetch dự phòng khi cần thiết và lùi thời gian để ưu tiên 100% băng thông tải segment video đầu tiên.
+  // Không fetch lại qua mạng nếu Hls.js đã trích xuất, bảo vệ tuyệt đối băng thông và giới hạn của máy chủ nguồn.
   useEffect(() => {
     adRangesRef.current = [];
     bannerRangesRef.current = [];
+    hasExtractedFromHlsRef.current = false;
     setAdRanges([]);
 
     if (!videoUrl) return;
@@ -754,7 +811,7 @@ export default function VideoPlayer({
     let isCancelled = false;
     const fetchTimer = setTimeout(() => {
       // Nếu Hls.js đã trích xuất xong từ fragments trong RAM, không cần fetch lại qua mạng
-      if (adRangesRef.current.length > 0 || bannerRangesRef.current.length > 0) return;
+      if (hasExtractedFromHlsRef.current || adRangesRef.current.length > 0 || bannerRangesRef.current.length > 0) return;
 
       fetchAndParseAllAdRanges(videoUrl).then((data) => {
         if (!isCancelled) {
@@ -776,7 +833,7 @@ export default function VideoPlayer({
           }
         }
       }).catch(() => {});
-    }, 1200);
+    }, 6000);
 
     return () => {
       isCancelled = true;
@@ -920,19 +977,41 @@ export default function VideoPlayer({
     // Seamless in-place source switch when changing episode/server (preserves decoder & avoids black flash)
     if (prevVideoUrlRef.current && prevVideoUrlRef.current !== videoUrl) {
       prevVideoUrlRef.current = videoUrl;
+      hasExtractedFromHlsRef.current = false;
+      setHasRenderedFirstFrame(false);
       setError(null);
       setIsLoading(true);
+      setIsSlowNetwork(false);
       retryCountRef.current = 0;
       didSeekInitialTimeRef.current = false;
       lastProgressSecondRef.current = -1;
 
+      // Arm watchdogs for the new episode
+      if (initialSlowWatchdogRef.current) clearTimeout(initialSlowWatchdogRef.current);
+      initialSlowWatchdogRef.current = setTimeout(() => {
+        setIsSlowNetwork(true);
+        if (hlsRef.current) {
+          hlsRef.current.startLoad();
+        }
+      }, 3500);
+
+      if (initialFatalWatchdogRef.current) clearTimeout(initialFatalWatchdogRef.current);
+      initialFatalWatchdogRef.current = setTimeout(() => {
+        if (hlsRef.current) {
+          hlsRef.current.recoverMediaError();
+          hlsRef.current.startLoad();
+        }
+        setIsSlowNetwork(true);
+        setIsLoading(false);
+      }, 7500);
+
       if (hlsRef.current) {
         try {
+          try { video.currentTime = targetStartPosition > 0 ? targetStartPosition : 0; } catch (e) {}
           hlsRef.current.stopLoad();
           hlsRef.current.config.startPosition = targetStartPosition;
           hlsRef.current.loadSource(videoUrl);
           hlsRef.current.startLoad(targetStartPosition);
-          playWithAutoplayFallback();
           return;
         } catch (err) {
           console.warn("Seamless HLS switch fallback to reinit:", err);
@@ -944,6 +1023,8 @@ export default function VideoPlayer({
             try { video.currentTime = targetStartPosition; } catch (e) {}
           };
           video.addEventListener('loadedmetadata', onMeta, { once: true });
+        } else {
+          try { video.currentTime = 0; } catch (e) {}
         }
         playWithAutoplayFallback();
         return;
@@ -954,16 +1035,16 @@ export default function VideoPlayer({
     setHasRenderedFirstFrame(false);
     setIsSlowNetwork(false);
 
-    // Watchdog: If initial load takes more than 4.5s, trigger active buffer recovery and flag slow network
+    // Watchdog: If initial load takes more than 3.5s, trigger active buffer recovery and flag slow network
     if (initialSlowWatchdogRef.current) clearTimeout(initialSlowWatchdogRef.current);
     initialSlowWatchdogRef.current = setTimeout(() => {
       setIsSlowNetwork(true);
       if (hlsRef.current) {
         hlsRef.current.startLoad();
       }
-    }, 4500);
+    }, 3500);
 
-    // Watchdog: If still loading after 9s, try recovery once and offer backup
+    // Watchdog: If still loading after 7.5s, try recovery once and offer backup
     if (initialFatalWatchdogRef.current) clearTimeout(initialFatalWatchdogRef.current);
     initialFatalWatchdogRef.current = setTimeout(() => {
       if (hlsRef.current) {
@@ -972,7 +1053,7 @@ export default function VideoPlayer({
       }
       setIsSlowNetwork(true);
       setIsLoading(false);
-    }, 9000);
+    }, 7500);
 
     const initHls = () => {
       // 1. Prefer Native HLS for Apple iOS devices (iPhone, iPad)
@@ -1049,34 +1130,34 @@ export default function VideoPlayer({
           autoStartLoad: true,
           startPosition: targetStartPosition,
           
-          backBufferLength: 15,
-          maxBufferLength: isMobile ? 60 : 90,
-          maxMaxBufferLength: isMobile ? 120 : 180,
-          maxBufferSize: isMobile ? 48 * 1024 * 1024 : 96 * 1024 * 1024,
-          maxBufferHole: 3.5,
+          backBufferLength: 10,
+          maxBufferLength: isMobile ? 20 : 25,
+          maxMaxBufferLength: isMobile ? 40 : 50,
+          maxBufferSize: isMobile ? 24 * 1024 * 1024 : 36 * 1024 * 1024,
+          maxBufferHole: 2.5,
           highBufferWatchdogPeriod: 1,
           nudgeOffset: 0.2,
-          nudgeMaxRetry: 20,
+          nudgeMaxRetry: 10,
           
           startLevel: -1,
-          capLevelToPlayerSize: isMobile,
-          testBandwidth: true,
+          capLevelToPlayerSize: true,
+          testBandwidth: false,
           
-          abrEwmaDefaultEstimate: 3_500_000,
-          abrBandWidthFactor: 0.85,
-          abrBandWidthUpFactor: 0.75,
+          abrEwmaDefaultEstimate: 2_000_000,
+          abrBandWidthFactor: 0.80,
+          abrBandWidthUpFactor: 0.70,
           
-          manifestLoadingMaxRetry: 4,
-          manifestLoadingRetryDelay: 500,
-          levelLoadingMaxRetry: 4,
-          levelLoadingRetryDelay: 500,
-          fragLoadingMaxRetry: 5,
-          fragLoadingRetryDelay: 500,
-          fragLoadingMaxRetryTimeout: 15_000,
+          manifestLoadingMaxRetry: 3,
+          manifestLoadingRetryDelay: 800,
+          levelLoadingMaxRetry: 3,
+          levelLoadingRetryDelay: 800,
+          fragLoadingMaxRetry: 3,
+          fragLoadingRetryDelay: 1000,
+          fragLoadingMaxRetryTimeout: 12_000,
           
-          manifestLoadingTimeOut: 10_000,
-          levelLoadingTimeOut: 10_000,
-          fragLoadingTimeOut: 12_000,
+          manifestLoadingTimeOut: 8_000,
+          levelLoadingTimeOut: 8_000,
+          fragLoadingTimeOut: 10_000,
           
           xhrSetup: (xhr) => {
             xhr.withCredentials = false;
@@ -1084,8 +1165,8 @@ export default function VideoPlayer({
         });
         
         hlsRef.current = hls;
-        hls.attachMedia(video);
         hls.loadSource(videoUrl);
+        hls.attachMedia(video);
 
         hls.on(HLS.Events.MANIFEST_PARSED, (e, data) => {
           retryCountRef.current = 0;
@@ -1120,9 +1201,19 @@ export default function VideoPlayer({
         });
 
         hls.on(HLS.Events.LEVEL_LOADED, (e, data) => {
-          clearInitialWatchdogs();
-          setIsLoading(false);
           try {
+            hasExtractedFromHlsRef.current = true;
+            // Instantly pre-align video playhead before fragment download finishes
+            if (targetStartPosition <= 0 && data?.details?.fragments?.length > 0) {
+              const firstFrag = data.details.fragments[0];
+              if (firstFrag.start > 0.05 && firstFrag.start < 5) {
+                const v = videoRef.current;
+                if (v && v.currentTime < firstFrag.start) {
+                  try { v.currentTime = firstFrag.start + 0.02; } catch (e) {}
+                }
+              }
+            }
+
             if (data?.details?.fragments) {
               const parsedData = extractAllAdRangesFromFragments(data.details.fragments);
               if (parsedData?.commercialRanges?.length > 0) {
@@ -1544,8 +1635,28 @@ export default function VideoPlayer({
       }
     };
 
+    const onSeekingEvent = () => {
+      let isBuffered = false;
+      if (video.buffered.length > 0) {
+        const cur = video.currentTime;
+        for (let i = 0; i < video.buffered.length; i++) {
+          if (cur >= video.buffered.start(i) && cur <= video.buffered.end(i) - 0.3) {
+            isBuffered = true;
+            break;
+          }
+        }
+      }
+      if (!isBuffered) {
+        setIsLoading(true);
+      }
+      if (hlsRef.current) {
+        hlsRef.current.startLoad(video.currentTime);
+      }
+    };
+
     const onSeekedEvent = () => {
       checkAndSkipIfInAdRange();
+      hideLoading();
     };
 
     const onProgressBufferCheck = () => {
@@ -1566,6 +1677,7 @@ export default function VideoPlayer({
     video.addEventListener('playing', hideLoading);
     video.addEventListener('timeupdate', onTimeUpdate);
     video.addEventListener('progress', onProgressBufferCheck);
+    video.addEventListener('seeking', onSeekingEvent);
     video.addEventListener('seeked', onSeekedEvent);
     video.addEventListener('ended', onEndedEvent);
     video.addEventListener('play', onPlayEvent);
@@ -1581,6 +1693,7 @@ export default function VideoPlayer({
       }
       video.removeEventListener('play', onPlayEvent);
       video.removeEventListener('pause', onPauseEvent);
+      video.removeEventListener('seeking', onSeekingEvent);
       video.removeEventListener('seeked', onSeekedEvent);
       video.removeEventListener('canplay', hideLoading);
       video.removeEventListener('canplaythrough', hideLoading);
@@ -1905,15 +2018,10 @@ export default function VideoPlayer({
     attemptUnmute();
     if (gestureHUD) return;
 
-    // If video is currently paused, tapping or clicking anywhere starts playback immediately (SYNCHRONOUS for mobile gesture permission)
-    if (videoRef.current?.paused) {
-      togglePlay();
-      showControlsHandler();
-      return;
-    }
+    const isMobileDevice = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
     const now = Date.now();
-    const isDoubleTap = now - lastTapRef.current.time < 350 && lastTapRef.current.side === side;
+    const isDoubleTap = now - lastTapRef.current.time < 320 && lastTapRef.current.side === side;
     lastTapRef.current = { time: now, side };
 
     if (isDoubleTap) {
@@ -1933,37 +2041,31 @@ export default function VideoPlayer({
       return;
     }
 
-    // Single tap when video is already playing
+    // On Desktop: Clicking the video toggles play/pause IMMEDIATELY with 0ms latency (Standard YouTube / Netflix behavior)
+    if (!isMobileDevice) {
+      showControlsHandler();
+      togglePlay();
+      return;
+    }
+
+    // On Mobile: Tap when paused starts playing immediately
+    if (videoRef.current?.paused) {
+      togglePlay();
+      showControlsHandler();
+      return;
+    }
+
+    // On Mobile: Single tap when playing toggles controls overlay
     if (singleTapTimerRef.current) clearTimeout(singleTapTimerRef.current);
     singleTapTimerRef.current = setTimeout(() => {
       singleTapTimerRef.current = null;
-
-      // On mobile / touch screens, a single tap toggles controls visibility
-      const isMobileDevice = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobileDevice) {
-        if (!showControls) {
-          showControlsHandler();
-        } else {
-          setShowControls(false);
-          if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-        }
-        return;
-      }
-
       if (!showControls) {
         showControlsHandler();
-        return;
-      }
-
-      // If controls are currently visible and video is playing, tapping center pauses
-      if (side === 'center') {
-        setShortcutFeedback({ icon: 'pause', id: Date.now() });
-        togglePlay();
       } else {
         setShowControls(false);
         if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
       }
-    }, 280);
+    }, 220);
   };
 
   return (
@@ -2218,13 +2320,15 @@ export default function VideoPlayer({
           </p>
           {isSlowNetwork && onSwitchToEmbed && (
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onSwitchToEmbed();
               }}
-              className="mt-4 px-4 py-2 bg-brand-green/20 hover:bg-brand-green/30 border border-brand-green/50 text-brand-green font-bold text-xs rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+              className="mt-3.5 px-4 py-2 sm:px-5 sm:py-2.5 bg-gradient-to-r from-brand-green/25 to-emerald-500/20 hover:from-brand-green/35 hover:to-emerald-500/30 border border-brand-green/60 hover:border-brand-green text-brand-green font-bold text-xs sm:text-sm rounded-xl shadow-[0_0_20px_rgba(34,197,94,0.3)] transition-all active:scale-95 flex items-center gap-2 cursor-pointer backdrop-blur-md"
             >
-              <span>Phát ngay bằng Máy chủ Dự phòng</span>
+              <Zap className="w-4 h-4 fill-brand-green shrink-0 animate-pulse" />
+              <span>Nguồn tải chậm? Xem ngay bằng Máy chủ VIP</span>
             </button>
           )}
         </div>
