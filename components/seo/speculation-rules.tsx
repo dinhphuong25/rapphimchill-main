@@ -17,31 +17,40 @@ export default function SpeculationRules() {
       const specScript = document.createElement("script");
       specScript.type = "speculationrules";
       
-      // Định nghĩa các quy tắc: Prerender các trang phim và trang xem khi hover
+      // Định nghĩa các quy tắc: Prerender tức thì 0ms cho các tab chính và trang phim
       const rules = {
         prerender: [
           {
             source: "list",
-            urls: [], // Sẽ được cập nhật động hoặc dùng document rules
+            urls: ["/", "/recently", "/favorites"],
+            eagerness: "eager"
+          },
+          {
+            source: "document",
             where: {
-              and: [
+              or: [
                 { href_matches: "/phim/*" },
                 { href_matches: "/watch\\?slug=*" }
               ]
             },
-            eagerness: "moderate" // Kích hoạt khi hover (moderate) hoặc ngay lập tức (eager)
+            eagerness: "moderate"
           }
         ],
         prefetch: [
           {
+            source: "list",
+            urls: ["/", "/recently", "/favorites"],
+            eagerness: "eager"
+          },
+          {
             source: "document",
             where: {
-              and: [
+              or: [
                 { href_matches: "/phim/*" },
                 { href_matches: "/watch\\?slug=*" }
               ]
             },
-            eagerness: "conservative" // Tiết kiệm băng thông, chỉ prefetch khi bấm nhẹ hoặc hover lâu
+            eagerness: "moderate"
           }
         ]
       };
