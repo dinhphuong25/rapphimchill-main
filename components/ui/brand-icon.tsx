@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { cn } from "@/lib/utils";
 
 interface BrandIconProps {
@@ -7,7 +8,7 @@ interface BrandIconProps {
   size?: "sm" | "md" | "lg" | "xl";
 }
 
-export default function BrandIcon({ className, size = "md" }: BrandIconProps) {
+function BrandIconComponent({ className, size = "md" }: BrandIconProps) {
   const pixelSize = {
     sm: 22,
     md: 28,
@@ -131,3 +132,5 @@ export default function BrandIcon({ className, size = "md" }: BrandIconProps) {
     </div>
   );
 }
+
+export default memo(BrandIconComponent);

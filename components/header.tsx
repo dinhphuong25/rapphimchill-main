@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -17,7 +17,7 @@ interface HeaderProps {
   topics?: { slug: string; name: string }[];
 }
 
-export default function Header({}: HeaderProps) {
+function HeaderComponent({}: HeaderProps) {
   useEffect(() => {
     preconnect("https://phimapi.com", { crossOrigin: "anonymous" });
     preconnect("https://img.phimapi.com", { crossOrigin: "anonymous" });
@@ -117,4 +117,6 @@ export default function Header({}: HeaderProps) {
     </>
   );
 }
+
+export default memo(HeaderComponent);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, startTransition, Suspense } from "react";
+import { useState, useEffect, useMemo, useRef, startTransition, Suspense, memo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
@@ -1655,10 +1655,12 @@ function SidebarContent({
   );
 }
 
+const MemoizedSidebarContent = memo(SidebarContent);
+
 export default function Sidebar(props: SidebarProps) {
   return (
     <Suspense fallback={null}>
-      <SidebarContent {...props} />
+      <MemoizedSidebarContent {...props} />
     </Suspense>
   );
 }

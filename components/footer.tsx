@@ -1,5 +1,4 @@
-"use client";
-
+import { memo } from "react";
 import BrandLogo from "@/components/ui/brand-logo";
 import { Heart } from "lucide-react";
 
@@ -7,7 +6,7 @@ interface FooterProps {
   customFooterText?: string;
 }
 
-export default function Footer({}: FooterProps = {}) {
+function FooterComponent({}: FooterProps = {}) {
   return (
     <footer className="w-full mt-auto py-3.5 sm:py-4 mb-20 lg:mb-0 border-t border-white/[0.08] bg-[#050807] select-none">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 sm:gap-6">
@@ -48,4 +47,6 @@ export default function Footer({}: FooterProps = {}) {
     </footer>
   );
 }
+
+export default memo(FooterComponent);
 

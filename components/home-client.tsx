@@ -23,7 +23,7 @@ interface HomeClientProps {
   featuredMovies?: any[];
 }
 
-export default function HomeClient({
+function HomeClientComponent({
   initialMovies,
   initialTopicsWithMovies,
   topics,
@@ -157,3 +157,5 @@ export default function HomeClient({
     </main>
   );
 }
+
+export default memo(HomeClientComponent);

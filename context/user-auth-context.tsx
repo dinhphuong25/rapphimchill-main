@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { toast } from "sonner";
 import { Lock, ShieldAlert, Clock } from "lucide-react";
 import { STORAGE_KEYS } from "@/hooks/useLocalStorage";
@@ -512,7 +512,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     setIsAuthModalOpen(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -560,9 +560,9 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       return { success: false, error: err?.message || "Lỗi kết nối máy chủ" };
     }
-  };
+  }, [syncWithServer]);
 
-  const register = async (email: string, password: string, name: string) => {
+  const register = useCallback(async (email: string, password: string, name: string) => {
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
@@ -584,9 +584,9 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       return { success: false, error: err?.message || "Lỗi kết nối máy chủ" };
     }
-  };
+  }, []);
 
-  const verifyOtp = async (email: string, otp: string) => {
+  const verifyOtp = useCallback(async (email: string, otp: string) => {
     try {
       const res = await fetch("/api/auth/verify-otp", {
         method: "POST",
@@ -613,9 +613,9 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       return { success: false, error: err?.message || "Lỗi kết nối máy chủ" };
     }
-  };
+  }, [syncWithServer]);
 
-  const resendOtp = async (email: string) => {
+  const resendOtp = useCallback(async (email: string) => {
     try {
       const res = await fetch("/api/auth/resend-otp", {
         method: "POST",
@@ -634,7 +634,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       return { success: false, error: err?.message || "Lỗi kết nối máy chủ" };
     }
-  };
+  }, []);
 
   const checkAuthOrPrompt = useCallback(
     (actionName?: string): boolean => {
@@ -648,7 +648,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     [user, openAuthModal]
   );
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       const oldUserId = user?.id;
       await doLogout(oldUserId);
@@ -656,28 +656,47 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.error("Logout error:", err);
     }
-  };
+  }, [user?.id, doLogout]);
+
+  const authContextValue = useMemo(
+    () => ({
+      user,
+      loading,
+      isAuthModalOpen,
+      authModalMode,
+      pendingEmail,
+      openAuthModal,
+      closeAuthModal,
+      login,
+      register,
+      verifyOtp,
+      resendOtp,
+      logout,
+      syncWithServer,
+      updateServerData,
+      checkAuthOrPrompt,
+    }),
+    [
+      user,
+      loading,
+      isAuthModalOpen,
+      authModalMode,
+      pendingEmail,
+      openAuthModal,
+      closeAuthModal,
+      login,
+      register,
+      verifyOtp,
+      resendOtp,
+      logout,
+      syncWithServer,
+      updateServerData,
+      checkAuthOrPrompt,
+    ]
+  );
 
   return (
-    <UserAuthContext.Provider
-      value={{
-        user,
-        loading,
-        isAuthModalOpen,
-        authModalMode,
-        pendingEmail,
-        openAuthModal,
-        closeAuthModal,
-        login,
-        register,
-        verifyOtp,
-        resendOtp,
-        logout,
-        syncWithServer,
-        updateServerData,
-        checkAuthOrPrompt,
-      }}
-    >
+    <UserAuthContext.Provider value={authContextValue}>
       {children}
 
       {/* Permanent Ban Modal - renders on top of every page */}

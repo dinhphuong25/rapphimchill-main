@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { cn } from "@/lib/utils";
 import BrandIcon from "./brand-icon";
 
@@ -11,7 +12,7 @@ interface BrandLogoProps {
   showIcon?: boolean;
 }
 
-export default function BrandLogo({
+function BrandLogoComponent({
   className,
   size = "md",
   slogan = "Điện ảnh không giới hạn",
@@ -91,4 +92,7 @@ export default function BrandLogo({
   );
 }
 
+const BrandLogo = memo(BrandLogoComponent);
+
+export default BrandLogo;
 export { BrandIcon };
