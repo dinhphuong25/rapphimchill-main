@@ -1413,9 +1413,7 @@ export default function VideoPlayer({
             break;
           }
         }
-        if (inBannerRange) {
-          setIsAdDetected(true);
-        }
+        setIsAdDetected(inBannerRange);
       }
 
 
