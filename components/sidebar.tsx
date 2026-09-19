@@ -42,6 +42,7 @@ import {
 import { cn } from "@/lib/utils";
 import { sortCountriesByPopularity, getCountryCode } from "@/lib/countries";
 import { instantMovieStore } from "@/lib/instant-movie-store";
+import MobileExploreSheet from "@/components/navigation/mobile-explore-sheet";
 
 interface SidebarProps {
   categories?: { slug: string; name: string }[];
@@ -143,8 +144,27 @@ function SidebarContent({
   const searchParams = useSearchParams();
   const router = useRouter();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isExploreOpen, setIsExploreOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Active selection modal: 'categories' | 'countries' | 'years' | null
+  const [activeModal, setActiveModal] = useState<"categories" | "countries" | "years" | null>(null);
+  const [categorySearchQuery, setCategorySearchQuery] = useState("");
+  const [countrySearchQuery, setCountrySearchQuery] = useState("");
+  const [yearSearchQuery, setYearSearchQuery] = useState("");
+
+  // Listen for open-mobile-explore event from mobile header category button
+  useEffect(() => {
+    const handleOpenExplore = () => {
+      setIsExploreOpen(true);
+      setIsMobileOpen(false);
+      setIsAccountOpen(false);
+      setActiveModal(null);
+    };
+    window.addEventListener("open-mobile-explore", handleOpenExplore);
+    return () => window.removeEventListener("open-mobile-explore", handleOpenExplore);
+  }, []);
 
   // Scroll container refs for selection modals
   const categoriesScrollRef = useRef<HTMLDivElement>(null);
@@ -157,12 +177,6 @@ function SidebarContent({
     setIsSyncing(false);
     toast.success("Đã đồng bộ phim yêu thích & lịch sử xem!");
   };
-
-  // Active selection modal: 'categories' | 'countries' | 'years' | null
-  const [activeModal, setActiveModal] = useState<"categories" | "countries" | "years" | null>(null);
-  const [categorySearchQuery, setCategorySearchQuery] = useState("");
-  const [countrySearchQuery, setCountrySearchQuery] = useState("");
-  const [yearSearchQuery, setYearSearchQuery] = useState("");
 
   const [categories, setCategories] = useState<{ slug: string; name: string }[]>(() => {
     if (Array.isArray(propCategories) && propCategories.length > 0) return propCategories;
@@ -198,6 +212,7 @@ function SidebarContent({
   // Close modals and mobile drawer on route change
   useEffect(() => {
     setIsMobileOpen(false);
+    setIsExploreOpen(false);
     setActiveModal(null);
     setCategorySearchQuery("");
     setCountrySearchQuery("");
@@ -364,7 +379,7 @@ function SidebarContent({
         className="lg:hidden fixed left-2.5 right-2.5 sm:left-auto sm:right-auto sm:w-[440px] bottom-[max(0.35rem,calc(env(safe-area-inset-bottom)-6px))] z-[110] max-w-[450px] mx-auto pointer-events-auto select-none"
         style={{ contain: "layout style", isolation: "isolate" }}
       >
-        <div className="h-16 px-1.5 py-1.5 rounded-full bg-[#0B100E]/90 backdrop-blur-2xl border border-white/[0.08] shadow-[0_12px_36px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.05)] flex items-center justify-around">
+        <div className="h-16 px-2 py-1.5 rounded-full bg-[#0B100E]/95 backdrop-blur-2xl border border-white/[0.08] shadow-[0_12px_36px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.05)] flex items-center justify-around">
           {/* Tab 1: Trang Chủ */}
           {(() => {
             const active =
@@ -373,7 +388,8 @@ function SidebarContent({
               !currentCountry &&
               !currentCategory &&
               !currentYear &&
-              !isAccountOpen;
+              !isAccountOpen &&
+              !isExploreOpen;
             return (
               <Link
                 href="/"
@@ -381,51 +397,31 @@ function SidebarContent({
                 onClick={() => {
                   setIsMobileOpen(false);
                   setIsAccountOpen(false);
+                  setIsExploreOpen(false);
                   setActiveModal(null);
                 }}
                 className={cn(
-                  "flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none min-w-0",
+                  "h-11 transition-all duration-200 active:scale-95 select-none",
                   active
-                    ? "bg-brand-green/[0.08] border border-brand-green/20 text-brand-green font-medium"
-                    : "border border-transparent text-white/50 hover:text-white/80"
+                    ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black flex items-center gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
+                    : "flex-1 mx-0.5 flex flex-col items-center justify-center gap-0.5 text-white/55 hover:text-white/90"
                 )}
                 aria-label="Trang Chủ"
               >
-                <Home className={cn("w-[17px] h-[17px]", active && "scale-105")} />
-                <span className="text-[9px] xs:text-[10px] font-bold tracking-tight whitespace-nowrap">Trang Chủ</span>
+                <Home className={cn("w-[18px] h-[18px] shrink-0", active ? "stroke-[2.5]" : "")} />
+                <span className={cn(
+                  active ? "text-[11px] sm:text-xs font-black tracking-tight" : "text-[9px] xs:text-[10px] font-bold tracking-tight",
+                  "whitespace-nowrap"
+                )}>
+                  Trang chủ
+                </span>
               </Link>
             );
           })()}
 
-          {/* Tab 2: Chiếu Rạp */}
+          {/* Tab 2: Lịch Sử Xem */}
           {(() => {
-            const active = pathname === "/" && currentTypeList === "phim-chieu-rap" && !isAccountOpen;
-            return (
-              <Link
-                href="/?typeList=phim-chieu-rap"
-                prefetch={true}
-                onClick={() => {
-                  setIsMobileOpen(false);
-                  setIsAccountOpen(false);
-                  setActiveModal(null);
-                }}
-                className={cn(
-                  "flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none min-w-0",
-                  active
-                    ? "bg-brand-green/[0.08] border border-brand-green/20 text-brand-green font-medium"
-                    : "border border-transparent text-white/50 hover:text-white/80"
-                )}
-                aria-label="Chiếu Rạp"
-              >
-                <Clapperboard className={cn("w-[17px] h-[17px]", active && "scale-105")} />
-                <span className="text-[9px] xs:text-[10px] font-bold tracking-tight whitespace-nowrap">Chiếu Rạp</span>
-              </Link>
-            );
-          })()}
-
-          {/* Tab 3: Lịch Sử Xem */}
-          {(() => {
-            const active = pathname === "/recently" && !isAccountOpen;
+            const active = pathname === "/recently" && !isAccountOpen && !isExploreOpen;
             return (
               <Link
                 href="/recently"
@@ -433,25 +429,31 @@ function SidebarContent({
                 onClick={() => {
                   setIsMobileOpen(false);
                   setIsAccountOpen(false);
+                  setIsExploreOpen(false);
                   setActiveModal(null);
                 }}
                 className={cn(
-                  "flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none min-w-0",
+                  "h-11 transition-all duration-200 active:scale-95 select-none",
                   active
-                    ? "bg-brand-green/[0.08] border border-brand-green/20 text-brand-green font-medium"
-                    : "border border-transparent text-white/50 hover:text-white/80"
+                    ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black flex items-center gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
+                    : "flex-1 mx-0.5 flex flex-col items-center justify-center gap-0.5 text-white/55 hover:text-white/90"
                 )}
                 aria-label="Lịch Sử Xem"
               >
-                <History className={cn("w-[17px] h-[17px]", active && "scale-105")} />
-                <span className="text-[9px] xs:text-[10px] font-bold tracking-tight whitespace-nowrap">Lịch Sử</span>
+                <History className={cn("w-[18px] h-[18px] shrink-0", active ? "stroke-[2.5]" : "")} />
+                <span className={cn(
+                  active ? "text-[11px] sm:text-xs font-black tracking-tight" : "text-[9px] xs:text-[10px] font-bold tracking-tight",
+                  "whitespace-nowrap"
+                )}>
+                  Lịch sử
+                </span>
               </Link>
             );
           })()}
 
-          {/* Tab 4: Yêu Thích */}
+          {/* Tab 3: Phim Yêu Thích */}
           {(() => {
-            const active = pathname === "/favorites" && !isAccountOpen;
+            const active = pathname === "/favorites" && !isAccountOpen && !isExploreOpen;
             return (
               <Link
                 href="/favorites"
@@ -459,60 +461,70 @@ function SidebarContent({
                 onClick={() => {
                   setIsMobileOpen(false);
                   setIsAccountOpen(false);
+                  setIsExploreOpen(false);
                   setActiveModal(null);
                 }}
                 className={cn(
-                  "flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none min-w-0",
+                  "h-11 transition-all duration-200 active:scale-95 select-none",
                   active
-                    ? "bg-brand-green/[0.08] border border-brand-green/20 text-brand-green font-medium"
-                    : "border border-transparent text-white/50 hover:text-white/80"
+                    ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black flex items-center gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
+                    : "flex-1 mx-0.5 flex flex-col items-center justify-center gap-0.5 text-white/55 hover:text-white/90"
                 )}
                 aria-label="Phim Yêu Thích"
               >
-                <Heart className={cn("w-[17px] h-[17px]", active && "scale-105", active && "fill-brand-green")} />
-                <span className="text-[9px] xs:text-[10px] font-bold tracking-tight whitespace-nowrap">Yêu Thích</span>
+                <Heart className={cn("w-[18px] h-[18px] shrink-0", active ? "fill-black stroke-[2.5]" : "")} />
+                <span className={cn(
+                  active ? "text-[11px] sm:text-xs font-black tracking-tight" : "text-[9px] xs:text-[10px] font-bold tracking-tight",
+                  "whitespace-nowrap"
+                )}>
+                  Yêu thích
+                </span>
               </Link>
             );
           })()}
 
-          {/* Tab 5: Danh Mục (Mở Drawer đầy đủ Thể loại, Quốc gia, Năm...) */}
+          {/* Tab 4: Tài Khoản */}
           {(() => {
-            const active =
-              !isAccountOpen &&
-              (isMobileOpen ||
-                Boolean(currentCategory) ||
-                Boolean(currentCountry) ||
-                Boolean(currentYear) ||
-                (Boolean(currentTypeList) && currentTypeList !== "phim-chieu-rap"));
+            const active = isAccountOpen;
             return (
               <button
                 type="button"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  setIsExploreOpen(false);
+                  setIsMobileOpen(false);
                   setActiveModal(null);
-                  setIsAccountOpen(false);
-                  setIsMobileOpen(true);
+                  if (user) {
+                    setIsAccountOpen(!isAccountOpen);
+                  } else {
+                    openAuthModal("login");
+                  }
                 }}
                 className={cn(
-                  "relative flex-1 h-11 mx-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 active:scale-[0.94] select-none min-w-0 cursor-pointer",
+                  "h-11 transition-all duration-200 active:scale-95 select-none cursor-pointer",
                   active
-                    ? "bg-brand-green/[0.08] border border-brand-green/20 text-brand-green font-medium"
-                    : "border border-transparent text-white/50 hover:text-white/80"
+                    ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black flex items-center gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
+                    : "flex-1 mx-0.5 flex flex-col items-center justify-center gap-0.5 text-white/55 hover:text-white/90"
                 )}
-                aria-label="Danh Mục"
+                aria-label="Tài Khoản"
               >
-                <div className="relative">
-                  <Layers className={cn("w-[17px] h-[17px]", active && "scale-105")} />
-                  {(currentCategory || currentCountry || currentYear) && (
-                    <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-brand-green rounded-full" />
-                  )}
-                </div>
-                <span className="text-[9px] xs:text-[10px] font-bold tracking-tight whitespace-nowrap">Danh Mục</span>
+                {user?.avatar ? (
+                  <div className="w-[18px] h-[18px] rounded-full overflow-hidden shrink-0 border border-white/20 relative">
+                    <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="18px" />
+                  </div>
+                ) : (
+                  <User className={cn("w-[18px] h-[18px] shrink-0", active ? "stroke-[2.5]" : "")} />
+                )}
+                <span className={cn(
+                  active ? "text-[11px] sm:text-xs font-black tracking-tight" : "text-[9px] xs:text-[10px] font-bold tracking-tight",
+                  "whitespace-nowrap"
+                )}>
+                  Tài khoản
+                </span>
               </button>
             );
           })()}
-
         </div>
       </nav>
 
@@ -1023,6 +1035,26 @@ function SidebarContent({
 
         </div>
       </aside>
+
+      {/* ======================================================== */}
+      {/* KHÁM PHÁ BOTTOM SHEET MENU (ONFLIX STYLE) - MOBILE ONLY */}
+      {/* ======================================================== */}
+      <MobileExploreSheet
+        isOpen={isExploreOpen}
+        onClose={() => setIsExploreOpen(false)}
+        onOpenCategories={() => {
+          setIsExploreOpen(false);
+          setActiveModal("categories");
+        }}
+        onOpenCountries={() => {
+          setIsExploreOpen(false);
+          setActiveModal("countries");
+        }}
+        onOpenYears={() => {
+          setIsExploreOpen(false);
+          setActiveModal("years");
+        }}
+      />
 
       {/* ======================================================== */}
       {/* MODAL BẢNG CHỌN THỂ LOẠI (CATEGORY SELECTION BOARD) */}
