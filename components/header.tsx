@@ -76,10 +76,10 @@ export default function Header({}: HeaderProps) {
 
           {/* Right Action Cluster: Search bar + User Profile / Login */}
           <div className="flex items-center gap-2 sm:gap-2.5 pointer-events-auto">
-            {/* Search Trigger Button - Full Pill across all viewports */}
+            {/* Search Trigger Button - Full Pill across all viewports, snug on mobile */}
             <button
               onClick={() => setShowSearchOverlay(true)}
-              className="relative flex items-center justify-between h-9 sm:h-10 pl-2 pr-2.5 w-36 sm:w-44 md:w-48 lg:w-52 rounded-full bg-[#0B100E]/90 hover:bg-[#111714] border border-white/10 hover:border-brand-green/50 backdrop-blur-xl text-white transition-all duration-300 cursor-pointer group shadow-[0_4px_24px_rgba(0,0,0,0.7)] active:scale-95 shrink-0 overflow-hidden"
+              className="relative flex items-center justify-between h-9 sm:h-10 pl-2 pr-3 sm:pr-2.5 w-auto sm:w-44 md:w-48 lg:w-52 rounded-full bg-[#0B100E]/90 hover:bg-[#111714] border border-white/10 hover:border-brand-green/50 backdrop-blur-xl text-white transition-all duration-300 cursor-pointer group shadow-[0_4px_24px_rgba(0,0,0,0.7)] active:scale-95 shrink-0 overflow-hidden"
               aria-label="Tìm kiếm phim"
             >
               {/* Subtle Ambient Hover Glow */}
@@ -96,7 +96,7 @@ export default function Header({}: HeaderProps) {
                 </span>
               </div>
 
-              <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-brand-green/10 border border-brand-green/30 text-[9.5px] text-brand-green font-mono font-bold uppercase shadow-[0_0_8px_rgba(32,214,107,0.15)] group-hover:bg-brand-green/20 group-hover:border-brand-green/60 transition-all shrink-0 z-10">
+              <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-brand-green/10 border border-brand-green/30 text-[9.5px] text-brand-green font-mono font-bold uppercase shadow-[0_0_8px_rgba(32,214,107,0.15)] group-hover:bg-brand-green/20 group-hover:border-brand-green/60 transition-all shrink-0 z-10 ml-2">
                 <span className="text-[9.5px]">Ctrl</span>K
               </kbd>
             </button>
