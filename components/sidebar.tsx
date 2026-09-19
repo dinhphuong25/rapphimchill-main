@@ -155,6 +155,16 @@ function SidebarContent({
     setYearDecade("all");
   }, [pathname, searchParams]);
 
+  // Safety watchdog: ensure optimistic tab never remains stuck if a navigation fails or is aborted
+  useEffect(() => {
+    if (optimisticTab !== null) {
+      const timer = setTimeout(() => {
+        setOptimisticTab(null);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [optimisticTab]);
+
   // Prefetch mobile bottom nav routes for instant 0ms transition on single tap
   useEffect(() => {
     router.prefetch("/");
@@ -375,14 +385,8 @@ function SidebarContent({
               <Link
                 href="/"
                 prefetch={true}
-                onPointerDown={() => setOptimisticTab("/")}
-                onTouchStart={() => {
-                  setOptimisticTab("/");
-                  router.prefetch("/");
-                }}
                 onMouseEnter={() => router.prefetch("/")}
                 onClick={(e) => {
-                  setOptimisticTab("/");
                   setIsMobileOpen(false);
                   setIsAccountOpen(false);
                   setIsExploreOpen(false);
@@ -398,6 +402,8 @@ function SidebarContent({
                     if (typeof window !== "undefined") {
                       window.scrollTo({ top: 0, behavior: "instant" });
                     }
+                  } else {
+                    setOptimisticTab("/");
                   }
                 }}
                 className={cn(
@@ -426,20 +432,22 @@ function SidebarContent({
               <Link
                 href="/recently"
                 prefetch={true}
-                onPointerDown={() => setOptimisticTab("/recently")}
-                onTouchStart={() => {
-                  setOptimisticTab("/recently");
-                  router.prefetch("/recently");
-                }}
                 onMouseEnter={() => router.prefetch("/recently")}
-                onClick={() => {
-                  setOptimisticTab("/recently");
+                onClick={(e) => {
                   setIsMobileOpen(false);
                   setIsAccountOpen(false);
                   setIsExploreOpen(false);
                   setActiveModal(null);
-                  if (pathname === "/recently" && typeof window !== "undefined") {
-                    window.scrollTo({ top: 0, behavior: "instant" });
+                  setCategorySearchQuery("");
+                  setCountrySearchQuery("");
+                  setYearSearchQuery("");
+                  if (pathname === "/recently") {
+                    e.preventDefault();
+                    if (typeof window !== "undefined") {
+                      window.scrollTo({ top: 0, behavior: "instant" });
+                    }
+                  } else {
+                    setOptimisticTab("/recently");
                   }
                 }}
                 className={cn(
@@ -468,20 +476,22 @@ function SidebarContent({
               <Link
                 href="/favorites"
                 prefetch={true}
-                onPointerDown={() => setOptimisticTab("/favorites")}
-                onTouchStart={() => {
-                  setOptimisticTab("/favorites");
-                  router.prefetch("/favorites");
-                }}
                 onMouseEnter={() => router.prefetch("/favorites")}
-                onClick={() => {
-                  setOptimisticTab("/favorites");
+                onClick={(e) => {
                   setIsMobileOpen(false);
                   setIsAccountOpen(false);
                   setIsExploreOpen(false);
                   setActiveModal(null);
-                  if (pathname === "/favorites" && typeof window !== "undefined") {
-                    window.scrollTo({ top: 0, behavior: "instant" });
+                  setCategorySearchQuery("");
+                  setCountrySearchQuery("");
+                  setYearSearchQuery("");
+                  if (pathname === "/favorites") {
+                    e.preventDefault();
+                    if (typeof window !== "undefined") {
+                      window.scrollTo({ top: 0, behavior: "instant" });
+                    }
+                  } else {
+                    setOptimisticTab("/favorites");
                   }
                 }}
                 className={cn(
@@ -509,12 +519,6 @@ function SidebarContent({
             return (
               <button
                 type="button"
-                onPointerDown={() => {
-                  if (!isAccountOpen) setOptimisticTab("account");
-                }}
-                onTouchStart={() => {
-                  if (!isAccountOpen) setOptimisticTab("account");
-                }}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -522,9 +526,11 @@ function SidebarContent({
                   setIsMobileOpen(false);
                   setActiveModal(null);
                   if (user) {
-                    const nextState = !isAccountOpen;
-                    setIsAccountOpen(nextState);
-                    setOptimisticTab(nextState ? "account" : null);
+                    setIsAccountOpen((prev) => {
+                      const next = !prev;
+                      setOptimisticTab(next ? "account" : null);
+                      return next;
+                    });
                   } else {
                     openAuthModal("login");
                   }
@@ -564,11 +570,13 @@ function SidebarContent({
             e.preventDefault();
             e.stopPropagation();
             setIsAccountOpen(false);
+            setOptimisticTab(null);
           }}
           onTouchEnd={(e) => {
             e.preventDefault();
             e.stopPropagation();
             setIsAccountOpen(false);
+            setOptimisticTab(null);
           }}
         />
       )}
