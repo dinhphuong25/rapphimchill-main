@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 export function SplashScreen() {
   const [show, setShow] = useState(true);
   const [isFading, setIsFading] = useState(false);
-  const [progress, setProgress] = useState(0);
 
   const dismiss = useCallback(() => {
     setIsFading(true);
@@ -16,33 +15,15 @@ export function SplashScreen() {
   }, []);
 
   useEffect(() => {
-    const startTime = performance.now();
-    const duration = 750; // 750ms progress sweep
+    // Elegant cinema intro: display for 850ms, then smoothly fade out
+    const timer = setTimeout(() => {
+      setIsFading(true);
+      setTimeout(() => {
+        setShow(false);
+      }, 350);
+    }, 850);
 
-    let rafId: number;
-    const updateProgress = (currentTime: number) => {
-      const elapsed = currentTime - startTime;
-      const currentProgress = Math.min(100, (elapsed / duration) * 100);
-      setProgress(currentProgress);
-
-      if (currentProgress < 100) {
-        rafId = requestAnimationFrame(updateProgress);
-      } else {
-        // Complete sweep, hold for 120ms then smoothly dissolve
-        setTimeout(() => {
-          setIsFading(true);
-          setTimeout(() => {
-            setShow(false);
-          }, 350);
-        }, 120);
-      }
-    };
-
-    rafId = requestAnimationFrame(updateProgress);
-
-    return () => {
-      if (rafId) cancelAnimationFrame(rafId);
-    };
+    return () => clearTimeout(timer);
   }, []);
 
   if (!show) return null;
@@ -54,51 +35,35 @@ export function SplashScreen() {
       role="status"
       aria-label="Đang tải Hi Phim"
       className={cn(
-        "fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[#050806] select-none cursor-pointer transition-all duration-350 ease-out",
+        "fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[#000000] select-none cursor-pointer transition-all duration-350 ease-out",
         isFading ? "opacity-0 scale-105 pointer-events-none" : "opacity-100 scale-100"
       )}
     >
-      {/* Ambient Cinema Radial Aura */}
+      {/* Subtle Cinema Ambient Glow */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(circle at 50% 50%, rgba(34, 197, 94, 0.14) 0%, rgba(5, 8, 6, 0.94) 55%, #050806 100%)",
+            "radial-gradient(circle at 50% 50%, rgba(32, 214, 107, 0.08) 0%, rgba(0, 0, 0, 0.95) 60%, #000000 100%)",
         }}
       />
 
-      {/* Subtle background film scanlines */}
-      <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.025] pointer-events-none" />
-
-      {/* Centerpiece Content */}
-      <div className="relative z-10 flex flex-col items-center text-center px-6 animate-in fade-in zoom-in-95 duration-400 fill-mode-forwards">
-        {/* Brand Logo: HI PHIM. */}
-        <div className="flex items-baseline tracking-normal font-oswald text-5xl sm:text-6xl md:text-7xl font-black text-white select-none">
-          <span className="tracking-tight">
-            HI PHIM
-          </span>
-          <span className="text-brand-green font-black ml-0.5 text-6xl sm:text-7xl md:text-8xl leading-none animate-pulse">
+      {/* Centerpiece Content — Minimalist, bold cinema identity matching Onflix reference */}
+      <div className="relative z-10 flex flex-col items-center text-center px-6 animate-in fade-in zoom-in-95 duration-350 fill-mode-forwards">
+        {/* Brand Logo: HI PHIM. — Proportional, crisp, and bold */}
+        <div className="flex items-baseline tracking-tight font-[family-name:var(--font-oswald)] text-5xl sm:text-6xl md:text-7xl font-bold text-white select-none">
+          <span>HI</span>
+          <span className="ml-2 sm:ml-2.5">PHIM</span>
+          {/* Proportional neon emerald dot, matching letter baseline */}
+          <span className="text-brand-green font-black ml-1 inline-block">
             .
           </span>
         </div>
 
         {/* Cinema Slogan: ĐIỆN ẢNH KHÔNG GIỚI HẠN */}
-        <p className="mt-3 sm:mt-3.5 text-xs sm:text-sm md:text-[15px] font-semibold text-white/80 uppercase tracking-[0.32em] sm:tracking-[0.42em]">
+        <p className="mt-3.5 sm:mt-4 text-xs sm:text-sm md:text-[15px] font-semibold text-white uppercase tracking-[0.25em] sm:tracking-[0.35em]">
           ĐIỆN ẢNH KHÔNG GIỚI HẠN
         </p>
-
-        {/* Signature Emerald Laser Progress Bar */}
-        <div className="relative mt-8 sm:mt-9 w-36 sm:w-48 h-[2px] bg-white/10 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-emerald-500 via-brand-green to-emerald-300 rounded-full shadow-[0_0_14px_rgba(34,197,94,0.95)] transition-all duration-75 ease-out"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-
-        {/* Tap to skip hint */}
-        <span className="mt-6 text-[10px] text-white/25 uppercase tracking-widest pointer-events-none">
-          Chạm để bỏ qua
-        </span>
       </div>
     </div>
   );

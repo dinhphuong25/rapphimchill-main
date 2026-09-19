@@ -101,8 +101,8 @@ export default function Header({}: HeaderProps) {
               </kbd>
             </button>
 
-            {/* User Profile / Admin Control */}
-            <div className="flex items-center shrink-0">
+            {/* User Profile / Admin Control — Hidden on mobile since it's already in the bottom nav dock */}
+            <div className="hidden lg:flex items-center shrink-0">
               <UserMenu />
             </div>
           </div>
