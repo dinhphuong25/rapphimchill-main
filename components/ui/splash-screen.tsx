@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
+import BrandIcon from "@/components/ui/brand-icon";
 
 export function SplashScreen() {
   const [show, setShow] = useState(true);
@@ -72,6 +73,9 @@ export function SplashScreen() {
 
       {/* Centerpiece Content */}
       <div className="relative z-10 flex flex-col items-center text-center px-6 animate-in fade-in zoom-in-95 duration-400 fill-mode-forwards">
+        {/* Brand Icon Emblem */}
+        <BrandIcon size="xl" className="mb-4 sm:mb-5 drop-shadow-[0_0_25px_rgba(32,214,107,0.5)]" />
+
         {/* Brand Logo: HI PHIM. */}
         <div className="flex items-baseline tracking-normal font-oswald text-5xl sm:text-6xl md:text-7xl font-black text-white select-none">
           <span className="tracking-tight drop-shadow-[0_2px_20px_rgba(255,255,255,0.18)]">
