@@ -7,7 +7,7 @@ import { MovieStructuredData, BreadcrumbStructuredData } from "@/components/seo/
 import { notFound } from "next/navigation";
 import { HIDDEN_MOVIE_SLUGS } from "@/lib/hidden-movies";
 import { unstable_cache } from "next/cache";
-import { Suspense } from "react";
+import { Suspense, Fragment } from "react";
 import { LoadingWatch } from "@/components/ui/page-loaders";
 import { getCachedCategories, getCachedCountries } from "@/lib/data";
 import { normalizeImageUrl } from "@/lib/image-helper";
@@ -84,18 +84,18 @@ export async function generateMetadata({ searchParams }: any) {
 }
 
 export default async function WatchPage({ searchParams }: any) {
-  const { slug } = await searchParams;
+  const { slug, ep, sv } = await searchParams;
 
   if (!slug || HIDDEN_MOVIE_SLUGS.includes(slug)) notFound();
 
   return (
     <Suspense fallback={<LoadingWatch />}>
-      <WatchContent slug={slug} />
+      <WatchContent slug={slug} ep={ep} sv={sv} />
     </Suspense>
   );
 }
 
-async function WatchContent({ slug }: { slug: string }) {
+async function WatchContent({ slug, ep, sv }: { slug: string; ep?: string; sv?: string }) {
   let movie: any, server: any;
   let categories: any[] = [];
   let countries: any[] = [];
@@ -128,26 +128,66 @@ async function WatchContent({ slug }: { slug: string }) {
   }));
 
   const bgUrl = normalizeImageUrl(movie.poster_url || movie.thumb_url);
-  const firstM3u8 = server?.[0]?.server_data?.[0]?.link_m3u8;
+
+  // Dynamically resolve target episode m3u8 for instant preload and preconnect
+  let targetM3u8 = "";
+  if (server && Array.isArray(server) && server.length > 0) {
+    const svIndex = sv ? parseInt(sv, 10) : 0;
+    const activeServer = (svIndex >= 0 && svIndex < server.length) ? server[svIndex] : server[0];
+    const episodes = activeServer?.server_data || [];
+    if (ep) {
+      const parsedEp = parseInt(ep, 10);
+      if (!isNaN(parsedEp) && parsedEp > 0) {
+        const epIdx = parsedEp - 1;
+        if (epIdx >= 0 && epIdx < episodes.length) {
+          targetM3u8 = episodes[epIdx]?.link_m3u8 || "";
+        } else {
+          const matched = episodes.find((e: any) => {
+            const num = parseInt(e.name?.match(/\d+/)?.[0] || "-1", 10);
+            return num === parsedEp;
+          });
+          if (matched) targetM3u8 = matched.link_m3u8 || "";
+        }
+      } else {
+        const matched = episodes.find((e: any) => e.slug === ep || e.name?.toLowerCase() === String(ep).toLowerCase());
+        if (matched) targetM3u8 = matched.link_m3u8 || "";
+      }
+    }
+    if (!targetM3u8 && episodes.length > 0) {
+      targetM3u8 = episodes[0]?.link_m3u8 || "";
+    }
+  }
+
   let m3u8Origin = "";
-  if (firstM3u8) {
+  if (targetM3u8) {
     try {
-      m3u8Origin = new URL(firstM3u8).origin;
+      m3u8Origin = new URL(targetM3u8).origin;
     } catch {}
   }
 
+  const cdnOrigins = [
+    m3u8Origin,
+    "https://s1.phimapi.com",
+    "https://s2.phimapi.com",
+    "https://s3.phimapi.com",
+    "https://vip.opstream16.com",
+    "https://vip.opstream17.com",
+    "https://vip.opstream18.com",
+    "https://phimimg.com",
+    "https://img.phimapi.com",
+    "https://player.phimapi.com",
+  ].filter((orig, idx, self) => orig && self.indexOf(orig) === idx);
+
   return (
     <div className="min-h-screen bg-cinema-bg text-white selection:bg-brand-green selection:text-cinema-bg">
-      {m3u8Origin && (
-        <>
-          <link rel="dns-prefetch" href={m3u8Origin} />
-          <link rel="preconnect" href={m3u8Origin} crossOrigin="anonymous" />
-        </>
-      )}
-      <link rel="dns-prefetch" href="https://player.phimapi.com" />
-      <link rel="preconnect" href="https://player.phimapi.com" crossOrigin="anonymous" />
-      {firstM3u8 && (
-        <link rel="preload" href={firstM3u8} as="fetch" crossOrigin="anonymous" />
+      {cdnOrigins.map((orig) => (
+        <Fragment key={orig}>
+          <link rel="dns-prefetch" href={orig} />
+          <link rel="preconnect" href={orig} crossOrigin="anonymous" />
+        </Fragment>
+      ))}
+      {targetM3u8 && (
+        <link rel="preload" href={targetM3u8} as="fetch" crossOrigin="anonymous" />
       )}
       {/* Dynamic Blurred Background - Chỉ hiện trên desktop để tối ưu GPU mobile */}
       <div 

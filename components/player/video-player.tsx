@@ -232,7 +232,21 @@ export default function VideoPlayer({
   const slowNetworkTimerRef = useRef<NodeJS.Timeout | null>(null);
   const settingsMenuRef = useRef<HTMLDivElement | null>(null);
   const waitingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const initialSlowWatchdogRef = useRef<NodeJS.Timeout | null>(null);
+  const initialFatalWatchdogRef = useRef<NodeJS.Timeout | null>(null);
   const lastBufferedRef = useRef<number>(0);
+
+  const clearInitialWatchdogs = useCallback(() => {
+    if (initialSlowWatchdogRef.current) {
+      clearTimeout(initialSlowWatchdogRef.current);
+      initialSlowWatchdogRef.current = null;
+    }
+    if (initialFatalWatchdogRef.current) {
+      clearTimeout(initialFatalWatchdogRef.current);
+      initialFatalWatchdogRef.current = null;
+    }
+    setIsSlowNetwork(false);
+  }, []);
   // Anti-Ad Banner Shield (Tự động phát hiện & che dải quảng cáo bài bạc ở mép trên - không hiện thông báo phiền)
   const [adShieldMode, setAdShieldMode] = useState<'auto' | 'always' | 'off'>('auto');
   const [isAdDetected, setIsAdDetected] = useState(false);
@@ -728,6 +742,8 @@ export default function VideoPlayer({
   useEffect(() => { posterRef.current = poster; }, [poster]);
 
   // Tự động phân tích luồng phát m3u8 để trích xuất dải thời gian các video quảng cáo cờ bạc & banner che
+  // Tối ưu băng thông: Nếu Hls.js đang chạy, LEVEL_LOADED sẽ trích xuất trực tiếp từ RAM mà không tốn request mạng.
+  // Chỉ chạy fetch dự phòng khi cần thiết và lùi thời gian để ưu tiên 100% băng thông tải segment video đầu tiên.
   useEffect(() => {
     adRangesRef.current = [];
     bannerRangesRef.current = [];
@@ -736,29 +752,35 @@ export default function VideoPlayer({
     if (!videoUrl) return;
 
     let isCancelled = false;
-    fetchAndParseAllAdRanges(videoUrl).then((data) => {
-      if (!isCancelled) {
-        if (data.commercialRanges.length > 0) {
-          adRangesRef.current = data.commercialRanges;
-          setAdRanges(data.commercialRanges);
-          if (videoRef.current && autoSkipAds) {
-            const current = videoRef.current.currentTime;
-            for (const range of data.commercialRanges) {
-              if (current >= range.start - 0.35 && current < range.end - 0.1) {
-                videoRef.current.currentTime = range.end + 0.15;
-                break;
+    const fetchTimer = setTimeout(() => {
+      // Nếu Hls.js đã trích xuất xong từ fragments trong RAM, không cần fetch lại qua mạng
+      if (adRangesRef.current.length > 0 || bannerRangesRef.current.length > 0) return;
+
+      fetchAndParseAllAdRanges(videoUrl).then((data) => {
+        if (!isCancelled) {
+          if (data.commercialRanges.length > 0) {
+            adRangesRef.current = data.commercialRanges;
+            setAdRanges(data.commercialRanges);
+            if (videoRef.current && autoSkipAds) {
+              const current = videoRef.current.currentTime;
+              for (const range of data.commercialRanges) {
+                if (current >= range.start - 0.35 && current < range.end - 0.1) {
+                  videoRef.current.currentTime = range.end + 0.15;
+                  break;
+                }
               }
             }
           }
+          if (data.bannerRanges.length > 0) {
+            bannerRangesRef.current = data.bannerRanges;
+          }
         }
-        if (data.bannerRanges.length > 0) {
-          bannerRangesRef.current = data.bannerRanges;
-        }
-      }
-    });
+      }).catch(() => {});
+    }, 1200);
 
     return () => {
       isCancelled = true;
+      clearTimeout(fetchTimer);
     };
   }, [videoUrl]);
 
@@ -843,6 +865,7 @@ export default function VideoPlayer({
 
     // Helper for fast, non-blocking playback start - Always keep sound unmuted
     const playWithAutoplayFallback = () => {
+      clearInitialWatchdogs();
       setIsLoading(false);
       if (!autoplayRef.current || !video) return;
 
@@ -859,6 +882,7 @@ export default function VideoPlayer({
       const p = video.play();
       if (p !== undefined) {
         p.then(() => {
+          clearInitialWatchdogs();
           setIsLoading(false);
           video.muted = false;
           setIsMuted(false);
@@ -866,6 +890,7 @@ export default function VideoPlayer({
           autoplayMutedRef.current = false;
         }).catch((err) => {
           console.warn("Autoplay without sound restriction notice:", err);
+          clearInitialWatchdogs();
           setIsLoading(false);
           // Crucial: NEVER mute the video when browser policy restricts initial play!
           // Maintain unmuted state so user receives full audio on interaction or tap.
@@ -916,23 +941,25 @@ export default function VideoPlayer({
     setHasRenderedFirstFrame(false);
     setIsSlowNetwork(false);
 
-    // Watchdog: If initial load takes more than 3.5s, trigger active buffer recovery and flag slow network
-    const slowWatchdog = setTimeout(() => {
+    // Watchdog: If initial load takes more than 4.5s, trigger active buffer recovery and flag slow network
+    if (initialSlowWatchdogRef.current) clearTimeout(initialSlowWatchdogRef.current);
+    initialSlowWatchdogRef.current = setTimeout(() => {
       setIsSlowNetwork(true);
       if (hlsRef.current) {
         hlsRef.current.startLoad();
       }
-    }, 3500);
+    }, 4500);
 
-    // Watchdog: If still loading after 8s, try recovery once and offer backup
-    const fatalWatchdog = setTimeout(() => {
+    // Watchdog: If still loading after 9s, try recovery once and offer backup
+    if (initialFatalWatchdogRef.current) clearTimeout(initialFatalWatchdogRef.current);
+    initialFatalWatchdogRef.current = setTimeout(() => {
       if (hlsRef.current) {
         hlsRef.current.recoverMediaError();
         hlsRef.current.startLoad();
       }
       setIsSlowNetwork(true);
       setIsLoading(false);
-    }, 8000);
+    }, 9000);
 
     const initHls = () => {
       // 1. Prefer Native HLS for Apple iOS devices (iPhone, iPad)
@@ -941,6 +968,7 @@ export default function VideoPlayer({
 
       if (useNativeHls) {
         const handleReady = () => { 
+          clearInitialWatchdogs();
           setIsLoading(false);
           setIsSlowNetwork(false);
           setHasRenderedFirstFrame(true);
@@ -992,27 +1020,27 @@ export default function VideoPlayer({
         const hls = new HLS({
           enableWorker: true,
           lowLatencyMode: false,
-          progressive: false,
+          progressive: true,
           startFragPrefetch: true,
           autoStartLoad: true,
           startPosition: targetStartPosition,
           
-          backBufferLength: 30,
+          backBufferLength: 15,
           maxBufferLength: isMobile ? 60 : 90,
-          maxMaxBufferLength: isMobile ? 120 : 240,
-          maxBufferSize: 64 * 1024 * 1024,
-          maxBufferHole: 0.5,
+          maxMaxBufferLength: isMobile ? 120 : 180,
+          maxBufferSize: isMobile ? 48 * 1024 * 1024 : 96 * 1024 * 1024,
+          maxBufferHole: 0.8,
           highBufferWatchdogPeriod: 2,
-          nudgeOffset: 0.2,
-          nudgeMaxRetry: 10,
+          nudgeOffset: 0.1,
+          nudgeMaxRetry: 15,
           
           startLevel: -1,
           capLevelToPlayerSize: isMobile,
           testBandwidth: true,
           
-          abrEwmaDefaultEstimate: 1_200_000,
-          abrBandWidthFactor: 0.8,
-          abrBandWidthUpFactor: 0.7,
+          abrEwmaDefaultEstimate: 3_500_000,
+          abrBandWidthFactor: 0.85,
+          abrBandWidthUpFactor: 0.75,
           
           manifestLoadingMaxRetry: 4,
           manifestLoadingRetryDelay: 500,
@@ -1022,9 +1050,9 @@ export default function VideoPlayer({
           fragLoadingRetryDelay: 500,
           fragLoadingMaxRetryTimeout: 15_000,
           
-          manifestLoadingTimeOut: 8_000,
-          levelLoadingTimeOut: 8_000,
-          fragLoadingTimeOut: 10_000,
+          manifestLoadingTimeOut: 10_000,
+          levelLoadingTimeOut: 10_000,
+          fragLoadingTimeOut: 12_000,
           
           xhrSetup: (xhr) => {
             xhr.withCredentials = false;
@@ -1046,15 +1074,18 @@ export default function VideoPlayer({
         });
 
         hls.on(HLS.Events.FRAG_LOADED, () => {
+          clearInitialWatchdogs();
           setIsLoading(false);
           setIsSlowNetwork(false);
         });
 
         hls.on(HLS.Events.FRAG_PARSED, () => {
+          clearInitialWatchdogs();
           setIsLoading(false);
         });
 
         hls.on(HLS.Events.LEVEL_LOADED, (e, data) => {
+          clearInitialWatchdogs();
           setIsLoading(false);
           try {
             if (data?.details?.fragments) {
@@ -1175,8 +1206,7 @@ export default function VideoPlayer({
 
     const cleanupNative = initHls();
     return () => { 
-      clearTimeout(slowWatchdog);
-      clearTimeout(fatalWatchdog);
+      clearInitialWatchdogs();
       if (cleanupNative) cleanupNative();
     };
   }, [videoUrl]);
@@ -1205,8 +1235,14 @@ export default function VideoPlayer({
       const cur = video.currentTime;
       currentTimeRef.current = cur;
       const now = performance.now();
-      if (cur > 0.1 && !hasRenderedFirstFrame) {
-        setHasRenderedFirstFrame(true);
+      if (cur > 0.05) {
+        if (!hasRenderedFirstFrame) {
+          setHasRenderedFirstFrame(true);
+        }
+        clearInitialWatchdogs();
+        if (!video.paused) {
+          hideLoading();
+        }
       }
 
       // Auto-Skip Video Ads: Tự động tua qua ngay lập tức, không chờ, không hiện nút, không hiện thông báo
@@ -1278,18 +1314,25 @@ export default function VideoPlayer({
         clearTimeout(slowNetworkTimerRef.current);
         slowNetworkTimerRef.current = null;
       }
+      clearInitialWatchdogs();
       setIsLoading(false);
     };
 
     const onWaiting = () => {
-      // If paused, NEVER show waiting/loading spinner!
-      if (video.paused) return;
+      // If paused or ended, NEVER show waiting/loading spinner!
+      if (video.paused || video.ended) return;
 
-      // Smart micro-gap auto-skip: If playback hits a tiny timestamp gap in stream, jump it immediately!
+      // Smart buffer check: If playback has buffer ahead, do NOT stall
       if (video.buffered.length > 0) {
         const cur = video.currentTime;
         for (let i = 0; i < video.buffered.length; i++) {
           const start = video.buffered.start(i);
+          const end = video.buffered.end(i);
+          // If current playhead is comfortably buffered >= 0.4s ahead, ignore spurious waiting event
+          if (cur >= start - 0.1 && end - cur >= 0.4) {
+            return;
+          }
+          // Smart micro-gap auto-skip: If playback hits a tiny timestamp gap in stream, jump it immediately!
           if (start > cur && start - cur <= 0.8) {
             video.currentTime = start + 0.05;
             return;
@@ -1299,14 +1342,15 @@ export default function VideoPlayer({
 
       if (waitingTimerRef.current) clearTimeout(waitingTimerRef.current);
       waitingTimerRef.current = setTimeout(() => {
-        if (!video.paused) {
+        // Only trigger loading if the video is genuinely stuck and not playing frames
+        if (!video.paused && !video.ended && video.readyState < 3) {
           setIsLoading(true);
         }
-      }, 300);
+      }, 600);
 
       if (slowNetworkTimerRef.current) clearTimeout(slowNetworkTimerRef.current);
       slowNetworkTimerRef.current = setTimeout(() => {
-        if (!video.paused) {
+        if (!video.paused && !video.ended && video.readyState < 3) {
           setIsSlowNetwork(true);
         }
       }, 4000);
@@ -1362,6 +1406,7 @@ export default function VideoPlayer({
 
       video.addEventListener('playing', clearWaiting, { once: true });
       video.addEventListener('canplay', clearWaiting, { once: true });
+      video.addEventListener('canplaythrough', clearWaiting, { once: true });
       video.addEventListener('pause', clearWaiting, { once: true });
     };
 
@@ -1394,6 +1439,7 @@ export default function VideoPlayer({
       isPlayingRef.current = true;
       setIsPlaying(true);
       setHasRenderedFirstFrame(true);
+      clearInitialWatchdogs();
       setIsSlowNetwork(false);
       hideLoading();
       checkAndSkipIfInAdRange();
@@ -1430,11 +1476,24 @@ export default function VideoPlayer({
       checkAndSkipIfInAdRange();
     };
 
+    const onProgressBufferCheck = () => {
+      if (video.buffered.length > 0 && !video.paused) {
+        const cur = video.currentTime;
+        for (let i = 0; i < video.buffered.length; i++) {
+          if (cur >= video.buffered.start(i) && video.buffered.end(i) - cur >= 0.5) {
+            hideLoading();
+            break;
+          }
+        }
+      }
+    };
+
     video.addEventListener('canplay', hideLoading);
     video.addEventListener('canplaythrough', hideLoading);
     video.addEventListener('loadeddata', hideLoading);
     video.addEventListener('playing', hideLoading);
     video.addEventListener('timeupdate', onTimeUpdate);
+    video.addEventListener('progress', onProgressBufferCheck);
     video.addEventListener('seeked', onSeekedEvent);
     video.addEventListener('ended', onEndedEvent);
     video.addEventListener('play', onPlayEvent);
@@ -1456,6 +1515,7 @@ export default function VideoPlayer({
       video.removeEventListener('loadeddata', hideLoading);
       video.removeEventListener('playing', hideLoading);
       video.removeEventListener('timeupdate', onTimeUpdate); 
+      video.removeEventListener('progress', onProgressBufferCheck);
       video.removeEventListener('ended', onEndedEvent);
       video.removeEventListener('waiting', onWaiting);
       video.removeEventListener('error', onErrorEvent);
@@ -2069,15 +2129,18 @@ export default function VideoPlayer({
         </button>
       </div>
 
-      {isLoading && (
+      {isLoading && (!hasRenderedFirstFrame || !isPlaying) && (
         <div 
           onClick={(e) => {
             e.stopPropagation();
             togglePlay();
           }}
-          className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 z-30 cursor-pointer pointer-events-auto backdrop-blur-xs"
+          className={cn(
+            "absolute inset-0 flex flex-col items-center justify-center z-30 cursor-pointer pointer-events-auto transition-opacity duration-300",
+            hasRenderedFirstFrame ? "bg-black/35 backdrop-blur-[2px]" : "bg-black/60 backdrop-blur-xs"
+          )}
         >
-          <Loader2 className="w-12 h-12 text-brand-green animate-spin mb-3 shadow-[0_0_20px_rgba(34,197,94,0.4)]" />
+          <Loader2 className="w-11 h-11 sm:w-12 sm:h-12 text-brand-green animate-spin mb-3 shadow-[0_0_20px_rgba(34,197,94,0.4)]" />
           <p className="text-white/90 text-sm font-bold tracking-wide">
             {isSlowNetwork ? "Đang tăng tốc bộ đệm giờ cao điểm..." : "Đang tải video..."}
           </p>
@@ -2087,7 +2150,7 @@ export default function VideoPlayer({
                 e.stopPropagation();
                 onSwitchToEmbed();
               }}
-              className="mt-4 px-4 py-2 bg-brand-green/20 hover:bg-brand-green/30 border border-brand-green/50 text-brand-green font-bold text-xs rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-1.5"
+              className="mt-4 px-4 py-2 bg-brand-green/20 hover:bg-brand-green/30 border border-brand-green/50 text-brand-green font-bold text-xs rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
             >
               <span>Phát ngay bằng Máy chủ Dự phòng</span>
             </button>
