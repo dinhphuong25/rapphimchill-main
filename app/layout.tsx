@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Be_Vietnam_Pro } from "next/font/google";
+import { Be_Vietnam_Pro, Oswald } from "next/font/google";
 import "./globals.css";
 import GTM from "@/components/ui/GTM";
 import { LoadingProvider } from "@/components/ui/loading-context";
@@ -26,6 +26,15 @@ const beVietnam = Be_Vietnam_Pro({
   display: "swap",
   preload: true,
   fallback: ["system-ui", "-apple-system", "sans-serif"],
+});
+
+// Oswald — Condensed cinematic headline font for brand logo
+const oswald = Oswald({
+  weight: ["600", "700"],
+  subsets: ["latin", "vietnamese"],
+  variable: "--font-oswald",
+  display: "swap",
+  preload: false,
 });
 
 export const viewport: Viewport = {
@@ -180,7 +189,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${beVietnam.variable} font-sans antialiased bg-background text-foreground`}
+        className={`${beVietnam.variable} ${oswald.variable} font-sans antialiased bg-background text-foreground`}
         suppressHydrationWarning
       >
         <SplashScreen />
