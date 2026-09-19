@@ -165,8 +165,23 @@ function SidebarContent({
     setIsAccountOpen(false);
     setIsExploreOpen(false);
     setActiveModal(null);
-    if (pathname !== href) {
-      router.push(href);
+    setCategorySearchQuery("");
+    setCountrySearchQuery("");
+    setYearSearchQuery("");
+
+    if (href === "/" && pathname === "/") {
+      if (searchParams.toString()) {
+        router.push("/");
+      }
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "instant" });
+      }
+      return;
+    }
+
+    router.push(href);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "instant" });
     }
   };
 
@@ -191,7 +206,15 @@ function SidebarContent({
   const currentCategory = searchParams.get("category");
   const currentCountry = searchParams.get("country");
   const currentYear = searchParams.get("year");
-  const currentTypeList = searchParams.get("typeList");
+  const currentTypeList = searchParams.get("typeList") || searchParams.get("typelist");
+  const hasActiveFilters = Boolean(
+    currentTypeList ||
+    currentCountry ||
+    currentCategory ||
+    currentYear ||
+    searchParams.get("topic") ||
+    searchParams.get("q")
+  );
 
   // Find active names
   const activeCategoryObj = useMemo(() => {
@@ -204,16 +227,10 @@ function SidebarContent({
 
   const isLinkActive = (href: string, typeList?: string) => {
     if (typeList) {
-      return pathname === "/" && currentTypeList === typeList;
+      return pathname === "/" && (currentTypeList === typeList || searchParams.get("typelist") === typeList);
     }
     if (href === "/") {
-      return (
-        pathname === "/" &&
-        !currentTypeList &&
-        !currentCountry &&
-        !currentCategory &&
-        !currentYear
-      );
+      return pathname === "/" && !hasActiveFilters;
     }
     return pathname.startsWith(href);
   };
@@ -336,29 +353,40 @@ function SidebarContent({
       {/* ======================================================== */}
       <nav
         aria-label="Điều hướng chính"
-        className="lg:hidden fixed left-2.5 right-2.5 sm:left-auto sm:right-auto sm:w-[440px] bottom-[max(0.35rem,calc(env(safe-area-inset-bottom)-6px))] z-[110] max-w-[450px] mx-auto pointer-events-auto select-none touch-manipulation"
+        className="lg:hidden fixed left-2.5 right-2.5 sm:left-auto sm:right-auto sm:w-[440px] bottom-[max(0.65rem,calc(env(safe-area-inset-bottom)+0.35rem))] z-[110] max-w-[450px] mx-auto pointer-events-auto select-none touch-manipulation"
         style={{ contain: "layout style", isolation: "isolate" }}
       >
         <div className="h-16 px-2 py-1.5 rounded-full bg-[#0B100E]/95 backdrop-blur-2xl border border-white/[0.08] shadow-[0_12px_36px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.05)] flex items-center justify-around touch-manipulation">
           {/* Tab 1: Trang Chủ */}
           {(() => {
-            const active =
-              pathname === "/" &&
-              !currentTypeList &&
-              !currentCountry &&
-              !currentCategory &&
-              !currentYear &&
-              !isAccountOpen &&
-              !isExploreOpen;
+            const active = pathname === "/" && !hasActiveFilters && !isAccountOpen && !isExploreOpen;
             return (
-              <button
-                type="button"
-                onClick={() => handleBottomNavNavigate("/")}
+              <Link
+                href="/"
+                prefetch={true}
+                onClick={(e) => {
+                  setIsMobileOpen(false);
+                  setIsAccountOpen(false);
+                  setIsExploreOpen(false);
+                  setActiveModal(null);
+                  setCategorySearchQuery("");
+                  setCountrySearchQuery("");
+                  setYearSearchQuery("");
+                  if (pathname === "/") {
+                    if (searchParams.toString()) {
+                      e.preventDefault();
+                      router.push("/");
+                    }
+                    if (typeof window !== "undefined") {
+                      window.scrollTo({ top: 0, behavior: "instant" });
+                    }
+                  }
+                }}
                 className={cn(
-                  "h-11 transition-all duration-150 active:scale-90 select-none touch-manipulation cursor-pointer",
+                  "h-11 transition-all duration-150 active:scale-90 select-none touch-manipulation cursor-pointer flex items-center justify-center",
                   active
-                    ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black flex items-center gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
-                    : "flex-1 mx-0.5 flex flex-col items-center justify-center gap-0.5 text-white/60 active:text-white"
+                    ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
+                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 active:text-white"
                 )}
                 aria-label="Trang Chủ"
               >
@@ -369,7 +397,7 @@ function SidebarContent({
                 )}>
                   Trang chủ
                 </span>
-              </button>
+              </Link>
             );
           })()}
 
@@ -377,14 +405,23 @@ function SidebarContent({
           {(() => {
             const active = pathname === "/recently" && !isAccountOpen && !isExploreOpen;
             return (
-              <button
-                type="button"
-                onClick={() => handleBottomNavNavigate("/recently")}
+              <Link
+                href="/recently"
+                prefetch={true}
+                onClick={() => {
+                  setIsMobileOpen(false);
+                  setIsAccountOpen(false);
+                  setIsExploreOpen(false);
+                  setActiveModal(null);
+                  if (pathname === "/recently" && typeof window !== "undefined") {
+                    window.scrollTo({ top: 0, behavior: "instant" });
+                  }
+                }}
                 className={cn(
-                  "h-11 transition-all duration-150 active:scale-90 select-none touch-manipulation cursor-pointer",
+                  "h-11 transition-all duration-150 active:scale-90 select-none touch-manipulation cursor-pointer flex items-center justify-center",
                   active
-                    ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black flex items-center gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
-                    : "flex-1 mx-0.5 flex flex-col items-center justify-center gap-0.5 text-white/60 active:text-white"
+                    ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
+                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 active:text-white"
                 )}
                 aria-label="Lịch Sử Xem"
               >
@@ -395,7 +432,7 @@ function SidebarContent({
                 )}>
                   Lịch sử
                 </span>
-              </button>
+              </Link>
             );
           })()}
 
@@ -403,14 +440,23 @@ function SidebarContent({
           {(() => {
             const active = pathname === "/favorites" && !isAccountOpen && !isExploreOpen;
             return (
-              <button
-                type="button"
-                onClick={() => handleBottomNavNavigate("/favorites")}
+              <Link
+                href="/favorites"
+                prefetch={true}
+                onClick={() => {
+                  setIsMobileOpen(false);
+                  setIsAccountOpen(false);
+                  setIsExploreOpen(false);
+                  setActiveModal(null);
+                  if (pathname === "/favorites" && typeof window !== "undefined") {
+                    window.scrollTo({ top: 0, behavior: "instant" });
+                  }
+                }}
                 className={cn(
-                  "h-11 transition-all duration-150 active:scale-90 select-none touch-manipulation cursor-pointer",
+                  "h-11 transition-all duration-150 active:scale-90 select-none touch-manipulation cursor-pointer flex items-center justify-center",
                   active
-                    ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black flex items-center gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
-                    : "flex-1 mx-0.5 flex flex-col items-center justify-center gap-0.5 text-white/60 active:text-white"
+                    ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
+                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 active:text-white"
                 )}
                 aria-label="Phim Yêu Thích"
               >
@@ -421,7 +467,7 @@ function SidebarContent({
                 )}>
                   Yêu thích
                 </span>
-              </button>
+              </Link>
             );
           })()}
 
@@ -444,10 +490,10 @@ function SidebarContent({
                   }
                 }}
                 className={cn(
-                  "h-11 transition-all duration-150 active:scale-90 select-none touch-manipulation cursor-pointer",
+                  "h-11 transition-all duration-150 active:scale-90 select-none touch-manipulation cursor-pointer flex items-center justify-center",
                   active
-                    ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black flex items-center gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
-                    : "flex-1 mx-0.5 flex flex-col items-center justify-center gap-0.5 text-white/60 active:text-white"
+                    ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
+                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 active:text-white"
                 )}
                 aria-label="Tài Khoản"
               >
@@ -784,6 +830,7 @@ function SidebarContent({
                   key={item.href}
                   href={item.href}
                   scroll={false}
+                  onClick={() => setIsMobileOpen(false)}
                   onMouseEnter={() => {
                     if (item.typeList) instantMovieStore.prefetch(item.typeList);
                   }}
@@ -948,6 +995,7 @@ function SidebarContent({
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={() => setIsMobileOpen(false)}
                   className={cn(
                     "relative flex items-center gap-3 lg:gap-2 px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-all duration-200 group overflow-hidden",
                     active

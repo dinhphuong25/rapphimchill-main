@@ -45,7 +45,7 @@ export async function generateMetadata({ searchParams }: HomeProps) {
   const index = Number(params.index) || 1;
   const category = params.category;
   const topic = params.topic;
-  const typeList = params.typeList;
+  const typeList = params.typeList || (params as any).typelist;
   const country = params.country;
   const year = params.year;
 
@@ -84,7 +84,7 @@ export default async function Home({ searchParams }: HomeProps) {
   const index = Number(params.index) || 1;
   const category = params.category;
   const topic = params.topic;
-  const typeList = params.typeList;
+  const typeList = params.typeList || (params as any).typelist;
   const hasFilters = Boolean(typeList || category || topic || params.country || params.year);
 
   // Fetch navigation data in parallel — all cached, near-instant after first request

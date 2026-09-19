@@ -7,7 +7,6 @@ import PhimApi from "@/libs/phimapi.com";
 import { HIDDEN_MOVIE_SLUGS } from "@/lib/hidden-movies";
 import { MovieStructuredData, BreadcrumbStructuredData } from "@/components/seo/structured-data";
 import { Suspense } from "react";
-import Sidebar from "@/components/sidebar";
 import { getCachedCategories, getCachedCountries } from "@/lib/data";
 
 import TrailerButtonWithModal from "@/components/movie/trailer-modal";
@@ -91,9 +90,7 @@ async function PhimDetailContent({ slug }: { slug: string }) {
   const totalEpisodes = episodes?.[0]?.server_data?.length || 0;
 
   return (
-    <main className="min-h-screen bg-[#0a0c0e] text-cinema-text lg:pl-[225px] transition-all duration-300 flex flex-col justify-center">
-      <Sidebar categories={categories as any[]} countries={countries as any[]} />
-
+    <main className="min-h-screen bg-[#0a0c0e] text-cinema-text transition-all duration-300 flex flex-col justify-center">
       {/* Main Container - Centered and balanced in viewport with guaranteed bottom dock clearance */}
       <div className="w-full max-w-[960px] mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-2 sm:py-4 lg:py-6 pb-28 sm:pb-8 lg:pb-6 flex flex-col justify-center my-auto flex-1">
         

@@ -15,7 +15,7 @@ export default function Footer({}: FooterProps = {}) {
         {/* Bên Trái (Desktop only): Logo & Slogan */}
         <div className="hidden sm:flex flex-col items-start text-left gap-1 min-w-0">
           <div className="flex items-center gap-2">
-            <BrandLogo size="sm" />
+            <BrandLogo size="sm" showSlogan={false} />
           </div>
 
           <p className="text-[11px] sm:text-[12px] text-white/60 leading-normal">
