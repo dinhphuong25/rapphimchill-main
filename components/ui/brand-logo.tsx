@@ -19,21 +19,21 @@ export default function BrandLogo({
   showIcon = true,
 }: BrandLogoProps) {
   const titleSizeClasses = {
-    sm: "text-[16px] sm:text-[17px]",
-    md: "text-[19px] sm:text-[21px]",
-    lg: "text-[27px] sm:text-[30px]",
+    sm: "text-[13.5px] sm:text-[14.5px]",
+    md: "text-[15px] sm:text-[16.5px]",
+    lg: "text-[21px] sm:text-[23px]",
   }[size];
 
   const sloganSizeClasses = {
-    sm: "text-[8px] sm:text-[8.5px] tracking-[0.04em]",
-    md: "text-[8.5px] sm:text-[9.5px] tracking-[0.05em]",
-    lg: "text-[11px] sm:text-[12px] tracking-[0.08em]",
+    sm: "text-[7.5px] sm:text-[8px] tracking-[0.01em]",
+    md: "text-[8px] sm:text-[8.5px] tracking-[0.02em]",
+    lg: "text-[10px] sm:text-[10.5px] tracking-[0.03em]",
   }[size];
 
   const gapClasses = {
-    sm: "gap-2",
-    md: "gap-2.5",
-    lg: "gap-3",
+    sm: "gap-1.5 sm:gap-2",
+    md: "gap-2 sm:gap-2.5",
+    lg: "gap-2.5 sm:gap-3",
   }[size];
 
   return (
@@ -54,7 +54,7 @@ export default function BrandLogo({
         {/* Main Stylized Wordmark — Condensed Cinema Typography (Oswald) */}
         <div
           className={cn(
-            "font-[family-name:var(--font-oswald)] font-bold uppercase tracking-wider leading-none flex items-baseline",
+            "font-[family-name:var(--font-oswald)] font-bold uppercase tracking-tight leading-none flex items-baseline translate-y-[1.5px]",
             titleSizeClasses
           )}
         >
@@ -64,21 +64,21 @@ export default function BrandLogo({
           </span>
 
           {/* PHIM — Electric Emerald Gradient */}
-          <span className="ml-1 sm:ml-1.5 text-transparent bg-clip-text bg-gradient-to-r from-brand-green via-[#2cf580] to-emerald-400 transition-all duration-300">
+          <span className="ml-0.5 sm:ml-1 text-transparent bg-clip-text bg-gradient-to-r from-brand-green via-[#2cf580] to-emerald-400 transition-all duration-300">
             PHIM
           </span>
 
           {/* Signature Dot . — Crisp Neon Emerald Dot */}
-          <span className="text-brand-green font-black ml-[1.5px] inline-block">
+          <span className="text-brand-green font-black ml-[1px] inline-block">
             .
           </span>
         </div>
 
-        {/* Subtitle / Slogan (Styled cleanly underneath, matching reference layout) */}
+        {/* Subtitle / Slogan — Snug right under top line with zero awkward gap */}
         {showSlogan && (
           <span
             className={cn(
-              "font-medium text-white/60 group-hover:text-white/85 transition-colors leading-tight mt-0.5 sm:mt-1 select-none truncate",
+              "font-medium text-white/55 group-hover:text-white/80 transition-colors leading-none mt-0 select-none truncate",
               sloganSizeClasses
             )}
           >

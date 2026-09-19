@@ -748,7 +748,7 @@ function SidebarContent({
       >
         {/* Sidebar Header / Brand Name */}
         <div className="h-16 lg:h-14 px-4 flex items-center justify-between border-b border-white/8 shrink-0">
-          <Link href="/" className="flex items-center overflow-hidden select-none py-1 group" aria-label="Về trang chủ Hi Phim">
+          <Link href="/" className="flex items-center select-none py-1 group" aria-label="Về trang chủ Hi Phim">
             <BrandLogo size="md" />
           </Link>
 

@@ -9,31 +9,30 @@ interface BrandIconProps {
 
 export default function BrandIcon({ className, size = "md" }: BrandIconProps) {
   const pixelSize = {
-    sm: 24,
-    md: 30,
-    lg: 40,
-    xl: 64,
+    sm: 22,
+    md: 28,
+    lg: 38,
+    xl: 56,
   }[size];
 
-  // Explicit pixel dimensions preventing any layout shift or flex distortion
   const sizeMap = {
-    sm: "w-[24px] h-[24px] min-w-[24px] min-h-[24px] max-w-[24px] max-h-[24px]",
-    md: "w-[30px] h-[30px] sm:w-[32px] sm:h-[32px] min-w-[30px] min-h-[30px] sm:min-w-[32px] sm:min-h-[32px] max-w-[30px] max-h-[30px] sm:max-w-[32px] sm:max-h-[32px]",
-    lg: "w-[38px] h-[38px] sm:w-[42px] sm:h-[42px] min-w-[38px] min-h-[38px] sm:min-w-[42px] sm:min-h-[42px] max-w-[38px] max-h-[38px] sm:max-w-[42px] sm:max-h-[42px]",
-    xl: "w-[60px] h-[60px] sm:w-[68px] sm:h-[68px] min-w-[60px] min-h-[60px] sm:min-w-[68px] sm:min-h-[68px] max-w-[60px] max-h-[60px] sm:max-w-[68px] sm:max-h-[68px]",
+    sm: "w-[22px] h-[22px] min-w-[22px] min-h-[22px] max-w-[22px] max-h-[22px]",
+    md: "w-[27px] h-[27px] sm:w-[28px] sm:h-[28px] min-w-[27px] min-h-[27px] sm:min-w-[28px] sm:min-h-[28px] max-w-[27px] max-h-[27px] sm:max-w-[28px] sm:max-h-[28px]",
+    lg: "w-[36px] h-[36px] sm:w-[38px] sm:h-[38px] min-w-[36px] min-h-[36px] sm:min-w-[38px] sm:min-h-[38px] max-w-[36px] max-h-[36px] sm:max-w-[38px] sm:max-h-[38px]",
+    xl: "w-[52px] h-[52px] sm:w-[56px] sm:h-[56px] min-w-[52px] min-h-[52px] sm:min-w-[56px] sm:min-h-[56px] max-w-[52px] max-h-[52px] sm:max-w-[56px] sm:max-h-[56px]",
   };
 
   return (
     <div
       style={{ width: pixelSize, height: pixelSize }}
       className={cn(
-        "relative flex items-center justify-center shrink-0 select-none group-hover:scale-105 transition-transform duration-300 aspect-square",
+        "relative flex items-center justify-center shrink-0 select-none group-hover:scale-105 transition-transform duration-200 aspect-square",
         sizeMap[size],
         className
       )}
     >
       <svg
-        viewBox="0 0 44 44"
+        viewBox="0 0 32 32"
         width={pixelSize}
         height={pixelSize}
         fill="none"
@@ -51,81 +50,81 @@ export default function BrandIcon({ className, size = "md" }: BrandIconProps) {
           {/* Sweeping Orbit Gradient */}
           <linearGradient id="hp-orbit-grad" x1="0%" y1="100%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#20D66B" />
-            <stop offset="60%" stopColor="#00F5A0" />
-            <stop offset="100%" stopColor="#10B981" stopOpacity="0.2" />
+            <stop offset="70%" stopColor="#00F5A0" />
+            <stop offset="100%" stopColor="#10B981" stopOpacity="0.15" />
           </linearGradient>
 
-          {/* Secondary Top Arc Gradient */}
+          {/* Top Arc Gradient */}
           <linearGradient id="hp-arc-top-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#00F5A0" stopOpacity="0.2" />
-            <stop offset="50%" stopColor="#20D66B" stopOpacity="0.8" />
+            <stop offset="0%" stopColor="#00F5A0" stopOpacity="0.15" />
+            <stop offset="60%" stopColor="#20D66B" stopOpacity="0.8" />
             <stop offset="100%" stopColor="#20D66B" />
           </linearGradient>
 
           {/* Core Disc Dark Cinema Radial */}
           <radialGradient id="hp-disc-grad" cx="40%" cy="38%" r="62%">
-            <stop offset="0%" stopColor="#11291b" />
-            <stop offset="65%" stopColor="#08140e" />
+            <stop offset="0%" stopColor="#0f2618" />
+            <stop offset="70%" stopColor="#07150d" />
             <stop offset="100%" stopColor="#030805" />
           </radialGradient>
 
-          {/* Play Triangle Metallic/Neon Shimmer */}
-          <linearGradient id="hp-play-grad" x1="15%" y1="10%" x2="90%" y2="90%">
+          {/* Play Triangle Metallic/White Shimmer */}
+          <linearGradient id="hp-play-grad" x1="20%" y1="10%" x2="90%" y2="90%">
             <stop offset="0%" stopColor="#FFFFFF" />
-            <stop offset="55%" stopColor="#E2FBEB" />
-            <stop offset="100%" stopColor="#20D66B" />
+            <stop offset="65%" stopColor="#F0FDF4" />
+            <stop offset="100%" stopColor="#A7F3D0" />
           </linearGradient>
         </defs>
 
-        {/* 1. Kinetic Outer Orbit Swoosh (Clean crisp vector, no blur/shadow) */}
+        {/* 1. Kinetic Outer Orbit Swoosh */}
         <path
-          d="M 8.5 15.5 C 6 23.5 9 32.5 17 37 C 24.5 40.5 33.5 38 38 31.5"
+          d="M 5 11 C 3 17 5 24 11 27.5 C 16.5 30.5 24 28.5 27.5 23.5"
           stroke="url(#hp-orbit-grad)"
-          strokeWidth="2.4"
+          strokeWidth="2"
           strokeLinecap="round"
         />
 
-        {/* 2. Kinetic Upper Counter-Arc (Film reel rotation accent) */}
+        {/* 2. Kinetic Upper Accent Arc */}
         <path
-          d="M 15 7.5 C 22 5 30.5 6.5 36 12 C 38.5 14.5 40 18 40.5 21.5"
+          d="M 10 4.5 C 16 3 23 4.5 27 9"
           stroke="url(#hp-arc-top-grad)"
-          strokeWidth="1.8"
+          strokeWidth="1.5"
           strokeLinecap="round"
-          strokeDasharray="16 3"
+          strokeDasharray="12 3"
         />
 
-        {/* 3. Orbital Satellite Dot / Spark */}
+        {/* 3. Orbital Satellite Spark */}
         <circle
-          cx="38"
-          cy="31.5"
-          r="1.75"
+          cx="27.5"
+          cy="23.5"
+          r="1.4"
           fill="#00F5A0"
         />
 
         {/* 4. Central Cinema Disc Core */}
         <circle
-          cx="22"
-          cy="22"
-          r="12"
+          cx="16"
+          cy="16"
+          r="10.5"
           fill="url(#hp-disc-grad)"
           stroke="url(#hp-emerald-grad)"
-          strokeWidth="1.4"
+          strokeWidth="1.2"
         />
 
         {/* 5. Inner Optical Aperture Ring */}
         <circle
-          cx="22"
-          cy="22"
-          r="9.5"
+          cx="16"
+          cy="16"
+          r="8"
           stroke="#20D66B"
-          strokeWidth="0.75"
+          strokeWidth="0.6"
           strokeOpacity="0.35"
-          strokeDasharray="2 3"
+          strokeDasharray="2 2.5"
         />
 
-        {/* 6. Signature Cinema Play Button */}
+        {/* 6. Perfectly Centered Cinema Play Button */}
         <path
-          d="M 19 16.4 C 19 15.6 19.9 15.1 20.6 15.5 L 27.2 19.3 C 27.9 19.7 27.9 20.7 27.2 21.1 L 20.6 24.9 C 19.9 25.3 19 24.8 19 24.0 Z"
+          d="M 13.8 12.2 C 13.8 11.5 14.6 11.1 15.2 11.4 L 19.8 15.2 C 20.3 15.6 20.3 16.4 19.8 16.8 L 15.2 20.6 C 14.6 20.9 13.8 20.5 13.8 19.8 Z"
           fill="url(#hp-play-grad)"
         />
       </svg>
