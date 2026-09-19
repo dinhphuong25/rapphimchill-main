@@ -54,7 +54,8 @@ export default function BrandLogo({
         {/* Main Stylized Wordmark — Condensed Cinema Typography (Oswald) */}
         <div
           className={cn(
-            "font-[family-name:var(--font-oswald)] font-bold uppercase tracking-tight leading-none flex items-baseline translate-y-[1.5px]",
+            "font-[family-name:var(--font-oswald)] font-bold uppercase tracking-tight leading-none flex items-baseline",
+            showSlogan ? "translate-y-[1.5px]" : "translate-y-0",
             titleSizeClasses
           )}
         >
