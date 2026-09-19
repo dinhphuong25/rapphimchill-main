@@ -169,8 +169,8 @@ function SidebarContent({
     setCountrySearchQuery("");
     setYearSearchQuery("");
 
-    if (href === "/" && pathname === "/") {
-      if (searchParams.toString()) {
+    if (pathname === href) {
+      if (href === "/" && searchParams.toString()) {
         router.push("/");
       }
       if (typeof window !== "undefined") {
@@ -351,35 +351,16 @@ function SidebarContent({
           {(() => {
             const active = currentActiveTab === "/";
             return (
-              <Link
-                href="/"
-                prefetch={true}
-                scroll={false}
-                onMouseEnter={() => router.prefetch("/")}
-                onClick={(e) => {
-                  setIsMobileOpen(false);
-                  setIsAccountOpen(false);
-                  setIsExploreOpen(false);
-                  setActiveModal(null);
-                  setCategorySearchQuery("");
-                  setCountrySearchQuery("");
-                  setYearSearchQuery("");
-                  if (pathname === "/") {
-                    if (searchParams.toString()) {
-                      e.preventDefault();
-                      router.push("/");
-                    }
-                    if (typeof window !== "undefined") {
-                      window.scrollTo({ top: 0, behavior: "instant" });
-                    }
-                  }
-                }}
+              <button
+                type="button"
+                onClick={() => handleBottomNavNavigate("/")}
                 className={cn(
-                  "h-12 transition-all duration-150 active:scale-[0.97] active:opacity-85 select-none touch-manipulation cursor-pointer flex items-center justify-center",
+                  "h-12 transition-all duration-150 active:scale-95 select-none touch-manipulation cursor-pointer flex items-center justify-center",
                   active
                     ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
-                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 hover:text-white/80 active:text-white"
+                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 active:text-white"
                 )}
+                style={{ WebkitTapHighlightColor: "transparent" }}
                 aria-label="Trang Chủ"
               >
                 <Home className={cn("w-[18px] h-[18px] shrink-0", active ? "stroke-[2.5]" : "")} />
@@ -389,7 +370,7 @@ function SidebarContent({
                 )}>
                   Trang chủ
                 </span>
-              </Link>
+              </button>
             );
           })()}
 
@@ -397,32 +378,16 @@ function SidebarContent({
           {(() => {
             const active = currentActiveTab === "/recently";
             return (
-              <Link
-                href="/recently"
-                prefetch={true}
-                scroll={false}
-                onMouseEnter={() => router.prefetch("/recently")}
-                onClick={(e) => {
-                  setIsMobileOpen(false);
-                  setIsAccountOpen(false);
-                  setIsExploreOpen(false);
-                  setActiveModal(null);
-                  setCategorySearchQuery("");
-                  setCountrySearchQuery("");
-                  setYearSearchQuery("");
-                  if (pathname === "/recently") {
-                    e.preventDefault();
-                    if (typeof window !== "undefined") {
-                      window.scrollTo({ top: 0, behavior: "instant" });
-                    }
-                  }
-                }}
+              <button
+                type="button"
+                onClick={() => handleBottomNavNavigate("/recently")}
                 className={cn(
-                  "h-12 transition-all duration-150 active:scale-[0.97] active:opacity-85 select-none touch-manipulation cursor-pointer flex items-center justify-center",
+                  "h-12 transition-all duration-150 active:scale-95 select-none touch-manipulation cursor-pointer flex items-center justify-center",
                   active
                     ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
-                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 hover:text-white/80 active:text-white"
+                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 active:text-white"
                 )}
+                style={{ WebkitTapHighlightColor: "transparent" }}
                 aria-label="Lịch Sử Xem"
               >
                 <History className={cn("w-[18px] h-[18px] shrink-0", active ? "stroke-[2.5]" : "")} />
@@ -432,7 +397,7 @@ function SidebarContent({
                 )}>
                   Lịch sử
                 </span>
-              </Link>
+              </button>
             );
           })()}
 
@@ -440,32 +405,16 @@ function SidebarContent({
           {(() => {
             const active = currentActiveTab === "/favorites";
             return (
-              <Link
-                href="/favorites"
-                prefetch={true}
-                scroll={false}
-                onMouseEnter={() => router.prefetch("/favorites")}
-                onClick={(e) => {
-                  setIsMobileOpen(false);
-                  setIsAccountOpen(false);
-                  setIsExploreOpen(false);
-                  setActiveModal(null);
-                  setCategorySearchQuery("");
-                  setCountrySearchQuery("");
-                  setYearSearchQuery("");
-                  if (pathname === "/favorites") {
-                    e.preventDefault();
-                    if (typeof window !== "undefined") {
-                      window.scrollTo({ top: 0, behavior: "instant" });
-                    }
-                  }
-                }}
+              <button
+                type="button"
+                onClick={() => handleBottomNavNavigate("/favorites")}
                 className={cn(
-                  "h-12 transition-all duration-150 active:scale-[0.97] active:opacity-85 select-none touch-manipulation cursor-pointer flex items-center justify-center",
+                  "h-12 transition-all duration-150 active:scale-95 select-none touch-manipulation cursor-pointer flex items-center justify-center",
                   active
                     ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
-                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 hover:text-white/80 active:text-white"
+                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 active:text-white"
                 )}
+                style={{ WebkitTapHighlightColor: "transparent" }}
                 aria-label="Phim Yêu Thích"
               >
                 <Heart className={cn("w-[18px] h-[18px] shrink-0", active ? "fill-black stroke-[2.5]" : "")} />
@@ -475,7 +424,7 @@ function SidebarContent({
                 )}>
                   Yêu thích
                 </span>
-              </Link>
+              </button>
             );
           })()}
 
@@ -498,11 +447,12 @@ function SidebarContent({
                   }
                 }}
                 className={cn(
-                  "h-12 transition-all duration-150 active:scale-[0.97] active:opacity-85 select-none touch-manipulation cursor-pointer flex items-center justify-center",
+                  "h-12 transition-all duration-150 active:scale-95 select-none touch-manipulation cursor-pointer flex items-center justify-center",
                   active
                     ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
-                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 hover:text-white/80 active:text-white"
+                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 active:text-white"
                 )}
+                style={{ WebkitTapHighlightColor: "transparent" }}
                 aria-label="Tài Khoản"
               >
                 {user?.avatar ? (
