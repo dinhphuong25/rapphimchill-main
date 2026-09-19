@@ -153,6 +153,23 @@ function SidebarContent({
     setYearDecade("all");
   }, [pathname, searchParams]);
 
+  // Prefetch mobile bottom nav routes for instant 0ms transition on single tap
+  useEffect(() => {
+    router.prefetch("/");
+    router.prefetch("/recently");
+    router.prefetch("/favorites");
+  }, [router]);
+
+  const handleBottomNavNavigate = (href: string) => {
+    setIsMobileOpen(false);
+    setIsAccountOpen(false);
+    setIsExploreOpen(false);
+    setActiveModal(null);
+    if (pathname !== href) {
+      router.push(href);
+    }
+  };
+
   // Listen for Escape key to close modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -319,10 +336,10 @@ function SidebarContent({
       {/* ======================================================== */}
       <nav
         aria-label="Điều hướng chính"
-        className="lg:hidden fixed left-2.5 right-2.5 sm:left-auto sm:right-auto sm:w-[440px] bottom-[max(0.35rem,calc(env(safe-area-inset-bottom)-6px))] z-[110] max-w-[450px] mx-auto pointer-events-auto select-none"
+        className="lg:hidden fixed left-2.5 right-2.5 sm:left-auto sm:right-auto sm:w-[440px] bottom-[max(0.35rem,calc(env(safe-area-inset-bottom)-6px))] z-[110] max-w-[450px] mx-auto pointer-events-auto select-none touch-manipulation"
         style={{ contain: "layout style", isolation: "isolate" }}
       >
-        <div className="h-16 px-2 py-1.5 rounded-full bg-[#0B100E]/95 backdrop-blur-2xl border border-white/[0.08] shadow-[0_12px_36px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.05)] flex items-center justify-around">
+        <div className="h-16 px-2 py-1.5 rounded-full bg-[#0B100E]/95 backdrop-blur-2xl border border-white/[0.08] shadow-[0_12px_36px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.05)] flex items-center justify-around touch-manipulation">
           {/* Tab 1: Trang Chủ */}
           {(() => {
             const active =
@@ -334,20 +351,14 @@ function SidebarContent({
               !isAccountOpen &&
               !isExploreOpen;
             return (
-              <Link
-                href="/"
-                prefetch={true}
-                onClick={() => {
-                  setIsMobileOpen(false);
-                  setIsAccountOpen(false);
-                  setIsExploreOpen(false);
-                  setActiveModal(null);
-                }}
+              <button
+                type="button"
+                onClick={() => handleBottomNavNavigate("/")}
                 className={cn(
-                  "h-11 transition-all duration-200 active:scale-95 select-none",
+                  "h-11 transition-all duration-150 active:scale-90 select-none touch-manipulation cursor-pointer",
                   active
                     ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black flex items-center gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
-                    : "flex-1 mx-0.5 flex flex-col items-center justify-center gap-0.5 text-white/55 hover:text-white/90"
+                    : "flex-1 mx-0.5 flex flex-col items-center justify-center gap-0.5 text-white/60 active:text-white"
                 )}
                 aria-label="Trang Chủ"
               >
@@ -358,7 +369,7 @@ function SidebarContent({
                 )}>
                   Trang chủ
                 </span>
-              </Link>
+              </button>
             );
           })()}
 
@@ -366,20 +377,14 @@ function SidebarContent({
           {(() => {
             const active = pathname === "/recently" && !isAccountOpen && !isExploreOpen;
             return (
-              <Link
-                href="/recently"
-                prefetch={true}
-                onClick={() => {
-                  setIsMobileOpen(false);
-                  setIsAccountOpen(false);
-                  setIsExploreOpen(false);
-                  setActiveModal(null);
-                }}
+              <button
+                type="button"
+                onClick={() => handleBottomNavNavigate("/recently")}
                 className={cn(
-                  "h-11 transition-all duration-200 active:scale-95 select-none",
+                  "h-11 transition-all duration-150 active:scale-90 select-none touch-manipulation cursor-pointer",
                   active
                     ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black flex items-center gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
-                    : "flex-1 mx-0.5 flex flex-col items-center justify-center gap-0.5 text-white/55 hover:text-white/90"
+                    : "flex-1 mx-0.5 flex flex-col items-center justify-center gap-0.5 text-white/60 active:text-white"
                 )}
                 aria-label="Lịch Sử Xem"
               >
@@ -390,7 +395,7 @@ function SidebarContent({
                 )}>
                   Lịch sử
                 </span>
-              </Link>
+              </button>
             );
           })()}
 
@@ -398,20 +403,14 @@ function SidebarContent({
           {(() => {
             const active = pathname === "/favorites" && !isAccountOpen && !isExploreOpen;
             return (
-              <Link
-                href="/favorites"
-                prefetch={true}
-                onClick={() => {
-                  setIsMobileOpen(false);
-                  setIsAccountOpen(false);
-                  setIsExploreOpen(false);
-                  setActiveModal(null);
-                }}
+              <button
+                type="button"
+                onClick={() => handleBottomNavNavigate("/favorites")}
                 className={cn(
-                  "h-11 transition-all duration-200 active:scale-95 select-none",
+                  "h-11 transition-all duration-150 active:scale-90 select-none touch-manipulation cursor-pointer",
                   active
                     ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black flex items-center gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
-                    : "flex-1 mx-0.5 flex flex-col items-center justify-center gap-0.5 text-white/55 hover:text-white/90"
+                    : "flex-1 mx-0.5 flex flex-col items-center justify-center gap-0.5 text-white/60 active:text-white"
                 )}
                 aria-label="Phim Yêu Thích"
               >
@@ -422,7 +421,7 @@ function SidebarContent({
                 )}>
                   Yêu thích
                 </span>
-              </Link>
+              </button>
             );
           })()}
 
@@ -445,10 +444,10 @@ function SidebarContent({
                   }
                 }}
                 className={cn(
-                  "h-11 transition-all duration-200 active:scale-95 select-none cursor-pointer",
+                  "h-11 transition-all duration-150 active:scale-90 select-none touch-manipulation cursor-pointer",
                   active
                     ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black flex items-center gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
-                    : "flex-1 mx-0.5 flex flex-col items-center justify-center gap-0.5 text-white/55 hover:text-white/90"
+                    : "flex-1 mx-0.5 flex flex-col items-center justify-center gap-0.5 text-white/60 active:text-white"
                 )}
                 aria-label="Tài Khoản"
               >

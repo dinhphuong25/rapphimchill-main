@@ -1,63 +1,104 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Image from "next/image";
+import { useEffect, useState, useCallback } from "react";
+import { cn } from "@/lib/utils";
 
 export function SplashScreen() {
-  const [show, setShow] = useState(false);
+  const [show, setShow] = useState(true);
   const [isFading, setIsFading] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  const dismiss = useCallback(() => {
+    setIsFading(true);
+    setTimeout(() => {
+      setShow(false);
+    }, 350);
+  }, []);
 
   useEffect(() => {
-    const isStandalone =
-      typeof window !== "undefined" &&
-      (window.matchMedia("(display-mode: standalone)").matches ||
-        Boolean((navigator as any).standalone));
+    const startTime = performance.now();
+    const duration = 750; // 750ms progress sweep
 
-    if (isStandalone && !sessionStorage.getItem("pwa_splash_shown")) {
-      sessionStorage.setItem("pwa_splash_shown", "1");
-      setShow(true);
-      const timer = setTimeout(() => {
-        setIsFading(true);
-        setTimeout(() => setShow(false), 300);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
+    let rafId: number;
+    const updateProgress = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const currentProgress = Math.min(100, (elapsed / duration) * 100);
+      setProgress(currentProgress);
+
+      if (currentProgress < 100) {
+        rafId = requestAnimationFrame(updateProgress);
+      } else {
+        // Complete sweep, hold for 120ms then smoothly dissolve
+        setTimeout(() => {
+          setIsFading(true);
+          setTimeout(() => {
+            setShow(false);
+          }, 350);
+        }, 120);
+      }
+    };
+
+    rafId = requestAnimationFrame(updateProgress);
+
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+    };
   }, []);
 
   if (!show) return null;
 
   return (
-    <div className={`fixed inset-0 z-[9999] flex items-center justify-center bg-[#09090b] transition-opacity duration-300 pointer-events-none ${isFading ? 'opacity-0' : 'opacity-100'}`}>
-      <div className="flex flex-col items-center justify-center text-center">
-        <div className="relative flex items-center justify-center w-24 h-24 mb-6">
-          {/* Hiệu ứng tỏa sáng xung quanh */}
-          <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" style={{ animationDuration: "2s" }}></div>
-          
-          {/* Vòng xoay ngoại */}
-          <div className="absolute inset-2 rounded-full border-2 border-white/10 border-t-primary animate-spin" style={{ animationDuration: "1.5s" }}></div>
-          
-          {/* Vòng xoay nội */}
-          <div className="absolute inset-4 rounded-full border-2 border-white/5 border-b-primary animate-spin" style={{ animationDuration: "2s", animationDirection: "reverse" }}></div>
-          
-          {/* Icon Hi Phim ở giữa */}
-          <Image
-            src="/favicon.svg"
-            alt="Hi Phim Logo"
-            width={36}
-            height={36}
-            className="w-9 h-9 object-contain"
-            priority
+    <div
+      onClick={dismiss}
+      onTouchStart={dismiss}
+      role="status"
+      aria-label="Đang tải Hi Phim"
+      className={cn(
+        "fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[#050806] select-none cursor-pointer transition-all duration-350 ease-out",
+        isFading ? "opacity-0 scale-105 pointer-events-none" : "opacity-100 scale-100"
+      )}
+    >
+      {/* Ambient Cinema Radial Aura */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(circle at 50% 50%, rgba(34, 197, 94, 0.14) 0%, rgba(5, 8, 6, 0.94) 55%, #050806 100%)",
+        }}
+      />
+
+      {/* Subtle background film scanlines */}
+      <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.025] pointer-events-none" />
+
+      {/* Centerpiece Content */}
+      <div className="relative z-10 flex flex-col items-center text-center px-6 animate-in fade-in zoom-in-95 duration-400 fill-mode-forwards">
+        {/* Brand Logo: HI PHIM. */}
+        <div className="flex items-baseline tracking-normal font-oswald text-5xl sm:text-6xl md:text-7xl font-black text-white select-none">
+          <span className="tracking-tight drop-shadow-[0_2px_20px_rgba(255,255,255,0.18)]">
+            HI PHIM
+          </span>
+          <span className="text-brand-green font-black ml-0.5 text-6xl sm:text-7xl md:text-8xl leading-none drop-shadow-[0_0_24px_rgba(34,197,94,0.9)] animate-pulse">
+            .
+          </span>
+        </div>
+
+        {/* Cinema Slogan: ĐIỆN ẢNH KHÔNG GIỚI HẠN */}
+        <p className="mt-3 sm:mt-3.5 text-xs sm:text-sm md:text-[15px] font-semibold text-white/75 uppercase tracking-[0.32em] sm:tracking-[0.42em] drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]">
+          ĐIỆN ẢNH KHÔNG GIỚI HẠN
+        </p>
+
+        {/* Signature Emerald Laser Progress Bar */}
+        <div className="relative mt-8 sm:mt-9 w-36 sm:w-48 h-[2px] bg-white/10 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-emerald-500 via-brand-green to-emerald-300 rounded-full shadow-[0_0_14px_rgba(34,197,94,0.95)] transition-all duration-75 ease-out"
+            style={{ width: `${progress}%` }}
           />
         </div>
-        
-        <div className="space-y-2">
-          <h2 className="text-xl font-bold text-white tracking-wide">
-            Đang kết nối Hi Phim...
-          </h2>
-          <p className="text-sm text-white/40">
-            Trải nghiệm điện ảnh đỉnh cao
-          </p>
-        </div>
+
+        {/* Tap to skip hint */}
+        <span className="mt-6 text-[10px] text-white/25 uppercase tracking-widest pointer-events-none">
+          Chạm để bỏ qua
+        </span>
       </div>
     </div>
   );
