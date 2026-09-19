@@ -15,7 +15,7 @@ export default function BrandIcon({ className, size = "md" }: BrandIconProps) {
     xl: 64,
   }[size];
 
-  // Use explicit min/max dimensions to prevent SVG flex blowout on any browser
+  // Explicit pixel dimensions preventing any layout shift or flex distortion
   const sizeMap = {
     sm: "w-[24px] h-[24px] min-w-[24px] min-h-[24px] max-w-[24px] max-h-[24px]",
     md: "w-[30px] h-[30px] sm:w-[32px] sm:h-[32px] min-w-[30px] min-h-[30px] sm:min-w-[32px] sm:min-h-[32px] max-w-[30px] max-h-[30px] sm:max-w-[32px] sm:max-h-[32px]",
@@ -32,16 +32,13 @@ export default function BrandIcon({ className, size = "md" }: BrandIconProps) {
         className
       )}
     >
-      {/* Ambient Radial Aura Glow */}
-      <div className="absolute inset-0 rounded-full bg-brand-green/25 blur-xs opacity-70 group-hover:opacity-100 group-hover:bg-brand-green/35 transition-all duration-300 pointer-events-none" />
-
       <svg
         viewBox="0 0 44 44"
         width={pixelSize}
         height={pixelSize}
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="w-full h-full max-w-full max-h-full block shrink-0 relative z-10 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
+        className="w-full h-full max-w-full max-h-full block shrink-0 relative z-10"
       >
         <defs>
           {/* Main Brand Emerald Gradient */}
@@ -78,18 +75,9 @@ export default function BrandIcon({ className, size = "md" }: BrandIconProps) {
             <stop offset="55%" stopColor="#E2FBEB" />
             <stop offset="100%" stopColor="#20D66B" />
           </linearGradient>
-
-          {/* Soft Neon Glow Filter */}
-          <filter id="hp-neon-glow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="1.2" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
         </defs>
 
-        {/* 1. Kinetic Outer Orbit Swoosh (Lower-left wrapping around the core) */}
+        {/* 1. Kinetic Outer Orbit Swoosh (Clean crisp vector, no blur/shadow) */}
         <path
           d="M 8.5 15.5 C 6 23.5 9 32.5 17 37 C 24.5 40.5 33.5 38 38 31.5"
           stroke="url(#hp-orbit-grad)"
@@ -106,14 +94,12 @@ export default function BrandIcon({ className, size = "md" }: BrandIconProps) {
           strokeDasharray="16 3"
         />
 
-        {/* 3. Glowing Orbital Satellite Dot / Spark */}
+        {/* 3. Orbital Satellite Dot / Spark */}
         <circle
           cx="38"
           cy="31.5"
           r="1.75"
           fill="#00F5A0"
-          filter="url(#hp-neon-glow)"
-          className="animate-pulse"
         />
 
         {/* 4. Central Cinema Disc Core */}
@@ -124,7 +110,6 @@ export default function BrandIcon({ className, size = "md" }: BrandIconProps) {
           fill="url(#hp-disc-grad)"
           stroke="url(#hp-emerald-grad)"
           strokeWidth="1.4"
-          className="drop-shadow-[0_0_8px_rgba(32,214,107,0.35)]"
         />
 
         {/* 5. Inner Optical Aperture Ring */}
@@ -134,7 +119,7 @@ export default function BrandIcon({ className, size = "md" }: BrandIconProps) {
           r="9.5"
           stroke="#20D66B"
           strokeWidth="0.75"
-          strokeOpacity="0.3"
+          strokeOpacity="0.35"
           strokeDasharray="2 3"
         />
 
@@ -142,7 +127,6 @@ export default function BrandIcon({ className, size = "md" }: BrandIconProps) {
         <path
           d="M 19 16.4 C 19 15.6 19.9 15.1 20.6 15.5 L 27.2 19.3 C 27.9 19.7 27.9 20.7 27.2 21.1 L 20.6 24.9 C 19.9 25.3 19 24.8 19 24.0 Z"
           fill="url(#hp-play-grad)"
-          filter="drop-shadow(0 1px 3px rgba(0,0,0,0.9))"
         />
       </svg>
     </div>

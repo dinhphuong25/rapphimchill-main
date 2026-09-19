@@ -44,9 +44,6 @@ export default function BrandLogo({
         className
       )}
     >
-      {/* Ambient Glow behind entire logo lockup on hover */}
-      <div className="absolute -inset-x-3 -inset-y-1.5 bg-gradient-to-r from-brand-green/10 via-brand-green/15 to-transparent rounded-2xl blur-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none duration-300" />
-
       {/* Bespoke Cinema Emblem Icon */}
       {showIcon && (
         <BrandIcon size={size} className="shrink-0" />
@@ -61,18 +58,18 @@ export default function BrandLogo({
             titleSizeClasses
           )}
         >
-          {/* HI — Crisp Stark White with Beveled Depth */}
-          <span className="text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)] transition-colors group-hover:text-white">
+          {/* HI — Crisp Stark White */}
+          <span className="text-white transition-colors group-hover:text-white">
             HI
           </span>
 
-          {/* PHIM — Electric Emerald Gradient with Neon Aura */}
-          <span className="ml-1 sm:ml-1.5 text-transparent bg-clip-text bg-gradient-to-r from-brand-green via-[#2cf580] to-emerald-400 drop-shadow-[0_0_14px_rgba(32,214,107,0.65)] group-hover:drop-shadow-[0_0_22px_rgba(32,214,107,0.95)] transition-all duration-300">
+          {/* PHIM — Electric Emerald Gradient */}
+          <span className="ml-1 sm:ml-1.5 text-transparent bg-clip-text bg-gradient-to-r from-brand-green via-[#2cf580] to-emerald-400 transition-all duration-300">
             PHIM
           </span>
 
-          {/* Signature Dot . — Glowing Neon Emerald Dot */}
-          <span className="text-brand-green font-black ml-[1.5px] drop-shadow-[0_0_10px_rgba(32,214,107,0.95)] inline-block">
+          {/* Signature Dot . — Crisp Neon Emerald Dot */}
+          <span className="text-brand-green font-black ml-[1.5px] inline-block">
             .
           </span>
         </div>
