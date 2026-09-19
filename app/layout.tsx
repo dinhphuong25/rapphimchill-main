@@ -16,6 +16,7 @@ import AnnouncementBanner from "@/components/announcement-banner";
 import { getSiteConfig } from "@/lib/site-config";
 import AppShell from "@/components/layout/app-shell";
 import { UserAuthProvider } from "@/context/user-auth-context";
+import { NavigationTabProvider } from "@/context/navigation-tab-context";
 import AuthModal from "@/components/auth/auth-modal";
 
 // Be Vietnam Pro — font hỗ trợ tiếng Việt tốt nhất, sans-serif hiện đại
@@ -221,7 +222,9 @@ export default function RootLayout({
         {/* Main App with User Auth & Instant Loading */}
         <UserAuthProvider>
           <LoadingProvider>
-            <AppShell>{children}</AppShell>
+            <NavigationTabProvider>
+              <AppShell>{children}</AppShell>
+            </NavigationTabProvider>
           </LoadingProvider>
           <AuthModal />
         </UserAuthProvider>

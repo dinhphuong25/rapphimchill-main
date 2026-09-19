@@ -43,6 +43,7 @@ import { sortCountriesByPopularity, getCountryCode } from "@/lib/countries";
 import { instantMovieStore } from "@/lib/instant-movie-store";
 import MobileExploreSheet from "@/components/navigation/mobile-explore-sheet";
 import BrandLogo from "@/components/ui/brand-logo";
+import { useNavigationTab } from "@/context/navigation-tab-context";
 
 interface SidebarProps {
   categories?: { slug: string; name: string }[];
@@ -75,6 +76,7 @@ function SidebarContent({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { activeTab, navigateToTab } = useNavigationTab();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isExploreOpen, setIsExploreOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
@@ -169,20 +171,7 @@ function SidebarContent({
     setCountrySearchQuery("");
     setYearSearchQuery("");
 
-    if (pathname === href) {
-      if (href === "/" && searchParams.toString()) {
-        router.push("/");
-      }
-      if (typeof window !== "undefined") {
-        window.scrollTo({ top: 0, behavior: "instant" });
-      }
-      return;
-    }
-
-    router.push(href);
-    if (typeof window !== "undefined") {
-      window.scrollTo({ top: 0, behavior: "instant" });
-    }
+    navigateToTab(href);
   };
 
   // Listen for Escape key to close modal
@@ -237,11 +226,12 @@ function SidebarContent({
 
   const currentActiveTab = useMemo(() => {
     if (isAccountOpen) return "account";
+    if (activeTab) return activeTab;
     if (pathname === "/recently") return "/recently";
     if (pathname === "/favorites") return "/favorites";
     if (pathname === "/" && !hasActiveFilters) return "/";
     return null;
-  }, [isAccountOpen, pathname, hasActiveFilters]);
+  }, [isAccountOpen, activeTab, pathname, hasActiveFilters]);
 
   const sortedCountries = useMemo(() => {
     return sortCountriesByPopularity(countries);
@@ -346,7 +336,7 @@ function SidebarContent({
         className="lg:hidden fixed left-2.5 right-2.5 sm:left-auto sm:right-auto sm:w-[440px] bottom-[max(0.65rem,calc(env(safe-area-inset-bottom)+0.35rem))] z-[110] max-w-[450px] mx-auto pointer-events-auto select-none touch-manipulation"
         style={{ contain: "layout style", isolation: "isolate" }}
       >
-        <div className="h-16 px-2 py-1.5 rounded-full bg-[#0B100E]/95 backdrop-blur-2xl border border-white/[0.08] shadow-[0_12px_36px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.05)] flex items-center justify-around touch-manipulation">
+        <div className="h-16 px-1.5 py-1.5 rounded-full bg-[#0B100E]/95 backdrop-blur-2xl border border-white/[0.08] shadow-[0_12px_36px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.05)] flex items-center justify-between touch-manipulation">
           {/* Tab 1: Trang Chủ */}
           {(() => {
             const active = currentActiveTab === "/";
@@ -354,22 +344,23 @@ function SidebarContent({
               <button
                 type="button"
                 onClick={() => handleBottomNavNavigate("/")}
-                className={cn(
-                  "h-12 transition-all duration-150 active:scale-95 select-none touch-manipulation cursor-pointer flex items-center justify-center",
-                  active
-                    ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
-                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 active:text-white"
-                )}
+                className="flex-1 h-12 flex items-center justify-center relative select-none touch-manipulation cursor-pointer active:scale-95 transition-transform duration-75"
                 style={{ WebkitTapHighlightColor: "transparent" }}
                 aria-label="Trang Chủ"
               >
-                <Home className={cn("w-[18px] h-[18px] shrink-0", active ? "stroke-[2.5]" : "")} />
-                <span className={cn(
-                  active ? "text-[11px] sm:text-xs font-black tracking-tight" : "text-[9px] xs:text-[10px] font-bold tracking-tight",
-                  "whitespace-nowrap"
-                )}>
-                  Trang chủ
-                </span>
+                <div
+                  className={cn(
+                    "w-full max-w-[84px] h-11 rounded-2xl flex flex-col items-center justify-center gap-0.5 select-none transition-colors duration-100",
+                    active
+                      ? "bg-brand-green text-black shadow-[0_0_18px_rgba(32,214,107,0.45)]"
+                      : "text-white/60 active:text-white"
+                  )}
+                >
+                  <Home className={cn("w-[18px] h-[18px] shrink-0", active ? "stroke-[2.5]" : "")} />
+                  <span className={cn("text-[10px] tracking-tight whitespace-nowrap", active ? "font-black" : "font-semibold")}>
+                    Trang chủ
+                  </span>
+                </div>
               </button>
             );
           })()}
@@ -381,22 +372,23 @@ function SidebarContent({
               <button
                 type="button"
                 onClick={() => handleBottomNavNavigate("/recently")}
-                className={cn(
-                  "h-12 transition-all duration-150 active:scale-95 select-none touch-manipulation cursor-pointer flex items-center justify-center",
-                  active
-                    ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
-                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 active:text-white"
-                )}
+                className="flex-1 h-12 flex items-center justify-center relative select-none touch-manipulation cursor-pointer active:scale-95 transition-transform duration-75"
                 style={{ WebkitTapHighlightColor: "transparent" }}
                 aria-label="Lịch Sử Xem"
               >
-                <History className={cn("w-[18px] h-[18px] shrink-0", active ? "stroke-[2.5]" : "")} />
-                <span className={cn(
-                  active ? "text-[11px] sm:text-xs font-black tracking-tight" : "text-[9px] xs:text-[10px] font-bold tracking-tight",
-                  "whitespace-nowrap"
-                )}>
-                  Lịch sử
-                </span>
+                <div
+                  className={cn(
+                    "w-full max-w-[84px] h-11 rounded-2xl flex flex-col items-center justify-center gap-0.5 select-none transition-colors duration-100",
+                    active
+                      ? "bg-brand-green text-black shadow-[0_0_18px_rgba(32,214,107,0.45)]"
+                      : "text-white/60 active:text-white"
+                  )}
+                >
+                  <History className={cn("w-[18px] h-[18px] shrink-0", active ? "stroke-[2.5]" : "")} />
+                  <span className={cn("text-[10px] tracking-tight whitespace-nowrap", active ? "font-black" : "font-semibold")}>
+                    Lịch sử
+                  </span>
+                </div>
               </button>
             );
           })()}
@@ -408,22 +400,23 @@ function SidebarContent({
               <button
                 type="button"
                 onClick={() => handleBottomNavNavigate("/favorites")}
-                className={cn(
-                  "h-12 transition-all duration-150 active:scale-95 select-none touch-manipulation cursor-pointer flex items-center justify-center",
-                  active
-                    ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
-                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 active:text-white"
-                )}
+                className="flex-1 h-12 flex items-center justify-center relative select-none touch-manipulation cursor-pointer active:scale-95 transition-transform duration-75"
                 style={{ WebkitTapHighlightColor: "transparent" }}
                 aria-label="Phim Yêu Thích"
               >
-                <Heart className={cn("w-[18px] h-[18px] shrink-0", active ? "fill-black stroke-[2.5]" : "")} />
-                <span className={cn(
-                  active ? "text-[11px] sm:text-xs font-black tracking-tight" : "text-[9px] xs:text-[10px] font-bold tracking-tight",
-                  "whitespace-nowrap"
-                )}>
-                  Yêu thích
-                </span>
+                <div
+                  className={cn(
+                    "w-full max-w-[84px] h-11 rounded-2xl flex flex-col items-center justify-center gap-0.5 select-none transition-colors duration-100",
+                    active
+                      ? "bg-brand-green text-black shadow-[0_0_18px_rgba(32,214,107,0.45)]"
+                      : "text-white/60 active:text-white"
+                  )}
+                >
+                  <Heart className={cn("w-[18px] h-[18px] shrink-0", active ? "fill-black stroke-[2.5]" : "")} />
+                  <span className={cn("text-[10px] tracking-tight whitespace-nowrap", active ? "font-black" : "font-semibold")}>
+                    Yêu thích
+                  </span>
+                </div>
               </button>
             );
           })()}
@@ -446,28 +439,29 @@ function SidebarContent({
                     openAuthModal("login");
                   }
                 }}
-                className={cn(
-                  "h-12 transition-all duration-150 active:scale-95 select-none touch-manipulation cursor-pointer flex items-center justify-center",
-                  active
-                    ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
-                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 active:text-white"
-                )}
+                className="flex-1 h-12 flex items-center justify-center relative select-none touch-manipulation cursor-pointer active:scale-95 transition-transform duration-75"
                 style={{ WebkitTapHighlightColor: "transparent" }}
                 aria-label="Tài Khoản"
               >
-                {user?.avatar ? (
-                  <div className="w-[18px] h-[18px] rounded-full overflow-hidden shrink-0 border border-white/20 relative">
-                    <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="18px" />
-                  </div>
-                ) : (
-                  <User className={cn("w-[18px] h-[18px] shrink-0", active ? "stroke-[2.5]" : "")} />
-                )}
-                <span className={cn(
-                  active ? "text-[11px] sm:text-xs font-black tracking-tight" : "text-[9px] xs:text-[10px] font-bold tracking-tight",
-                  "whitespace-nowrap"
-                )}>
-                  Tài khoản
-                </span>
+                <div
+                  className={cn(
+                    "w-full max-w-[84px] h-11 rounded-2xl flex flex-col items-center justify-center gap-0.5 select-none transition-colors duration-100",
+                    active
+                      ? "bg-brand-green text-black shadow-[0_0_18px_rgba(32,214,107,0.45)]"
+                      : "text-white/60 active:text-white"
+                  )}
+                >
+                  {user?.avatar ? (
+                    <div className="w-[18px] h-[18px] rounded-full overflow-hidden shrink-0 border border-white/20 relative">
+                      <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="18px" />
+                    </div>
+                  ) : (
+                    <User className={cn("w-[18px] h-[18px] shrink-0", active ? "stroke-[2.5]" : "")} />
+                  )}
+                  <span className={cn("text-[10px] tracking-tight whitespace-nowrap", active ? "font-black" : "font-semibold")}>
+                    Tài khoản
+                  </span>
+                </div>
               </button>
             );
           })()}
@@ -783,12 +777,42 @@ function SidebarContent({
             {NAV_MAIN.map((item) => {
               const active = isLinkActive(item.href, item.typeList);
               const Icon = item.icon;
+              if (item.href === "/") {
+                return (
+                  <button
+                    type="button"
+                    key={item.href}
+                    onClick={() => {
+                      setIsMobileOpen(false);
+                      navigateToTab("/");
+                    }}
+                    className={cn(
+                      "w-full relative flex items-center gap-3 lg:gap-2 px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-colors duration-150 group overflow-hidden text-left cursor-pointer",
+                      active
+                        ? "bg-gradient-to-r from-brand-green/20 via-brand-green/10 to-transparent text-brand-green font-bold shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
+                        : "text-white/60 hover:text-white hover:bg-white/5"
+                    )}
+                    aria-current={active ? "page" : undefined}
+                  >
+                    {active && (
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 lg:h-3.5 bg-brand-green rounded-r-full shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
+                    )}
+                    <Icon className={cn("w-[18px] h-[18px] lg:w-4 lg:h-4 shrink-0 transition-transform group-hover:scale-110", active ? "text-brand-green" : "text-white/60 group-hover:text-white")} />
+                    <span className="truncate">{item.label}</span>
+                  </button>
+                );
+              }
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   scroll={false}
-                  onClick={() => setIsMobileOpen(false)}
+                  onClick={() => {
+                    setIsMobileOpen(false);
+                    if (activeTab && activeTab !== "/") {
+                      navigateToTab("/");
+                    }
+                  }}
                   onMouseEnter={() => {
                     if (item.typeList) instantMovieStore.prefetch(item.typeList);
                   }}
@@ -947,15 +971,18 @@ function SidebarContent({
             </span>
 
             {NAV_PERSONAL.map((item) => {
-              const active = isLinkActive(item.href);
+              const active = currentActiveTab === item.href;
               const Icon = item.icon;
               return (
-                <Link
+                <button
+                  type="button"
                   key={item.href}
-                  href={item.href}
-                  onClick={() => setIsMobileOpen(false)}
+                  onClick={() => {
+                    setIsMobileOpen(false);
+                    navigateToTab(item.href);
+                  }}
                   className={cn(
-                    "relative flex items-center gap-3 lg:gap-2 px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-all duration-200 group overflow-hidden",
+                    "w-full relative flex items-center gap-3 lg:gap-2 px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-all duration-150 group overflow-hidden text-left cursor-pointer",
                     active
                       ? "bg-gradient-to-r from-brand-green/20 via-brand-green/10 to-transparent text-brand-green font-bold shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
                       : "text-white/60 hover:text-white hover:bg-white/5"
@@ -967,7 +994,7 @@ function SidebarContent({
                   )}
                   <Icon className={cn("w-[18px] h-[18px] lg:w-4 lg:h-4 shrink-0 transition-transform group-hover:scale-110", active ? "text-brand-green" : "text-white/60 group-hover:text-white")} />
                   <span className="truncate">{item.label}</span>
-                </Link>
+                </button>
               );
             })}
           </div>

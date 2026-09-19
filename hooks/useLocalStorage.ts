@@ -235,7 +235,7 @@ if (typeof window !== "undefined") {
 
 export function useWatchHistory() {
   const [history, setHistory] = useState<WatchHistoryItem[]>(() => getGlobalHistory());
-  const [hydrated, setHydrated] = useState(false);
+  const [hydrated, setHydrated] = useState(() => typeof window !== "undefined");
 
   useEffect(() => {
     setHistory(getGlobalHistory());
@@ -336,7 +336,7 @@ export function useWatchHistory() {
 
 export function useFavorites() {
   const [favorites, setFavorites] = useState<FavoriteItem[]>(() => getGlobalFavorites());
-  const [hydrated, setHydrated] = useState(false);
+  const [hydrated, setHydrated] = useState(() => typeof window !== "undefined");
 
   useEffect(() => {
     setFavorites(getGlobalFavorites());
