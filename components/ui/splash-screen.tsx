@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 export function SplashScreen() {
   const [show, setShow] = useState(true);
   const [isFading, setIsFading] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   const dismiss = useCallback(() => {
     setIsFading(true);
@@ -15,15 +16,23 @@ export function SplashScreen() {
   }, []);
 
   useEffect(() => {
+    // Start filling progress bar smoothly from 0% to 100%
+    const progressTimer = setTimeout(() => {
+      setProgress(100);
+    }, 40);
+
     // Elegant cinema intro: display for 850ms, then smoothly fade out
-    const timer = setTimeout(() => {
+    const fadeTimer = setTimeout(() => {
       setIsFading(true);
       setTimeout(() => {
         setShow(false);
       }, 350);
     }, 850);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(progressTimer);
+      clearTimeout(fadeTimer);
+    };
   }, []);
 
   if (!show) return null;
@@ -64,6 +73,17 @@ export function SplashScreen() {
         <p className="mt-3.5 sm:mt-4 text-xs sm:text-sm md:text-[15px] font-semibold text-white uppercase tracking-[0.25em] sm:tracking-[0.35em]">
           ĐIỆN ẢNH KHÔNG GIỚI HẠN
         </p>
+
+        {/* Sleek Cinema Progress Loading Bar */}
+        <div className="mt-6 sm:mt-7 w-36 sm:w-48 h-1 sm:h-1.5 rounded-full bg-white/[0.08] overflow-hidden relative shadow-inner">
+          <div
+            className="h-full bg-gradient-to-r from-brand-green/30 via-brand-green to-[#2cf580] rounded-full transition-all duration-[800ms] ease-out shadow-[0_0_12px_rgba(32,214,107,0.7)] relative"
+            style={{ width: `${progress}%` }}
+          >
+            {/* Laser leading tip */}
+            <div className="absolute right-0 top-0 bottom-0 w-2.5 bg-white/75 blur-[0.5px] rounded-full" />
+          </div>
+        </div>
       </div>
     </div>
   );
