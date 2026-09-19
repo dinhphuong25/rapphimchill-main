@@ -21,8 +21,7 @@ import {
   Menu,
   Sparkles,
   ChevronRight,
-  ChevronUp,
-  ChevronDown,
+  RotateCcw,
   Layers,
   Search,
   Check,
@@ -65,74 +64,6 @@ const NAV_PERSONAL = [
   { href: "/favorites", label: "Phim Yêu Thích", icon: Heart },
 ];
 
-function ModalScrollButton({
-  scrollRef,
-  className,
-}: {
-  scrollRef: React.RefObject<HTMLDivElement | null>;
-  className?: string;
-}) {
-  const [isScrolledDown, setIsScrolledDown] = useState(false);
-  const [hasScroll, setHasScroll] = useState(false);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-
-    const checkScroll = () => {
-      setHasScroll(el.scrollHeight > el.clientHeight + 30);
-      setIsScrolledDown(el.scrollTop > 80);
-    };
-
-    const timer = setTimeout(checkScroll, 120);
-    el.addEventListener("scroll", checkScroll, { passive: true });
-    window.addEventListener("resize", checkScroll);
-    return () => {
-      clearTimeout(timer);
-      el.removeEventListener("scroll", checkScroll);
-      window.removeEventListener("resize", checkScroll);
-    };
-  }, [scrollRef]);
-
-  const handleToggleScroll = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const el = scrollRef.current;
-    if (!el) return;
-    if (isScrolledDown) {
-      el.scrollTo({ top: 0, behavior: "smooth" });
-    } else {
-      el.scrollBy({ top: 320, behavior: "smooth" });
-    }
-  };
-
-  if (!hasScroll) return null;
-
-  return (
-    <button
-      type="button"
-      onClick={handleToggleScroll}
-      aria-label={isScrolledDown ? "Cuộn lên đầu trang" : "Cuộn xuống xem thêm"}
-      title={isScrolledDown ? "Cuộn lên đầu trang" : "Cuộn xuống xem thêm"}
-      className={cn(
-        "absolute right-4 sm:right-6 bottom-14 sm:bottom-16 z-30",
-        "w-9 h-9 sm:w-10 sm:h-10 rounded-full",
-        "bg-[#111c15]/95 hover:bg-brand-green border border-brand-green/50 hover:border-brand-green",
-        "text-brand-green hover:text-black",
-        "shadow-[0_4px_25px_rgba(0,0,0,0.9),0_0_15px_rgba(32,214,107,0.35)]",
-        "flex items-center justify-center transition-all duration-200 active:scale-95 cursor-pointer group backdrop-blur-md",
-        className
-      )}
-    >
-      {isScrolledDown ? (
-        <ChevronUp className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
-      ) : (
-        <ChevronDown className="w-5 h-5 group-hover:translate-y-0.5 transition-transform animate-bounce" />
-      )}
-    </button>
-  );
-}
-
 function SidebarContent({
   categories: propCategories = [],
   countries: propCountries = [],
@@ -154,6 +85,7 @@ function SidebarContent({
   const [categorySearchQuery, setCategorySearchQuery] = useState("");
   const [countrySearchQuery, setCountrySearchQuery] = useState("");
   const [yearSearchQuery, setYearSearchQuery] = useState("");
+  const [yearDecade, setYearDecade] = useState<"all" | "2020s" | "2010s" | "2000s" | "classic">("all");
 
   // Listen for open-mobile-explore event from mobile header category button
   useEffect(() => {
@@ -218,6 +150,7 @@ function SidebarContent({
     setCategorySearchQuery("");
     setCountrySearchQuery("");
     setYearSearchQuery("");
+    setYearDecade("all");
   }, [pathname, searchParams]);
 
   // Listen for Escape key to close modal
@@ -280,10 +213,6 @@ function SidebarContent({
     );
   }, [currentYearNum]);
 
-  const HIGHLIGHT_YEARS = useMemo(() => {
-    return YEARS_LIST.slice(0, 8);
-  }, [YEARS_LIST]);
-
   const filteredCategories = useMemo(() => {
     if (!categorySearchQuery.trim()) return categories;
     return categories.filter((c) =>
@@ -303,6 +232,15 @@ function SidebarContent({
     return YEARS_LIST.filter((y) => String(y).includes(yearSearchQuery.trim()));
   }, [YEARS_LIST, yearSearchQuery]);
 
+  const displayedYears = useMemo(() => {
+    if (yearSearchQuery.trim()) return filteredYears;
+    if (yearDecade === "2020s") return filteredYears.filter((y) => y >= 2020);
+    if (yearDecade === "2010s") return filteredYears.filter((y) => y >= 2010 && y <= 2019);
+    if (yearDecade === "2000s") return filteredYears.filter((y) => y >= 2000 && y <= 2009);
+    if (yearDecade === "classic") return filteredYears.filter((y) => y < 2000);
+    return filteredYears;
+  }, [filteredYears, yearSearchQuery, yearDecade]);
+
   const [isClosing, setIsClosing] = useState(false);
   const [isSelecting, setIsSelecting] = useState(false);
 
@@ -316,6 +254,10 @@ function SidebarContent({
     setTimeout(() => {
       setActiveModal(null);
       setIsClosing(false);
+      setCategorySearchQuery("");
+      setCountrySearchQuery("");
+      setYearSearchQuery("");
+      setYearDecade("all");
     }, 120);
   };
 
@@ -1056,7 +998,7 @@ function SidebarContent({
       {activeModal === "categories" && (
         <div
           className={cn(
-            "fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-6 transition-opacity duration-150 select-none",
+            "fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 lg:p-6 transition-opacity duration-150 select-none",
             isClosing ? "opacity-0 pointer-events-none" : "opacity-100 animate-in fade-in duration-200"
           )}
           onClick={(e) => {
@@ -1064,9 +1006,9 @@ function SidebarContent({
             e.stopPropagation();
           }}
         >
-          {/* Backdrop */}
+          {/* Backdrop with Cinema Blur */}
           <div
-            className="fixed inset-0 bg-black/80 cursor-pointer"
+            className="fixed inset-0 bg-black/85 backdrop-blur-md cursor-pointer transition-opacity"
             onClick={closeModal}
             onTouchEnd={closeModal}
           />
@@ -1075,55 +1017,74 @@ function SidebarContent({
           <div
             onClick={(e) => e.stopPropagation()}
             className={cn(
-              "relative z-10 w-full sm:max-w-4xl max-h-[85dvh] sm:max-h-[82vh] bg-[#0a0a0a] border-t sm:border border-white/10 rounded-t-[24px] sm:rounded-3xl p-3.5 sm:p-7 flex flex-col shadow-none overflow-hidden transform-gpu",
-              isClosing ? "scale-95 opacity-0 duration-150" : "animate-in slide-in-from-bottom-3 sm:zoom-in-95 duration-200"
+              "relative z-10 w-full sm:max-w-3xl lg:max-w-4xl max-h-[88dvh] sm:max-h-[84vh] bg-[#0c120e]/95 backdrop-blur-2xl border-t sm:border border-emerald-500/20 rounded-t-[28px] sm:rounded-[28px] p-4 sm:p-6 flex flex-col shadow-[0_25px_70px_rgba(0,0,0,0.95),0_0_40px_rgba(32,214,107,0.06)] overflow-hidden transform-gpu",
+              isClosing ? "scale-95 opacity-0 duration-150" : "animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
             )}
           >
+            {/* Top Ambient Glow Line */}
+            <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-brand-green/40 to-transparent pointer-events-none" />
+
             {/* Mobile Sheet Handle Bar */}
-            <div className="sm:hidden w-10 h-1 bg-white/20 rounded-full mx-auto mb-2.5 shrink-0" />
+            <div className="sm:hidden w-12 h-1 bg-white/20 hover:bg-white/30 rounded-full mx-auto mb-3 shrink-0" />
 
             {/* Modal Header */}
-            <div className="relative z-10 flex items-center justify-between pb-3 sm:pb-4 border-b border-white/10 shrink-0 gap-3">
-              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-xl bg-brand-green/20 border border-brand-green/30 flex items-center justify-center text-brand-green shrink-0">
-                  <Sparkles className="w-4 h-4" />
+            <div className="relative z-10 flex items-center justify-between pb-3 sm:pb-4 border-b border-white/[0.08] shrink-0 gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-brand-green/15 border border-brand-green/30 flex items-center justify-center text-brand-green shrink-0 shadow-[0_0_15px_rgba(32,214,107,0.18)]">
+                  <Layers className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <h3 className="text-base sm:text-xl font-extrabold text-white tracking-tight truncate">
-                  Tất Cả Thể Loại
-                </h3>
-                <span className="text-[10px] sm:text-[11px] font-semibold text-brand-green bg-brand-green/10 border border-brand-green/25 px-2 py-0.5 rounded-full shrink-0">
-                  {categories.length} THỂ LOẠI
-                </span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base sm:text-xl font-extrabold text-white tracking-tight truncate">
+                      Tất Cả Thể Loại
+                    </h3>
+                    <span className="text-[10px] sm:text-[11px] font-mono font-bold text-brand-green bg-brand-green/10 border border-brand-green/25 px-2.5 py-0.5 rounded-full shrink-0">
+                      {categories.length} THỂ LOẠI
+                    </span>
+                  </div>
+                  <p className="hidden sm:block text-[11px] text-white/40 mt-0.5">
+                    Khám phá kho phim phong phú theo thể loại yêu thích của bạn
+                  </p>
+                </div>
               </div>
 
               {/* Close Button */}
               <button
                 type="button"
                 onClick={closeModal}
-                className="p-2 rounded-xl bg-[#181818] hover:bg-[#222222] text-white/80 hover:text-white border border-white/10 transition-all shrink-0 active:scale-95"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-all shrink-0 cursor-pointer"
                 aria-label="Đóng bảng"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               </button>
             </div>
 
             {/* Quick Filter Search Box */}
             <div className="relative z-10 my-3 shrink-0">
-              <div className="relative">
-                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+              <div className="relative flex items-center">
+                <Search className="w-4 h-4 absolute left-3.5 text-emerald-400/60 pointer-events-none" />
                 <input
                   type="text"
                   aria-label="Lọc thể loại phim"
-                  style={{ fontSize: "16px" }}
                   value={categorySearchQuery}
                   onChange={(e) => setCategorySearchQuery(e.target.value)}
-                  placeholder="Lọc nhanh thể loại (Hành động, Cổ trang, Kinh dị...)"
-                  className="w-full bg-[#141414] border border-white/10 focus:border-white/25 text-white placeholder-white/30 text-[16px] sm:text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none transition-all"
+                  placeholder="Lọc nhanh thể loại (Hành động, Cổ trang, Kinh dị, Hoạt hình...)"
+                  className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.08] border border-white/10 focus:border-brand-green/50 text-white placeholder-white/35 text-[15px] sm:text-sm rounded-xl sm:rounded-2xl pl-10 pr-9 py-2.5 outline-none transition-all duration-200 shadow-inner"
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
                   spellCheck={false}
                 />
+                {categorySearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setCategorySearchQuery("")}
+                    aria-label="Xóa tìm kiếm"
+                    className="absolute right-2.5 p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1144,25 +1105,27 @@ function SidebarContent({
                         className={cn(
                           "relative flex items-center justify-between p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border text-left transition-all duration-200 group active:scale-95 min-w-0 shadow-none",
                           active
-                            ? "bg-brand-green/20 border-brand-green/50 text-brand-green font-bold"
-                            : "bg-[#141414] hover:bg-[#1f1f1f] border-white/5 hover:border-brand-green/30 text-white/80 hover:text-white"
+                            ? "bg-brand-green text-black border-brand-green font-extrabold shadow-[0_0_20px_rgba(32,214,107,0.35)] scale-[1.02]"
+                            : "bg-white/[0.03] hover:bg-white/[0.08] border-white/[0.06] hover:border-brand-green/40 text-white/80 hover:text-white"
                         )}
                       >
-                        <div className="flex items-center gap-2 min-w-0 truncate">
+                        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 truncate">
                           <span
                             className={cn(
-                              "w-2 h-2 rounded-full shrink-0 transition-all",
+                              "w-1.5 h-1.5 rounded-full shrink-0 transition-all",
                               active
-                                ? "bg-brand-green scale-125"
-                                : "bg-white/20 group-hover:bg-brand-green"
+                                ? "bg-black scale-125"
+                                : "bg-white/25 group-hover:bg-brand-green group-hover:scale-125"
                             )}
                           />
-                          <span className="text-xs sm:text-sm font-semibold truncate">
+                          <span className={cn("text-xs sm:text-sm truncate", active ? "font-black" : "font-semibold")}>
                             {cat.name}
                           </span>
                         </div>
-                        {active && (
-                          <Check className="w-4 h-4 text-brand-green shrink-0 ml-1" />
+                        {active ? (
+                          <Check className="w-4 h-4 text-black shrink-0 ml-1.5 stroke-[2.5]" />
+                        ) : (
+                          <ChevronRight className="w-3.5 h-3.5 text-white/20 group-hover:text-brand-green group-hover:translate-x-0.5 transition-all shrink-0 ml-1 hidden sm:block opacity-0 group-hover:opacity-100" />
                         )}
                       </button>
                     );
@@ -1175,12 +1138,32 @@ function SidebarContent({
               )}
             </div>
 
-            {/* Scroll Button for Easy Browsing */}
-            <ModalScrollButton scrollRef={categoriesScrollRef} />
-
             {/* Modal Bottom Action / Hint */}
-            <div className="relative z-10 pt-2.5 mt-2 border-t border-white/10 flex items-center justify-between text-xs text-white/40 shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-              <span className="truncate mr-2">Bấm vào thể loại để lọc phim ngay</span>
+            <div className="relative z-10 pt-3 mt-1.5 border-t border-white/[0.08] flex items-center justify-between text-xs text-white/50 shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+              <div className="flex items-center gap-2 min-w-0">
+                {currentCategory ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      startTransition(() => {
+                        router.push("/", { scroll: false });
+                      });
+                      closeModal();
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 transition-colors font-medium text-[11px]"
+                  >
+                    <X className="w-3 h-3" />
+                    <span>Bỏ chọn ({activeCategoryObj?.name || currentCategory})</span>
+                  </button>
+                ) : (
+                  <span className="truncate text-white/40 text-[11px] sm:text-xs">
+                    Bấm vào thể loại để lọc phim tức thì
+                  </span>
+                )}
+              </div>
+
               <button
                 type="button"
                 onClick={(e) => {
@@ -1189,9 +1172,9 @@ function SidebarContent({
                   closeModal();
                   router.push("/");
                 }}
-                className="text-brand-green hover:underline font-semibold shrink-0"
+                className="text-brand-green hover:underline font-semibold shrink-0 text-[11px] sm:text-xs"
               >
-                Xem tất cả
+                Xem tất cả phim
               </button>
             </div>
           </div>
@@ -1204,7 +1187,7 @@ function SidebarContent({
       {activeModal === "countries" && (
         <div
           className={cn(
-            "fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-6 transition-opacity duration-150 select-none",
+            "fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 lg:p-6 transition-opacity duration-150 select-none",
             isClosing ? "opacity-0 pointer-events-none" : "opacity-100 animate-in fade-in duration-200"
           )}
           onClick={(e) => {
@@ -1212,9 +1195,9 @@ function SidebarContent({
             e.stopPropagation();
           }}
         >
-          {/* Backdrop */}
+          {/* Backdrop with Cinema Blur */}
           <div
-            className="fixed inset-0 bg-black/80 cursor-pointer"
+            className="fixed inset-0 bg-black/85 backdrop-blur-md cursor-pointer transition-opacity"
             onClick={closeModal}
             onTouchEnd={closeModal}
           />
@@ -1223,68 +1206,87 @@ function SidebarContent({
           <div
             onClick={(e) => e.stopPropagation()}
             className={cn(
-              "relative z-10 w-full sm:max-w-4xl max-h-[85dvh] sm:max-h-[82vh] bg-[#0a0a0a] border-t sm:border border-white/10 rounded-t-[24px] sm:rounded-3xl p-3.5 sm:p-7 flex flex-col shadow-none overflow-hidden transform-gpu",
-              isClosing ? "scale-95 opacity-0 duration-150" : "animate-in slide-in-from-bottom-3 sm:zoom-in-95 duration-200"
+              "relative z-10 w-full sm:max-w-3xl lg:max-w-4xl max-h-[88dvh] sm:max-h-[84vh] bg-[#0c120e]/95 backdrop-blur-2xl border-t sm:border border-emerald-500/20 rounded-t-[28px] sm:rounded-[28px] p-4 sm:p-6 flex flex-col shadow-[0_25px_70px_rgba(0,0,0,0.95),0_0_40px_rgba(32,214,107,0.06)] overflow-hidden transform-gpu",
+              isClosing ? "scale-95 opacity-0 duration-150" : "animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
             )}
           >
+            {/* Top Ambient Glow Line */}
+            <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-brand-green/40 to-transparent pointer-events-none" />
+
             {/* Mobile Sheet Handle Bar */}
-            <div className="sm:hidden w-10 h-1 bg-white/20 rounded-full mx-auto mb-2.5 shrink-0" />
+            <div className="sm:hidden w-12 h-1 bg-white/20 hover:bg-white/30 rounded-full mx-auto mb-3 shrink-0" />
 
             {/* Modal Header */}
-            <div className="relative z-10 flex items-center justify-between pb-3 sm:pb-4 border-b border-white/10 shrink-0 gap-3">
-              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-xl bg-brand-green/20 border border-brand-green/30 flex items-center justify-center text-brand-green shrink-0">
-                  <Globe className="w-4 h-4" />
+            <div className="relative z-10 flex items-center justify-between pb-3 sm:pb-4 border-b border-white/[0.08] shrink-0 gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-brand-green/15 border border-brand-green/30 flex items-center justify-center text-brand-green shrink-0 shadow-[0_0_15px_rgba(32,214,107,0.18)]">
+                  <Globe className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <h3 className="text-base sm:text-xl font-extrabold text-white tracking-tight truncate">
-                  Quốc Gia Điện Ảnh
-                </h3>
-                <span className="text-[10px] sm:text-[11px] font-semibold text-brand-green bg-brand-green/10 border border-brand-green/25 px-2 py-0.5 rounded-full shrink-0">
-                  TOÀN THẾ GIỚI
-                </span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base sm:text-xl font-extrabold text-white tracking-tight truncate">
+                      Quốc Gia Điện Ảnh
+                    </h3>
+                    <span className="text-[10px] sm:text-[11px] font-mono font-bold text-brand-green bg-brand-green/10 border border-brand-green/25 px-2.5 py-0.5 rounded-full shrink-0">
+                      {countries.length || "TOÀN CẦU"} QUỐC GIA
+                    </span>
+                  </div>
+                  <p className="hidden sm:block text-[11px] text-white/40 mt-0.5">
+                    Lọc điện ảnh theo nền văn hóa và xuất xứ phim
+                  </p>
+                </div>
               </div>
 
               {/* Close Button */}
               <button
                 type="button"
                 onClick={closeModal}
-                className="p-2 rounded-xl bg-[#181818] hover:bg-[#222222] text-white/80 hover:text-white border border-white/10 transition-all shrink-0 active:scale-95"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-all shrink-0 cursor-pointer"
                 aria-label="Đóng bảng"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               </button>
             </div>
 
             {/* Quick Filter Search Box */}
             <div className="relative z-10 my-3 shrink-0">
-              <div className="relative">
-                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+              <div className="relative flex items-center">
+                <Search className="w-4 h-4 absolute left-3.5 text-emerald-400/60 pointer-events-none" />
                 <input
                   type="text"
                   aria-label="Lọc quốc gia phim"
-                  style={{ fontSize: "16px" }}
                   value={countrySearchQuery}
                   onChange={(e) => setCountrySearchQuery(e.target.value)}
-                  placeholder="Lọc nhanh quốc gia (Hàn Quốc, Trung Quốc, Âu Mỹ...)"
-                  className="w-full bg-[#141414] border border-white/10 focus:border-white/25 text-white placeholder-white/30 text-[16px] sm:text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none transition-all"
+                  placeholder="Lọc nhanh quốc gia (Hàn Quốc, Trung Quốc, Âu Mỹ, Nhật Bản...)"
+                  className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.08] border border-white/10 focus:border-brand-green/50 text-white placeholder-white/35 text-[15px] sm:text-sm rounded-xl sm:rounded-2xl pl-10 pr-9 py-2.5 outline-none transition-all duration-200 shadow-inner"
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
                   spellCheck={false}
                 />
+                {countrySearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setCountrySearchQuery("")}
+                    aria-label="Xóa tìm kiếm"
+                    className="absolute right-2.5 p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* Countries Interactive Grid */}
+            {/* Countries Interactive Content */}
             <div
               ref={countriesScrollRef}
               className="relative z-10 flex-1 overflow-y-auto pr-1 modal-scroll custom-scrollbar space-y-4 overscroll-contain -webkit-overflow-scrolling-touch"
             >
               {!countrySearchQuery.trim() && (
                 <div>
-                  <span className="text-[11px] font-bold text-white/50 uppercase tracking-widest block mb-2 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-brand-green animate-pulse" />
-                    Quốc Gia Nổi Bật Nhất
+                  <span className="text-[10px] sm:text-[11px] font-bold text-emerald-400/80 uppercase tracking-widest block mb-2 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-brand-green animate-pulse" />
+                    Quốc Gia Nổi Bật
                   </span>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
                     {sortedCountries.slice(0, 8).map((c) => {
@@ -1296,26 +1298,26 @@ function SidebarContent({
                           type="button"
                           onClick={(e) => handleSelectCountry(c.slug, e)}
                           className={cn(
-                            "relative p-3 sm:p-3.5 rounded-xl sm:rounded-2xl border text-center transition-all duration-200 group flex flex-col items-center justify-center gap-1.5 sm:gap-2 active:scale-95 min-w-0 shadow-none",
+                            "relative p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border text-center transition-all duration-200 group flex items-center justify-start gap-2.5 active:scale-95 min-w-0 shadow-none",
                             active
-                              ? "bg-brand-green/20 border-brand-green/50 text-brand-green font-bold"
-                              : "bg-[#141414] hover:bg-[#1f1f1f] border-white/5 hover:border-brand-green/30 text-white/80 hover:text-white"
+                              ? "bg-brand-green text-black border-brand-green font-extrabold shadow-[0_0_18px_rgba(32,214,107,0.35)] scale-[1.02]"
+                              : "bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.08] hover:border-brand-green/40 text-white/90 hover:text-white"
                           )}
                         >
                           {(!code || code === "WW") ? (
-                            <Globe className="w-5 h-5 sm:w-6 sm:h-6 text-brand-green group-hover:scale-110 transition-transform" />
+                            <Globe className={cn("w-5 h-5 shrink-0 transition-transform group-hover:scale-110", active ? "text-black" : "text-brand-green")} />
                           ) : (
                             <img
                               src={`https://flagcdn.com/w80/${code.toLowerCase()}.png`}
                               alt={c.name}
                               loading="lazy"
-                              className="w-7 sm:w-8 h-5 sm:h-5.5 object-cover rounded-[3px] group-hover:scale-110 transition-transform"
+                              className="w-6 sm:w-7 h-4 sm:h-4.5 object-cover rounded-[3px] border border-white/10 shrink-0 group-hover:scale-110 transition-transform"
                               onError={(e) => {
                                 e.currentTarget.style.display = "none";
                               }}
                             />
                           )}
-                          <span className="text-xs sm:text-sm font-bold truncate w-full">
+                          <span className={cn("text-xs sm:text-sm truncate text-left", active ? "font-black" : "font-bold")}>
                             {c.name}
                           </span>
                         </button>
@@ -1326,8 +1328,8 @@ function SidebarContent({
               )}
 
               <div>
-                <span className="text-[11px] font-bold text-white/50 uppercase tracking-widest block mb-2 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-white/30" />
+                <span className="text-[10px] sm:text-[11px] font-bold text-white/40 uppercase tracking-widest block mb-2 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white/20" />
                   {countrySearchQuery.trim() ? "Kết Quả Tìm Kiếm" : "Tất Cả Quốc Gia"}
                 </span>
 
@@ -1342,32 +1344,32 @@ function SidebarContent({
                           type="button"
                           onClick={(e) => handleSelectCountry(c.slug, e)}
                           className={cn(
-                            "relative flex items-center justify-between p-2.5 sm:p-3 rounded-xl border text-left transition-all duration-200 group active:scale-95 min-w-0 shadow-none",
+                            "relative flex items-center justify-between p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border text-left transition-all duration-200 group active:scale-95 min-w-0 shadow-none",
                             active
-                              ? "bg-brand-green/20 border-brand-green/50 text-brand-green font-bold"
-                              : "bg-[#141414] hover:bg-[#1f1f1f] border-white/5 hover:border-brand-green/30 text-white/75 hover:text-white"
+                              ? "bg-brand-green text-black border-brand-green font-extrabold shadow-[0_0_18px_rgba(32,214,107,0.35)] scale-[1.02]"
+                              : "bg-white/[0.03] hover:bg-white/[0.07] border-white/[0.06] hover:border-brand-green/30 text-white/80 hover:text-white"
                           )}
                         >
                           <div className="flex items-center gap-2 min-w-0 truncate">
                             {(!code || code === "WW") ? (
-                              <Globe className="w-4 h-4 text-white/40 group-hover:text-brand-green shrink-0" />
+                              <Globe className={cn("w-4 h-4 shrink-0", active ? "text-black" : "text-white/40 group-hover:text-brand-green")} />
                             ) : (
                               <img
                                 src={`https://flagcdn.com/w40/${code.toLowerCase()}.png`}
                                 alt={c.name}
                                 loading="lazy"
-                                className="w-5 h-3.5 object-cover rounded-[2px] opacity-80 group-hover:opacity-100 shrink-0"
+                                className="w-5 h-3.5 object-cover rounded-[2px] border border-white/10 shrink-0 opacity-80 group-hover:opacity-100"
                                 onError={(e) => {
                                   e.currentTarget.style.display = "none";
                                 }}
                               />
                             )}
-                            <span className="text-xs font-semibold truncate">
+                            <span className={cn("text-xs truncate", active ? "font-black" : "font-medium")}>
                               {c.name}
                             </span>
                           </div>
                           {active && (
-                            <Check className="w-3.5 h-3.5 text-brand-green shrink-0 ml-1" />
+                            <Check className="w-3.5 h-3.5 text-black shrink-0 ml-1 stroke-[2.5]" />
                           )}
                         </button>
                       );
@@ -1381,12 +1383,32 @@ function SidebarContent({
               </div>
             </div>
 
-            {/* Scroll Button for Easy Browsing */}
-            <ModalScrollButton scrollRef={countriesScrollRef} />
-
             {/* Modal Bottom Action / Hint */}
-            <div className="relative z-10 pt-2.5 mt-2 border-t border-white/10 flex items-center justify-between text-xs text-white/40 shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-              <span className="truncate mr-2">Bấm vào quốc gia để lọc phim ngay</span>
+            <div className="relative z-10 pt-3 mt-1.5 border-t border-white/[0.08] flex items-center justify-between text-xs text-white/50 shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+              <div className="flex items-center gap-2 min-w-0">
+                {currentCountry ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      startTransition(() => {
+                        router.push("/", { scroll: false });
+                      });
+                      closeModal();
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 transition-colors font-medium text-[11px]"
+                  >
+                    <X className="w-3 h-3" />
+                    <span>Bỏ chọn ({activeCountryObj?.name || currentCountry})</span>
+                  </button>
+                ) : (
+                  <span className="truncate text-white/40 text-[11px] sm:text-xs">
+                    Bấm vào quốc gia để lọc phim tức thì
+                  </span>
+                )}
+              </div>
+
               <button
                 type="button"
                 onClick={(e) => {
@@ -1395,9 +1417,9 @@ function SidebarContent({
                   closeModal();
                   router.push("/");
                 }}
-                className="text-brand-green hover:underline font-semibold shrink-0"
+                className="text-brand-green hover:underline font-semibold shrink-0 text-[11px] sm:text-xs"
               >
-                Xem tất cả
+                Xem tất cả phim
               </button>
             </div>
           </div>
@@ -1409,7 +1431,7 @@ function SidebarContent({
       {activeModal === "years" && (
         <div
           className={cn(
-            "fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-6 transition-opacity duration-150 select-none",
+            "fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 lg:p-6 transition-opacity duration-150 select-none",
             isClosing ? "opacity-0 pointer-events-none" : "opacity-100 animate-in fade-in duration-200"
           )}
           onClick={(e) => {
@@ -1417,9 +1439,9 @@ function SidebarContent({
             e.stopPropagation();
           }}
         >
-          {/* Backdrop */}
+          {/* Backdrop with Cinema Blur */}
           <div
-            className="fixed inset-0 bg-black/80 cursor-pointer"
+            className="fixed inset-0 bg-black/85 backdrop-blur-md cursor-pointer transition-opacity"
             onClick={closeModal}
             onTouchEnd={closeModal}
           />
@@ -1428,50 +1450,59 @@ function SidebarContent({
           <div
             onClick={(e) => e.stopPropagation()}
             className={cn(
-              "relative z-10 w-full sm:max-w-4xl max-h-[85dvh] sm:max-h-[82vh] bg-[#0a0a0a] border-t sm:border border-white/10 rounded-t-[24px] sm:rounded-3xl p-3.5 sm:p-7 flex flex-col shadow-none overflow-hidden transform-gpu",
-              isClosing ? "scale-95 opacity-0 duration-150" : "animate-in slide-in-from-bottom-3 sm:zoom-in-95 duration-200"
+              "relative z-10 w-full sm:max-w-3xl lg:max-w-4xl max-h-[88dvh] sm:max-h-[84vh] bg-[#0c120e]/95 backdrop-blur-2xl border-t sm:border border-emerald-500/20 rounded-t-[28px] sm:rounded-[28px] p-4 sm:p-6 flex flex-col shadow-[0_25px_70px_rgba(0,0,0,0.95),0_0_40px_rgba(32,214,107,0.06)] overflow-hidden transform-gpu",
+              isClosing ? "scale-95 opacity-0 duration-150" : "animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
             )}
           >
+            {/* Top Ambient Glow Line */}
+            <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-brand-green/40 to-transparent pointer-events-none" />
+
             {/* Mobile Sheet Handle Bar */}
-            <div className="sm:hidden w-10 h-1 bg-white/20 rounded-full mx-auto mb-2.5 shrink-0" />
+            <div className="sm:hidden w-12 h-1 bg-white/20 hover:bg-white/30 rounded-full mx-auto mb-3 shrink-0" />
 
             {/* Modal Header */}
-            <div className="relative z-10 flex items-center justify-between pb-3 sm:pb-4 border-b border-white/10 shrink-0 gap-2">
-              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-xl bg-brand-green/20 border border-brand-green/30 flex items-center justify-center text-brand-green shrink-0">
-                  <Calendar className="w-4 h-4" />
+            <div className="relative z-10 flex items-center justify-between pb-3 sm:pb-4 border-b border-white/[0.08] shrink-0 gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-brand-green/15 border border-brand-green/30 flex items-center justify-center text-brand-green shrink-0 shadow-[0_0_15px_rgba(32,214,107,0.18)]">
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <h3 className="text-base sm:text-xl font-extrabold text-white tracking-tight truncate">
-                  Năm Phát Hành
-                </h3>
-                <span className="hidden xs:inline-flex text-[10px] sm:text-[11px] font-semibold text-brand-green bg-brand-green/10 border border-brand-green/25 px-2 py-0.5 rounded-full shrink-0">
-                  1980 - {currentYearNum}
-                </span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base sm:text-xl font-extrabold text-white tracking-tight truncate">
+                      Năm Phát Hành
+                    </h3>
+                    <span className="text-[10px] sm:text-[11px] font-mono font-bold text-brand-green bg-brand-green/10 border border-brand-green/25 px-2 py-0.5 rounded-full shrink-0">
+                      1980 - {currentYearNum}
+                    </span>
+                  </div>
+                  <p className="hidden sm:block text-[11px] text-white/40 mt-0.5">
+                    Lọc phim theo từng mốc thời gian và thập niên điện ảnh
+                  </p>
+                </div>
               </div>
 
               {/* Close Button */}
               <button
                 type="button"
                 onClick={closeModal}
-                className="p-2 rounded-xl bg-[#181818] hover:bg-[#222222] text-white/80 hover:text-white border border-white/10 transition-all shrink-0 active:scale-95"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-all shrink-0 cursor-pointer"
                 aria-label="Đóng bảng"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               </button>
             </div>
 
             {/* Quick Filter Search Box */}
-            <div className="relative z-10 my-2.5 sm:my-3 shrink-0">
-              <div className="relative">
-                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+            <div className="relative z-10 my-3 shrink-0">
+              <div className="relative flex items-center">
+                <Search className="w-4 h-4 absolute left-3.5 text-emerald-400/60 pointer-events-none" />
                 <input
                   type="text"
                   aria-label="Lọc năm phát hành phim"
-                  style={{ fontSize: "16px" }}
                   value={yearSearchQuery}
                   onChange={(e) => setYearSearchQuery(e.target.value)}
-                  placeholder="Lọc nhanh năm (2026, 2025, 2020...)"
-                  className="w-full bg-[#141414] border border-white/10 focus:border-white/25 text-white placeholder-white/30 text-[16px] sm:text-sm rounded-xl pl-10 pr-9 py-2 sm:py-2.5 outline-none transition-all"
+                  placeholder="Lọc nhanh năm (2026, 2025, 2024, 2020...)"
+                  className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.08] border border-white/10 focus:border-brand-green/50 text-white placeholder-white/35 text-[15px] sm:text-sm rounded-xl sm:rounded-2xl pl-10 pr-9 py-2.5 outline-none transition-all duration-200 shadow-inner"
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
@@ -1480,13 +1511,9 @@ function SidebarContent({
                 {yearSearchQuery && (
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setYearSearchQuery("");
-                    }}
+                    onClick={() => setYearSearchQuery("")}
                     aria-label="Xóa tìm kiếm"
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-white/40 hover:text-white rounded-md"
+                    className="absolute right-2.5 p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -1494,106 +1521,115 @@ function SidebarContent({
               </div>
             </div>
 
-            {/* Years Interactive Content */}
+            {/* Decade Quick-Filter Pills (Shown when not searching) */}
+            {!yearSearchQuery.trim() && (
+              <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar-hidden pb-2.5 shrink-0 select-none">
+                {[
+                  { id: "all", label: "Tất cả các năm" },
+                  { id: "2020s", label: "2020 - Nay" },
+                  { id: "2010s", label: "2010 - 2019" },
+                  { id: "2000s", label: "2000 - 2009" },
+                  { id: "classic", label: "Trước 2000" },
+                ].map((tab) => {
+                  const isTabActive = yearDecade === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setYearDecade(tab.id as any)}
+                      className={cn(
+                        "px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-150 border shrink-0",
+                        isTabActive
+                          ? "bg-brand-green text-black border-brand-green font-bold shadow-[0_0_12px_rgba(32,214,107,0.3)]"
+                          : "bg-white/[0.03] hover:bg-white/[0.06] text-white/70 hover:text-white border-white/[0.08]"
+                      )}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Years Interactive Unified Grid (NO duplicate sections, NO blocking buttons) */}
             <div
               ref={yearsScrollRef}
-              className="relative z-10 flex-1 overflow-y-auto pr-1 modal-scroll custom-scrollbar space-y-3.5 sm:space-y-4 overscroll-contain -webkit-overflow-scrolling-touch"
+              className="relative z-10 flex-1 overflow-y-auto pr-1 modal-scroll custom-scrollbar overscroll-contain -webkit-overflow-scrolling-touch"
             >
-              {!yearSearchQuery.trim() && (
-                <div>
-                  <span className="text-[10px] sm:text-[11px] font-bold text-white/50 uppercase tracking-widest block mb-2 flex items-center gap-1.5 sm:gap-2">
-                    <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-brand-green animate-pulse" />
-                    Năm Gần Đây Nổi Bật
-                  </span>
-                  <div className="grid grid-cols-4 sm:grid-cols-4 gap-1.5 sm:gap-2.5">
-                    {HIGHLIGHT_YEARS.map((y) => {
-                      const active = currentYear === String(y);
-                      return (
-                        <button
-                          key={y}
-                          type="button"
-                          onClick={(e) => handleSelectYear(y, e)}
-                          className={cn(
-                            "relative py-2 sm:py-2.5 px-1.5 sm:px-2 rounded-xl sm:rounded-2xl border text-center transition-all duration-200 group flex flex-col items-center justify-center gap-0.5 active:scale-95 min-w-0 shadow-none",
-                            active
-                              ? "bg-brand-green/20 border-brand-green/50 text-brand-green font-bold"
-                              : "bg-[#141414] hover:bg-[#1f1f1f] border-white/5 hover:border-brand-green/30 text-white/90 hover:text-white"
-                          )}
-                        >
-                          <div className="flex items-center gap-1 sm:gap-1.5">
-                            <span
-                              className={cn(
-                                "w-1.5 h-1.5 rounded-full shrink-0 transition-all",
-                                active
-                                  ? "bg-brand-green scale-125"
-                                  : "bg-white/25 group-hover:bg-brand-green"
-                              )}
-                            />
-                            <span className="text-xs sm:text-sm font-extrabold tracking-tight">
-                              {y}
-                            </span>
-                          </div>
-                          <span
-                            className={cn(
-                              "text-[9px] sm:text-[10px] font-mono",
-                              active ? "text-brand-green font-semibold" : "text-white/35"
-                            )}
-                          >
-                            {active ? "Đang chọn" : "Nổi bật"}
+              {displayedYears.length > 0 ? (
+                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 sm:gap-2.5 pb-4">
+                  {displayedYears.map((y) => {
+                    const active = currentYear === String(y);
+                    const isLatest = y >= currentYearNum - 1; // e.g. 2025, 2026
+                    return (
+                      <button
+                        key={y}
+                        type="button"
+                        onClick={(e) => handleSelectYear(y, e)}
+                        className={cn(
+                          "relative py-2.5 sm:py-3 px-2 rounded-xl sm:rounded-2xl border text-center transition-all duration-200 group active:scale-95 min-w-0 flex flex-col items-center justify-center gap-0.5",
+                          active
+                            ? "bg-brand-green text-black border-brand-green font-black shadow-[0_0_20px_rgba(32,214,107,0.4)] scale-105 z-10"
+                            : isLatest
+                            ? "bg-emerald-500/[0.08] hover:bg-emerald-500/[0.18] border-emerald-500/30 hover:border-brand-green text-white font-bold"
+                            : "bg-white/[0.03] hover:bg-white/[0.08] border-white/[0.06] hover:border-brand-green/40 text-white/80 hover:text-white font-semibold"
+                        )}
+                      >
+                        {/* Subtle pulse dot for latest years when not active */}
+                        {isLatest && !active && (
+                          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-brand-green shadow-[0_0_6px_rgba(32,214,107,0.8)] animate-pulse" />
+                        )}
+
+                        <span className="text-xs sm:text-sm tracking-tight font-semibold">
+                          {y}
+                        </span>
+
+                        {active ? (
+                          <span className="text-[9px] sm:text-[10px] font-bold text-black flex items-center gap-0.5">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" /> Chọn
                           </span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                        ) : isLatest ? (
+                          <span className="text-[9px] text-brand-green font-mono font-medium">
+                            Mới
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="py-12 text-center text-white/40 text-sm">
+                  Không tìm thấy năm nào phù hợp với &quot;{yearSearchQuery}&quot;
                 </div>
               )}
-
-              <div>
-                <span className="text-[10px] sm:text-[11px] font-bold text-white/50 uppercase tracking-widest block mb-2 flex items-center gap-1.5 sm:gap-2">
-                  <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white/30" />
-                  {yearSearchQuery.trim() ? "Kết Quả Tìm Kiếm" : "Tất Cả Các Năm"}
-                </span>
-
-                {filteredYears.length > 0 ? (
-                  <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-1.5 sm:gap-2 pb-4">
-                    {filteredYears.map((y) => {
-                      const active = currentYear === String(y);
-                      return (
-                        <button
-                          key={y}
-                          type="button"
-                          onClick={(e) => handleSelectYear(y, e)}
-                          className={cn(
-                            "relative flex items-center justify-center py-2 sm:py-2.5 px-1 rounded-xl border text-center transition-all duration-200 group active:scale-95 min-w-0 font-medium shadow-none",
-                            active
-                              ? "bg-brand-green/20 border-brand-green/50 text-brand-green font-bold"
-                              : "bg-[#141414] hover:bg-[#1f1f1f] border-white/5 hover:border-brand-green/30 text-white/75 hover:text-white"
-                          )}
-                        >
-                          <span className="text-xs sm:text-sm font-semibold truncate">
-                            {y}
-                          </span>
-                          {active && (
-                            <Check className="w-3 h-3 text-brand-green shrink-0 ml-1" />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="py-12 text-center text-white/40 text-sm">
-                    Không tìm thấy năm nào phù hợp với &quot;{yearSearchQuery}&quot;
-                  </div>
-                )}
-              </div>
             </div>
 
-            {/* Scroll Button for Easy Browsing */}
-            <ModalScrollButton scrollRef={yearsScrollRef} />
-
             {/* Modal Bottom Action / Hint */}
-            <div className="relative z-10 pt-2.5 sm:pt-3 mt-1.5 sm:mt-2 border-t border-white/10 flex items-center justify-between text-xs text-white/40 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-              <span className="truncate mr-2 text-[11px] sm:text-xs">Bấm vào năm để lọc phim ngay</span>
+            <div className="relative z-10 pt-3 mt-1.5 border-t border-white/[0.08] flex items-center justify-between text-xs text-white/50 shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+              <div className="flex items-center gap-2 min-w-0">
+                {currentYear ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      startTransition(() => {
+                        router.push("/", { scroll: false });
+                      });
+                      closeModal();
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 transition-colors font-medium text-[11px]"
+                  >
+                    <X className="w-3 h-3" />
+                    <span>Bỏ chọn (Năm {currentYear})</span>
+                  </button>
+                ) : (
+                  <span className="truncate text-white/40 text-[11px] sm:text-xs">
+                    Bấm vào năm để lọc phim tức thì
+                  </span>
+                )}
+              </div>
+
               <button
                 type="button"
                 onClick={(e) => {
@@ -1602,9 +1638,9 @@ function SidebarContent({
                   closeModal();
                   router.push("/");
                 }}
-                className="text-brand-green hover:underline font-semibold shrink-0 text-xs"
+                className="text-brand-green hover:underline font-semibold shrink-0 text-[11px] sm:text-xs"
               >
-                Xem tất cả
+                Xem tất cả phim
               </button>
             </div>
           </div>
