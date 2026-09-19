@@ -1054,6 +1054,8 @@ function SidebarContent({
           setIsExploreOpen(false);
           setActiveModal("years");
         }}
+        categoriesCount={categories.length}
+        countriesCount={countries.length}
       />
 
       {/* ======================================================== */}
