@@ -1,4 +1,3 @@
-import { getCachedCategories, getCachedCountries } from "@/lib/data";
 import RecentlyWatchedClient from "./recently-client";
 
 export const metadata = {
@@ -6,11 +5,6 @@ export const metadata = {
   description: "Phim bạn đã xem gần đây",
 };
 
-export default async function RecentlyWatchedPage() {
-  const [categories, countries] = await Promise.all([
-    getCachedCategories(),
-    getCachedCountries(),
-  ]);
-
-  return <RecentlyWatchedClient categories={categories as any[]} countries={countries as any[]} />;
+export default function RecentlyWatchedPage() {
+  return <RecentlyWatchedClient />;
 }

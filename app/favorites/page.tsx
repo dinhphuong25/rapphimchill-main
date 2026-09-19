@@ -1,4 +1,3 @@
-import { getCachedCategories, getCachedCountries } from "@/lib/data";
 import FavoritesClient from "./favorites-client";
 
 export const metadata = {
@@ -6,11 +5,6 @@ export const metadata = {
   description: "Danh sách phim yêu thích của bạn",
 };
 
-export default async function FavoritesPage() {
-  const [categories, countries] = await Promise.all([
-    getCachedCategories(),
-    getCachedCountries(),
-  ]);
-
-  return <FavoritesClient categories={categories as any[]} countries={countries as any[]} />;
+export default function FavoritesPage() {
+  return <FavoritesClient />;
 }

@@ -79,6 +79,7 @@ function SidebarContent({
   const [isExploreOpen, setIsExploreOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [optimisticTab, setOptimisticTab] = useState<string | null>(null);
 
   // Active selection modal: 'categories' | 'countries' | 'years' | null
   const [activeModal, setActiveModal] = useState<"categories" | "countries" | "years" | null>(null);
@@ -142,8 +143,9 @@ function SidebarContent({
     }
   }, [categories.length, countries.length]);
 
-  // Close modals and mobile drawer on route change
+  // Close modals, optimistic tabs, and mobile drawer on route change
   useEffect(() => {
+    setOptimisticTab(null);
     setIsMobileOpen(false);
     setIsExploreOpen(false);
     setActiveModal(null);
@@ -234,6 +236,15 @@ function SidebarContent({
     }
     return pathname.startsWith(href);
   };
+
+  const currentActiveTab = useMemo(() => {
+    if (optimisticTab !== null) return optimisticTab;
+    if (isAccountOpen) return "account";
+    if (pathname === "/recently") return "/recently";
+    if (pathname === "/favorites") return "/favorites";
+    if (pathname === "/" && !hasActiveFilters) return "/";
+    return null;
+  }, [optimisticTab, isAccountOpen, pathname, hasActiveFilters]);
 
   const sortedCountries = useMemo(() => {
     return sortCountriesByPopularity(countries);
@@ -359,12 +370,19 @@ function SidebarContent({
         <div className="h-16 px-2 py-1.5 rounded-full bg-[#0B100E]/95 backdrop-blur-2xl border border-white/[0.08] shadow-[0_12px_36px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.05)] flex items-center justify-around touch-manipulation">
           {/* Tab 1: Trang Chủ */}
           {(() => {
-            const active = pathname === "/" && !hasActiveFilters && !isAccountOpen && !isExploreOpen;
+            const active = currentActiveTab === "/";
             return (
               <Link
                 href="/"
                 prefetch={true}
+                onPointerDown={() => setOptimisticTab("/")}
+                onTouchStart={() => {
+                  setOptimisticTab("/");
+                  router.prefetch("/");
+                }}
+                onMouseEnter={() => router.prefetch("/")}
                 onClick={(e) => {
+                  setOptimisticTab("/");
                   setIsMobileOpen(false);
                   setIsAccountOpen(false);
                   setIsExploreOpen(false);
@@ -383,10 +401,10 @@ function SidebarContent({
                   }
                 }}
                 className={cn(
-                  "h-11 transition-all duration-150 active:scale-90 select-none touch-manipulation cursor-pointer flex items-center justify-center",
+                  "h-12 transition-all duration-150 active:scale-[0.97] active:opacity-85 select-none touch-manipulation cursor-pointer flex items-center justify-center",
                   active
                     ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
-                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 active:text-white"
+                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 hover:text-white/80 active:text-white"
                 )}
                 aria-label="Trang Chủ"
               >
@@ -403,12 +421,19 @@ function SidebarContent({
 
           {/* Tab 2: Lịch Sử Xem */}
           {(() => {
-            const active = pathname === "/recently" && !isAccountOpen && !isExploreOpen;
+            const active = currentActiveTab === "/recently";
             return (
               <Link
                 href="/recently"
                 prefetch={true}
+                onPointerDown={() => setOptimisticTab("/recently")}
+                onTouchStart={() => {
+                  setOptimisticTab("/recently");
+                  router.prefetch("/recently");
+                }}
+                onMouseEnter={() => router.prefetch("/recently")}
                 onClick={() => {
+                  setOptimisticTab("/recently");
                   setIsMobileOpen(false);
                   setIsAccountOpen(false);
                   setIsExploreOpen(false);
@@ -418,10 +443,10 @@ function SidebarContent({
                   }
                 }}
                 className={cn(
-                  "h-11 transition-all duration-150 active:scale-90 select-none touch-manipulation cursor-pointer flex items-center justify-center",
+                  "h-12 transition-all duration-150 active:scale-[0.97] active:opacity-85 select-none touch-manipulation cursor-pointer flex items-center justify-center",
                   active
                     ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
-                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 active:text-white"
+                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 hover:text-white/80 active:text-white"
                 )}
                 aria-label="Lịch Sử Xem"
               >
@@ -438,12 +463,19 @@ function SidebarContent({
 
           {/* Tab 3: Phim Yêu Thích */}
           {(() => {
-            const active = pathname === "/favorites" && !isAccountOpen && !isExploreOpen;
+            const active = currentActiveTab === "/favorites";
             return (
               <Link
                 href="/favorites"
                 prefetch={true}
+                onPointerDown={() => setOptimisticTab("/favorites")}
+                onTouchStart={() => {
+                  setOptimisticTab("/favorites");
+                  router.prefetch("/favorites");
+                }}
+                onMouseEnter={() => router.prefetch("/favorites")}
                 onClick={() => {
+                  setOptimisticTab("/favorites");
                   setIsMobileOpen(false);
                   setIsAccountOpen(false);
                   setIsExploreOpen(false);
@@ -453,10 +485,10 @@ function SidebarContent({
                   }
                 }}
                 className={cn(
-                  "h-11 transition-all duration-150 active:scale-90 select-none touch-manipulation cursor-pointer flex items-center justify-center",
+                  "h-12 transition-all duration-150 active:scale-[0.97] active:opacity-85 select-none touch-manipulation cursor-pointer flex items-center justify-center",
                   active
                     ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
-                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 active:text-white"
+                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 hover:text-white/80 active:text-white"
                 )}
                 aria-label="Phim Yêu Thích"
               >
@@ -473,10 +505,16 @@ function SidebarContent({
 
           {/* Tab 4: Tài Khoản */}
           {(() => {
-            const active = isAccountOpen;
+            const active = currentActiveTab === "account";
             return (
               <button
                 type="button"
+                onPointerDown={() => {
+                  if (!isAccountOpen) setOptimisticTab("account");
+                }}
+                onTouchStart={() => {
+                  if (!isAccountOpen) setOptimisticTab("account");
+                }}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -484,16 +522,18 @@ function SidebarContent({
                   setIsMobileOpen(false);
                   setActiveModal(null);
                   if (user) {
-                    setIsAccountOpen(!isAccountOpen);
+                    const nextState = !isAccountOpen;
+                    setIsAccountOpen(nextState);
+                    setOptimisticTab(nextState ? "account" : null);
                   } else {
                     openAuthModal("login");
                   }
                 }}
                 className={cn(
-                  "h-11 transition-all duration-150 active:scale-90 select-none touch-manipulation cursor-pointer flex items-center justify-center",
+                  "h-12 transition-all duration-150 active:scale-[0.97] active:opacity-85 select-none touch-manipulation cursor-pointer flex items-center justify-center",
                   active
                     ? "px-3.5 sm:px-4 rounded-full bg-brand-green text-black font-black gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.4)]"
-                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 active:text-white"
+                    : "flex-1 mx-0.5 flex-col gap-0.5 text-white/60 hover:text-white/80 active:text-white"
                 )}
                 aria-label="Tài Khoản"
               >
