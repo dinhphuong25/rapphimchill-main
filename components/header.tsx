@@ -44,7 +44,7 @@ function HeaderComponent({}: HeaderProps) {
     <>
       <header
         className={cn(
-          "fixed top-0 right-0 z-[90] h-16 sm:h-20 flex items-center transition-all duration-300 select-none bg-cinema-bg border-b border-white/10 shadow-md",
+          "fixed top-0 right-0 z-[90] h-16 sm:h-20 flex items-center transition-all duration-300 select-none bg-cinema-bg border-b border-white/10 shadow-none",
           "left-0 lg:left-[225px]" // Aligns next to Left Sidebar
         )}
       >
