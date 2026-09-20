@@ -205,7 +205,6 @@ export default function GlobalPipPlayer() {
           className="w-full h-full object-contain"
           poster={data.poster}
           playsInline
-          muted={false}
         />
         {/* Play/Pause overlay */}
         <button

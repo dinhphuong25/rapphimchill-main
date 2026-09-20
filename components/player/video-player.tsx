@@ -144,6 +144,7 @@ export default function VideoPlayer({
   const didSeekInitialTimeRef = useRef<boolean>(false);
   const autoplayMutedRef = useRef<boolean>(false);
   const lastNonZeroVolumeRef = useRef<number>(1);
+  const userExplicitlyMutedRef = useRef<boolean>(false);
   const hasUserInteractedRef = useRef<boolean>(false);
   const lastTimeUpdateRef = useRef<number>(0);
   const lastTapRef = useRef<{ time: number; side: 'left' | 'right' | 'center' }>({ time: 0, side: 'center' });
@@ -309,12 +310,9 @@ export default function VideoPlayer({
 
   // Auto Unmute Helper - immediately unmute and restore audio whenever called
   const attemptUnmute = useCallback(() => {
+    userExplicitlyMutedRef.current = false;
     const video = videoRef.current;
     if (!video) return;
-    if (!video.muted && !autoplayMutedRef.current) {
-      setIsAutoplayMuted(false);
-      return;
-    }
 
     video.muted = false;
     const targetVolume = lastNonZeroVolumeRef.current > 0 ? lastNonZeroVolumeRef.current : 1;
@@ -328,12 +326,14 @@ export default function VideoPlayer({
       if (p !== undefined) p.catch(() => {});
     } catch (e) {}
     try { localStorage.setItem('cinema_muted', 'false'); } catch (e) {}
+    try { localStorage.setItem('cinema_volume', String(targetVolume)); } catch (e) {}
   }, []);
 
   // Global user interaction listener to unmute & ensure audio is always active on any interaction
   useEffect(() => {
     const onUserInteraction = () => {
       hasUserInteractedRef.current = true;
+      userExplicitlyMutedRef.current = false;
       const video = videoRef.current;
       if (video) {
         video.muted = false;
@@ -375,17 +375,20 @@ export default function VideoPlayer({
     return () => window.removeEventListener('click', handleClickOutside);
   }, [showSettings]);
 
-  // Load saved volume preferences on mount - ensure sound is ALWAYS enabled when opening
+  // Load saved volume preferences on mount - ensure sound is ALWAYS enabled and ready by default
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const savedVol = localStorage.getItem('cinema_volume');
     const volNum = savedVol !== null ? Number(savedVol) : 1;
+    // Always default to 100% full volume if not set or if 0, guaranteeing audio is on
     const initialVol = !isNaN(volNum) && volNum > 0 && volNum <= 1 ? volNum : 1;
     
     lastNonZeroVolumeRef.current = initialVol;
+    userExplicitlyMutedRef.current = false;
     setVolume(initialVol);
     setIsMuted(false);
     try { localStorage.setItem('cinema_muted', 'false'); } catch (e) {}
+    try { localStorage.setItem('cinema_volume', String(initialVol)); } catch (e) {}
 
     if (videoRef.current) {
       videoRef.current.volume = initialVol;
@@ -416,6 +419,19 @@ export default function VideoPlayer({
       }
     } catch (e) {}
   }, []);
+
+  // Proactively auto-unmute whenever video starts playing - sound is always on and ready
+  useEffect(() => {
+    if (isPlaying && !userExplicitlyMutedRef.current) {
+      const v = videoRef.current;
+      if (v) {
+        if (v.muted) v.muted = false;
+        if (v.volume === 0) v.volume = 1;
+      }
+      if (isMuted) setIsMuted(false);
+      if (volume === 0) setVolume(1);
+    }
+  }, [isPlaying, isMuted, volume]);
 
   // 3. ACTIONS (Strictly defined before any useEffect)
   const showControlsHandler = useCallback(() => {
@@ -493,6 +509,7 @@ export default function VideoPlayer({
     if (videoRef.current) {
       videoRef.current.volume = newVolume;
       videoRef.current.muted = newVolume === 0;
+      userExplicitlyMutedRef.current = newVolume === 0;
       if (newVolume > 0) {
         lastNonZeroVolumeRef.current = newVolume;
         try { localStorage.setItem('cinema_volume', String(newVolume)); } catch (e) {}
@@ -553,6 +570,7 @@ export default function VideoPlayer({
     if (videoRef.current) {
       const nextMuted = !videoRef.current.muted;
       videoRef.current.muted = nextMuted;
+      userExplicitlyMutedRef.current = nextMuted;
       setIsMuted(nextMuted);
       setIsAutoplayMuted(false);
       autoplayMutedRef.current = false;
@@ -949,24 +967,17 @@ export default function VideoPlayer({
           console.warn("Autoplay without sound restriction notice:", err);
           clearInitialWatchdogs();
           setIsLoading(false);
-          // If browser policy rejects unmuted autoplay, immediately begin muted autoplay
-          // so video frames start streaming immediately without stall.
-          // Any user click/touch across the screen will immediately restore full audio via attemptUnmute!
+          // When browser restricts unmuted autoplay, do NOT automatically mute the sound!
+          // Keep sound unmuted and pause playback, so when the user taps to watch,
+          // the video plays with full sound as expected.
           if (err?.name === 'NotAllowedError') {
-            video.muted = true;
-            setIsMuted(true);
-            setIsAutoplayMuted(true);
-            autoplayMutedRef.current = true;
-            video.play().then(() => {
-              clearInitialWatchdogs();
-              setIsLoading(false);
-            }).catch(() => {
-              video.muted = false;
-              setIsMuted(false);
-              setIsAutoplayMuted(false);
-              autoplayMutedRef.current = false;
-              setShowControls(true);
-            });
+            video.muted = false;
+            setIsMuted(false);
+            setIsAutoplayMuted(false);
+            autoplayMutedRef.current = false;
+            setIsPlaying(false);
+            setShowControls(true);
+            try { video.pause(); } catch (e) {}
           }
         });
       }
@@ -1605,6 +1616,14 @@ export default function VideoPlayer({
       hideLoading();
       checkAndSkipIfInAdRange();
 
+      // Always ensure audio is ON and ready unless user explicitly muted
+      if (!userExplicitlyMutedRef.current) {
+        if (video.muted) video.muted = false;
+        if (video.volume === 0) video.volume = 1;
+        setIsMuted(false);
+        setVolume(video.volume > 0 ? video.volume : 1);
+      }
+
       // Đảm bảo không bật Picture-in-Picture và cập nhật MediaSession state
       try {
         video.disablePictureInPicture = true;
@@ -1661,12 +1680,28 @@ export default function VideoPlayer({
       if (video.buffered.length > 0 && !video.paused) {
         const cur = video.currentTime;
         for (let i = 0; i < video.buffered.length; i++) {
-          if (cur >= video.buffered.start(i) && video.buffered.end(i) - cur >= 0.5) {
+          if (cur >= video.buffered.start(i) && cur <= video.buffered.end(i) - 0.5) {
             hideLoading();
             break;
           }
         }
       }
+    };
+
+    const onVolumeChangeEvent = () => {
+      if (!video) return;
+      // If browser/system tried to mute without user explicitly pressing mute, automatically restore sound
+      if ((video.muted || video.volume === 0) && !userExplicitlyMutedRef.current) {
+        try {
+          video.muted = false;
+          video.volume = 1;
+        } catch {}
+        setIsMuted(false);
+        setVolume(1);
+        return;
+      }
+      setIsMuted(video.muted || video.volume === 0);
+      setVolume(video.volume);
     };
 
     video.addEventListener('canplay', hideLoading);
@@ -1681,6 +1716,7 @@ export default function VideoPlayer({
     video.addEventListener('play', onPlayEvent);
     video.addEventListener('pause', onPauseEvent);
     video.addEventListener('durationchange', () => setDuration(video.duration));
+    video.addEventListener('volumechange', onVolumeChangeEvent);
     video.addEventListener('waiting', onWaiting);
     video.addEventListener('error', onErrorEvent);
     
@@ -1700,6 +1736,7 @@ export default function VideoPlayer({
       video.removeEventListener('timeupdate', onTimeUpdate); 
       video.removeEventListener('progress', onProgressBufferCheck);
       video.removeEventListener('ended', onEndedEvent);
+      video.removeEventListener('volumechange', onVolumeChangeEvent);
       video.removeEventListener('waiting', onWaiting);
       video.removeEventListener('error', onErrorEvent);
       if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
@@ -2114,7 +2151,6 @@ export default function VideoPlayer({
           poster={poster} 
           playsInline 
           preload="auto" 
-          muted={isMuted}
         />
 
       {/* Poster Backdrop while video hasn't rendered first frame */}

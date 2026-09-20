@@ -76,7 +76,7 @@ function SidebarContent({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { activeTab, navigateToTab } = useNavigationTab();
+  const { activeTab, setActiveTab, navigateToTab } = useNavigationTab();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isExploreOpen, setIsExploreOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
@@ -162,7 +162,7 @@ function SidebarContent({
     router.prefetch("/favorites");
   }, [router]);
 
-  const handleBottomNavNavigate = (href: string, e?: React.MouseEvent) => {
+  const handleBottomNavNavigate = (href: string) => {
     setIsMobileOpen(false);
     setIsAccountOpen(false);
     setIsExploreOpen(false);
@@ -176,10 +176,6 @@ function SidebarContent({
     }
 
     navigateToTab(href);
-
-    if (pathname === href && !hasActiveFilters) {
-      if (e) e.preventDefault();
-    }
   };
 
   // Listen for Escape key to close modal
@@ -344,8 +340,6 @@ function SidebarContent({
         className="lg:hidden fixed left-2.5 right-2.5 sm:left-auto sm:right-auto sm:w-[440px] z-[140] max-w-[450px] mx-auto pointer-events-auto select-none touch-manipulation"
         style={{
           bottom: "max(0.75rem, calc(env(safe-area-inset-bottom) + 0.35rem))",
-          contain: "layout style",
-          isolation: "isolate",
         }}
       >
         <div className="h-16 px-1.5 py-1.5 rounded-full bg-[#0B100E]/95 backdrop-blur-2xl border border-white/[0.08] shadow-[0_12px_36px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.05)] flex items-center justify-between touch-manipulation">
@@ -353,10 +347,9 @@ function SidebarContent({
           {(() => {
             const active = currentActiveTab === "/";
             return (
-              <Link
-                href="/"
-                prefetch={true}
-                onClick={(e) => handleBottomNavNavigate("/", e)}
+              <button
+                type="button"
+                onClick={() => handleBottomNavNavigate("/")}
                 className="flex-1 h-12 flex items-center justify-center relative select-none touch-manipulation cursor-pointer active:scale-95 transition-transform duration-75"
                 style={{ WebkitTapHighlightColor: "transparent" }}
                 aria-label="Trang Chủ"
@@ -374,7 +367,7 @@ function SidebarContent({
                     Trang chủ
                   </span>
                 </div>
-              </Link>
+              </button>
             );
           })()}
 
@@ -382,10 +375,9 @@ function SidebarContent({
           {(() => {
             const active = currentActiveTab === "/recently";
             return (
-              <Link
-                href="/recently"
-                prefetch={true}
-                onClick={(e) => handleBottomNavNavigate("/recently", e)}
+              <button
+                type="button"
+                onClick={() => handleBottomNavNavigate("/recently")}
                 className="flex-1 h-12 flex items-center justify-center relative select-none touch-manipulation cursor-pointer active:scale-95 transition-transform duration-75"
                 style={{ WebkitTapHighlightColor: "transparent" }}
                 aria-label="Lịch Sử Xem"
@@ -403,7 +395,7 @@ function SidebarContent({
                     Lịch sử
                   </span>
                 </div>
-              </Link>
+              </button>
             );
           })()}
 
@@ -411,10 +403,9 @@ function SidebarContent({
           {(() => {
             const active = currentActiveTab === "/favorites";
             return (
-              <Link
-                href="/favorites"
-                prefetch={true}
-                onClick={(e) => handleBottomNavNavigate("/favorites", e)}
+              <button
+                type="button"
+                onClick={() => handleBottomNavNavigate("/favorites")}
                 className="flex-1 h-12 flex items-center justify-center relative select-none touch-manipulation cursor-pointer active:scale-95 transition-transform duration-75"
                 style={{ WebkitTapHighlightColor: "transparent" }}
                 aria-label="Phim Yêu Thích"
@@ -432,7 +423,7 @@ function SidebarContent({
                     Yêu thích
                   </span>
                 </div>
-              </Link>
+              </button>
             );
           })()}
 
@@ -493,7 +484,7 @@ function SidebarContent({
       {isAccountOpen && (
         <div
           className="lg:hidden fixed left-1/2 -translate-x-1/2 z-[130] w-[calc(100%-24px)] max-w-[390px] max-h-[calc(100dvh-5.5rem)] overflow-y-auto overscroll-contain bg-[#0B100E]/95 backdrop-blur-2xl border border-white/[0.08] rounded-3xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.85)] animate-in fade-in slide-in-from-bottom-5 duration-200 pointer-events-auto select-none"
-          style={{ bottom: "max(5rem, calc(env(safe-area-inset-bottom) + 4.5rem))" }}
+          style={{ bottom: "max(5.25rem, calc(env(safe-area-inset-bottom) + 4.75rem))" }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Top Pill Handle */}
