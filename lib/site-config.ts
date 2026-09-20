@@ -30,7 +30,7 @@ export const DEFAULT_SITE_CONFIG: SiteConfig = {
   siteName: "Hi Phim",
   siteDescription: "Hi Phim - Nền tảng xem phim trực tuyến hàng đầu với hơn 50.000+ tựa phim điện ảnh, phim bộ, anime vietsub chất lượng cao.",
   contactTelegram: "https://t.me/hiphim_support",
-  contactEmail: "contact@hiphim.biz",
+  contactEmail: "contact@hiphim.one",
   announcement: {
     enabled: false,
     text: "Chào mừng bạn đến với Hi Phim! Chúc bạn có những phút giây xem phim thư giãn tuyệt vời.",

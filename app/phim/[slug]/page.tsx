@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
         description: movie.content?.substring(0, 200),
         images: [{ url: posterUrl, width: 300, height: 450, alt: movie.name }],
       },
-      alternates: { canonical: `https://hiphim.biz/phim/${slug}` },
+      alternates: { canonical: `https://hiphim.one/phim/${slug}` },
     };
   } catch {
     return { title: "Phim" };
@@ -210,11 +210,11 @@ async function PhimDetailContent({ slug }: { slug: string }) {
       </div>
 
       {/* SEO structured data */}
-      <MovieStructuredData movie={movie} url={`https://hiphim.biz/phim/${slug}`} />
+      <MovieStructuredData movie={movie} url={`https://hiphim.one/phim/${slug}`} />
       <BreadcrumbStructuredData
         items={[
-          { name: "Trang Chủ", url: "https://hiphim.biz" },
-          { name: movie.name, url: `https://hiphim.biz/phim/${slug}` },
+          { name: "Trang Chủ", url: "https://hiphim.one" },
+          { name: movie.name, url: `https://hiphim.one/phim/${slug}` },
         ]}
       />
     </main>

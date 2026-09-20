@@ -1,6 +1,6 @@
 import type { Movie, MovieListItem, MovieEpisode, Pagination } from "@/lib/types";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://hiphim.biz";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://hiphim.one";
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
 const REFERER = APP_URL;
 

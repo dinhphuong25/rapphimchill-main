@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 
-const DEFAULT_SENDER = process.env.EMAIL_FROM || "noreply@hiphim.biz";
+const DEFAULT_SENDER = process.env.EMAIL_FROM || "noreply@hiphim.one";
 
 export interface SendOtpResult {
   success: boolean;

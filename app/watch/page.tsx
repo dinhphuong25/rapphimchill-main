@@ -30,7 +30,7 @@ export async function generateMetadata({ searchParams }: any) {
     const data = await getMovieData(slug);
     const movie = data?.movie;
     if (!movie?.name) return { title: "Xem phim" };
-    const watchUrl = `https://hiphim.biz/watch?slug=${slug}`;
+    const watchUrl = `https://hiphim.one/watch?slug=${slug}`;
     const canonicalUrl = watchUrl;
     
     const posterUrl = normalizeImageUrl(movie.poster_url);
@@ -44,7 +44,7 @@ export async function generateMetadata({ searchParams }: any) {
       ep: movie.episode_current || '',
       poster: thumbUrl || posterUrl || '',
     });
-    const dynamicOgUrl = `https://hiphim.biz/api/og?${ogParams.toString()}`;
+    const dynamicOgUrl = `https://hiphim.one/api/og?${ogParams.toString()}`;
 
     return {
       title: `${movie.name} - Xem phim HD chất lượng cao | Hi Phim`,
@@ -124,7 +124,7 @@ async function WatchContent({ slug, ep, sv }: { slug: string; ep?: string; sv?: 
 
   const structuredBreadcrumbItems = breadcrumbItems.map(item => ({
     name: item.name,
-    url: `https://hiphim.biz${item.url}`
+    url: `https://hiphim.one${item.url}`
   }));
 
   const bgUrl = normalizeImageUrl(movie.poster_url || movie.thumb_url);
@@ -203,7 +203,7 @@ async function WatchContent({ slug, ep, sv }: { slug: string; ep?: string; sv?: 
       <main className="relative z-10 min-h-0 sm:min-h-screen flex flex-col w-full">
         <MovieStructuredData
           movie={movie}
-          url={`https://hiphim.biz/watch?slug=${slug}`}
+          url={`https://hiphim.one/watch?slug=${slug}`}
         />
         <BreadcrumbStructuredData items={structuredBreadcrumbItems} />
 

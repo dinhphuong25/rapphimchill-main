@@ -14,12 +14,12 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: "https://hiphim.biz/favorites",
+    canonical: "https://hiphim.one/favorites",
   },
   openGraph: {
     title: "Phim yêu thích | Hi Phim",
     description: "Danh sách phim bạn đã đánh dấu yêu thích trên Hi Phim.",
-    url: "https://hiphim.biz/favorites",
+    url: "https://hiphim.one/favorites",
     type: "website",
   },
   twitter: {

@@ -139,7 +139,7 @@ export function MovieStructuredData({ movie, url }: MovieStructuredDataProps) {
         "name": "Hi Phim",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://hiphim.biz/favicon.png"
+          "url": "https://hiphim.one/favicon.png"
         }
       }
     }
@@ -161,7 +161,7 @@ export function WebsiteStructuredData({ url, name = "Hi Phim", description }: We
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": name,
-    "alternateName": ["Hi Phim", "HiPhim", "hiphim.biz"],
+    "alternateName": ["Hi Phim", "HiPhim", "hiphim.one"],
     "url": url,
     "description": description || "Hi Phim - Trang xem phim online HD miễn phí hàng đầu Việt Nam. Kho 50,000+ phim bộ, phim lẻ, anime vietsub mới nhất 2026.",
     "inLanguage": "vi-VN",

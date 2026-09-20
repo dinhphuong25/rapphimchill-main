@@ -186,10 +186,15 @@ export async function proxy(request: NextRequest) {
         });
     }
 
-    // Canonical host normalization: redirect www to apex so Google indexes one URL set only.
-    if (request.nextUrl.hostname === 'www.hiphim.biz' || request.nextUrl.hostname === 'www.rapphimchill.app') {
+    // Canonical host normalization: redirect www to apex, and redirect old domain (hiphim.biz) to hiphim.one
+    if (
+        request.nextUrl.hostname === 'www.hiphim.one' ||
+        request.nextUrl.hostname === 'hiphim.biz' ||
+        request.nextUrl.hostname === 'www.hiphim.biz' ||
+        request.nextUrl.hostname === 'www.rapphimchill.app'
+    ) {
         const canonicalUrl = request.nextUrl.clone();
-        canonicalUrl.hostname = request.nextUrl.hostname.includes('hiphim') ? 'hiphim.biz' : 'rapphimchill.app';
+        canonicalUrl.hostname = request.nextUrl.hostname.includes('rapphimchill') ? 'rapphimchill.app' : 'hiphim.one';
         return NextResponse.redirect(canonicalUrl, 308);
     }
 
@@ -348,6 +353,7 @@ export async function proxy(request: NextRequest) {
                         const parsed = new URL(value, request.nextUrl.origin);
                         const isAllowedHost = 
                             parsed.hostname === request.nextUrl.hostname ||
+                            parsed.hostname === 'hiphim.one' ||
                             parsed.hostname === 'hiphim.biz' ||
                             parsed.hostname === 'rapphimchill.app' ||
                             parsed.hostname.endsWith('phimapi.com');

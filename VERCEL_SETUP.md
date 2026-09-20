@@ -12,7 +12,7 @@ The first successful admin user listing imports existing records from `data/user
 
 ## 2. OTP email
 
-1. Create a Resend account and add `hiphim.biz` as a sending domain.
+1. Create a Resend account and add `hiphim.one` as a sending domain.
 2. Add the SPF, DKIM, and DMARC records shown by Resend to Cloudflare DNS.
 3. Verify the domain in Resend.
 4. Create a Resend API key.
@@ -20,7 +20,7 @@ The first successful admin user listing imports existing records from `data/user
 
 ```env
 RESEND_API_KEY=re_xxxxxxxxx
-EMAIL_FROM=Hi Phim <noreply@hiphim.biz>
+EMAIL_FROM=Hi Phim <noreply@hiphim.one>
 ```
 
 The sender address must be on the verified Resend domain. The app sends OTP through `https://api.resend.com/emails`.

@@ -301,7 +301,7 @@ export async function GET(request: NextRequest) {
                   fontFamily: 'monospace',
                 }}
               >
-                hiphim.biz
+                hiphim.one
               </span>
             </div>
           </div>

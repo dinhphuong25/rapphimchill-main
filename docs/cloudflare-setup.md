@@ -18,7 +18,7 @@
 ### Bước 1: Thêm Tên Miền Vào Cloudflare
 
 1. Đăng nhập vào [Cloudflare Dashboard](https://dash.cloudflare.com/).
-2. Bấm nút **Add a site** (Thêm trang web) ➔ Nhập tên miền của bạn (ví dụ: `hiphim.biz`).
+2. Bấm nút **Add a site** (Thêm trang web) ➔ Nhập tên miền của bạn (ví dụ: `hiphim.one`).
 3. Chọn gói **Free** (Miễn phí) ➔ Bấm **Continue**.
 4. Cloudflare sẽ tự động quét các bản ghi DNS hiện tại. Bấm **Continue**.
 5. Cloudflare sẽ cung cấp 2 địa chỉ Nameservers (ví dụ: `carl.ns.cloudflare.com` và `maya.ns.cloudflare.com`).

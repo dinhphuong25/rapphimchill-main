@@ -73,12 +73,12 @@ export const metadata: Metadata = {
     "phim vietsub",
     "phim thuyết minh",
   ],
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://hiphim.biz"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://hiphim.one"),
   openGraph: {
     title: "Hi Phim - Xem phim theo cách của bạn",
     description:
       "Kho 50,000+ phim bộ, phim lẻ chiếu rạp, anime vietsub mới nhất 2026. Tốc độ cao, chuẩn Full HD/4K, cập nhật liên tục hàng ngày.",
-    url: "https://hiphim.biz",
+    url: "https://hiphim.one",
     siteName: "Hi Phim",
     type: "website",
     locale: "vi_VN",
@@ -105,7 +105,7 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-  alternates: { canonical: "https://hiphim.biz" },
+  alternates: { canonical: "https://hiphim.one" },
   verification: {
     google: "oOs1HYmXd-muliYGGR8v91joJyTEVTbr-mRtnIpXrPY",
     other: {
@@ -211,8 +211,8 @@ export default function RootLayout({
         <SecurityGuard />
 
         {/* Structured Data SEO */}
-        <WebsiteStructuredData url="https://hiphim.biz" />
-        <OrganizationStructuredData url="https://hiphim.biz" />
+        <WebsiteStructuredData url="https://hiphim.one" />
+        <OrganizationStructuredData url="https://hiphim.one" />
 
         <HydrationFix />
 
