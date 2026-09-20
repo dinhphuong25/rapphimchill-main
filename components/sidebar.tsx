@@ -342,7 +342,7 @@ function SidebarContent({
           bottom: "max(0.75rem, calc(env(safe-area-inset-bottom) + 0.35rem))",
         }}
       >
-        <div className="h-16 px-1.5 py-1.5 rounded-full bg-[#0B100E]/95 backdrop-blur-2xl border border-white/[0.08] shadow-[0_12px_36px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.05)] flex items-center justify-between touch-manipulation">
+        <div className="h-16 px-1.5 py-1.5 rounded-full bg-[#0B100E]/95 backdrop-blur-2xl border border-white/[0.08] shadow-none flex items-center justify-between touch-manipulation">
           {/* Tab 1: Trang Chủ */}
           {(() => {
             const active = currentActiveTab === "/";
