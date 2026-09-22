@@ -1190,7 +1190,7 @@ function SidebarContent({
       />
 
       {/* ======================================================== */}
-      {/* UNIFIED MASTER CATEGORY HUB (THỂ LOẠI / QUỐC GIA / NĂM)  */}
+      {/* MODAL DANH MỤC RIÊNG BIỆT (THỂ LOẠI / QUỐC GIA / NĂM)    */}
       {/* ======================================================== */}
       {activeModal && (
         <div
@@ -1214,7 +1214,7 @@ function SidebarContent({
           <div
             onClick={(e) => e.stopPropagation()}
             className={cn(
-              "relative z-10 w-full sm:max-w-3xl lg:max-w-4xl max-h-[90dvh] sm:max-h-[86vh] bg-[#0C1310]/98 backdrop-blur-2xl border-t sm:border border-emerald-500/25 rounded-t-[28px] sm:rounded-[28px] p-3.5 sm:p-6 flex flex-col shadow-[0_25px_70px_rgba(0,0,0,0.95),0_0_40px_rgba(32,214,107,0.1)] overflow-hidden transform-gpu",
+              "relative z-10 w-full sm:max-w-3xl lg:max-w-4xl max-h-[88dvh] sm:max-h-[84vh] bg-[#0C1310]/98 backdrop-blur-2xl border-t sm:border border-emerald-500/25 rounded-t-[28px] sm:rounded-[28px] p-3.5 sm:p-6 flex flex-col shadow-[0_25px_70px_rgba(0,0,0,0.95),0_0_40px_rgba(32,214,107,0.1)] overflow-hidden transform-gpu",
               isClosing ? "scale-95 opacity-0 duration-150" : "animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
             )}
           >
@@ -1224,50 +1224,33 @@ function SidebarContent({
             {/* Mobile Sheet Handle Bar */}
             <div className="sm:hidden w-12 h-1 bg-white/20 hover:bg-white/30 rounded-full mx-auto mb-2 shrink-0" />
 
-            {/* 3-in-1 Master Category Switcher Header */}
-            <div className="relative z-10 flex items-center justify-between pb-3 border-b border-white/[0.08] shrink-0 gap-2">
-              <div className="flex items-center gap-1 sm:gap-1.5 p-1 rounded-xl bg-white/[0.04] border border-white/[0.06] overflow-x-auto scrollbar-none">
-                <button
-                  type="button"
-                  onClick={() => setActiveModal("categories")}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer select-none active:scale-95",
-                    activeModal === "categories"
-                      ? "bg-gradient-to-r from-[#20D66B] to-[#10B981] text-[#050807] shadow-md shadow-[#20D66B]/25"
-                      : "text-white/60 hover:text-white hover:bg-white/[0.05]"
-                  )}
-                >
-                  <Layers className="w-3.5 h-3.5 shrink-0" />
-                  <span>Thể Loại ({categories.length || 24})</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveModal("countries")}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer select-none active:scale-95",
-                    activeModal === "countries"
-                      ? "bg-gradient-to-r from-[#20D66B] to-[#10B981] text-[#050807] shadow-md shadow-[#20D66B]/25"
-                      : "text-white/60 hover:text-white hover:bg-white/[0.05]"
-                  )}
-                >
-                  <Globe className="w-3.5 h-3.5 shrink-0" />
-                  <span>Quốc Gia ({countries.length || 36})</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveModal("years")}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer select-none active:scale-95",
-                    activeModal === "years"
-                      ? "bg-gradient-to-r from-[#20D66B] to-[#10B981] text-[#050807] shadow-md shadow-[#20D66B]/25"
-                      : "text-white/60 hover:text-white hover:bg-white/[0.05]"
-                  )}
-                >
-                  <Calendar className="w-3.5 h-3.5 shrink-0" />
-                  <span>Năm Phát Hành</span>
-                </button>
+            {/* Modal Header: 1 Danh Mục Duy Nhất (Không Switcher, Không Emoji) */}
+            <div className="relative z-10 flex items-center justify-between pb-3 border-b border-white/[0.08] shrink-0 gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#20D66B]/15 border border-[#20D66B]/30 flex items-center justify-center text-[#20D66B] shrink-0 shadow-[0_0_15px_rgba(32,214,107,0.2)]">
+                  {activeModal === "categories" && <Layers className="w-4 h-4 sm:w-4.5 sm:h-4.5" />}
+                  {activeModal === "countries" && <Globe className="w-4 h-4 sm:w-4.5 sm:h-4.5" />}
+                  {activeModal === "years" && <Calendar className="w-4 h-4 sm:w-4.5 sm:h-4.5" />}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base sm:text-lg font-extrabold text-white tracking-tight truncate">
+                      {activeModal === "categories" && "Thể Loại Phim"}
+                      {activeModal === "countries" && "Quốc Gia Điện Ảnh"}
+                      {activeModal === "years" && "Năm Phát Hành"}
+                    </h3>
+                    <span className="text-[10px] sm:text-[11px] font-mono font-bold text-[#20D66B] bg-[#20D66B]/10 border border-[#20D66B]/25 px-2 py-0.5 rounded-full shrink-0">
+                      {activeModal === "categories" && `${categories.length} THỂ LOẠI`}
+                      {activeModal === "countries" && `${countries.length} QUỐC GIA`}
+                      {activeModal === "years" && `NĂM ${currentYearNum}`}
+                    </span>
+                  </div>
+                  <p className="hidden sm:block text-[11px] text-white/40 mt-0.5">
+                    {activeModal === "categories" && "Khám phá kho phim phong phú theo thể loại bạn yêu thích"}
+                    {activeModal === "countries" && "Lọc phim theo xuất xứ và nền điện ảnh quốc gia"}
+                    {activeModal === "years" && "Tìm kiếm các tác phẩm theo năm phát hành và thập niên"}
+                  </p>
+                </div>
               </div>
 
               {/* Close Button */}
@@ -1282,11 +1265,11 @@ function SidebarContent({
             </div>
 
             {/* ==================================================== */}
-            {/* TAB 1: THỂ LOẠI (GENRES SELECTION)                   */}
+            {/* THỂ LOẠI (KHÔNG EMOJI, THIẾT KẾ ĐIỆN ẢNH SANG TRỌNG) */}
             {/* ==================================================== */}
             {activeModal === "categories" && (
               <>
-                {/* Search & Sub-filters */}
+                {/* Search & Sub-filters (KHÔNG EMOJI) */}
                 <div className="relative z-10 pt-2.5 pb-2 shrink-0 space-y-2">
                   <div className="relative flex items-center">
                     <Search className="w-4 h-4 absolute left-3.5 text-emerald-400/60 pointer-events-none" />
@@ -1295,7 +1278,7 @@ function SidebarContent({
                       aria-label="Lọc thể loại phim"
                       value={categorySearchQuery}
                       onChange={(e) => setCategorySearchQuery(e.target.value)}
-                      placeholder="Lọc nhanh thể loại (Hành động, Cổ trang, Tình cảm, Viễn tưởng...)"
+                      placeholder="Lọc nhanh thể loại (Hành động, Cổ trang, Tình cảm...)"
                       className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.08] border border-white/10 focus:border-[#20D66B]/50 text-white placeholder-white/35 text-xs sm:text-sm rounded-xl pl-9 pr-9 py-2 outline-none transition-all duration-200 shadow-inner"
                       autoComplete="off"
                       spellCheck={false}
@@ -1312,15 +1295,15 @@ function SidebarContent({
                     )}
                   </div>
 
-                  {/* Thematic Chips */}
+                  {/* Thematic Chips (KHÔNG EMOJI) */}
                   {!categorySearchQuery.trim() && (
                     <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
                       {[
                         { id: "all", label: "Tất Cả" },
-                        { id: "popular", label: "⭐ Phổ Biến" },
-                        { id: "action", label: "💥 Hành Động" },
-                        { id: "romance", label: "💖 Tình Cảm / Cổ Trang" },
-                        { id: "anime", label: "🎨 Hoạt Hình / Anime" },
+                        { id: "popular", label: "Phổ Biến" },
+                        { id: "action", label: "Hành Động & Kịch Tính" },
+                        { id: "romance", label: "Tình Cảm & Cổ Trang" },
+                        { id: "anime", label: "Hoạt Hình & Khác" },
                       ].map((f) => (
                         <button
                           key={f.id}
@@ -1340,7 +1323,7 @@ function SidebarContent({
                   )}
                 </div>
 
-                {/* Genre Cards Grid */}
+                {/* Genre Cards Grid (KHÔNG EMOJI - Minimalist Cinema Style) */}
                 <div
                   ref={categoriesScrollRef}
                   className="relative z-10 flex-1 overflow-y-auto pr-1 modal-scroll custom-scrollbar overscroll-contain -webkit-overflow-scrolling-touch"
@@ -1349,27 +1332,33 @@ function SidebarContent({
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-2.5 pb-4">
                       {displayedCategories.map((cat, idx) => {
                         const active = currentCategory === cat.slug;
-                        const emoji = getCategoryEmoji(cat.slug, cat.name);
                         return (
                           <button
                             key={`${cat.slug}-${idx}`}
                             type="button"
                             onClick={(e) => handleSelectCategory(cat.slug, e)}
                             className={cn(
-                              "group relative flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-xl border text-left transition-all duration-200 active:scale-95 min-w-0 shadow-none",
+                              "group relative flex items-center justify-between p-2.5 sm:p-3 rounded-xl border text-left transition-all duration-200 active:scale-95 min-w-0 shadow-none",
                               active
                                 ? "bg-[#20D66B]/15 text-[#20D66B] border-[#20D66B]/60 font-black shadow-[0_0_15px_rgba(32,214,107,0.2)]"
                                 : "bg-white/[0.03] hover:bg-white/[0.07] border-white/[0.06] hover:border-[#20D66B]/35 text-white/85 hover:text-white"
                             )}
                           >
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white/[0.05] border border-white/10 flex items-center justify-center text-sm sm:text-base shrink-0 group-hover:scale-110 transition-transform">
-                              {emoji}
+                            <div className="flex items-center gap-2.5 min-w-0 truncate">
+                              <span
+                                className={cn(
+                                  "w-1.5 h-1.5 rounded-full shrink-0 transition-all",
+                                  active
+                                    ? "bg-[#20D66B] scale-125"
+                                    : "bg-white/25 group-hover:bg-[#20D66B] group-hover:scale-125"
+                                )}
+                              />
+                              <span className={cn("text-xs sm:text-sm truncate", active ? "font-black" : "font-semibold")}>
+                                {cat.name}
+                              </span>
                             </div>
-                            <span className={cn("text-xs sm:text-sm font-semibold truncate flex-1", active && "font-black text-[#20D66B]")}>
-                              {cat.name}
-                            </span>
                             {active && (
-                              <Check className="w-3.5 h-3.5 text-[#20D66B] stroke-[3] shrink-0 ml-auto" />
+                              <Check className="w-3.5 h-3.5 text-[#20D66B] stroke-[3] shrink-0 ml-1.5" />
                             )}
                           </button>
                         );
@@ -1425,11 +1414,11 @@ function SidebarContent({
             )}
 
             {/* ==================================================== */}
-            {/* TAB 2: QUỐC GIA (COUNTRIES SELECTION)                */}
+            {/* QUỐC GIA (KHÔNG EMOJI)                               */}
             {/* ==================================================== */}
             {activeModal === "countries" && (
               <>
-                {/* Search & Sub-filters */}
+                {/* Search & Sub-filters (KHÔNG EMOJI) */}
                 <div className="relative z-10 pt-2.5 pb-2 shrink-0 space-y-2">
                   <div className="relative flex items-center">
                     <Search className="w-4 h-4 absolute left-3.5 text-emerald-400/60 pointer-events-none" />
@@ -1438,7 +1427,7 @@ function SidebarContent({
                       aria-label="Lọc quốc gia phim"
                       value={countrySearchQuery}
                       onChange={(e) => setCountrySearchQuery(e.target.value)}
-                      placeholder="Lọc nhanh quốc gia (Hàn Quốc, Trung Quốc, Âu Mỹ, Nhật Bản...)"
+                      placeholder="Lọc nhanh quốc gia (Hàn Quốc, Trung Quốc, Âu Mỹ...)"
                       className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.08] border border-white/10 focus:border-[#20D66B]/50 text-white placeholder-white/35 text-xs sm:text-sm rounded-xl pl-9 pr-9 py-2 outline-none transition-all duration-200 shadow-inner"
                       autoComplete="off"
                       spellCheck={false}
@@ -1455,14 +1444,14 @@ function SidebarContent({
                     )}
                   </div>
 
-                  {/* Regional Chips */}
+                  {/* Regional Chips (KHÔNG EMOJI) */}
                   {!countrySearchQuery.trim() && (
                     <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
                       {[
                         { id: "all", label: "Tất Cả" },
-                        { id: "popular", label: "⭐ Nổi Bật" },
-                        { id: "asia", label: "🌏 Châu Á" },
-                        { id: "west", label: "🌍 Âu Mỹ & Toàn Cầu" },
+                        { id: "popular", label: "Nổi Bật" },
+                        { id: "asia", label: "Châu Á" },
+                        { id: "west", label: "Âu Mỹ & Toàn Cầu" },
                       ].map((f) => (
                         <button
                           key={f.id}
@@ -1498,7 +1487,7 @@ function SidebarContent({
                             type="button"
                             onClick={(e) => handleSelectCountry(c.slug, e)}
                             className={cn(
-                              "group relative flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-xl border text-left transition-all duration-200 active:scale-95 min-w-0 shadow-none",
+                              "group relative flex items-center gap-2.5 p-2 sm:p-2.5 rounded-xl border text-left transition-all duration-200 active:scale-95 min-w-0 shadow-none",
                               active
                                 ? "bg-[#20D66B]/15 text-[#20D66B] border-[#20D66B]/60 font-black shadow-[0_0_15px_rgba(32,214,107,0.2)]"
                                 : "bg-white/[0.03] hover:bg-white/[0.07] border-white/[0.06] hover:border-[#20D66B]/35 text-white/85 hover:text-white"
@@ -1579,11 +1568,11 @@ function SidebarContent({
             )}
 
             {/* ==================================================== */}
-            {/* TAB 3: NĂM PHÁT HÀNH (YEARS SELECTION)               */}
+            {/* NĂM PHÁT HÀNH (KHÔNG EMOJI)                          */}
             {/* ==================================================== */}
             {activeModal === "years" && (
               <>
-                {/* Search & Sub-filters */}
+                {/* Search & Sub-filters (KHÔNG EMOJI) */}
                 <div className="relative z-10 pt-2.5 pb-2 shrink-0 space-y-2">
                   <div className="relative flex items-center">
                     <Search className="w-4 h-4 absolute left-3.5 text-emerald-400/60 pointer-events-none" />
@@ -1609,12 +1598,12 @@ function SidebarContent({
                     )}
                   </div>
 
-                  {/* Decade Chips */}
+                  {/* Decade Chips (KHÔNG EMOJI) */}
                   {!yearSearchQuery.trim() && (
                     <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
                       {[
                         { id: "all", label: "Tất Cả Năm" },
-                        { id: "2020s", label: "🚀 2020s Mới" },
+                        { id: "2020s", label: "2020s Mới" },
                         { id: "2010s", label: "2010s" },
                         { id: "2000s", label: "2000s" },
                         { id: "classic", label: "Kinh Điển" },
