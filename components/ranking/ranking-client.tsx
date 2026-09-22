@@ -17,8 +17,7 @@ import {
   Sparkles,
   Tv,
   Clapperboard,
-  Smile,
-  ChevronRight
+  Smile
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getMovieImageCandidates } from "@/lib/image-helper";
@@ -102,9 +101,9 @@ function RankingImage({
 
   if (!src) {
     return (
-      <div className="w-full h-full bg-[#0c1310] flex flex-col items-center justify-center p-2 text-center select-none">
-        <Film className="w-6 h-6 text-[#20D66B]/60 mb-1" />
-        <span className="text-[10px] text-white/70 line-clamp-1">{movie.name}</span>
+      <div className="w-full h-full bg-[#0c1310] flex flex-col items-center justify-center p-1.5 text-center select-none">
+        <Film className="w-5 h-5 text-[#20D66B]/60 mb-0.5" />
+        <span className="text-[9px] text-white/70 line-clamp-1">{movie.name}</span>
       </div>
     );
   }
@@ -179,46 +178,46 @@ export default function RankingClient({ initialData }: RankingClientProps) {
   return (
     <div className="w-full">
       {/* ========================================================= */}
-      {/* 1. CINEMATIC STAGE HEADER                                 */}
+      {/* 1. CINEMATIC STAGE HEADER (COMPACT ON MOBILE)             */}
       {/* ========================================================= */}
-      <header className="relative mb-6 sm:mb-10 overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-b from-[#111A15] via-[#0D1411] to-[#080D0B] border border-white/[0.08] p-4 sm:p-8 lg:p-10 shadow-2xl">
+      <header className="relative mb-3.5 sm:mb-8 overflow-hidden rounded-xl sm:rounded-3xl bg-gradient-to-b from-[#111A15] via-[#0D1411] to-[#080D0B] border border-white/[0.08] p-3 sm:p-7 lg:p-8 shadow-2xl">
         {/* Ambient Glows */}
-        <div className="absolute top-0 right-0 -mt-16 -mr-16 w-80 h-80 bg-[#20D66B]/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 -mb-20 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 -mt-16 -mr-16 w-64 sm:w-80 h-64 sm:h-80 bg-[#20D66B]/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 -mb-20 w-48 sm:w-64 h-48 sm:h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-4 sm:gap-6">
-          <div className="space-y-2 sm:space-y-3">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-2.5 sm:gap-6">
+          <div className="space-y-1 sm:space-y-2">
             {/* Live Indicator */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#20D66B]/15 border border-[#20D66B]/30 text-[#20D66B] text-[11px] sm:text-xs font-black uppercase tracking-wider">
-              <span className="relative flex h-2 w-2">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#20D66B]/15 border border-[#20D66B]/30 text-[#20D66B] text-[10px] sm:text-xs font-black uppercase tracking-wider">
+              <span className="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#20D66B] opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#20D66B]" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 bg-[#20D66B]" />
               </span>
               <span>Bảng Xếp Hạng Điện Ảnh Hi Phim</span>
             </div>
 
             {/* Page Title */}
-            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white flex items-center gap-2.5">
+            <h1 className="text-lg sm:text-3xl lg:text-4xl font-black tracking-tight text-white flex items-center gap-2">
               <span>BẢNG XẾP HẠNG</span>
               <span className="text-[#20D66B]">PHIM</span>
             </h1>
 
             {/* Dynamic Tab Description */}
-            <p className="text-xs sm:text-sm md:text-base text-white/60 font-medium leading-relaxed">
+            <p className="text-[11px] sm:text-sm text-white/60 font-medium leading-tight sm:leading-relaxed line-clamp-1 sm:line-clamp-none">
               {activeTabMeta.desc}
             </p>
           </div>
 
           {/* Quick stats pill */}
-          <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs font-semibold text-white/70 backdrop-blur-md">
-            <Trophy className="w-4 h-4 text-[#20D66B]" />
+          <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs font-semibold text-white/70 backdrop-blur-md">
+            <Trophy className="w-3.5 h-3.5 text-[#20D66B]" />
             <span>Top 20 xuất sắc nhất</span>
           </div>
         </div>
 
         {/* 5 Period Navigation Tabs */}
-        <div className="mt-5 sm:mt-8 pt-4 sm:pt-6 border-t border-white/[0.06]">
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
+        <div className="mt-3 sm:mt-6 pt-2.5 sm:pt-4 border-t border-white/[0.06]">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-0.5 scrollbar-none -mx-1 px-1">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -227,13 +226,13 @@ export default function RankingClient({ initialData }: RankingClientProps) {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    "group relative flex items-center gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-all duration-200 cursor-pointer select-none active:scale-95",
+                    "group relative flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-all duration-200 cursor-pointer select-none active:scale-95",
                     isActive
-                      ? "bg-gradient-to-r from-[#20D66B] to-[#10B981] text-[#050807] shadow-lg shadow-[#20D66B]/25 scale-[1.02]"
+                      ? "bg-gradient-to-r from-[#20D66B] to-[#10B981] text-[#050807] shadow-md shadow-[#20D66B]/25 scale-[1.02]"
                       : "bg-white/[0.04] hover:bg-white/[0.08] text-white/70 hover:text-white border border-white/[0.06]"
                   )}
                 >
-                  <Icon className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4", isActive ? "stroke-[2.5]" : "stroke-2")} />
+                  <Icon className={cn("w-3.5 h-3.5", isActive ? "stroke-[2.5]" : "stroke-2")} />
                   <span>{tab.label}</span>
                 </button>
               );
@@ -245,8 +244,8 @@ export default function RankingClient({ initialData }: RankingClientProps) {
       {/* ========================================================= */}
       {/* 2. SUB-FILTERS: MOVIE CATEGORY TYPES                      */}
       {/* ========================================================= */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 sm:mb-8 scrollbar-none -mx-1 px-1">
-        <span className="text-[11px] font-bold text-white/40 uppercase tracking-wider mr-1 shrink-0 hidden sm:inline-block">
+      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-2 mb-4 sm:mb-6 scrollbar-none -mx-1 px-1">
+        <span className="text-[10px] sm:text-[11px] font-bold text-white/40 uppercase tracking-wider mr-1 shrink-0 hidden sm:inline-block">
           Thể loại:
         </span>
         {TYPE_FILTERS.map((f) => {
@@ -257,13 +256,13 @@ export default function RankingClient({ initialData }: RankingClientProps) {
               key={f.id}
               onClick={() => setTypeFilter(f.id)}
               className={cn(
-                "flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer select-none active:scale-95",
+                "flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer select-none active:scale-95",
                 isActive
-                  ? "bg-[#20D66B]/20 text-[#20D66B] border border-[#20D66B]/50 shadow-[0_0_15px_rgba(32,214,107,0.15)]"
+                  ? "bg-[#20D66B]/20 text-[#20D66B] border border-[#20D66B]/50 shadow-[0_0_12px_rgba(32,214,107,0.15)]"
                   : "bg-white/[0.03] hover:bg-white/[0.07] text-white/60 hover:text-white border border-white/[0.06]"
               )}
             >
-              <Icon className="w-3.5 h-3.5" />
+              <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               <span>{f.label}</span>
             </button>
           );
@@ -271,10 +270,10 @@ export default function RankingClient({ initialData }: RankingClientProps) {
       </div>
 
       {filteredList.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl bg-white/[0.02] border border-white/[0.06]">
-          <Trophy className="w-12 h-12 text-white/20 mb-3 stroke-1" />
-          <h3 className="text-base sm:text-lg font-bold text-white mb-1">Chưa có phim trong mục này</h3>
-          <p className="text-xs sm:text-sm text-white/50">Vui lòng chọn danh mục hoặc bộ lọc khác để xem bảng xếp hạng.</p>
+        <div className="flex flex-col items-center justify-center py-16 text-center rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+          <Trophy className="w-10 h-10 text-white/20 mb-2 stroke-1" />
+          <h3 className="text-sm sm:text-base font-bold text-white mb-1">Chưa có phim trong mục này</h3>
+          <p className="text-xs text-white/50">Vui lòng chọn danh mục hoặc bộ lọc khác để xem bảng xếp hạng.</p>
         </div>
       ) : (
         <>
@@ -282,15 +281,15 @@ export default function RankingClient({ initialData }: RankingClientProps) {
           {/* 3. TOP 3 HALL OF FAME (PODIUM)                            */}
           {/* ========================================================= */}
           {top3.length > 0 && (
-            <section className="mb-10 sm:mb-14">
-              <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6">
-                <div className="flex items-center gap-2">
-                  <Crown className="w-5 h-5 text-amber-400 fill-amber-400" />
-                  <h2 className="text-base sm:text-xl font-black text-white uppercase tracking-wider">
+            <section className="mb-6 sm:mb-12">
+              <div className="flex items-center justify-between gap-2 mb-3 sm:mb-5">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <Crown className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 fill-amber-400" />
+                  <h2 className="text-sm sm:text-xl font-black text-white uppercase tracking-wider">
                     Top 3 Vinh Danh
                   </h2>
                 </div>
-                <span className="text-[11px] font-bold text-white/40 uppercase tracking-wider">
+                <span className="text-[10px] sm:text-[11px] font-bold text-white/40 uppercase tracking-wider">
                   Bục vinh quang
                 </span>
               </div>
@@ -322,25 +321,23 @@ export default function RankingClient({ initialData }: RankingClientProps) {
               </div>
 
               {/* ----------------------------------------------------- */}
-              {/* MOBILE TOP 3 (Champion Spotlight + Dual Pod Grid)     */}
+              {/* MOBILE TOP 3 PODIUM (Olympic 3-Column Mini Elevation)  */}
               {/* ----------------------------------------------------- */}
-              <div className="block md:hidden space-y-3.5">
-                {/* #1 SPOTLIGHT HERO CARD */}
-                {top3[0] && (
-                  <MobileChampionCard movie={top3[0]} />
-                )}
+              <div className="grid md:hidden grid-cols-3 gap-2 items-end pt-3 pb-1">
+                {/* RANK 2 - SILVER (Left) */}
+                {top3[1] ? (
+                  <MobilePodiumColumn movie={top3[1]} rank={2} theme="silver" />
+                ) : <div />}
 
-                {/* #2 & #3 DUAL COLUMN COMPACT GRID */}
-                {(top3[1] || top3[2]) && (
-                  <div className="grid grid-cols-2 gap-3">
-                    {top3[1] && (
-                      <MobileRunnerUpCard movie={top3[1]} rank={2} theme="silver" />
-                    )}
-                    {top3[2] && (
-                      <MobileRunnerUpCard movie={top3[2]} rank={3} theme="bronze" />
-                    )}
-                  </div>
-                )}
+                {/* RANK 1 - GOLD CHAMPION (Center, Elevated) */}
+                {top3[0] ? (
+                  <MobilePodiumColumn movie={top3[0]} rank={1} theme="gold" isChampion />
+                ) : <div />}
+
+                {/* RANK 3 - BRONZE (Right) */}
+                {top3[2] ? (
+                  <MobilePodiumColumn movie={top3[2]} rank={3} theme="bronze" />
+                ) : <div />}
               </div>
             </section>
           )}
@@ -349,20 +346,20 @@ export default function RankingClient({ initialData }: RankingClientProps) {
           {/* 4. LEADERBOARD LIST (RANK 4 - 20)                         */}
           {/* ========================================================= */}
           {restRankings.length > 0 && (
-            <section className="space-y-3 sm:space-y-4">
-              <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 sm:pb-4 mb-3 sm:mb-4">
-                <div className="flex items-center gap-2">
-                  <Flame className="w-4 h-4 text-[#20D66B]" />
-                  <h3 className="text-sm sm:text-lg font-black text-white uppercase tracking-wider">
+            <section className="space-y-2.5 sm:space-y-3">
+              <div className="flex items-center justify-between border-b border-white/[0.08] pb-2 sm:pb-3 mb-2.5 sm:mb-3">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#20D66B]" />
+                  <h3 className="text-xs sm:text-base font-black text-white uppercase tracking-wider">
                     Bảng Xếp Hạng Hạng 4 - 20
                   </h3>
                 </div>
-                <span className="text-xs text-white/50 font-bold">
+                <span className="text-[11px] sm:text-xs text-white/50 font-bold">
                   {restRankings.length} tác phẩm
                 </span>
               </div>
 
-              <div className="space-y-2.5 sm:space-y-3">
+              <div className="space-y-2 sm:space-y-2.5">
                 {restRankings.map((movie, idx) => {
                   const rank = idx + 4;
                   return (
@@ -375,6 +372,128 @@ export default function RankingClient({ initialData }: RankingClientProps) {
         </>
       )}
     </div>
+  );
+}
+
+/* ============================================================= */
+/* MOBILE 3-PODIUM COLUMN COMPONENT (OLYMPIC 2 - 1 - 3)          */
+/* ============================================================= */
+
+interface MobilePodiumColumnProps {
+  movie: RankingMovieItem;
+  rank: number;
+  theme: "gold" | "silver" | "bronze";
+  isChampion?: boolean;
+}
+
+function MobilePodiumColumn({ movie, rank, theme, isChampion }: MobilePodiumColumnProps) {
+  const rating = getRating(movie);
+
+  const config = {
+    gold: {
+      border: "border-2 border-amber-400/90",
+      glow: "shadow-[0_0_20px_rgba(251,191,36,0.3)]",
+      badgeBg: "bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-black",
+      badgeText: "QUÁN QUÂN",
+      titleColor: "text-amber-300",
+      pedestalBg: "bg-amber-400/15 border-amber-400/40",
+      icon: Crown,
+    },
+    silver: {
+      border: "border border-slate-300/60",
+      glow: "shadow-[0_0_12px_rgba(203,213,225,0.15)]",
+      badgeBg: "bg-gradient-to-r from-slate-200 to-slate-400 text-black",
+      badgeText: "Á QUÂN",
+      titleColor: "text-slate-200",
+      pedestalBg: "bg-slate-300/10 border-slate-300/30",
+      icon: Medal,
+    },
+    bronze: {
+      border: "border border-amber-700/60",
+      glow: "shadow-[0_0_12px_rgba(217,119,6,0.15)]",
+      badgeBg: "bg-gradient-to-r from-amber-700 to-amber-600 text-white",
+      badgeText: "QUÝ QUÂN",
+      titleColor: "text-amber-500",
+      pedestalBg: "bg-amber-700/10 border-amber-700/30",
+      icon: Medal,
+    },
+  }[theme];
+
+  const Icon = config.icon;
+
+  return (
+    <Link
+      href={`/watch?slug=${movie.slug}`}
+      className={cn(
+        "group relative flex flex-col items-center text-center select-none active:scale-95 transition-transform",
+        isChampion ? "-translate-y-2.5 z-10" : "z-0"
+      )}
+    >
+      {/* Top Floating Badge */}
+      <div className={cn(
+        "mb-1 px-1.5 py-0.5 rounded-full text-[9px] font-black tracking-wider flex items-center gap-0.5 shadow-md",
+        config.badgeBg
+      )}>
+        <Icon className="w-2.5 h-2.5 fill-current shrink-0" />
+        <span>#{rank}</span>
+      </div>
+
+      {/* Poster Frame (Portrait 2:3 ratio) */}
+      <div className={cn(
+        "relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-[#0A0E0C] transition-all",
+        config.border,
+        config.glow
+      )}>
+        <RankingImage
+          movie={movie}
+          type="poster"
+          sizes="33vw"
+          className="object-cover group-hover:scale-105 transition-transform duration-300"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+
+        {/* Bottom Poster Tag: Rating or Quality */}
+        <div className="absolute bottom-1 left-1 right-1 flex items-center justify-between z-10 px-0.5">
+          {rating ? (
+            <span className="flex items-center gap-0.5 px-1 py-0.2 rounded bg-black/80 backdrop-blur-sm text-amber-400 text-[9px] font-black">
+              <Star className="w-2.5 h-2.5 fill-amber-400" />
+              {rating}
+            </span>
+          ) : <span />}
+
+          {movie.quality && (
+            <span className="px-1 py-0.2 rounded bg-black/80 backdrop-blur-sm text-[#20D66B] text-[8px] font-bold">
+              {movie.quality}
+            </span>
+          )}
+        </div>
+
+        {/* Play Icon on Center */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity bg-black/40">
+          <div className="w-8 h-8 rounded-full bg-[#20D66B] flex items-center justify-center text-[#050807] shadow-lg">
+            <Play className="w-3.5 h-3.5 fill-[#050807] ml-0.5" />
+          </div>
+        </div>
+      </div>
+
+      {/* Movie Info & Pedestal Base */}
+      <div className={cn(
+        "w-full mt-1.5 p-1.5 rounded-lg border flex flex-col justify-between",
+        config.pedestalBg,
+        isChampion ? "min-h-[50px]" : "min-h-[46px]"
+      )}>
+        <h4 className={cn("text-[11px] font-bold leading-tight line-clamp-1", config.titleColor)}>
+          {movie.name}
+        </h4>
+        <div className="flex items-center justify-center gap-1 mt-0.5 text-[9px] text-white/50">
+          <span>{movie.year || "Phim Hot"}</span>
+          <span>•</span>
+          <span className="text-[#20D66B] font-bold flex items-center gap-0.5">
+            <Play className="w-2 h-2 fill-current" /> Xem
+          </span>
+        </div>
+      </div>
+    </Link>
   );
 }
 
@@ -531,165 +650,6 @@ function DesktopPodiumCard({ movie, rank, theme, isChampion }: DesktopPodiumCard
 }
 
 /* ============================================================= */
-/* MOBILE CHAMPION CARD (#1 SPOTLIGHT)                           */
-/* ============================================================= */
-
-function MobileChampionCard({ movie }: { movie: RankingMovieItem }) {
-  const rating = getRating(movie);
-
-  return (
-    <Link
-      href={`/watch?slug=${movie.slug}`}
-      className="group relative block rounded-2xl overflow-hidden bg-[#0F1613] border-2 border-amber-400/80 shadow-[0_0_30px_rgba(251,191,36,0.22)] active:scale-[0.98] transition-transform"
-    >
-      {/* Visual Backdrop */}
-      <div className="relative aspect-[16/9] w-full overflow-hidden bg-[#0A0E0C]">
-        <RankingImage
-          movie={movie}
-          type="backdrop"
-          sizes="100vw"
-          className="object-cover"
-        />
-        {/* Vignette Gradients */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0F1613] via-[#0F1613]/40 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent" />
-
-        {/* Big Watermark Rank #01 */}
-        <span className="absolute bottom-2 right-3 text-5xl font-black font-mono italic text-amber-400/25 pointer-events-none select-none">
-          #01
-        </span>
-
-        {/* Top Badges */}
-        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-10">
-          <div className="px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-black text-[10px] font-black tracking-wider flex items-center gap-1 shadow-md">
-            <Crown className="w-3.5 h-3.5 fill-current" />
-            <span>QUÁN QUÂN #1</span>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            {rating && (
-              <span className="px-2 py-0.5 rounded-full bg-black/75 backdrop-blur-md text-amber-400 text-[10px] font-black border border-amber-400/40 flex items-center gap-0.5">
-                <Star className="w-3.5 h-3.5 fill-amber-400" />
-                {rating}
-              </span>
-            )}
-            {movie.quality && (
-              <span className="px-2 py-0.5 rounded bg-black/75 backdrop-blur-md text-[#20D66B] text-[10px] font-bold border border-[#20D66B]/30">
-                {movie.quality}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Play Icon Center Button */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-12 h-12 rounded-full bg-[#20D66B] flex items-center justify-center text-[#050807] shadow-xl shadow-[#20D66B]/30 scale-95 group-active:scale-90 transition-transform">
-            <Play className="w-5 h-5 fill-[#050807] ml-0.5" />
-          </div>
-        </div>
-      </div>
-
-      {/* Info Bottom Bar */}
-      <div className="p-3.5 flex items-center justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <h3 className="text-base font-black text-white group-hover:text-[#20D66B] transition-colors truncate">
-            {movie.name}
-          </h3>
-          <p className="text-xs text-white/50 truncate mt-0.5">
-            {movie.origin_name || movie.year || "Phim Điện Ảnh Hot"}
-          </p>
-        </div>
-
-        <span className="shrink-0 px-3 py-1.5 rounded-lg bg-[#20D66B] text-[#050807] text-xs font-black flex items-center gap-1 shadow-sm">
-          <span>Xem ngay</span>
-          <ChevronRight className="w-3.5 h-3.5 stroke-[3]" />
-        </span>
-      </div>
-    </Link>
-  );
-}
-
-/* ============================================================= */
-/* MOBILE RUNNER-UP CARDS (#2 & #3 DUAL GRID)                    */
-/* ============================================================= */
-
-interface MobileRunnerUpCardProps {
-  movie: RankingMovieItem;
-  rank: number;
-  theme: "silver" | "bronze";
-}
-
-function MobileRunnerUpCard({ movie, rank, theme }: MobileRunnerUpCardProps) {
-  const rating = getRating(movie);
-
-  const config = {
-    silver: {
-      border: "border-slate-300/40",
-      badgeBg: "bg-gradient-to-r from-slate-200 to-slate-400 text-black",
-      label: "Á QUÂN",
-      rankColor: "text-slate-300",
-    },
-    bronze: {
-      border: "border-amber-700/50",
-      badgeBg: "bg-gradient-to-r from-amber-700 to-amber-600 text-white",
-      label: "QUÝ QUÂN",
-      rankColor: "text-amber-600",
-    },
-  }[theme];
-
-  return (
-    <Link
-      href={`/watch?slug=${movie.slug}`}
-      className={cn(
-        "group relative flex flex-col rounded-xl overflow-hidden bg-[#0F1613] border shadow-md active:scale-[0.98] transition-transform",
-        config.border
-      )}
-    >
-      {/* Poster Image */}
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#0A0E0C]">
-        <RankingImage
-          movie={movie}
-          type="backdrop"
-          sizes="50vw"
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0F1613] via-transparent to-black/30" />
-
-        {/* Rank Badge */}
-        <div className="absolute top-2 left-2 z-10">
-          <div className={cn("px-2 py-0.5 rounded-full text-[9px] font-black tracking-wider flex items-center gap-0.5 shadow", config.badgeBg)}>
-            <Medal className="w-3 h-3 fill-current" />
-            <span>#{rank} {config.label}</span>
-          </div>
-        </div>
-
-        {/* Rating or Quality */}
-        {rating && (
-          <div className="absolute top-2 right-2 z-10 px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-md text-amber-400 text-[9px] font-black flex items-center gap-0.5">
-            <Star className="w-2.5 h-2.5 fill-amber-400" />
-            <span>{rating}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Info */}
-      <div className="p-2.5 flex flex-col justify-between flex-1">
-        <h4 className="text-xs font-bold text-white group-hover:text-[#20D66B] transition-colors line-clamp-1">
-          {movie.name}
-        </h4>
-        <div className="flex items-center justify-between mt-1 text-[10px] text-white/50">
-          <span>{movie.year || "Phim Hot"}</span>
-          <span className="flex items-center gap-1 text-[#20D66B] font-bold">
-            <Play className="w-2.5 h-2.5 fill-current" />
-            Xem
-          </span>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-/* ============================================================= */
 /* LEADERBOARD ROW COMPONENT (RANK 4 - 20)                        */
 /* ============================================================= */
 
@@ -705,13 +665,13 @@ function LeaderboardRow({ movie, rank }: LeaderboardRowProps) {
   return (
     <Link
       href={`/watch?slug=${movie.slug}`}
-      className="group relative flex items-center gap-2.5 sm:gap-4 p-2 sm:p-3.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.06] hover:border-[#20D66B]/40 transition-all duration-200 active:scale-[0.99]"
+      className="group relative flex items-center gap-2 sm:gap-4 p-1.5 sm:p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.06] hover:border-[#20D66B]/40 transition-all duration-200 active:scale-[0.99]"
     >
       {/* Big Typographic Rank Number */}
-      <div className="w-9 sm:w-14 shrink-0 text-center">
+      <div className="w-8 sm:w-14 shrink-0 text-center">
         <span
           className={cn(
-            "text-base sm:text-2xl font-black font-mono italic tracking-tighter transition-colors",
+            "text-sm sm:text-2xl font-black font-mono italic tracking-tighter transition-colors",
             isTop10
               ? "text-[#20D66B] group-hover:drop-shadow-[0_0_8px_rgba(32,214,107,0.5)]"
               : "text-white/30 group-hover:text-white/60"
@@ -722,7 +682,7 @@ function LeaderboardRow({ movie, rank }: LeaderboardRowProps) {
       </div>
 
       {/* Thumbnail Poster */}
-      <div className="relative w-12 sm:w-16 aspect-[2/3] shrink-0 rounded-lg overflow-hidden bg-[#0A0E0C] border border-white/[0.08] group-hover:border-[#20D66B]/50 transition-colors">
+      <div className="relative w-11 sm:w-16 aspect-[2/3] shrink-0 rounded-lg overflow-hidden bg-[#0A0E0C] border border-white/[0.08] group-hover:border-[#20D66B]/50 transition-colors">
         <RankingImage
           movie={movie}
           type="poster"
@@ -730,7 +690,7 @@ function LeaderboardRow({ movie, rank }: LeaderboardRowProps) {
           className="object-cover group-hover:scale-105 transition-transform duration-300"
         />
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
-          <Play className="w-4 h-4 fill-[#20D66B] text-[#20D66B]" />
+          <Play className="w-3.5 h-3.5 fill-[#20D66B] text-[#20D66B]" />
         </div>
       </div>
 
@@ -739,24 +699,24 @@ function LeaderboardRow({ movie, rank }: LeaderboardRowProps) {
         <h4 className="text-xs sm:text-base font-bold text-white group-hover:text-[#20D66B] transition-colors truncate">
           {movie.name}
         </h4>
-        <p className="text-[11px] sm:text-xs text-white/50 truncate mt-0.5">
+        <p className="text-[10px] sm:text-xs text-white/50 truncate mt-0.5">
           {movie.origin_name || `${movie.year || ""}`}
         </p>
 
         {/* Badges & Meta */}
-        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1 sm:mt-2">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1 sm:mt-1.5">
           {movie.quality && (
-            <span className="px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold bg-[#20D66B]/15 text-[#20D66B] border border-[#20D66B]/30">
+            <span className="px-1.5 py-0.2 sm:py-0.5 rounded text-[8.5px] sm:text-[10px] font-bold bg-[#20D66B]/15 text-[#20D66B] border border-[#20D66B]/30">
               {movie.quality}
             </span>
           )}
           {movie.year && (
-            <span className="text-[10px] sm:text-xs text-white/50 font-medium">
+            <span className="text-[9.5px] sm:text-xs text-white/50 font-medium">
               {movie.year}
             </span>
           )}
           {movie.episode_current && (
-            <span className="text-[10px] sm:text-xs text-white/40 font-medium hidden xs:inline-block">
+            <span className="text-[9.5px] sm:text-xs text-white/40 font-medium hidden xs:inline-block">
               • {movie.episode_current}
             </span>
           )}
@@ -769,10 +729,10 @@ function LeaderboardRow({ movie, rank }: LeaderboardRowProps) {
       </div>
 
       {/* Stats & Watch CTA */}
-      <div className="flex items-center gap-2.5 sm:gap-5 shrink-0">
+      <div className="flex items-center gap-2 sm:gap-5 shrink-0">
         {rating && (
-          <div className="flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md bg-amber-400/10 border border-amber-400/20 text-amber-400 font-bold text-[11px] sm:text-xs">
-            <Star className="w-3 h-3 fill-amber-400" />
+          <div className="flex items-center gap-1 px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-md bg-amber-400/10 border border-amber-400/20 text-amber-400 font-bold text-[10px] sm:text-xs">
+            <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-amber-400" />
             <span>{rating}</span>
           </div>
         )}
@@ -782,8 +742,8 @@ function LeaderboardRow({ movie, rank }: LeaderboardRowProps) {
           <span>{formatViews(movie.view)}</span>
         </div>
 
-        <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/[0.05] group-hover:bg-[#20D66B] text-white/50 group-hover:text-[#050807] border border-white/[0.08] group-hover:border-[#20D66B] flex items-center justify-center transition-all duration-200">
-          <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current ml-0.5" />
+        <div className="w-6 h-6 sm:w-9 sm:h-9 rounded-full bg-white/[0.05] group-hover:bg-[#20D66B] text-white/50 group-hover:text-[#050807] border border-white/[0.08] group-hover:border-[#20D66B] flex items-center justify-center transition-all duration-200">
+          <Play className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 fill-current ml-0.5" />
         </div>
       </div>
     </Link>
