@@ -31,7 +31,7 @@ export default async function RankingPage() {
 
   return (
     <>
-      <main className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 pt-24 pb-20">
+      <main className="max-w-[1600px] mx-auto px-3 sm:px-8 lg:px-12 xl:px-16 pt-20 sm:pt-24 pb-32 sm:pb-28">
         <RankingClient initialData={rankingsData} />
       </main>
     </>
