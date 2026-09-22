@@ -1,5 +1,4 @@
 import { memo } from "react";
-import BrandLogo from "@/components/ui/brand-logo";
 import Script from "next/script";
 
 interface FooterProps {
@@ -9,21 +8,28 @@ interface FooterProps {
 function FooterComponent({}: FooterProps = {}) {
   return (
     <footer className="w-full mt-auto py-4 sm:py-5 mb-20 lg:mb-0 border-t border-white/[0.08] bg-[#050807] select-none">
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col md:grid md:grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-4 md:gap-6">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col items-center justify-center text-center gap-1.5 sm:gap-2">
         
-        {/* Bên Trái (Desktop only): Logo & Slogan */}
-        <div className="hidden md:flex flex-col items-start text-left gap-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <BrandLogo size="sm" showSlogan={false} />
-          </div>
+        {/* Dòng 1: Copyright, Bản quyền & Miễn trừ trách nhiệm */}
+        <p className="text-[11px] sm:text-[12px] font-medium text-white/60 leading-normal">
+          © 2026 Hi Phim. Mọi bản quyền được bảo lưu và miễn trừ trách nhiệm pháp lý.
+        </p>
 
-          <p className="text-[11px] sm:text-[12px] text-white/60 leading-normal">
-            Nền tảng xem phim phi lợi nhuận.
-          </p>
-        </div>
+        {/* Dòng 2: Người quản lý & phát triển */}
+        <p className="text-[11px] sm:text-[12px] text-white/70 leading-normal">
+          Được quản lý và phát triển bởi{" "}
+          <a
+            href="https://www.facebook.com/dinhphuong205/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-brand-green font-bold hover:underline hover:text-brand-green-hover transition-colors"
+          >
+            Kim Đình Phương
+          </a>
+        </p>
 
-        {/* Ở Giữa (Chính giữa trang desktop, Mobile nằm dưới cùng): DMCA Badge + Đã Thông Báo Bộ Công Thương */}
-        <div className="order-last md:order-none flex items-center justify-center gap-3 pt-1 md:pt-0 shrink-0">
+        {/* Dòng 3: Badges Chứng Nhận (DMCA + Đã Thông Báo Bộ Công Thương) */}
+        <div className="flex items-center justify-center gap-3 pt-1">
           {/* DMCA Badge */}
           <a
             href="https://www.dmca.com/Protection/Status.aspx?ID=49260aed-2988-411a-9305-320180b35777"
@@ -57,27 +63,6 @@ function FooterComponent({}: FooterProps = {}) {
               loading="lazy"
             />
           </a>
-        </div>
-
-        {/* Bên Phải: Bản quyền & Người quản lý (Mobile: Căn giữa, Desktop: Căn phải) */}
-        <div className="order-first md:order-none flex flex-col items-center md:items-end text-center md:text-right gap-1 min-w-0">
-          {/* Dòng 1: Copyright, Bản quyền & Miễn trừ trách nhiệm */}
-          <p className="text-[11px] sm:text-[12px] font-medium text-white/60 leading-normal">
-            © 2026 Hi Phim. Mọi bản quyền được bảo lưu và miễn trừ trách nhiệm pháp lý.
-          </p>
-
-          {/* Dòng 2: Người quản lý & phát triển */}
-          <p className="text-[11px] sm:text-[12px] text-white/70 leading-normal">
-            Được quản lý và phát triển bởi{" "}
-            <a
-              href="https://www.facebook.com/dinhphuong205/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-brand-green font-bold hover:underline hover:text-brand-green-hover transition-colors"
-            >
-              Kim Đình Phương
-            </a>
-          </p>
         </div>
 
       </div>
