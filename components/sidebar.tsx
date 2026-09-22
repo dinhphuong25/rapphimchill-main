@@ -53,7 +53,7 @@ interface SidebarProps {
 
 const NAV_MAIN = [
   { href: "/", label: "Trang Chủ", icon: Home },
-  // { href: "/bang-xep-hang", label: "Bảng Xếp Hạng", icon: Trophy }, // Tạm ẩn theo yêu cầu
+  { href: "/bang-xep-hang", label: "Bảng Xếp Hạng", icon: Trophy },
   { href: "/?typeList=phim-chieu-rap", label: "Chiếu Rạp", icon: Clapperboard, typeList: "phim-chieu-rap" },
   { href: "/?typeList=phim-bo", label: "Phim Bộ", icon: Tv, typeList: "phim-bo" },
   { href: "/?typeList=phim-le", label: "Phim Lẻ", icon: Film, typeList: "phim-le" },
@@ -395,15 +395,15 @@ function SidebarContent({
       {/* ======================================================== */}
       <nav
         aria-label="Điều hướng chính"
-        className="lg:hidden fixed left-0 right-0 bottom-0 z-[140] w-full max-w-lg mx-auto pointer-events-auto select-none touch-manipulation"
+        className="lg:hidden fixed left-0 right-0 bottom-0 z-[140] w-full pointer-events-auto select-none touch-manipulation"
         style={{
           paddingBottom: "max(0.35rem, env(safe-area-inset-bottom, 0px))",
         }}
       >
-        {/* Nav Bar Container with Curved Scoop Notch */}
-        <div className="relative w-full h-[58px]">
-          {/* Background Layer: Left Wing + Center SVG Notch + Right Wing */}
-          <div className="absolute inset-0 flex items-stretch pointer-events-none">
+        {/* Seamless Full-Width Background Underlay spanning notch to screen bottom */}
+        <div className="absolute inset-0 flex flex-col pointer-events-none">
+          {/* Top Notch Row (58px) */}
+          <div className="w-full h-[58px] flex items-stretch">
             {/* Left Wing with Top Border */}
             <div className="flex-1 bg-[#0B100E]/95 backdrop-blur-2xl border-t border-white/[0.08]" />
 
@@ -443,11 +443,16 @@ function SidebarContent({
             <div className="flex-1 bg-[#0B100E]/95 backdrop-blur-2xl border-t border-white/[0.08]" />
           </div>
 
-          {/* Additional background extension for safe-area-inset-bottom */}
-          <div className="absolute top-[57px] left-0 right-0 -bottom-[env(safe-area-inset-bottom,20px)] bg-[#0B100E]/95 backdrop-blur-2xl pointer-events-none" />
+          {/* Bottom Extension: Seamlessly fills safe-area-inset-bottom and padding to screen bottom */}
+          <div className="flex-1 w-full bg-[#0B100E]/95 backdrop-blur-2xl -mt-px" />
+        </div>
 
-          {/* Interactive Navigation Elements Layer */}
-          <div className="relative z-10 w-full h-full flex items-center justify-between px-1">
+        {/* Rubber-band overscroll protection for iOS bouncing */}
+        <div className="absolute -bottom-12 left-0 right-0 h-12 bg-[#0B100E] pointer-events-none" />
+
+        {/* Interactive Navigation Elements Layer */}
+        <div className="relative z-10 w-full max-w-lg mx-auto h-[58px]">
+          <div className="w-full h-full flex items-center justify-between px-1">
             {/* Left 2 Items: Chiếu Rạp & Lịch Sử */}
             <div className="flex-1 flex items-center justify-around pr-1 h-full">
               {/* Tab 1: Chiếu Rạp */}
@@ -934,8 +939,8 @@ function SidebarContent({
           isMobileOpen ? "translate-x-0 z-[130]" : "-translate-x-full lg:translate-x-0 z-[100]"
         )}
       >
-        {/* Sidebar Header / Brand Name */}
-        <div className="h-16 lg:h-14 px-4 flex items-center justify-between border-b border-white/8 shrink-0">
+        {/* Sidebar Header / Brand Name (Mobile Drawer Only) */}
+        <div className="lg:hidden h-16 px-4 flex items-center justify-between border-b border-white/10 shrink-0">
           <Link href="/" className="flex items-center select-none py-1 group" aria-label="Về trang chủ Hi Phim">
             <BrandLogo size="md" />
           </Link>
@@ -949,14 +954,14 @@ function SidebarContent({
               setIsMobileOpen(false);
             }}
             aria-label="Đóng Menu"
-            className="lg:hidden p-2 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-2 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Scrollable Navigation Body - Balanced spacing to fit frame seamlessly */}
-        <div className="flex-1 overflow-y-auto lg:overflow-y-hidden overflow-x-hidden p-3 lg:p-2 lg:py-2 space-y-3 lg:space-y-1.5 custom-scrollbar">
+        {/* Scrollable Navigation Body - Balanced spacing to fit frame seamlessly and prevent cutoff */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 lg:p-2 lg:pt-3.5 lg:pb-6 space-y-3 lg:space-y-1 custom-scrollbar">
           
           {/* Main Nav Section */}
           <div className="space-y-1 lg:space-y-1">

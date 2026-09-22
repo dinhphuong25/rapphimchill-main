@@ -91,8 +91,8 @@ async function PhimDetailContent({ slug }: { slug: string }) {
 
   return (
     <main className="min-h-screen bg-[#0a0c0e] text-cinema-text transition-all duration-300 flex flex-col justify-center">
-      {/* Main Container - Centered and balanced in viewport with guaranteed bottom dock clearance */}
-      <div className="w-full max-w-[960px] mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-2 sm:py-4 lg:py-6 pb-28 sm:pb-8 lg:pb-6 flex flex-col justify-center my-auto flex-1">
+      {/* Main Container - Centered and balanced in viewport with guaranteed top header and bottom dock clearance */}
+      <div className="w-full max-w-[960px] mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20 py-2 sm:py-4 lg:py-6 pb-28 sm:pb-8 lg:pb-6 flex flex-col justify-center my-auto flex-1">
         
         {/* Prominent Featured Hero Card */}
         <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden border border-white/10 bg-gradient-to-br from-[#131915] via-[#0d120f] to-[#070b09] shadow-[0_20px_60px_rgba(0,0,0,0.8),0_0_40px_rgba(32,214,107,0.08)]">

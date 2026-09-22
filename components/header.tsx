@@ -45,12 +45,12 @@ function HeaderComponent({}: HeaderProps) {
       <header
         className={cn(
           "fixed top-0 right-0 z-[90] h-16 sm:h-20 flex items-center transition-all duration-300 select-none bg-cinema-bg border-b border-white/10 shadow-none",
-          "left-0 lg:left-[225px]" // Aligns next to Left Sidebar
+          "left-0 lg:left-[225px]"
         )}
       >
-        <div className="w-full max-w-[1700px] mx-auto px-3 sm:px-6 lg:pl-8 lg:pr-5 xl:pl-10 xl:pr-6 2xl:pr-8 flex items-center justify-between lg:justify-end h-full">
-          {/* Mobile Left Group: Category Button [⊞] + Brand Logo */}
-          <div className="lg:hidden flex items-center gap-2 sm:gap-2.5 pointer-events-auto shrink-0">
+        <div className="w-full max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-full">
+          {/* Left Group: Mobile Category Button [⊞] + Brand Logo (Desktop & Mobile) */}
+          <div className="flex items-center gap-2 sm:gap-2.5 pointer-events-auto shrink-0">
             <button
               type="button"
               onClick={() => {
@@ -58,7 +58,7 @@ function HeaderComponent({}: HeaderProps) {
                   window.dispatchEvent(new CustomEvent("open-mobile-explore"));
                 }
               }}
-              className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/80 hover:text-brand-green active:scale-90 transition-all cursor-pointer -ml-1"
+              className="lg:hidden w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/80 hover:text-brand-green active:scale-90 transition-all cursor-pointer -ml-1"
               aria-label="Mở danh mục Khám Phá"
               title="Khám phá danh mục"
             >
