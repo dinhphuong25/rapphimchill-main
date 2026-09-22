@@ -214,8 +214,8 @@ export async function proxy(request: NextRequest) {
         });
     }
 
-    // Block known scraper bots & attack tools
-    if (isBlockedUserAgent(userAgent)) {
+    // Block known scraper bots & attack tools (exempt DMCA validation)
+    if (isBlockedUserAgent(userAgent) && pathname !== '/dmca-validation.html') {
         return new NextResponse('Forbidden - Automated Scraper / Scanner Blocked', { 
             status: 403,
             headers: { 'Content-Type': 'text/plain; charset=utf-8' }

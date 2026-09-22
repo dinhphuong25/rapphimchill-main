@@ -109,7 +109,7 @@ export const metadata: Metadata = {
   verification: {
     google: "oOs1HYmXd-muliYGGR8v91joJyTEVTbr-mRtnIpXrPY",
     other: {
-      "dmca-site-verification": "MkFjU1d2RTgwK1BXdndRaHRUMUpOd1BxdEFPRmg3RUhzRHIxWjFYM1BlMD01",
+      "dmca-site-verification": "dVFRZm1kcE1rS1Evak9vaU9jVHBOdz090",
     },
   },
   icons: {
@@ -131,8 +131,6 @@ export default function RootLayout({
   return (
     <html lang="vi" suppressHydrationWarning className="dark">
       <head>
-        {/* DMCA Site Verification */}
-        <meta name="dmca-site-verification" content="MkFjU1d2RTgwK1BXdndRaHRUMUpOd1BxdEFPRmg3RUhzRHIxWjFYM1BlMD01" />
 
         {/* Favicon */}
         <link rel="icon" href="/favicon.ico" sizes="any" />
