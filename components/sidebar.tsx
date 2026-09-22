@@ -162,7 +162,7 @@ function SidebarContent({
     router.prefetch("/favorites");
   }, [router]);
 
-  const handleBottomNavNavigate = (href: string) => {
+  const handleBottomNavNavigate = (href: string, e?: React.MouseEvent) => {
     setIsMobileOpen(false);
     setIsAccountOpen(false);
     setIsExploreOpen(false);
@@ -176,6 +176,10 @@ function SidebarContent({
     }
 
     navigateToTab(href);
+
+    if (pathname === href && !hasActiveFilters) {
+      if (e) e.preventDefault();
+    }
   };
 
   // Listen for Escape key to close modal
@@ -230,12 +234,18 @@ function SidebarContent({
 
   const currentActiveTab = useMemo(() => {
     if (isAccountOpen) return "account";
+    if (
+      activeTab === "/?typeList=phim-chieu-rap" ||
+      (pathname === "/" && (currentTypeList === "phim-chieu-rap" || searchParams.get("typelist") === "phim-chieu-rap"))
+    ) {
+      return "chieu-rap";
+    }
     if (activeTab) return activeTab;
     if (pathname === "/recently") return "/recently";
     if (pathname === "/favorites") return "/favorites";
     if (pathname === "/" && !hasActiveFilters) return "/";
     return null;
-  }, [isAccountOpen, activeTab, pathname, hasActiveFilters]);
+  }, [isAccountOpen, activeTab, pathname, currentTypeList, searchParams, hasActiveFilters]);
 
   const sortedCountries = useMemo(() => {
     return sortCountriesByPopularity(countries);
@@ -333,142 +343,278 @@ function SidebarContent({
   return (
     <>
       {/* ======================================================== */}
-      {/* MOBILE BOTTOM NAVIGATION BAR (COMPACT FLOATING PILL DOCK) */}
+      {/* MOBILE BOTTOM NAVIGATION BAR (AURAFLIX CURVED NOTCH DOCK) */}
       {/* ======================================================== */}
       <nav
         aria-label="Điều hướng chính"
-        className="lg:hidden fixed left-3 right-3 sm:left-auto sm:right-auto sm:w-[350px] z-[140] max-w-[340px] xs:max-w-[350px] mx-auto pointer-events-auto select-none touch-manipulation"
+        className="lg:hidden fixed left-0 right-0 bottom-0 z-[140] w-full max-w-lg mx-auto pointer-events-auto select-none touch-manipulation"
         style={{
-          bottom: "max(0.6rem, calc(env(safe-area-inset-bottom) + 0.25rem))",
+          paddingBottom: "max(0.35rem, env(safe-area-inset-bottom, 0px))",
         }}
       >
-        <div className="h-[50px] px-1 py-1 rounded-full bg-[#0B100E]/95 backdrop-blur-2xl border border-white/[0.1] shadow-none flex items-center justify-between touch-manipulation">
-          {/* Tab 1: Trang Chủ */}
-          {(() => {
-            const active = currentActiveTab === "/";
-            return (
-              <button
-                type="button"
-                onClick={() => handleBottomNavNavigate("/")}
-                className="flex-1 h-[42px] flex items-center justify-center relative select-none touch-manipulation cursor-pointer active:scale-95 transition-transform duration-75"
-                style={{ WebkitTapHighlightColor: "transparent" }}
-                aria-label="Trang Chủ"
-              >
-                <div
-                  className={cn(
-                    "w-full max-w-[74px] h-[42px] rounded-full flex flex-col items-center justify-center gap-0.5 select-none transition-colors duration-100",
-                    active
-                      ? "bg-brand-green text-black"
-                      : "text-white/60 active:text-white"
-                  )}
-                >
-                  <Home className={cn("w-4 h-4 shrink-0", active ? "stroke-[2.5]" : "")} />
-                  <span className={cn("text-[9px] tracking-tight whitespace-nowrap", active ? "font-black" : "font-semibold")}>
-                    Trang chủ
-                  </span>
-                </div>
-              </button>
-            );
-          })()}
+        {/* Nav Bar Container with Curved Scoop Notch */}
+        <div className="relative w-full h-[58px]">
+          {/* Background Layer: Left Wing + Center SVG Notch + Right Wing */}
+          <div className="absolute inset-0 flex items-stretch pointer-events-none">
+            {/* Left Wing with Top Border */}
+            <div className="flex-1 bg-[#0B100E]/95 backdrop-blur-2xl border-t border-white/[0.08]" />
 
-          {/* Tab 2: Lịch Sử Xem */}
-          {(() => {
-            const active = currentActiveTab === "/recently";
-            return (
-              <button
-                type="button"
-                onClick={() => handleBottomNavNavigate("/recently")}
-                className="flex-1 h-[42px] flex items-center justify-center relative select-none touch-manipulation cursor-pointer active:scale-95 transition-transform duration-75"
-                style={{ WebkitTapHighlightColor: "transparent" }}
-                aria-label="Lịch Sử Xem"
+            {/* Center Notch SVG Cutout */}
+            <div className="w-[88px] h-full relative shrink-0">
+              <svg
+                viewBox="0 0 88 58"
+                className="w-[88px] h-[58px] block"
+                preserveAspectRatio="none"
               >
-                <div
-                  className={cn(
-                    "w-full max-w-[74px] h-[42px] rounded-full flex flex-col items-center justify-center gap-0.5 select-none transition-colors duration-100",
-                    active
-                      ? "bg-brand-green text-black"
-                      : "text-white/60 active:text-white"
-                  )}
-                >
-                  <History className={cn("w-4 h-4 shrink-0", active ? "stroke-[2.5]" : "")} />
-                  <span className={cn("text-[9px] tracking-tight whitespace-nowrap", active ? "font-black" : "font-semibold")}>
-                    Lịch sử
-                  </span>
-                </div>
-              </button>
-            );
-          })()}
+                <defs>
+                  <linearGradient id="hiphimNotchStroke" x1="0" y1="0" x2="88" y2="0" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="rgba(255,255,255,0.08)" />
+                    <stop offset="35%" stopColor={currentActiveTab === "/" ? "rgba(32,214,107,0.4)" : "rgba(255,255,255,0.08)"} />
+                    <stop offset="50%" stopColor={currentActiveTab === "/" ? "rgba(32,214,107,0.75)" : "rgba(255,255,255,0.12)"} />
+                    <stop offset="65%" stopColor={currentActiveTab === "/" ? "rgba(32,214,107,0.4)" : "rgba(255,255,255,0.08)"} />
+                    <stop offset="100%" stopColor="rgba(255,255,255,0.08)" />
+                  </linearGradient>
+                </defs>
+                {/* Notch body fill matching bar background */}
+                <path
+                  d="M 0 0 C 16 0, 24 16, 44 16 C 64 16, 72 0, 88 0 L 88 58 L 0 58 Z"
+                  fill="#0B100E"
+                  fillOpacity="0.95"
+                />
+                {/* Notch top contour stroke */}
+                <path
+                  d="M 0 0 C 16 0, 24 16, 44 16 C 64 16, 72 0, 88 0"
+                  fill="none"
+                  stroke="url(#hiphimNotchStroke)"
+                  strokeWidth="1.2"
+                />
+              </svg>
+            </div>
 
-          {/* Tab 3: Phim Yêu Thích */}
-          {(() => {
-            const active = currentActiveTab === "/favorites";
-            return (
-              <button
-                type="button"
-                onClick={() => handleBottomNavNavigate("/favorites")}
-                className="flex-1 h-[42px] flex items-center justify-center relative select-none touch-manipulation cursor-pointer active:scale-95 transition-transform duration-75"
-                style={{ WebkitTapHighlightColor: "transparent" }}
-                aria-label="Phim Yêu Thích"
-              >
-                <div
-                  className={cn(
-                    "w-full max-w-[74px] h-[42px] rounded-full flex flex-col items-center justify-center gap-0.5 select-none transition-colors duration-100",
-                    active
-                      ? "bg-brand-green text-black"
-                      : "text-white/60 active:text-white"
-                  )}
-                >
-                  <Heart className={cn("w-4 h-4 shrink-0", active ? "fill-black stroke-[2.5]" : "")} />
-                  <span className={cn("text-[9px] tracking-tight whitespace-nowrap", active ? "font-black" : "font-semibold")}>
-                    Yêu thích
-                  </span>
-                </div>
-              </button>
-            );
-          })()}
+            {/* Right Wing with Top Border */}
+            <div className="flex-1 bg-[#0B100E]/95 backdrop-blur-2xl border-t border-white/[0.08]" />
+          </div>
 
-          {/* Tab 4: Tài Khoản */}
-          {(() => {
-            const active = currentActiveTab === "account";
-            return (
-              <button
-                type="button"
-                onClick={() => {
-                  setIsExploreOpen(false);
-                  setIsMobileOpen(false);
-                  setActiveModal(null);
-                  if (user) {
-                    setIsAccountOpen((prev) => !prev);
-                  } else {
-                    openAuthModal("login");
-                  }
-                }}
-                className="flex-1 h-[42px] flex items-center justify-center relative select-none touch-manipulation cursor-pointer active:scale-95 transition-transform duration-75"
-                style={{ WebkitTapHighlightColor: "transparent" }}
-                aria-label="Tài Khoản"
-              >
-                <div
-                  className={cn(
-                    "w-full max-w-[74px] h-[42px] rounded-full flex flex-col items-center justify-center gap-0.5 select-none transition-colors duration-100",
-                    active
-                      ? "bg-brand-green text-black"
-                      : "text-white/60 active:text-white"
-                  )}
-                >
-                  {user?.avatar ? (
-                    <div className="w-4 h-4 rounded-full overflow-hidden shrink-0 border border-white/20 relative">
-                      <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="16px" />
+          {/* Additional background extension for safe-area-inset-bottom */}
+          <div className="absolute top-[57px] left-0 right-0 -bottom-[env(safe-area-inset-bottom,20px)] bg-[#0B100E]/95 backdrop-blur-2xl pointer-events-none" />
+
+          {/* Interactive Navigation Elements Layer */}
+          <div className="relative z-10 w-full h-full flex items-center justify-between px-1">
+            {/* Left 2 Items: Chiếu Rạp & Lịch Sử */}
+            <div className="flex-1 flex items-center justify-around pr-1 h-full">
+              {/* Tab 1: Chiếu Rạp */}
+              {(() => {
+                const active = currentActiveTab === "chieu-rap";
+                return (
+                  <Link
+                    href="/?typeList=phim-chieu-rap"
+                    prefetch={true}
+                    onClick={(e) => handleBottomNavNavigate("/?typeList=phim-chieu-rap", e)}
+                    className="flex-1 h-full flex flex-col items-center justify-center gap-1 relative select-none touch-manipulation cursor-pointer active:scale-90 transition-transform duration-75 group"
+                    style={{ WebkitTapHighlightColor: "transparent" }}
+                    aria-label="Chiếu Rạp"
+                  >
+                    <div className="relative flex items-center justify-center">
+                      <Clapperboard
+                        className={cn(
+                          "w-[19px] h-[19px] transition-colors duration-150",
+                          active ? "text-brand-green stroke-[2.4]" : "text-white/50 group-hover:text-white"
+                        )}
+                      />
+                      {active && (
+                        <span className="absolute -inset-1.5 rounded-full bg-brand-green/20 blur-sm pointer-events-none" />
+                      )}
                     </div>
-                  ) : (
-                    <User className={cn("w-4 h-4 shrink-0", active ? "stroke-[2.5]" : "")} />
-                  )}
-                  <span className={cn("text-[9px] tracking-tight whitespace-nowrap", active ? "font-black" : "font-semibold")}>
-                    Tài khoản
-                  </span>
-                </div>
-              </button>
-            );
-          })()}
+                    <span
+                      className={cn(
+                        "text-[9.5px] tracking-tight whitespace-nowrap transition-colors duration-150 leading-none",
+                        active ? "text-brand-green font-bold" : "text-white/50 group-hover:text-white font-medium"
+                      )}
+                    >
+                      Chiếu rạp
+                    </span>
+                  </Link>
+                );
+              })()}
+
+              {/* Tab 2: Lịch Sử Xem */}
+              {(() => {
+                const active = currentActiveTab === "/recently";
+                return (
+                  <Link
+                    href="/recently"
+                    prefetch={true}
+                    onClick={(e) => handleBottomNavNavigate("/recently", e)}
+                    className="flex-1 h-full flex flex-col items-center justify-center gap-1 relative select-none touch-manipulation cursor-pointer active:scale-90 transition-transform duration-75 group"
+                    style={{ WebkitTapHighlightColor: "transparent" }}
+                    aria-label="Lịch Sử Xem"
+                  >
+                    <div className="relative flex items-center justify-center">
+                      <History
+                        className={cn(
+                          "w-[19px] h-[19px] transition-colors duration-150",
+                          active ? "text-brand-green stroke-[2.4]" : "text-white/50 group-hover:text-white"
+                        )}
+                      />
+                      {active && (
+                        <span className="absolute -inset-1.5 rounded-full bg-brand-green/20 blur-sm pointer-events-none" />
+                      )}
+                    </div>
+                    <span
+                      className={cn(
+                        "text-[9.5px] tracking-tight whitespace-nowrap transition-colors duration-150 leading-none",
+                        active ? "text-brand-green font-bold" : "text-white/50 group-hover:text-white font-medium"
+                      )}
+                    >
+                      Lịch sử
+                    </span>
+                  </Link>
+                );
+              })()}
+            </div>
+
+            {/* Center Elevated Action: Home Button */}
+            <div className="w-[88px] h-full relative shrink-0 flex items-center justify-center">
+              {(() => {
+                const active = currentActiveTab === "/";
+                return (
+                  <Link
+                    href="/"
+                    prefetch={true}
+                    onClick={(e) => handleBottomNavNavigate("/", e)}
+                    className="absolute -top-[18px] w-[52px] h-[52px] rounded-full flex items-center justify-center select-none touch-manipulation cursor-pointer active:scale-90 transition-transform duration-100 group"
+                    style={{ WebkitTapHighlightColor: "transparent" }}
+                    aria-label="Trang Chủ"
+                  >
+                    {/* Ambient Glow Halo behind Elevated Button */}
+                    <div
+                      className={cn(
+                        "absolute -inset-1.5 rounded-full blur-md transition-opacity duration-300 pointer-events-none",
+                        active
+                          ? "bg-brand-green/45 opacity-100"
+                          : "bg-brand-green/15 opacity-40 group-hover:opacity-80"
+                      )}
+                    />
+
+                    {/* Elevated Button Body */}
+                    <div
+                      className={cn(
+                        "w-full h-full rounded-full flex items-center justify-center transition-all duration-200 relative overflow-hidden",
+                        active
+                          ? "bg-gradient-to-tr from-[#20D66B] via-[#2AE376] to-[#10B981] text-black shadow-[0_0_24px_rgba(32,214,107,0.6),0_6px_20px_rgba(0,0,0,0.7)] border-2 border-brand-green"
+                          : "bg-[#111915] text-white/70 hover:text-white border border-white/15 hover:border-brand-green/40 shadow-[0_6px_18px_rgba(0,0,0,0.8)]"
+                      )}
+                    >
+                      {/* Top highlight shine on active button */}
+                      {active && (
+                        <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/35 to-transparent pointer-events-none rounded-t-full" />
+                      )}
+                      <Home
+                        className={cn(
+                          "w-[23px] h-[23px] transition-transform group-hover:scale-105",
+                          active ? "stroke-[2.5] text-black" : "stroke-[2] text-white/70 group-hover:text-brand-green"
+                        )}
+                      />
+                    </div>
+                  </Link>
+                );
+              })()}
+            </div>
+
+            {/* Right 2 Items: Yêu Thích & Tài Khoản */}
+            <div className="flex-1 flex items-center justify-around pl-1 h-full">
+              {/* Tab 4: Phim Yêu Thích */}
+              {(() => {
+                const active = currentActiveTab === "/favorites";
+                return (
+                  <Link
+                    href="/favorites"
+                    prefetch={true}
+                    onClick={(e) => handleBottomNavNavigate("/favorites", e)}
+                    className="flex-1 h-full flex flex-col items-center justify-center gap-1 relative select-none touch-manipulation cursor-pointer active:scale-90 transition-transform duration-75 group"
+                    style={{ WebkitTapHighlightColor: "transparent" }}
+                    aria-label="Phim Yêu Thích"
+                  >
+                    <div className="relative flex items-center justify-center">
+                      <Heart
+                        className={cn(
+                          "w-[19px] h-[19px] transition-colors duration-150",
+                          active
+                            ? "text-brand-green fill-brand-green stroke-[2.4]"
+                            : "text-white/50 group-hover:text-white"
+                        )}
+                      />
+                      {active && (
+                        <span className="absolute -inset-1.5 rounded-full bg-brand-green/20 blur-sm pointer-events-none" />
+                      )}
+                    </div>
+                    <span
+                      className={cn(
+                        "text-[9.5px] tracking-tight whitespace-nowrap transition-colors duration-150 leading-none",
+                        active ? "text-brand-green font-bold" : "text-white/50 group-hover:text-white font-medium"
+                      )}
+                    >
+                      Yêu thích
+                    </span>
+                  </Link>
+                );
+              })()}
+
+              {/* Tab 5: Tài Khoản */}
+              {(() => {
+                const active = currentActiveTab === "account";
+                return (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsExploreOpen(false);
+                      setIsMobileOpen(false);
+                      setActiveModal(null);
+                      if (user) {
+                        setIsAccountOpen((prev) => !prev);
+                      } else {
+                        openAuthModal("login");
+                      }
+                    }}
+                    className="flex-1 h-full flex flex-col items-center justify-center gap-1 relative select-none touch-manipulation cursor-pointer active:scale-90 transition-transform duration-75 group"
+                    style={{ WebkitTapHighlightColor: "transparent" }}
+                    aria-label="Tài Khoản"
+                  >
+                    <div className="relative flex items-center justify-center">
+                      {user?.avatar ? (
+                        <div
+                          className={cn(
+                            "w-[21px] h-[21px] rounded-full overflow-hidden shrink-0 border relative transition-colors",
+                            active ? "border-brand-green ring-2 ring-brand-green/30" : "border-white/20"
+                          )}
+                        >
+                          <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="21px" />
+                        </div>
+                      ) : (
+                        <User
+                          className={cn(
+                            "w-[19px] h-[19px] transition-colors duration-150",
+                            active ? "text-brand-green stroke-[2.4]" : "text-white/50 group-hover:text-white"
+                          )}
+                        />
+                      )}
+                      {active && (
+                        <span className="absolute -inset-1.5 rounded-full bg-brand-green/20 blur-sm pointer-events-none" />
+                      )}
+                    </div>
+                    <span
+                      className={cn(
+                        "text-[9.5px] tracking-tight whitespace-nowrap transition-colors duration-150 leading-none",
+                        active ? "text-brand-green font-bold" : "text-white/50 group-hover:text-white font-medium"
+                      )}
+                    >
+                      Tài khoản
+                    </span>
+                  </button>
+                );
+              })()}
+            </div>
+          </div>
         </div>
       </nav>
 
