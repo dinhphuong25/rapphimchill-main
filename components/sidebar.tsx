@@ -39,7 +39,8 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { sortCountriesByPopularity, getCountryCode } from "@/lib/countries";
+import { sortCountriesByPopularity, getCountryCode, POPULAR_COUNTRIES } from "@/lib/countries";
+import { getCategoryEmoji, sortCategoriesByPopularity, POPULAR_CATEGORIES } from "@/lib/categories";
 import { instantMovieStore } from "@/lib/instant-movie-store";
 import MobileExploreSheet from "@/components/navigation/mobile-explore-sheet";
 import BrandLogo from "@/components/ui/brand-logo";
@@ -88,6 +89,8 @@ function SidebarContent({
   const [countrySearchQuery, setCountrySearchQuery] = useState("");
   const [yearSearchQuery, setYearSearchQuery] = useState("");
   const [yearDecade, setYearDecade] = useState<"all" | "2020s" | "2010s" | "2000s" | "classic">("all");
+  const [categoryThematicFilter, setCategoryThematicFilter] = useState<"all" | "popular" | "action" | "romance" | "anime">("all");
+  const [countryRegionFilter, setCountryRegionFilter] = useState<"all" | "popular" | "asia" | "west">("all");
 
   // Listen for open-mobile-explore event from mobile header category button
   useEffect(() => {
@@ -153,6 +156,8 @@ function SidebarContent({
     setCountrySearchQuery("");
     setYearSearchQuery("");
     setYearDecade("all");
+    setCategoryThematicFilter("all");
+    setCountryRegionFilter("all");
   }, [pathname, searchParams]);
 
   // Prefetch mobile bottom nav routes for instant 0ms transition on single tap
@@ -170,6 +175,9 @@ function SidebarContent({
     setCategorySearchQuery("");
     setCountrySearchQuery("");
     setYearSearchQuery("");
+    setYearDecade("all");
+    setCategoryThematicFilter("all");
+    setCountryRegionFilter("all");
 
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "instant" });
@@ -266,12 +274,50 @@ function SidebarContent({
     );
   }, [categories, categorySearchQuery]);
 
+  const displayedCategories = useMemo(() => {
+    if (categorySearchQuery.trim()) return filteredCategories;
+    if (categoryThematicFilter === "popular") {
+      const popularSlugs = new Set(["hanh-dong", "co-trang", "tinh-cam", "kinh-di", "hai-huoc", "vien-tuong", "hoat-hinh", "tam-ly", "vo-thuat", "hinh-su", "phieu-luu", "gia-dinh"]);
+      return categories.filter((c) => popularSlugs.has(c.slug));
+    }
+    if (categoryThematicFilter === "action") {
+      const slugs = new Set(["hanh-dong", "vo-thuat", "vien-tuong", "khoa-hoc-vien-tuong", "hinh-su", "phieu-luu", "chien-tranh", "gay-can", "kich-tinh", "kinh-di"]);
+      return categories.filter((c) => slugs.has(c.slug) || c.name.toLowerCase().includes("hành động") || c.name.toLowerCase().includes("võ thuật"));
+    }
+    if (categoryThematicFilter === "romance") {
+      const slugs = new Set(["tinh-cam", "co-trang", "tam-ly", "gia-dinh", "hoc-duong", "hai-huoc", "am-nhac", "chinh-kich"]);
+      return categories.filter((c) => slugs.has(c.slug) || c.name.toLowerCase().includes("tình cảm") || c.name.toLowerCase().includes("cổ trang"));
+    }
+    if (categoryThematicFilter === "anime") {
+      const slugs = new Set(["hoat-hinh", "anime", "than-thoai", "bi-an", "tai-lieu", "the-thao", "lich-su", "mien-tay", "phim-18"]);
+      return categories.filter((c) => slugs.has(c.slug) || c.name.toLowerCase().includes("hoạt hình") || c.name.toLowerCase().includes("thần thoại"));
+    }
+    return categories;
+  }, [categories, categorySearchQuery, filteredCategories, categoryThematicFilter]);
+
   const filteredCountries = useMemo(() => {
     if (!countrySearchQuery.trim()) return sortedCountries;
     return sortedCountries.filter((c) =>
       c.name.toLowerCase().includes(countrySearchQuery.toLowerCase())
     );
   }, [sortedCountries, countrySearchQuery]);
+
+  const displayedCountries = useMemo(() => {
+    if (countrySearchQuery.trim()) return filteredCountries;
+    if (countryRegionFilter === "popular") {
+      const popularSlugs = new Set(["trung-quoc", "han-quoc", "au-my", "nhat-ban", "thai-lan", "viet-nam", "hong-kong", "an-do", "dai-loan", "phap", "anh", "duc"]);
+      return sortedCountries.filter((c) => popularSlugs.has(c.slug));
+    }
+    if (countryRegionFilter === "asia") {
+      const asiaSlugs = new Set(["trung-quoc", "han-quoc", "nhat-ban", "thai-lan", "viet-nam", "hong-kong", "an-do", "dai-loan", "tai-wan", "philippines", "malaysia", "indonesia", "singapore", "tho-nhi-ky", "trieu-tien", "campuchia", "lao", "myanmar"]);
+      return sortedCountries.filter((c) => asiaSlugs.has(c.slug) || ["CN", "KR", "JP", "VN", "TH", "HK", "IN", "TW"].includes(getCountryCode(c.slug) || ""));
+    }
+    if (countryRegionFilter === "west") {
+      const westSlugs = new Set(["au-my", "phap", "anh", "duc", "tay-ban-nha", "canada", "uc", "y", "nga", "na-uy", "thuy-dien", "ha-lan", "ba-lan", "bi", "thuy-si", "dan-mach", "brazil", "mexico"]);
+      return sortedCountries.filter((c) => westSlugs.has(c.slug) || !["trung-quoc", "han-quoc", "nhat-ban", "thai-lan", "viet-nam", "hong-kong", "an-do", "dai-loan"].includes(c.slug));
+    }
+    return sortedCountries;
+  }, [sortedCountries, countrySearchQuery, filteredCountries, countryRegionFilter]);
 
   const filteredYears = useMemo(() => {
     if (!yearSearchQuery.trim()) return YEARS_LIST;
@@ -302,6 +348,8 @@ function SidebarContent({
     setCountrySearchQuery("");
     setYearSearchQuery("");
     setYearDecade("all");
+    setCategoryThematicFilter("all");
+    setCountryRegionFilter("all");
   };
 
   const handleSelectCategory = (slug: string, e?: React.SyntheticEvent) => {
@@ -1142,9 +1190,9 @@ function SidebarContent({
       />
 
       {/* ======================================================== */}
-      {/* MODAL BẢNG CHỌN THỂ LOẠI (CATEGORY SELECTION BOARD) */}
+      {/* UNIFIED MASTER CATEGORY HUB (THỂ LOẠI / QUỐC GIA / NĂM)  */}
       {/* ======================================================== */}
-      {activeModal === "categories" && (
+      {activeModal && (
         <div
           className={cn(
             "fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 lg:p-6 transition-opacity duration-150 select-none",
@@ -1166,35 +1214,60 @@ function SidebarContent({
           <div
             onClick={(e) => e.stopPropagation()}
             className={cn(
-              "relative z-10 w-full sm:max-w-3xl lg:max-w-4xl max-h-[88dvh] sm:max-h-[84vh] bg-[#0c120e]/95 backdrop-blur-2xl border-t sm:border border-emerald-500/20 rounded-t-[28px] sm:rounded-[28px] p-4 sm:p-6 flex flex-col shadow-[0_25px_70px_rgba(0,0,0,0.95),0_0_40px_rgba(32,214,107,0.06)] overflow-hidden transform-gpu",
+              "relative z-10 w-full sm:max-w-3xl lg:max-w-4xl max-h-[90dvh] sm:max-h-[86vh] bg-[#0C1310]/98 backdrop-blur-2xl border-t sm:border border-emerald-500/25 rounded-t-[28px] sm:rounded-[28px] p-3.5 sm:p-6 flex flex-col shadow-[0_25px_70px_rgba(0,0,0,0.95),0_0_40px_rgba(32,214,107,0.1)] overflow-hidden transform-gpu",
               isClosing ? "scale-95 opacity-0 duration-150" : "animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
             )}
           >
             {/* Top Ambient Glow Line */}
-            <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-brand-green/40 to-transparent pointer-events-none" />
+            <div className="absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#20D66B]/50 to-transparent pointer-events-none" />
 
             {/* Mobile Sheet Handle Bar */}
-            <div className="sm:hidden w-12 h-1 bg-white/20 hover:bg-white/30 rounded-full mx-auto mb-3 shrink-0" />
+            <div className="sm:hidden w-12 h-1 bg-white/20 hover:bg-white/30 rounded-full mx-auto mb-2 shrink-0" />
 
-            {/* Modal Header */}
-            <div className="relative z-10 flex items-center justify-between pb-3 sm:pb-4 border-b border-white/[0.08] shrink-0 gap-3">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-brand-green/15 border border-brand-green/30 flex items-center justify-center text-brand-green shrink-0 shadow-[0_0_15px_rgba(32,214,107,0.18)]">
-                  <Layers className="w-4 h-4 sm:w-5 sm:h-5" />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base sm:text-xl font-extrabold text-white tracking-tight truncate">
-                      Tất Cả Thể Loại
-                    </h3>
-                    <span className="text-[10px] sm:text-[11px] font-mono font-bold text-brand-green bg-brand-green/10 border border-brand-green/25 px-2.5 py-0.5 rounded-full shrink-0">
-                      {categories.length} THỂ LOẠI
-                    </span>
-                  </div>
-                  <p className="hidden sm:block text-[11px] text-white/40 mt-0.5">
-                    Khám phá kho phim phong phú theo thể loại yêu thích của bạn
-                  </p>
-                </div>
+            {/* 3-in-1 Master Category Switcher Header */}
+            <div className="relative z-10 flex items-center justify-between pb-3 border-b border-white/[0.08] shrink-0 gap-2">
+              <div className="flex items-center gap-1 sm:gap-1.5 p-1 rounded-xl bg-white/[0.04] border border-white/[0.06] overflow-x-auto scrollbar-none">
+                <button
+                  type="button"
+                  onClick={() => setActiveModal("categories")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer select-none active:scale-95",
+                    activeModal === "categories"
+                      ? "bg-gradient-to-r from-[#20D66B] to-[#10B981] text-[#050807] shadow-md shadow-[#20D66B]/25"
+                      : "text-white/60 hover:text-white hover:bg-white/[0.05]"
+                  )}
+                >
+                  <Layers className="w-3.5 h-3.5 shrink-0" />
+                  <span>Thể Loại ({categories.length || 24})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveModal("countries")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer select-none active:scale-95",
+                    activeModal === "countries"
+                      ? "bg-gradient-to-r from-[#20D66B] to-[#10B981] text-[#050807] shadow-md shadow-[#20D66B]/25"
+                      : "text-white/60 hover:text-white hover:bg-white/[0.05]"
+                  )}
+                >
+                  <Globe className="w-3.5 h-3.5 shrink-0" />
+                  <span>Quốc Gia ({countries.length || 36})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveModal("years")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer select-none active:scale-95",
+                    activeModal === "years"
+                      ? "bg-gradient-to-r from-[#20D66B] to-[#10B981] text-[#050807] shadow-md shadow-[#20D66B]/25"
+                      : "text-white/60 hover:text-white hover:bg-white/[0.05]"
+                  )}
+                >
+                  <Calendar className="w-3.5 h-3.5 shrink-0" />
+                  <span>Năm Phát Hành</span>
+                </button>
               </div>
 
               {/* Close Button */}
@@ -1204,594 +1277,457 @@ function SidebarContent({
                 className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-all shrink-0 cursor-pointer"
                 aria-label="Đóng bảng"
               >
-                <X className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Quick Filter Search Box */}
-            <div className="relative z-10 my-3 shrink-0">
-              <div className="relative flex items-center">
-                <Search className="w-4 h-4 absolute left-3.5 text-emerald-400/60 pointer-events-none" />
-                <input
-                  type="text"
-                  aria-label="Lọc thể loại phim"
-                  value={categorySearchQuery}
-                  onChange={(e) => setCategorySearchQuery(e.target.value)}
-                  placeholder="Lọc nhanh thể loại (Hành động, Cổ trang, Kinh dị, Hoạt hình...)"
-                  className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.08] border border-white/10 focus:border-brand-green/50 text-white placeholder-white/35 text-[15px] sm:text-sm rounded-xl sm:rounded-2xl pl-10 pr-9 py-2.5 outline-none transition-all duration-200 shadow-inner"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  spellCheck={false}
-                />
-                {categorySearchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setCategorySearchQuery("")}
-                    aria-label="Xóa tìm kiếm"
-                    className="absolute right-2.5 p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Categories Interactive Grid */}
-            <div
-              ref={categoriesScrollRef}
-              className="relative z-10 flex-1 overflow-y-auto pr-1 modal-scroll custom-scrollbar overscroll-contain -webkit-overflow-scrolling-touch"
-            >
-              {filteredCategories.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-2.5 pb-4">
-                  {filteredCategories.map((cat, idx) => {
-                    const active = currentCategory === cat.slug;
-                    return (
+            {/* ==================================================== */}
+            {/* TAB 1: THỂ LOẠI (GENRES SELECTION)                   */}
+            {/* ==================================================== */}
+            {activeModal === "categories" && (
+              <>
+                {/* Search & Sub-filters */}
+                <div className="relative z-10 pt-2.5 pb-2 shrink-0 space-y-2">
+                  <div className="relative flex items-center">
+                    <Search className="w-4 h-4 absolute left-3.5 text-emerald-400/60 pointer-events-none" />
+                    <input
+                      type="text"
+                      aria-label="Lọc thể loại phim"
+                      value={categorySearchQuery}
+                      onChange={(e) => setCategorySearchQuery(e.target.value)}
+                      placeholder="Lọc nhanh thể loại (Hành động, Cổ trang, Tình cảm, Viễn tưởng...)"
+                      className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.08] border border-white/10 focus:border-[#20D66B]/50 text-white placeholder-white/35 text-xs sm:text-sm rounded-xl pl-9 pr-9 py-2 outline-none transition-all duration-200 shadow-inner"
+                      autoComplete="off"
+                      spellCheck={false}
+                    />
+                    {categorySearchQuery && (
                       <button
-                        key={`${cat.slug}-${idx}`}
                         type="button"
-                        onClick={(e) => handleSelectCategory(cat.slug, e)}
-                        className={cn(
-                          "relative flex items-center justify-between p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border text-left transition-all duration-200 group active:scale-95 min-w-0 shadow-none",
-                          active
-                            ? "bg-brand-green text-black border-brand-green font-extrabold shadow-[0_0_20px_rgba(32,214,107,0.35)] scale-[1.02]"
-                            : "bg-white/[0.03] hover:bg-white/[0.08] border-white/[0.06] hover:border-brand-green/40 text-white/80 hover:text-white"
-                        )}
+                        onClick={() => setCategorySearchQuery("")}
+                        aria-label="Xóa tìm kiếm"
+                        className="absolute right-2.5 p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors"
                       >
-                        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 truncate">
-                          <span
-                            className={cn(
-                              "w-1.5 h-1.5 rounded-full shrink-0 transition-all",
-                              active
-                                ? "bg-black scale-125"
-                                : "bg-white/25 group-hover:bg-brand-green group-hover:scale-125"
-                            )}
-                          />
-                          <span className={cn("text-xs sm:text-sm truncate", active ? "font-black" : "font-semibold")}>
-                            {cat.name}
-                          </span>
-                        </div>
-                        {active ? (
-                          <Check className="w-4 h-4 text-black shrink-0 ml-1.5 stroke-[2.5]" />
-                        ) : (
-                          <ChevronRight className="w-3.5 h-3.5 text-white/20 group-hover:text-brand-green group-hover:translate-x-0.5 transition-all shrink-0 ml-1 hidden sm:block opacity-0 group-hover:opacity-100" />
-                        )}
+                        <X className="w-3.5 h-3.5" />
                       </button>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="py-12 text-center text-white/40 text-sm">
-                  Không tìm thấy thể loại nào phù hợp với &quot;{categorySearchQuery}&quot;
-                </div>
-              )}
-            </div>
+                    )}
+                  </div>
 
-            {/* Modal Bottom Action / Hint */}
-            <div className="relative z-10 pt-3 mt-1.5 border-t border-white/[0.08] flex items-center justify-between text-xs text-white/50 shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-              <div className="flex items-center gap-2 min-w-0">
-                {currentCategory ? (
+                  {/* Thematic Chips */}
+                  {!categorySearchQuery.trim() && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
+                      {[
+                        { id: "all", label: "Tất Cả" },
+                        { id: "popular", label: "⭐ Phổ Biến" },
+                        { id: "action", label: "💥 Hành Động" },
+                        { id: "romance", label: "💖 Tình Cảm / Cổ Trang" },
+                        { id: "anime", label: "🎨 Hoạt Hình / Anime" },
+                      ].map((f) => (
+                        <button
+                          key={f.id}
+                          type="button"
+                          onClick={() => setCategoryThematicFilter(f.id as any)}
+                          className={cn(
+                            "px-2.5 py-1 rounded-md text-[11px] font-bold whitespace-nowrap transition-all select-none active:scale-95",
+                            categoryThematicFilter === f.id
+                              ? "bg-[#20D66B]/20 text-[#20D66B] border border-[#20D66B]/40"
+                              : "bg-white/[0.03] hover:bg-white/[0.06] text-white/60 hover:text-white border border-white/[0.06]"
+                          )}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Genre Cards Grid */}
+                <div
+                  ref={categoriesScrollRef}
+                  className="relative z-10 flex-1 overflow-y-auto pr-1 modal-scroll custom-scrollbar overscroll-contain -webkit-overflow-scrolling-touch"
+                >
+                  {displayedCategories.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-2.5 pb-4">
+                      {displayedCategories.map((cat, idx) => {
+                        const active = currentCategory === cat.slug;
+                        const emoji = getCategoryEmoji(cat.slug, cat.name);
+                        return (
+                          <button
+                            key={`${cat.slug}-${idx}`}
+                            type="button"
+                            onClick={(e) => handleSelectCategory(cat.slug, e)}
+                            className={cn(
+                              "group relative flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-xl border text-left transition-all duration-200 active:scale-95 min-w-0 shadow-none",
+                              active
+                                ? "bg-[#20D66B]/15 text-[#20D66B] border-[#20D66B]/60 font-black shadow-[0_0_15px_rgba(32,214,107,0.2)]"
+                                : "bg-white/[0.03] hover:bg-white/[0.07] border-white/[0.06] hover:border-[#20D66B]/35 text-white/85 hover:text-white"
+                            )}
+                          >
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white/[0.05] border border-white/10 flex items-center justify-center text-sm sm:text-base shrink-0 group-hover:scale-110 transition-transform">
+                              {emoji}
+                            </div>
+                            <span className={cn("text-xs sm:text-sm font-semibold truncate flex-1", active && "font-black text-[#20D66B]")}>
+                              {cat.name}
+                            </span>
+                            {active && (
+                              <Check className="w-3.5 h-3.5 text-[#20D66B] stroke-[3] shrink-0 ml-auto" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="py-12 text-center text-white/40 text-xs sm:text-sm">
+                      Không tìm thấy thể loại nào phù hợp với &quot;{categorySearchQuery}&quot;
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer Bar */}
+                <div className="relative z-10 pt-2.5 mt-1 border-t border-white/[0.08] flex items-center justify-between text-xs text-white/50 shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {currentCategory ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          startTransition(() => {
+                            router.push("/", { scroll: false });
+                          });
+                          closeModal();
+                        }}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 transition-colors font-medium text-[11px]"
+                      >
+                        <X className="w-3 h-3" />
+                        <span>Bỏ chọn ({activeCategoryObj?.name || currentCategory})</span>
+                      </button>
+                    ) : (
+                      <span className="truncate text-white/40 text-[11px] sm:text-xs">
+                        Bấm vào thể loại để lọc phim tức thì
+                      </span>
+                    )}
+                  </div>
+
                   <button
                     type="button"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      startTransition(() => {
-                        router.push("/", { scroll: false });
-                      });
                       closeModal();
+                      router.push("/");
                     }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 transition-colors font-medium text-[11px]"
+                    className="text-[#20D66B] hover:underline font-semibold shrink-0 text-[11px] sm:text-xs"
                   >
-                    <X className="w-3 h-3" />
-                    <span>Bỏ chọn ({activeCategoryObj?.name || currentCategory})</span>
+                    Xem tất cả phim
                   </button>
-                ) : (
-                  <span className="truncate text-white/40 text-[11px] sm:text-xs">
-                    Bấm vào thể loại để lọc phim tức thì
-                  </span>
-                )}
-              </div>
-
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  closeModal();
-                  router.push("/");
-                }}
-                className="text-brand-green hover:underline font-semibold shrink-0 text-[11px] sm:text-xs"
-              >
-                Xem tất cả phim
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ======================================================== */}
-      {/* MODAL BẢNG CHỌN QUỐC GIA (COUNTRY SELECTION BOARD) */}
-      {/* ======================================================== */}
-      {activeModal === "countries" && (
-        <div
-          className={cn(
-            "fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 lg:p-6 transition-opacity duration-150 select-none",
-            isClosing ? "opacity-0 pointer-events-none" : "opacity-100 animate-in fade-in duration-200"
-          )}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-        >
-          {/* Backdrop with Cinema Blur */}
-          <div
-            className="fixed inset-0 bg-black/85 backdrop-blur-md cursor-pointer transition-opacity"
-            onClick={closeModal}
-            onTouchEnd={closeModal}
-          />
-
-          {/* Modal Content Board (Bottom Sheet on Mobile, Centered on Desktop) */}
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className={cn(
-              "relative z-10 w-full sm:max-w-3xl lg:max-w-4xl max-h-[88dvh] sm:max-h-[84vh] bg-[#0c120e]/95 backdrop-blur-2xl border-t sm:border border-emerald-500/20 rounded-t-[28px] sm:rounded-[28px] p-4 sm:p-6 flex flex-col shadow-[0_25px_70px_rgba(0,0,0,0.95),0_0_40px_rgba(32,214,107,0.06)] overflow-hidden transform-gpu",
-              isClosing ? "scale-95 opacity-0 duration-150" : "animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
+                </div>
+              </>
             )}
-          >
-            {/* Top Ambient Glow Line */}
-            <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-brand-green/40 to-transparent pointer-events-none" />
 
-            {/* Mobile Sheet Handle Bar */}
-            <div className="sm:hidden w-12 h-1 bg-white/20 hover:bg-white/30 rounded-full mx-auto mb-3 shrink-0" />
-
-            {/* Modal Header */}
-            <div className="relative z-10 flex items-center justify-between pb-3 sm:pb-4 border-b border-white/[0.08] shrink-0 gap-3">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-brand-green/15 border border-brand-green/30 flex items-center justify-center text-brand-green shrink-0 shadow-[0_0_15px_rgba(32,214,107,0.18)]">
-                  <Globe className="w-4 h-4 sm:w-5 sm:h-5" />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base sm:text-xl font-extrabold text-white tracking-tight truncate">
-                      Quốc Gia Điện Ảnh
-                    </h3>
-                    <span className="text-[10px] sm:text-[11px] font-mono font-bold text-brand-green bg-brand-green/10 border border-brand-green/25 px-2.5 py-0.5 rounded-full shrink-0">
-                      {countries.length || "TOÀN CẦU"} QUỐC GIA
-                    </span>
+            {/* ==================================================== */}
+            {/* TAB 2: QUỐC GIA (COUNTRIES SELECTION)                */}
+            {/* ==================================================== */}
+            {activeModal === "countries" && (
+              <>
+                {/* Search & Sub-filters */}
+                <div className="relative z-10 pt-2.5 pb-2 shrink-0 space-y-2">
+                  <div className="relative flex items-center">
+                    <Search className="w-4 h-4 absolute left-3.5 text-emerald-400/60 pointer-events-none" />
+                    <input
+                      type="text"
+                      aria-label="Lọc quốc gia phim"
+                      value={countrySearchQuery}
+                      onChange={(e) => setCountrySearchQuery(e.target.value)}
+                      placeholder="Lọc nhanh quốc gia (Hàn Quốc, Trung Quốc, Âu Mỹ, Nhật Bản...)"
+                      className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.08] border border-white/10 focus:border-[#20D66B]/50 text-white placeholder-white/35 text-xs sm:text-sm rounded-xl pl-9 pr-9 py-2 outline-none transition-all duration-200 shadow-inner"
+                      autoComplete="off"
+                      spellCheck={false}
+                    />
+                    {countrySearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setCountrySearchQuery("")}
+                        aria-label="Xóa tìm kiếm"
+                        className="absolute right-2.5 p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
-                  <p className="hidden sm:block text-[11px] text-white/40 mt-0.5">
-                    Lọc điện ảnh theo nền văn hóa và xuất xứ phim
-                  </p>
-                </div>
-              </div>
 
-              {/* Close Button */}
-              <button
-                type="button"
-                onClick={closeModal}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-all shrink-0 cursor-pointer"
-                aria-label="Đóng bảng"
-              >
-                <X className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-              </button>
-            </div>
-
-            {/* Quick Filter Search Box */}
-            <div className="relative z-10 my-3 shrink-0">
-              <div className="relative flex items-center">
-                <Search className="w-4 h-4 absolute left-3.5 text-emerald-400/60 pointer-events-none" />
-                <input
-                  type="text"
-                  aria-label="Lọc quốc gia phim"
-                  value={countrySearchQuery}
-                  onChange={(e) => setCountrySearchQuery(e.target.value)}
-                  placeholder="Lọc nhanh quốc gia (Hàn Quốc, Trung Quốc, Âu Mỹ, Nhật Bản...)"
-                  className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.08] border border-white/10 focus:border-brand-green/50 text-white placeholder-white/35 text-[15px] sm:text-sm rounded-xl sm:rounded-2xl pl-10 pr-9 py-2.5 outline-none transition-all duration-200 shadow-inner"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  spellCheck={false}
-                />
-                {countrySearchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setCountrySearchQuery("")}
-                    aria-label="Xóa tìm kiếm"
-                    className="absolute right-2.5 p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Countries Interactive Content */}
-            <div
-              ref={countriesScrollRef}
-              className="relative z-10 flex-1 overflow-y-auto pr-1 modal-scroll custom-scrollbar space-y-4 overscroll-contain -webkit-overflow-scrolling-touch"
-            >
-              {!countrySearchQuery.trim() && (
-                <div>
-                  <span className="text-[10px] sm:text-[11px] font-bold text-emerald-400/80 uppercase tracking-widest block mb-2 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-brand-green animate-pulse" />
-                    Quốc Gia Nổi Bật
-                  </span>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
-                    {sortedCountries.slice(0, 8).map((c) => {
-                      const active = currentCountry === c.slug;
-                      const code = c.code || getCountryCode(c.slug) || getCountryCode(c.name);
-                      return (
+                  {/* Regional Chips */}
+                  {!countrySearchQuery.trim() && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
+                      {[
+                        { id: "all", label: "Tất Cả" },
+                        { id: "popular", label: "⭐ Nổi Bật" },
+                        { id: "asia", label: "🌏 Châu Á" },
+                        { id: "west", label: "🌍 Âu Mỹ & Toàn Cầu" },
+                      ].map((f) => (
                         <button
-                          key={c.slug}
+                          key={f.id}
                           type="button"
-                          onClick={(e) => handleSelectCountry(c.slug, e)}
+                          onClick={() => setCountryRegionFilter(f.id as any)}
                           className={cn(
-                            "relative p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border text-center transition-all duration-200 group flex items-center justify-start gap-2.5 active:scale-95 min-w-0 shadow-none",
-                            active
-                              ? "bg-brand-green text-black border-brand-green font-extrabold shadow-[0_0_18px_rgba(32,214,107,0.35)] scale-[1.02]"
-                              : "bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.08] hover:border-brand-green/40 text-white/90 hover:text-white"
+                            "px-2.5 py-1 rounded-md text-[11px] font-bold whitespace-nowrap transition-all select-none active:scale-95",
+                            countryRegionFilter === f.id
+                              ? "bg-[#20D66B]/20 text-[#20D66B] border border-[#20D66B]/40"
+                              : "bg-white/[0.03] hover:bg-white/[0.06] text-white/60 hover:text-white border border-white/[0.06]"
                           )}
                         >
-                          {(!code || code === "WW") ? (
-                            <Globe className={cn("w-5 h-5 shrink-0 transition-transform group-hover:scale-110", active ? "text-black" : "text-brand-green")} />
-                          ) : (
-                            <img
-                              src={`https://flagcdn.com/w80/${code.toLowerCase()}.png`}
-                              alt={c.name}
-                              loading="lazy"
-                              className="w-6 sm:w-7 h-4 sm:h-4.5 object-cover rounded-[3px] border border-white/10 shrink-0 group-hover:scale-110 transition-transform"
-                              onError={(e) => {
-                                e.currentTarget.style.display = "none";
-                              }}
-                            />
-                          )}
-                          <span className={cn("text-xs sm:text-sm truncate text-left", active ? "font-black" : "font-bold")}>
-                            {c.name}
-                          </span>
+                          {f.label}
                         </button>
-                      );
-                    })}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
 
-              <div>
-                <span className="text-[10px] sm:text-[11px] font-bold text-white/40 uppercase tracking-widest block mb-2 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white/20" />
-                  {countrySearchQuery.trim() ? "Kết Quả Tìm Kiếm" : "Tất Cả Quốc Gia"}
-                </span>
-
-                {filteredCountries.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 pb-4">
-                    {filteredCountries.map((c) => {
-                      const active = currentCountry === c.slug;
-                      const code = c.code || getCountryCode(c.slug) || getCountryCode(c.name);
-                      return (
-                        <button
-                          key={c.slug}
-                          type="button"
-                          onClick={(e) => handleSelectCountry(c.slug, e)}
-                          className={cn(
-                            "relative flex items-center justify-between p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border text-left transition-all duration-200 group active:scale-95 min-w-0 shadow-none",
-                            active
-                              ? "bg-brand-green text-black border-brand-green font-extrabold shadow-[0_0_18px_rgba(32,214,107,0.35)] scale-[1.02]"
-                              : "bg-white/[0.03] hover:bg-white/[0.07] border-white/[0.06] hover:border-brand-green/30 text-white/80 hover:text-white"
-                          )}
-                        >
-                          <div className="flex items-center gap-2 min-w-0 truncate">
-                            {(!code || code === "WW") ? (
-                              <Globe className={cn("w-4 h-4 shrink-0", active ? "text-black" : "text-white/40 group-hover:text-brand-green")} />
-                            ) : (
-                              <img
-                                src={`https://flagcdn.com/w40/${code.toLowerCase()}.png`}
-                                alt={c.name}
-                                loading="lazy"
-                                className="w-5 h-3.5 object-cover rounded-[2px] border border-white/10 shrink-0 opacity-80 group-hover:opacity-100"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = "none";
-                                }}
-                              />
+                {/* Country Cards Grid */}
+                <div
+                  ref={countriesScrollRef}
+                  className="relative z-10 flex-1 overflow-y-auto pr-1 modal-scroll custom-scrollbar overscroll-contain -webkit-overflow-scrolling-touch"
+                >
+                  {displayedCountries.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-2.5 pb-4">
+                      {displayedCountries.map((c) => {
+                        const active = currentCountry === c.slug;
+                        const code = c.code || getCountryCode(c.slug) || getCountryCode(c.name);
+                        return (
+                          <button
+                            key={c.slug}
+                            type="button"
+                            onClick={(e) => handleSelectCountry(c.slug, e)}
+                            className={cn(
+                              "group relative flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-xl border text-left transition-all duration-200 active:scale-95 min-w-0 shadow-none",
+                              active
+                                ? "bg-[#20D66B]/15 text-[#20D66B] border-[#20D66B]/60 font-black shadow-[0_0_15px_rgba(32,214,107,0.2)]"
+                                : "bg-white/[0.03] hover:bg-white/[0.07] border-white/[0.06] hover:border-[#20D66B]/35 text-white/85 hover:text-white"
                             )}
-                            <span className={cn("text-xs truncate", active ? "font-black" : "font-medium")}>
+                          >
+                            <div className="w-7 h-5 sm:w-8 sm:h-5.5 rounded overflow-hidden border border-white/15 shrink-0 bg-black/40 flex items-center justify-center shadow-sm">
+                              {(!code || code === "WW") ? (
+                                <Globe className="w-4 h-4 text-[#20D66B]" />
+                              ) : (
+                                <img
+                                  src={`https://flagcdn.com/w80/${code.toLowerCase()}.png`}
+                                  alt={c.name}
+                                  loading="lazy"
+                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = "none";
+                                  }}
+                                />
+                              )}
+                            </div>
+                            <span className={cn("text-xs sm:text-sm font-semibold truncate flex-1", active && "font-black text-[#20D66B]")}>
                               {c.name}
                             </span>
-                          </div>
-                          {active && (
-                            <Check className="w-3.5 h-3.5 text-black shrink-0 ml-1 stroke-[2.5]" />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="py-12 text-center text-white/40 text-sm">
-                    Không tìm thấy quốc gia nào phù hợp với &quot;{countrySearchQuery}&quot;
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Modal Bottom Action / Hint */}
-            <div className="relative z-10 pt-3 mt-1.5 border-t border-white/[0.08] flex items-center justify-between text-xs text-white/50 shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-              <div className="flex items-center gap-2 min-w-0">
-                {currentCountry ? (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      startTransition(() => {
-                        router.push("/", { scroll: false });
-                      });
-                      closeModal();
-                    }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 transition-colors font-medium text-[11px]"
-                  >
-                    <X className="w-3 h-3" />
-                    <span>Bỏ chọn ({activeCountryObj?.name || currentCountry})</span>
-                  </button>
-                ) : (
-                  <span className="truncate text-white/40 text-[11px] sm:text-xs">
-                    Bấm vào quốc gia để lọc phim tức thì
-                  </span>
-                )}
-              </div>
-
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  closeModal();
-                  router.push("/");
-                }}
-                className="text-brand-green hover:underline font-semibold shrink-0 text-[11px] sm:text-xs"
-              >
-                Xem tất cả phim
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* ======================================================== */}
-      {/* MODAL BẢNG CHỌN NĂM PHÁT HÀNH (YEAR SELECTION BOARD) */}
-      {/* ======================================================== */}
-      {activeModal === "years" && (
-        <div
-          className={cn(
-            "fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 lg:p-6 transition-opacity duration-150 select-none",
-            isClosing ? "opacity-0 pointer-events-none" : "opacity-100 animate-in fade-in duration-200"
-          )}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-        >
-          {/* Backdrop with Cinema Blur */}
-          <div
-            className="fixed inset-0 bg-black/85 backdrop-blur-md cursor-pointer transition-opacity"
-            onClick={closeModal}
-            onTouchEnd={closeModal}
-          />
-
-          {/* Modal Content Board (Bottom Sheet on Mobile, Centered on Desktop) */}
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className={cn(
-              "relative z-10 w-full sm:max-w-3xl lg:max-w-4xl max-h-[88dvh] sm:max-h-[84vh] bg-[#0c120e]/95 backdrop-blur-2xl border-t sm:border border-emerald-500/20 rounded-t-[28px] sm:rounded-[28px] p-4 sm:p-6 flex flex-col shadow-[0_25px_70px_rgba(0,0,0,0.95),0_0_40px_rgba(32,214,107,0.06)] overflow-hidden transform-gpu",
-              isClosing ? "scale-95 opacity-0 duration-150" : "animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
-            )}
-          >
-            {/* Top Ambient Glow Line */}
-            <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-brand-green/40 to-transparent pointer-events-none" />
-
-            {/* Mobile Sheet Handle Bar */}
-            <div className="sm:hidden w-12 h-1 bg-white/20 hover:bg-white/30 rounded-full mx-auto mb-3 shrink-0" />
-
-            {/* Modal Header */}
-            <div className="relative z-10 flex items-center justify-between pb-3 sm:pb-4 border-b border-white/[0.08] shrink-0 gap-3">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-brand-green/15 border border-brand-green/30 flex items-center justify-center text-brand-green shrink-0 shadow-[0_0_15px_rgba(32,214,107,0.18)]">
-                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
+                            {active && (
+                              <Check className="w-3.5 h-3.5 text-[#20D66B] stroke-[3] shrink-0 ml-auto" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="py-12 text-center text-white/40 text-xs sm:text-sm">
+                      Không tìm thấy quốc gia nào phù hợp với &quot;{countrySearchQuery}&quot;
+                    </div>
+                  )}
                 </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base sm:text-xl font-extrabold text-white tracking-tight truncate">
-                      Năm Phát Hành
-                    </h3>
-                    <span className="text-[10px] sm:text-[11px] font-mono font-bold text-brand-green bg-brand-green/10 border border-brand-green/25 px-2 py-0.5 rounded-full shrink-0">
-                      1980 - {currentYearNum}
-                    </span>
-                  </div>
-                  <p className="hidden sm:block text-[11px] text-white/40 mt-0.5">
-                    Lọc phim theo từng mốc thời gian và thập niên điện ảnh
-                  </p>
-                </div>
-              </div>
 
-              {/* Close Button */}
-              <button
-                type="button"
-                onClick={closeModal}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-all shrink-0 cursor-pointer"
-                aria-label="Đóng bảng"
-              >
-                <X className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-              </button>
-            </div>
-
-            {/* Quick Filter Search Box */}
-            <div className="relative z-10 my-3 shrink-0">
-              <div className="relative flex items-center">
-                <Search className="w-4 h-4 absolute left-3.5 text-emerald-400/60 pointer-events-none" />
-                <input
-                  type="text"
-                  aria-label="Lọc năm phát hành phim"
-                  value={yearSearchQuery}
-                  onChange={(e) => setYearSearchQuery(e.target.value)}
-                  placeholder="Lọc nhanh năm (2026, 2025, 2024, 2020...)"
-                  className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.08] border border-white/10 focus:border-brand-green/50 text-white placeholder-white/35 text-[15px] sm:text-sm rounded-xl sm:rounded-2xl pl-10 pr-9 py-2.5 outline-none transition-all duration-200 shadow-inner"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  spellCheck={false}
-                />
-                {yearSearchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setYearSearchQuery("")}
-                    aria-label="Xóa tìm kiếm"
-                    className="absolute right-2.5 p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Decade Quick-Filter Pills (Shown when not searching) */}
-            {!yearSearchQuery.trim() && (
-              <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar-hidden pb-2.5 shrink-0 select-none">
-                {[
-                  { id: "all", label: "Tất cả các năm" },
-                  { id: "2020s", label: "2020 - Nay" },
-                  { id: "2010s", label: "2010 - 2019" },
-                  { id: "2000s", label: "2000 - 2009" },
-                  { id: "classic", label: "Trước 2000" },
-                ].map((tab) => {
-                  const isTabActive = yearDecade === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setYearDecade(tab.id as any)}
-                      className={cn(
-                        "px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-150 border shrink-0",
-                        isTabActive
-                          ? "bg-brand-green text-black border-brand-green font-bold shadow-[0_0_12px_rgba(32,214,107,0.3)]"
-                          : "bg-white/[0.03] hover:bg-white/[0.06] text-white/70 hover:text-white border-white/[0.08]"
-                      )}
-                    >
-                      {tab.label}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Years Interactive Unified Grid (NO duplicate sections, NO blocking buttons) */}
-            <div
-              ref={yearsScrollRef}
-              className="relative z-10 flex-1 overflow-y-auto pr-1 modal-scroll custom-scrollbar overscroll-contain -webkit-overflow-scrolling-touch"
-            >
-              {displayedYears.length > 0 ? (
-                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 sm:gap-2.5 pb-4">
-                  {displayedYears.map((y) => {
-                    const active = currentYear === String(y);
-                    const isLatest = y >= currentYearNum - 1; // e.g. 2025, 2026
-                    return (
+                {/* Footer Bar */}
+                <div className="relative z-10 pt-2.5 mt-1 border-t border-white/[0.08] flex items-center justify-between text-xs text-white/50 shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {currentCountry ? (
                       <button
-                        key={y}
                         type="button"
-                        onClick={(e) => handleSelectYear(y, e)}
-                        className={cn(
-                          "relative py-2.5 sm:py-3 px-2 rounded-xl sm:rounded-2xl border text-center transition-all duration-200 group active:scale-95 min-w-0 flex flex-col items-center justify-center gap-0.5",
-                          active
-                            ? "bg-brand-green text-black border-brand-green font-black shadow-[0_0_20px_rgba(32,214,107,0.4)] scale-105 z-10"
-                            : isLatest
-                            ? "bg-emerald-500/[0.08] hover:bg-emerald-500/[0.18] border-emerald-500/30 hover:border-brand-green text-white font-bold"
-                            : "bg-white/[0.03] hover:bg-white/[0.08] border-white/[0.06] hover:border-brand-green/40 text-white/80 hover:text-white font-semibold"
-                        )}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          startTransition(() => {
+                            router.push("/", { scroll: false });
+                          });
+                          closeModal();
+                        }}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 transition-colors font-medium text-[11px]"
                       >
-                        {/* Subtle pulse dot for latest years when not active */}
-                        {isLatest && !active && (
-                          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-brand-green shadow-[0_0_6px_rgba(32,214,107,0.8)] animate-pulse" />
-                        )}
-
-                        <span className="text-xs sm:text-sm tracking-tight font-semibold">
-                          {y}
-                        </span>
-
-                        {active ? (
-                          <span className="text-[9px] sm:text-[10px] font-bold text-black flex items-center gap-0.5">
-                            <Check className="w-2.5 h-2.5 stroke-[3]" /> Chọn
-                          </span>
-                        ) : isLatest ? (
-                          <span className="text-[9px] text-brand-green font-mono font-medium">
-                            Mới
-                          </span>
-                        ) : null}
+                        <X className="w-3 h-3" />
+                        <span>Bỏ chọn ({activeCountryObj?.name || currentCountry})</span>
                       </button>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="py-12 text-center text-white/40 text-sm">
-                  Không tìm thấy năm nào phù hợp với &quot;{yearSearchQuery}&quot;
-                </div>
-              )}
-            </div>
+                    ) : (
+                      <span className="truncate text-white/40 text-[11px] sm:text-xs">
+                        Bấm vào quốc gia để lọc phim tức thì
+                      </span>
+                    )}
+                  </div>
 
-            {/* Modal Bottom Action / Hint */}
-            <div className="relative z-10 pt-3 mt-1.5 border-t border-white/[0.08] flex items-center justify-between text-xs text-white/50 shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-              <div className="flex items-center gap-2 min-w-0">
-                {currentYear ? (
                   <button
                     type="button"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      startTransition(() => {
-                        router.push("/", { scroll: false });
-                      });
                       closeModal();
+                      router.push("/");
                     }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 transition-colors font-medium text-[11px]"
+                    className="text-[#20D66B] hover:underline font-semibold shrink-0 text-[11px] sm:text-xs"
                   >
-                    <X className="w-3 h-3" />
-                    <span>Bỏ chọn (Năm {currentYear})</span>
+                    Xem tất cả phim
                   </button>
-                ) : (
-                  <span className="truncate text-white/40 text-[11px] sm:text-xs">
-                    Bấm vào năm để lọc phim tức thì
-                  </span>
-                )}
-              </div>
+                </div>
+              </>
+            )}
 
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  closeModal();
-                  router.push("/");
-                }}
-                className="text-brand-green hover:underline font-semibold shrink-0 text-[11px] sm:text-xs"
-              >
-                Xem tất cả phim
-              </button>
-            </div>
+            {/* ==================================================== */}
+            {/* TAB 3: NĂM PHÁT HÀNH (YEARS SELECTION)               */}
+            {/* ==================================================== */}
+            {activeModal === "years" && (
+              <>
+                {/* Search & Sub-filters */}
+                <div className="relative z-10 pt-2.5 pb-2 shrink-0 space-y-2">
+                  <div className="relative flex items-center">
+                    <Search className="w-4 h-4 absolute left-3.5 text-emerald-400/60 pointer-events-none" />
+                    <input
+                      type="text"
+                      aria-label="Nhập năm phát hành"
+                      value={yearSearchQuery}
+                      onChange={(e) => setYearSearchQuery(e.target.value)}
+                      placeholder="Nhập năm phát hành (2026, 2025, 2024...)"
+                      className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.08] border border-white/10 focus:border-[#20D66B]/50 text-white placeholder-white/35 text-xs sm:text-sm rounded-xl pl-9 pr-9 py-2 outline-none transition-all duration-200 shadow-inner"
+                      autoComplete="off"
+                      spellCheck={false}
+                    />
+                    {yearSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setYearSearchQuery("")}
+                        aria-label="Xóa tìm kiếm"
+                        className="absolute right-2.5 p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Decade Chips */}
+                  {!yearSearchQuery.trim() && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
+                      {[
+                        { id: "all", label: "Tất Cả Năm" },
+                        { id: "2020s", label: "🚀 2020s Mới" },
+                        { id: "2010s", label: "2010s" },
+                        { id: "2000s", label: "2000s" },
+                        { id: "classic", label: "Kinh Điển" },
+                      ].map((f) => (
+                        <button
+                          key={f.id}
+                          type="button"
+                          onClick={() => setYearDecade(f.id as any)}
+                          className={cn(
+                            "px-2.5 py-1 rounded-md text-[11px] font-bold whitespace-nowrap transition-all select-none active:scale-95",
+                            yearDecade === f.id
+                              ? "bg-[#20D66B]/20 text-[#20D66B] border border-[#20D66B]/40"
+                              : "bg-white/[0.03] hover:bg-white/[0.06] text-white/60 hover:text-white border border-white/[0.06]"
+                          )}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Years Grid */}
+                <div
+                  ref={yearsScrollRef}
+                  className="relative z-10 flex-1 overflow-y-auto pr-1 modal-scroll custom-scrollbar overscroll-contain -webkit-overflow-scrolling-touch"
+                >
+                  {displayedYears.length > 0 ? (
+                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 sm:gap-2.5 pb-4">
+                      {displayedYears.map((y) => {
+                        const active = currentYear === String(y);
+                        const isLatest = y >= currentYearNum - 1;
+                        return (
+                          <button
+                            key={y}
+                            type="button"
+                            onClick={(e) => handleSelectYear(y, e)}
+                            className={cn(
+                              "group relative py-2 sm:py-2.5 px-2 rounded-xl border text-center transition-all duration-200 active:scale-95 min-w-0 flex flex-col items-center justify-center gap-0.5",
+                              active
+                                ? "bg-gradient-to-r from-[#20D66B] to-[#10B981] text-[#050807] border-[#20D66B] font-black shadow-[0_0_15px_rgba(32,214,107,0.35)] scale-105 z-10"
+                                : isLatest
+                                ? "bg-emerald-500/[0.08] hover:bg-emerald-500/[0.18] border-emerald-500/30 hover:border-[#20D66B] text-white font-bold"
+                                : "bg-white/[0.03] hover:bg-white/[0.08] border-white/[0.06] hover:border-[#20D66B]/40 text-white/80 hover:text-white font-semibold"
+                            )}
+                          >
+                            {isLatest && !active && (
+                              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[#20D66B] shadow-[0_0_6px_rgba(32,214,107,0.8)] animate-pulse" />
+                            )}
+                            <span className="text-xs sm:text-sm tracking-tight font-bold">
+                              {y}
+                            </span>
+                            {active ? (
+                              <span className="text-[9px] font-black text-[#050807] flex items-center gap-0.5">
+                                <Check className="w-2.5 h-2.5 stroke-[3]" /> Chọn
+                              </span>
+                            ) : isLatest ? (
+                              <span className="text-[9px] text-[#20D66B] font-mono font-medium">
+                                Mới
+                              </span>
+                            ) : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="py-12 text-center text-white/40 text-xs sm:text-sm">
+                      Không tìm thấy năm nào phù hợp với &quot;{yearSearchQuery}&quot;
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer Bar */}
+                <div className="relative z-10 pt-2.5 mt-1 border-t border-white/[0.08] flex items-center justify-between text-xs text-white/50 shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {currentYear ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          startTransition(() => {
+                            router.push("/", { scroll: false });
+                          });
+                          closeModal();
+                        }}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 transition-colors font-medium text-[11px]"
+                      >
+                        <X className="w-3 h-3" />
+                        <span>Bỏ chọn (Năm {currentYear})</span>
+                      </button>
+                    ) : (
+                      <span className="truncate text-white/40 text-[11px] sm:text-xs">
+                        Bấm vào năm để lọc phim tức thì
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      closeModal();
+                      router.push("/");
+                    }}
+                    className="text-[#20D66B] hover:underline font-semibold shrink-0 text-[11px] sm:text-xs"
+                  >
+                    Xem tất cả phim
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
