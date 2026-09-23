@@ -480,7 +480,7 @@ function SidebarContent({
                     </div>
                     <span
                       className={cn(
-                        "text-[9.5px] tracking-tight whitespace-nowrap transition-colors duration-150 leading-none",
+                        "text-[10px] tracking-tight whitespace-nowrap transition-colors duration-150 leading-none",
                         active ? "text-brand-green font-bold" : "text-white/50 group-hover:text-white font-medium"
                       )}
                     >
@@ -515,7 +515,7 @@ function SidebarContent({
                     </div>
                     <span
                       className={cn(
-                        "text-[9.5px] tracking-tight whitespace-nowrap transition-colors duration-150 leading-none",
+                        "text-[10px] tracking-tight whitespace-nowrap transition-colors duration-150 leading-none",
                         active ? "text-brand-green font-bold" : "text-white/50 group-hover:text-white font-medium"
                       )}
                     >
@@ -535,40 +535,53 @@ function SidebarContent({
                     href="/"
                     prefetch={true}
                     onClick={(e) => handleBottomNavNavigate("/", e)}
-                    className="absolute -top-[18px] w-[52px] h-[52px] rounded-full flex items-center justify-center select-none touch-manipulation cursor-pointer active:scale-90 transition-transform duration-100 group"
+                    className="w-full h-full flex flex-col items-center justify-end pb-[12px] relative select-none touch-manipulation cursor-pointer active:scale-90 transition-transform duration-100 group"
                     style={{ WebkitTapHighlightColor: "transparent" }}
                     aria-label="Trang Chủ"
                   >
-                    {/* Ambient Glow Halo behind Elevated Button */}
-                    <div
-                      className={cn(
-                        "absolute -inset-1.5 rounded-full blur-md transition-opacity duration-300 pointer-events-none",
-                        active
-                          ? "bg-brand-green/45 opacity-100"
-                          : "bg-brand-green/15 opacity-40 group-hover:opacity-80"
-                      )}
-                    />
-
-                    {/* Elevated Button Body */}
-                    <div
-                      className={cn(
-                        "w-full h-full rounded-full flex items-center justify-center transition-all duration-200 relative overflow-hidden",
-                        active
-                          ? "bg-gradient-to-tr from-[#20D66B] via-[#2AE376] to-[#10B981] text-black shadow-[0_0_24px_rgba(32,214,107,0.6),0_6px_20px_rgba(0,0,0,0.7)] border-2 border-brand-green"
-                          : "bg-[#111915] text-white/70 hover:text-white border border-white/15 hover:border-brand-green/40 shadow-[0_6px_18px_rgba(0,0,0,0.8)]"
-                      )}
-                    >
-                      {/* Top highlight shine on active button */}
-                      {active && (
-                        <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/35 to-transparent pointer-events-none rounded-t-full" />
-                      )}
-                      <Home
+                    {/* Elevated Button Wrapper */}
+                    <div className="absolute -top-[18px] w-[48px] h-[48px] flex items-center justify-center">
+                      {/* Ambient Glow Halo behind Elevated Button */}
+                      <div
                         className={cn(
-                          "w-[23px] h-[23px] transition-transform group-hover:scale-105",
-                          active ? "stroke-[2.5] text-black" : "stroke-[2] text-white/70 group-hover:text-brand-green"
+                          "absolute -inset-1.5 rounded-full blur-md transition-opacity duration-300 pointer-events-none",
+                          active
+                            ? "bg-brand-green/45 opacity-100"
+                            : "bg-brand-green/15 opacity-40 group-hover:opacity-80"
                         )}
                       />
+
+                      {/* Elevated Button Body */}
+                      <div
+                        className={cn(
+                          "w-full h-full rounded-full flex items-center justify-center transition-all duration-200 relative overflow-hidden",
+                          active
+                            ? "bg-gradient-to-tr from-[#20D66B] via-[#2AE376] to-[#10B981] text-black shadow-[0_0_24px_rgba(32,214,107,0.6),0_6px_20px_rgba(0,0,0,0.7)] border-2 border-brand-green"
+                            : "bg-[#111915] text-white/70 hover:text-white border border-white/15 hover:border-brand-green/40 shadow-[0_6px_18px_rgba(0,0,0,0.8)]"
+                        )}
+                      >
+                        {/* Top highlight shine on active button */}
+                        {active && (
+                          <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/35 to-transparent pointer-events-none rounded-t-full" />
+                        )}
+                        <Home
+                          className={cn(
+                            "w-[22px] h-[22px] transition-transform group-hover:scale-105",
+                            active ? "stroke-[2.5] text-black" : "stroke-[2] text-white/70 group-hover:text-brand-green"
+                          )}
+                        />
+                      </div>
                     </div>
+
+                    {/* Text Label under House Icon */}
+                    <span
+                      className={cn(
+                        "text-[11px] tracking-tight whitespace-nowrap transition-colors duration-150 leading-none",
+                        active ? "text-brand-green font-bold" : "text-white/60 group-hover:text-white font-semibold"
+                      )}
+                    >
+                      Trang chủ
+                    </span>
                   </Link>
                 );
               })()}
@@ -603,7 +616,7 @@ function SidebarContent({
                     </div>
                     <span
                       className={cn(
-                        "text-[9.5px] tracking-tight whitespace-nowrap transition-colors duration-150 leading-none",
+                        "text-[10px] tracking-tight whitespace-nowrap transition-colors duration-150 leading-none",
                         active ? "text-brand-green font-bold" : "text-white/50 group-hover:text-white font-medium"
                       )}
                     >
@@ -657,7 +670,7 @@ function SidebarContent({
                     </div>
                     <span
                       className={cn(
-                        "text-[9.5px] tracking-tight whitespace-nowrap transition-colors duration-150 leading-none",
+                        "text-[10px] tracking-tight whitespace-nowrap transition-colors duration-150 leading-none",
                         active ? "text-brand-green font-bold" : "text-white/50 group-hover:text-white font-medium"
                       )}
                     >

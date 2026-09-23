@@ -44,7 +44,7 @@ function HeaderComponent({}: HeaderProps) {
     <>
       <header
         className={cn(
-          "fixed top-0 right-0 z-[90] h-16 sm:h-20 flex items-center transition-all duration-300 select-none bg-cinema-bg border-b border-white/10 shadow-none",
+          "fixed top-0 right-0 z-[90] h-16 flex items-center transition-all duration-300 select-none bg-cinema-sub border-b border-white/10 shadow-none",
           "left-0 lg:left-[225px]"
         )}
       >
@@ -79,7 +79,7 @@ function HeaderComponent({}: HeaderProps) {
             {/* Search Trigger Button - Full Pill across all viewports, snug on mobile */}
             <button
               onClick={() => setShowSearchOverlay(true)}
-              className="relative flex items-center justify-between h-9 sm:h-10 pl-2 pr-3 sm:pr-2.5 w-auto sm:w-44 md:w-48 lg:w-52 rounded-full bg-[#0B100E]/90 hover:bg-[#111714] border border-white/10 hover:border-brand-green/50 backdrop-blur-xl text-white transition-all duration-300 cursor-pointer group shadow-[0_4px_24px_rgba(0,0,0,0.7)] active:scale-95 shrink-0 overflow-hidden"
+              className="relative flex items-center justify-between h-9 sm:h-10 pl-2 pr-3 sm:pr-2.5 w-auto sm:w-44 md:w-48 lg:w-52 rounded-full bg-[#111714] hover:bg-[#151D19] border border-white/10 hover:border-brand-green/50 backdrop-blur-xl text-white transition-all duration-300 cursor-pointer group shadow-[0_4px_24px_rgba(0,0,0,0.7)] active:scale-95 shrink-0 overflow-hidden"
               aria-label="Tìm kiếm phim"
             >
               {/* Subtle Ambient Hover Glow */}

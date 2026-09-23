@@ -95,6 +95,20 @@ export default function HeroSection({ movies }: HeroSectionProps) {
   const { user, checkAuthOrPrompt, updateServerData } = useUserAuth();
   const { toggleFavorite, isFavorite } = useFavorites();
 
+  const thumbnailContainerRef = useRef<HTMLDivElement>(null);
+  const activeThumbnailRef = useRef<HTMLButtonElement>(null);
+
+  // Auto-scroll active thumbnail smoothly into view whenever currentIndex updates
+  useEffect(() => {
+    if (activeThumbnailRef.current && thumbnailContainerRef.current) {
+      activeThumbnailRef.current.scrollIntoView({
+        behavior: "smooth",
+        inline: "center",
+        block: "nearest",
+      });
+    }
+  }, [currentIndex]);
+
   const validMovies = useMemo(() => {
     return (movies || []).filter((m) => m?.thumb_url || m?.poster_url).slice(0, 7);
   }, [movies]);
@@ -225,7 +239,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
   return (
     <section
       className="relative w-full overflow-hidden select-none bg-cinema-bg touch-pan-y"
-      style={{ minHeight: "clamp(450px, 60vh, 560px)" }}
+      style={{ minHeight: "clamp(500px, 60vh, 580px)" }}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onTouchStart={handleTouchStart}
@@ -271,11 +285,11 @@ export default function HeroSection({ movies }: HeroSectionProps) {
       </div>
 
       {/* 2. Main Editorial Content Container */}
-      <div className="relative z-20 h-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col justify-center pt-16 sm:pt-20 pb-4 sm:pb-6 min-h-[inherit]">
+      <div className="relative z-20 h-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col justify-start lg:justify-center pt-24 sm:pt-24 lg:pt-28 pb-6 sm:pb-5 min-h-[inherit]">
         <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           
           {/* Left Column: Movie Editorial & Rich Information */}
-          <div className="lg:col-span-8 xl:col-span-7 space-y-4 pr-0 lg:pr-10 relative z-30">
+          <div className="lg:col-span-8 xl:col-span-7 space-y-3.5 sm:space-y-4 pr-0 lg:pr-10 relative z-30">
             
             {/* Top Trending Ribbon Badge */}
             <div className="flex items-center gap-3">
@@ -474,101 +488,129 @@ export default function HeroSection({ movies }: HeroSectionProps) {
           </div>
 
           {/* Right Column: Interactive Thumbnail Carousel (Desktop & Large screens) */}
-          <div className="hidden lg:flex lg:col-span-4 xl:col-span-5 flex-col items-end justify-end relative z-30 self-end pb-2">
+          <div className="hidden lg:flex lg:col-span-4 xl:col-span-5 flex-col items-end justify-end relative z-30 self-end pb-0 translate-y-3 lg:translate-y-4 xl:translate-y-5">
             
-            {/* Carousel Navigation Header */}
-            <div className="flex items-center justify-between w-full mb-2.5 px-1">
-              <div className="flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-brand-green shrink-0" />
-                <span className="text-[11px] font-bold text-white/75 tracking-wider uppercase select-none">
-                  Danh Sách Ghim Nổi Bật
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={prev}
-                  aria-label="Phim trước"
-                  className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white border border-white/10 transition-all active:scale-95 cursor-pointer"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={next}
-                  aria-label="Phim tiếp theo"
-                  className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white border border-white/10 transition-all active:scale-95 cursor-pointer"
-                >
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
+            {/* Glassmorphic Cinema Featured Dock */}
+            <div className="w-full max-w-[460px] xl:max-w-[500px] rounded-2xl bg-black/65 backdrop-blur-xl border border-white/10 p-2.5 sm:p-3 shadow-[0_16px_40px_rgba(0,0,0,0.85)]">
+              {/* Carousel Navigation Header */}
+              <div className="flex items-center justify-between w-full mb-2 px-0.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-brand-green/15 border border-brand-green/30 flex items-center justify-center text-brand-green shadow-[0_0_10px_rgba(34,197,94,0.2)]">
+                    <Sparkles className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-[11px] font-bold text-white tracking-wider uppercase select-none">
+                    Phim Ghim Nổi Bật
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-brand-green/15 text-brand-green border border-brand-green/30">
+                    {currentIndex + 1} / {validMovies.length}
+                  </span>
+                </div>
 
-            {/* Thumbnails Row */}
-            <div className="flex items-center gap-3 overflow-x-auto pb-1 max-w-full scrollbar-hide">
-              {validMovies.map((movie, idx) => {
-                const isActive = idx === currentIndex;
-                const thumb = movie.thumb_url || movie.poster_url || "";
-                return (
+                {/* Arrow Controls */}
+                <div className="flex items-center gap-1.5">
                   <button
-                    key={movie.slug}
-                    onClick={() => goTo(idx)}
-                    aria-label={`Chọn phim nổi bật ${movie.name}`}
-                    className={cn(
-                      "relative rounded-2xl overflow-hidden transition-[width,height,opacity,border-color] duration-300 text-left group border shadow-lg shrink-0 active:scale-95",
-                      isActive
-                        ? "w-48 h-28 border-brand-green/80 shadow-[0_0_20px_rgba(34,197,94,0.3)] scale-100 ring-2 ring-brand-green/30"
-                        : "w-28 h-20 border-white/10 hover:border-white/40 opacity-60 hover:opacity-100 hover:scale-105"
-                    )}
+                    onClick={prev}
+                    aria-label="Phim trước"
+                    className="w-7 h-7 rounded-full bg-white/5 hover:bg-brand-green hover:text-cinema-bg border border-white/10 hover:border-brand-green flex items-center justify-center text-white/80 transition-all active:scale-90 cursor-pointer shadow-sm"
                   >
-                    <HeroThumbImage movie={movie} isActive={isActive} />
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={next}
+                    aria-label="Phim tiếp theo"
+                    className="w-7 h-7 rounded-full bg-white/5 hover:bg-brand-green hover:text-cinema-bg border border-white/10 hover:border-brand-green flex items-center justify-center text-white/80 transition-all active:scale-90 cursor-pointer shadow-sm"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
 
-                    {/* Inactive Dark Shade */}
-                    {!isActive && (
-                      <div className="absolute inset-0 bg-black/50 group-hover:bg-transparent transition-colors duration-200" />
-                    )}
-
-                    {/* Rank Badge — solid bg, no backdrop-blur */}
-                    <span
+              {/* Thumbnails Row with Auto-Scroll & Snap */}
+              <div
+                ref={thumbnailContainerRef}
+                className="flex items-stretch gap-2.5 overflow-x-auto pb-1 max-w-full scrollbar-none scroll-smooth snap-x snap-mandatory"
+                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+              >
+                {validMovies.map((movie, idx) => {
+                  const isActive = idx === currentIndex;
+                  return (
+                    <button
+                      key={movie.slug}
+                      ref={isActive ? activeThumbnailRef : null}
+                      onClick={() => goTo(idx)}
+                      aria-label={`Chọn phim nổi bật ${movie.name}`}
                       className={cn(
-                        "absolute top-2 left-2 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold tracking-tight z-10 shadow-sm",
+                        "relative rounded-xl overflow-hidden transition-all duration-300 text-left group border shrink-0 snap-center cursor-pointer",
                         isActive
-                          ? "bg-brand-green text-cinema-bg font-black"
-                          : "bg-black/80 text-white/80 border border-white/10"
+                          ? "w-40 h-[86px] sm:w-44 sm:h-[90px] border-brand-green shadow-[0_0_18px_rgba(32,214,107,0.35)] ring-2 ring-brand-green/40"
+                          : "w-28 h-[86px] sm:w-32 sm:h-[90px] border-white/10 hover:border-white/30 opacity-70 hover:opacity-100 hover:scale-[1.02]"
                       )}
                     >
-                      #{idx + 1}
-                    </span>
+                      <HeroThumbImage movie={movie} isActive={isActive} />
 
-                    {/* Active Overlay with Title & Progress Bar */}
-                    {isActive && (
-                      <>
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent z-10" />
-                        <div className="absolute bottom-2 left-2.5 right-2.5 z-20 flex flex-col">
-                          <span className="text-[9px] font-black text-brand-green uppercase tracking-widest drop-shadow-md">
-                            ĐANG XEM
-                          </span>
-                          <p className="text-xs font-bold text-white truncate drop-shadow-md">
+                      {/* Scrim Gradient for Readable Overlays */}
+                      <div
+                        className={cn(
+                          "absolute inset-0 z-10 transition-opacity",
+                          isActive
+                            ? "bg-gradient-to-t from-black/95 via-black/40 to-transparent"
+                            : "bg-gradient-to-t from-black/90 via-black/50 to-black/30 group-hover:via-black/30"
+                        )}
+                      />
+
+                      {/* Rank Badge */}
+                      <span
+                        className={cn(
+                          "absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md text-[9.5px] font-mono font-bold tracking-tight z-20 shadow-sm",
+                          isActive
+                            ? "bg-brand-green text-cinema-bg font-black shadow-[0_0_8px_rgba(32,214,107,0.6)]"
+                            : "bg-black/80 text-white/80 border border-white/10"
+                        )}
+                      >
+                        #{idx + 1}
+                      </span>
+
+                      {/* Inactive Card: Movie Title Preview */}
+                      {!isActive && (
+                        <div className="absolute bottom-1.5 left-1.5 right-1.5 z-20">
+                          <p className="text-[9.5px] sm:text-[10px] font-semibold text-white/90 truncate leading-tight group-hover:text-brand-green transition-colors">
                             {movie.name}
                           </p>
                         </div>
-                        {/* Auto-Slide Progress Bar - GPU Composited (No Reflow) */}
-                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-20 overflow-hidden">
-                          <div
-                            key={currentIndex}
-                            className={cn(
-                              "h-full w-full bg-brand-green origin-left transform-gpu will-change-transform",
-                              !isPaused && "animate-progress-scale"
-                            )}
-                            style={{
-                              animationDuration: `${AUTO_SLIDE_DURATION}ms`,
-                              animationTimingFunction: "linear",
-                            }}
-                          />
-                        </div>
-                      </>
-                    )}
-                  </button>
-                );
-              })}
+                      )}
+
+                      {/* Active Card: ĐANG CHIẾU Label + Movie Title + Animated Progress Bar */}
+                      {isActive && (
+                        <>
+                          <div className="absolute bottom-1.5 left-2 right-2 z-20 flex flex-col">
+                            <span className="text-[8px] font-black text-brand-green uppercase tracking-widest leading-none mb-0.5">
+                              ĐANG CHIẾU
+                            </span>
+                            <p className="text-[10.5px] sm:text-[11px] font-bold text-white truncate drop-shadow-md leading-tight">
+                              {movie.name}
+                            </p>
+                          </div>
+
+                          {/* Auto-Slide Progress Bar */}
+                          <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-20 overflow-hidden">
+                            <div
+                              key={currentIndex}
+                              className={cn(
+                                "h-full w-full bg-brand-green origin-left transform-gpu will-change-transform",
+                                !isPaused && "animate-progress-scale"
+                              )}
+                              style={{
+                                animationDuration: `${AUTO_SLIDE_DURATION}ms`,
+                                animationTimingFunction: "linear",
+                              }}
+                            />
+                          </div>
+                        </>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 

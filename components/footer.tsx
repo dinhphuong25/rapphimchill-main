@@ -1,77 +1,39 @@
 import { memo } from "react";
-import Script from "next/script";
 
 interface FooterProps {
   customFooterText?: string;
 }
 
-function FooterComponent({}: FooterProps = {}) {
+function FooterComponent({ customFooterText }: FooterProps = {}) {
   return (
-    <footer className="w-full mt-auto py-4 sm:py-5 mb-20 lg:mb-0 border-t border-white/[0.08] bg-[#050807] select-none">
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col items-center justify-center text-center gap-1.5 sm:gap-2">
+    <footer className="w-full mt-auto mb-0 border-t border-white/[0.08] bg-[#050807] select-none text-cinema-text">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-8 lg:px-12 pt-5 pb-2.5 sm:py-7 flex flex-col items-center text-center gap-3.5 sm:gap-4">
         
-        {/* Dòng 1: Copyright, Bản quyền & Miễn trừ trách nhiệm */}
-        <p className="text-[11px] sm:text-[12px] font-medium text-white/60 leading-normal">
-          © 2026 Hi Phim. Mọi bản quyền được bảo lưu và miễn trừ trách nhiệm pháp lý.
+        {/* Tuyên bố miễn trừ trách nhiệm */}
+        <p className="text-[11px] sm:text-[11.5px] text-white/45 leading-relaxed max-w-3xl">
+          <span className="font-semibold text-white/60">Tuyên bố miễn trừ trách nhiệm:</span> Toàn bộ nội dung video trên website được thu thập tự động từ các nguồn chia sẻ mở công khai trên Internet. Hi Phim không tự lưu trữ hoặc tải lên bất kỳ tệp tin phương tiện nào lên máy chủ của mình. Nếu có bất kỳ thắc mắc hoặc khiếu nại bản quyền, xin vui lòng liên hệ trực tiếp với các đơn vị cung cấp nguồn tương ứng.
         </p>
 
-        {/* Dòng 2: Người quản lý & phát triển */}
-        <p className="text-[11px] sm:text-[12px] text-white/70 leading-normal">
-          Được quản lý và phát triển bởi{" "}
-          <a
-            href="https://www.facebook.com/dinhphuong205/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-brand-green font-bold hover:underline hover:text-brand-green-hover transition-colors"
-          >
-            Kim Đình Phương
-          </a>
-        </p>
+        {/* Phần dưới: Bản quyền & Nhà phát triển */}
+        <div className="w-full pt-4 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-2.5 text-[11.5px] text-white/50">
+          <p>
+            © 2025 Hi Phim. Mọi bản quyền được bảo lưu.
+          </p>
 
-        {/* Dòng 3: Badges Chứng Nhận (DMCA + Đã Thông Báo Bộ Công Thương) */}
-        <div className="flex items-center justify-center gap-3 pt-1">
-          {/* DMCA Badge */}
-          <a
-            href="https://www.dmca.com/Protection/Status.aspx?ID=49260aed-2988-411a-9305-320180b35777"
-            title="DMCA.com Protection Status"
-            className="dmca-badge inline-flex items-center transition-all duration-200 hover:opacity-80 active:scale-95"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://images.dmca.com/Badges/dmca-badge-w150-2x1-01.png?ID=49260aed-2988-411a-9305-320180b35777"
-              alt="DMCA.com Protection Status"
-              className="h-7 sm:h-8 w-auto object-contain"
-              loading="lazy"
-            />
-          </a>
-
-          {/* Đã Thông Báo Bộ Công Thương */}
-          <a
-            href="http://online.gov.vn"
-            title="Đã thông báo Bộ Công Thương"
-            className="inline-flex items-center transition-all duration-200 hover:opacity-80 active:scale-95"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/bo-cong-thuong.png"
-              alt="Đã thông báo Bộ Công Thương"
-              className="h-7 sm:h-8 w-auto object-contain rounded-sm"
-              loading="lazy"
-            />
-          </a>
+          <p>
+            Phát triển & vận hành bởi{" "}
+            <a
+              href="https://www.facebook.com/dinhphuong205/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-brand-green font-semibold hover:underline hover:text-brand-green-hover transition-colors"
+            >
+              Kim Đình Phương
+            </a>
+          </p>
         </div>
 
       </div>
-
-      {/* DMCA Badge Helper Script */}
-      <Script
-        src="https://images.dmca.com/Badges/DMCABadgeHelper.min.js"
-        strategy="lazyOnload"
-      />
     </footer>
   );
 }
