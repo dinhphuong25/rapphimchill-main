@@ -2107,7 +2107,7 @@ export default function VideoPlayer({
     <div 
       ref={containerRef} 
       className={cn(
-        "relative bg-black group overflow-hidden select-none w-full aspect-video rounded-xl lg:rounded-2xl shadow-2xl touch-manipulation", 
+        "relative bg-black group overflow-hidden select-none w-full aspect-video rounded-xl lg:rounded-2xl touch-manipulation", 
         isFullscreen && "fixed inset-0 z-[99999] w-screen h-[100dvh] rounded-none aspect-auto"
       )} 
       style={{ transform: "translateZ(0)" }}

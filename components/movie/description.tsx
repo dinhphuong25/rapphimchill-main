@@ -953,13 +953,10 @@ export default function Description({ movie, serverData }: any) {
         {/* Left Primary Stage: Video Player — sticky on desktop */}
         <div className="flex-1 w-full min-w-0 flex flex-col gap-4 sm:gap-6 lg:sticky lg:top-[60px]">
           
-          {/* Video Player Container with Dynamic OLED Backlight Glow */}
+          {/* Video Player Container */}
           <div className="relative group/player w-full">
-            {/* Ambient backlight glow - desktop only to prevent mobile GPU lag */}
-            <div className="absolute -inset-3 bg-gradient-to-r from-brand-green/25 via-brand-green/10 to-emerald-600/20 rounded-[32px] blur-3xl opacity-70 group-hover/player:opacity-100 transition-opacity pointer-events-none hidden sm:block will-change-transform" />
-
             <Card className={cn(
-              "border border-white/10 overflow-hidden w-full rounded-2xl lg:rounded-3xl bg-black relative z-10",
+              "border border-white/10 overflow-hidden w-full rounded-2xl lg:rounded-3xl bg-black relative z-10 shadow-none",
               isUserBanned ? "min-h-[430px] sm:min-h-[500px]" : isUnreleasedMovie ? "min-h-[380px] sm:min-h-[480px] aspect-video" : "aspect-video"
             )}>
               <CardContent className="p-0 h-full w-full">

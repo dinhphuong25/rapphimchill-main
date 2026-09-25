@@ -127,8 +127,6 @@ async function WatchContent({ slug, ep, sv }: { slug: string; ep?: string; sv?: 
     url: `https://hiphim.one${item.url}`
   }));
 
-  const bgUrl = normalizeImageUrl(movie.poster_url || movie.thumb_url);
-
   // Dynamically resolve target episode m3u8 for instant preload and preconnect
   let targetM3u8 = "";
   if (server && Array.isArray(server) && server.length > 0) {
@@ -186,19 +184,6 @@ async function WatchContent({ slug, ep, sv }: { slug: string; ep?: string; sv?: 
           <link rel="preconnect" href={orig} crossOrigin="anonymous" />
         </Fragment>
       ))}
-      {/* Dynamic Blurred Background - Chỉ hiện trên desktop để tối ưu GPU mobile */}
-      <div 
-        className="fixed inset-0 z-0 opacity-25 scale-105 pointer-events-none hidden sm:block will-change-transform"
-        style={{
-          backgroundImage: `url(${bgUrl})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          filter: 'blur(60px)',
-          transform: 'translateZ(0)',
-        }}
-      />
-      <div className="fixed inset-0 z-0 bg-gradient-to-b from-cinema-bg/80 via-cinema-bg/95 to-cinema-bg pointer-events-none" />
-
       {/* Main Cinema Page Layout - Full-width Standalone Cinema View */}
       <main className="relative z-10 min-h-0 sm:min-h-screen flex flex-col w-full">
         <MovieStructuredData

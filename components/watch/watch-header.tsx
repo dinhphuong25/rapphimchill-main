@@ -74,7 +74,7 @@ export default function WatchHeader({
   return (
     <>
       <div className="sticky top-0 z-40 w-full max-w-[1600px] mx-auto transition-all shrink-0">
-        <header className="w-full bg-[#0a0a0a]/90 backdrop-blur-2xl border-x border-b border-white/10 rounded-b-2xl sm:rounded-b-3xl px-3 sm:px-6 py-2.5 shadow-2xl relative">
+        <header className="w-full bg-[#0a0a0a]/90 backdrop-blur-2xl border-x border-b border-white/10 rounded-b-2xl sm:rounded-b-3xl px-3 sm:px-6 py-2.5 relative">
           <div className="flex items-center justify-between gap-2 sm:gap-4 w-full">
             {/* Left: Back button (Far left corner) */}
             <Button

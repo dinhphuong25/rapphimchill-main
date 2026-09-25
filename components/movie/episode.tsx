@@ -134,7 +134,7 @@ export default function Episode({
 
   return (
     <div className="flex flex-col gap-4 w-full">
-      <div className="bg-[#141414] rounded-2xl border border-white/5 p-5 flex flex-col gap-5 relative shadow-xl">
+      <div className="bg-[#141414] rounded-2xl border border-white/5 p-5 flex flex-col gap-5 relative">
         {/* Máy Chủ Phát Section */}
         <div className="space-y-3 min-w-0 z-10 relative">
           <h4 className="text-white/60 text-[13px] font-bold uppercase tracking-widest flex items-center gap-2 whitespace-nowrap">
