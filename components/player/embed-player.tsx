@@ -72,7 +72,7 @@ const EmbedPlayer = ({
             {/* Back Button */}
             <button
                 onClick={handleBack}
-                className="absolute top-4 left-4 z-20 flex items-center justify-center w-10 h-10 bg-black/50 hover:bg-black/80 backdrop-blur-sm text-white rounded-full transition-all duration-300 opacity-0 group-hover:opacity-100 cursor-pointer border border-white/10 shadow-lg active:scale-95"
+                className="absolute top-4 left-4 z-20 flex items-center justify-center w-10 h-10 bg-black/50 hover:bg-black/80 backdrop-blur-sm text-white rounded-full transition-all duration-300 opacity-0 group-hover:opacity-100 cursor-pointer border border-white/10 active:scale-95"
                 title="Quay lại"
             >
                 <ArrowLeft className="w-5 h-5" strokeWidth={2.5} />
@@ -84,14 +84,14 @@ const EmbedPlayer = ({
                 <button
                     onClick={toggleAdShield}
                     className={cn(
-                        "flex items-center gap-1.5 px-3 py-1.5 bg-black/60 hover:bg-black/90 backdrop-blur-md border rounded-full transition-all duration-300 cursor-pointer text-xs font-bold shadow-lg active:scale-95",
+                        "flex items-center gap-1.5 px-3 py-1.5 bg-black/60 hover:bg-black/90 backdrop-blur-md border rounded-full transition-all duration-300 cursor-pointer text-xs font-bold active:scale-95",
                         adShield
-                            ? "text-brand-green border-brand-green/40 shadow-[0_0_10px_rgba(34,197,94,0.2)]"
+                            ? "text-brand-green border-brand-green/40"
                             : "text-white/50 border-white/15 hover:text-white"
                     )}
                     title={adShield ? "Đang bật che QC cờ bạc (Bấm để tắt)" : "Đang tắt che QC (Bấm để bật)"}
                 >
-                    <ShieldCheck className={cn("w-3.5 h-3.5", adShield && "drop-shadow-[0_0_6px_rgba(34,197,94,0.5)]")} />
+                    <ShieldCheck className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">{adShield ? "Đang che QC" : "Bật che QC"}</span>
                 </button>
 
@@ -99,7 +99,7 @@ const EmbedPlayer = ({
                 {onSwitchToM3u8 && (
                     <button
                         onClick={onSwitchToM3u8}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-black/60 hover:bg-black/90 backdrop-blur-md text-brand-green hover:text-white border border-brand-green/30 hover:border-brand-green/60 rounded-full transition-all duration-300 cursor-pointer text-xs font-bold shadow-lg active:scale-95"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-black/60 hover:bg-black/90 backdrop-blur-md text-brand-green hover:text-white border border-brand-green/30 hover:border-brand-green/60 rounded-full transition-all duration-300 cursor-pointer text-xs font-bold active:scale-95"
                         title="Chuyển về Máy chủ Mặc định"
                     >
                         <Server className="w-3.5 h-3.5" />
@@ -125,7 +125,7 @@ const EmbedPlayer = ({
                 }`}
             >
                 <div className="flex flex-col items-center gap-3">
-                    <div className="w-12 h-12 border-4 border-brand-green/20 border-t-brand-green rounded-full animate-spin shadow-[0_0_15px_rgba(34,197,94,0.4)]"></div>
+                    <div className="w-12 h-12 border-4 border-brand-green/20 border-t-brand-green rounded-full animate-spin"></div>
                     <p className="text-white text-sm font-semibold tracking-wide animate-pulse">
                         Đang kết nối Máy chủ Dự phòng...
                     </p>

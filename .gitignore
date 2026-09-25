@@ -49,3 +49,8 @@ next-env.d.ts
 # editorconfig
 *.editorconfig
 .env
+
+# scratch & skills
+/scratch/
+/.agents/
+skills-lock.json

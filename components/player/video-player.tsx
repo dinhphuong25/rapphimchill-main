@@ -2348,7 +2348,7 @@ export default function VideoPlayer({
             hasRenderedFirstFrame ? "bg-black/35 backdrop-blur-[2px]" : "bg-black/60 backdrop-blur-xs"
           )}
         >
-          <Loader2 className="w-11 h-11 sm:w-12 sm:h-12 text-brand-green animate-spin mb-3 shadow-[0_0_20px_rgba(34,197,94,0.4)]" />
+          <Loader2 className="w-11 h-11 sm:w-12 sm:h-12 text-brand-green animate-spin mb-3" />
           <p className="text-white/90 text-sm font-bold tracking-wide">
             {isSlowNetwork ? "Đang tăng tốc bộ đệm giờ cao điểm..." : "Đang tải video..."}
           </p>
@@ -2359,7 +2359,7 @@ export default function VideoPlayer({
                 e.stopPropagation();
                 onSwitchToEmbed();
               }}
-              className="mt-3.5 px-4 py-2 sm:px-5 sm:py-2.5 bg-gradient-to-r from-brand-green/25 to-emerald-500/20 hover:from-brand-green/35 hover:to-emerald-500/30 border border-brand-green/60 hover:border-brand-green text-brand-green font-bold text-xs sm:text-sm rounded-xl shadow-[0_0_20px_rgba(34,197,94,0.3)] transition-all active:scale-95 flex items-center gap-2 cursor-pointer backdrop-blur-md"
+              className="mt-3.5 px-4 py-2 sm:px-5 sm:py-2.5 bg-gradient-to-r from-brand-green/25 to-emerald-500/20 hover:from-brand-green/35 hover:to-emerald-500/30 border border-brand-green/60 hover:border-brand-green text-brand-green font-bold text-xs sm:text-sm rounded-xl transition-all active:scale-95 flex items-center gap-2 cursor-pointer backdrop-blur-md"
             >
               <Zap className="w-4 h-4 fill-brand-green shrink-0 animate-pulse" />
               <span>Nguồn tải chậm? Xem ngay bằng Máy chủ VIP</span>
@@ -2374,7 +2374,7 @@ export default function VideoPlayer({
           className="absolute inset-0 z-[60] flex flex-col items-center justify-center bg-black/85 backdrop-blur-md px-4 text-center animate-in fade-in duration-200 select-none"
         >
           {/* Cinema Hub */}
-          <div className="relative flex flex-col items-center max-w-sm w-full p-6 sm:p-8 rounded-3xl bg-[#0c130e]/95 border border-brand-green/30 shadow-[0_0_50px_rgba(32,214,107,0.18)]">
+          <div className="relative flex flex-col items-center max-w-sm w-full p-6 sm:p-8 rounded-3xl bg-[#0c130e]/95 border border-brand-green/30">
             {/* SVG Progress Ring */}
             <div className="relative w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center mb-5">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
@@ -2400,7 +2400,7 @@ export default function VideoPlayer({
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-3xl sm:text-4xl font-black text-white font-mono tracking-tighter drop-shadow-[0_0_12px_rgba(32,214,107,0.6)]">
+                <span className="text-3xl sm:text-4xl font-black text-white font-mono tracking-tighter">
                   {countdown}
                 </span>
                 <span className="text-[10px] text-brand-green uppercase tracking-widest font-bold">giây</span>
@@ -2426,7 +2426,7 @@ export default function VideoPlayer({
               <Button
                 type="button"
                 onClick={handlePlayNextImmediately}
-                className="flex-1 py-2.5 h-auto text-xs sm:text-sm font-bold rounded-xl bg-brand-green hover:bg-brand-green/90 text-black shadow-[0_0_20px_rgba(32,214,107,0.35)] transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 h-auto text-xs sm:text-sm font-bold rounded-xl bg-brand-green hover:bg-brand-green/90 text-black transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <FastForward className="w-3.5 h-3.5 fill-black" />
                 <span>Phát ngay</span>
@@ -2812,7 +2812,7 @@ export default function VideoPlayer({
                 className={cn(
                   "w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer",
                   visualFilter === 'oled' 
-                    ? "bg-brand-green/20 text-brand-green font-bold border border-brand-green/40 shadow-[0_0_15px_rgba(32,214,107,0.15)]" 
+                    ? "bg-brand-green/20 text-brand-green font-bold border border-brand-green/40" 
                     : "hover:bg-white/5 text-white/80 border border-transparent"
                 )}
               >
@@ -2836,7 +2836,7 @@ export default function VideoPlayer({
                 className={cn(
                   "w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer",
                   visualFilter === 'vivid' 
-                    ? "bg-brand-green/20 text-brand-green font-bold border border-brand-green/40 shadow-[0_0_15px_rgba(32,214,107,0.15)]" 
+                    ? "bg-brand-green/20 text-brand-green font-bold border border-brand-green/40" 
                     : "hover:bg-white/5 text-white/80 border border-transparent"
                 )}
               >
@@ -2857,7 +2857,7 @@ export default function VideoPlayer({
                 className={cn(
                   "w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer",
                   visualFilter === 'bright' 
-                    ? "bg-brand-green/20 text-brand-green font-bold border border-brand-green/40 shadow-[0_0_15px_rgba(32,214,107,0.15)]" 
+                    ? "bg-brand-green/20 text-brand-green font-bold border border-brand-green/40" 
                     : "hover:bg-white/5 text-white/80 border border-transparent"
                 )}
               >

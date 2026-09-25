@@ -154,7 +154,7 @@ export default function Episode({
                 className={cn(
                   "w-full py-2.5 px-2 flex flex-col items-center justify-center gap-0.5 rounded-xl transition-all border cursor-pointer",
                   currentServerIndex === index && playerMode === "m3u8"
-                    ? "bg-brand-green/10 text-brand-green border-brand-green/30 shadow-sm"
+                    ? "bg-brand-green/10 text-brand-green border-brand-green/30"
                     : "bg-[#222222] text-white/50 border-transparent hover:bg-[#2a2a2a] hover:text-white/80"
                 )}
               >
@@ -181,7 +181,7 @@ export default function Episode({
                 className={cn(
                   "w-full py-2.5 px-2 flex flex-col items-center justify-center gap-0.5 rounded-xl transition-all border cursor-pointer",
                   currentServerIndex === index && playerMode === "embed"
-                    ? "bg-brand-green/10 text-brand-green border-brand-green/30 shadow-sm"
+                    ? "bg-brand-green/10 text-brand-green border-brand-green/30"
                     : "bg-[#222222] text-white/50 border-transparent hover:bg-[#2a2a2a] hover:text-white/80"
                 )}
               >
@@ -247,7 +247,7 @@ export default function Episode({
                     className={cn(
                       "px-2 py-1 text-[11px] font-bold rounded-lg border transition-all shrink-0",
                       isSelected
-                        ? "bg-brand-green/20 text-brand-green border-brand-green/40 shadow-[0_0_12px_rgba(34,197,94,0.2)]"
+                        ? "bg-brand-green/20 text-brand-green border-brand-green/40"
                         : "bg-white/5 text-white/60 border-white/10 hover:bg-white/10 hover:text-white"
                     )}
                   >
@@ -284,11 +284,11 @@ export default function Episode({
                         )
                       }
                       className={cn(
-                        "relative flex h-10 w-full items-center justify-center px-2 py-1.5 rounded-xl transition-all border group text-center shadow-sm",
+                        "relative flex h-10 w-full items-center justify-center px-2 py-1.5 rounded-xl transition-all border group text-center",
                         isActive
-                          ? "bg-brand-green/20 text-brand-green border-brand-green/50 shadow-[0_0_15px_rgba(34,197,94,0.3)] ring-1 ring-brand-green/40"
+                          ? "bg-brand-green/20 text-brand-green border-brand-green/50 ring-1 ring-brand-green/40"
                           : isNew
-                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.2)]"
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/20"
                           : isWatched
                           ? "bg-white/5 text-brand-green/90 border-brand-green/20 hover:bg-white/10"
                           : "bg-[#222222] text-white/70 border-transparent hover:bg-[#2a2a2a] hover:text-white"
@@ -303,7 +303,7 @@ export default function Episode({
                           <span className="w-[1.5px] h-full bg-brand-green rounded-full animate-bounce" />
                         </div>
                       ) : isNew ? (
-                        <span className="absolute -top-1.5 -right-1 px-1.5 py-0.5 bg-emerald-400 text-black text-[7px] font-black rounded-full shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse uppercase tracking-wider z-10">
+                        <span className="absolute -top-1.5 -right-1 px-1.5 py-0.5 bg-emerald-400 text-black text-[7px] font-black rounded-full animate-pulse uppercase tracking-wider z-10">
                           MỚI
                         </span>
                       ) : isWatched ? (
@@ -316,7 +316,7 @@ export default function Episode({
                         className={cn(
                           "font-extrabold text-xs leading-tight truncate w-full text-center transition-colors duration-200",
                           isActive
-                            ? "text-brand-green drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+                            ? "text-brand-green"
                             : isWatched
                             ? "text-brand-green/90"
                             : "text-white/80 group-hover:text-white"

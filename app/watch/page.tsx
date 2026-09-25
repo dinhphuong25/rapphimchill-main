@@ -1,5 +1,3 @@
-// Cache the watch page at Vercel Edge for 10 minutes (eliminates massive Node.js Serverless CPU usage)
-export const revalidate = 600;
 
 import PhimApi from "@/libs/phimapi.com";
 import Description from "@/components/movie/description";
