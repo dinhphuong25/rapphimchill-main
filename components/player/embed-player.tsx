@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Server, ShieldCheck } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ArrowLeft } from "lucide-react";
 
 interface EmbedPlayerProps {
     videoUrl: string;
@@ -17,7 +16,6 @@ const EmbedPlayer = ({
     onSwitchToM3u8,
 }: EmbedPlayerProps) => {
     const [isLoading, setIsLoading] = useState(true);
-    const [adShield, setAdShield] = useState<boolean>(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -27,24 +25,6 @@ const EmbedPlayer = ({
         }, 4000);
         return () => clearTimeout(timer);
     }, [videoUrl]);
-
-    // Check if user explicitly set ad shield to 'always'
-    useEffect(() => {
-        try {
-            const saved = localStorage.getItem('cinema_ad_shield');
-            if (saved === 'always') {
-                setAdShield(true);
-            }
-        } catch (e) {}
-    }, []);
-
-    const toggleAdShield = () => {
-        const next = !adShield;
-        setAdShield(next);
-        try {
-            localStorage.setItem('cinema_ad_shield', next ? 'always' : 'off');
-        } catch (e) {}
-    };
 
     const handleBack = () => {
         if (typeof window !== "undefined" && window.history.length > 1) {
@@ -56,16 +36,6 @@ const EmbedPlayer = ({
 
     return (
         <div className="relative bg-black w-full h-full group select-none">
-            {/* Intelligent Anti-Ad Banner Shield */}
-            <div
-                className={cn(
-                    "absolute top-0 left-0 right-0 z-20 pointer-events-none overflow-hidden transition-all duration-300",
-                    adShield ? "opacity-100 h-[25%] sm:h-[24%]" : "opacity-0 h-0"
-                )}
-            >
-                <div className="w-full h-full bg-gradient-to-b from-black/98 via-black/95 via-80% to-transparent" />
-            </div>
-
             {/* Top gradient overlay for hover controls */}
             <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-black/80 to-transparent z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
@@ -77,36 +47,6 @@ const EmbedPlayer = ({
             >
                 <ArrowLeft className="w-5 h-5" strokeWidth={2.5} />
             </button>
-
-            {/* Action buttons top-right */}
-            <div className="absolute top-4 right-4 z-20 flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity duration-300">
-                {/* 1-Click Anti-Ad Shield Toggle */}
-                <button
-                    onClick={toggleAdShield}
-                    className={cn(
-                        "flex items-center gap-1.5 px-3 py-1.5 bg-black/60 hover:bg-black/90 backdrop-blur-md border rounded-full transition-all duration-300 cursor-pointer text-xs font-bold active:scale-95",
-                        adShield
-                            ? "text-brand-green border-brand-green/40"
-                            : "text-white/50 border-white/15 hover:text-white"
-                    )}
-                    title={adShield ? "Đang bật che QC cờ bạc (Bấm để tắt)" : "Đang tắt che QC (Bấm để bật)"}
-                >
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">{adShield ? "Đang che QC" : "Bật che QC"}</span>
-                </button>
-
-                {/* Switch back to Default Server Button */}
-                {onSwitchToM3u8 && (
-                    <button
-                        onClick={onSwitchToM3u8}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-black/60 hover:bg-black/90 backdrop-blur-md text-brand-green hover:text-white border border-brand-green/30 hover:border-brand-green/60 rounded-full transition-all duration-300 cursor-pointer text-xs font-bold active:scale-95"
-                        title="Chuyển về Máy chủ Mặc định"
-                    >
-                        <Server className="w-3.5 h-3.5" />
-                        <span>Máy chủ Mặc định</span>
-                    </button>
-                )}
-            </div>
 
             <iframe
                 src={videoUrl}

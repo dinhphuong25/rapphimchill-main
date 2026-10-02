@@ -54,3 +54,11 @@ next-env.d.ts
 /scratch/
 /.agents/
 skills-lock.json
+
+# mobile app (expo & native ios/android)
+/mobile/node_modules/
+/mobile/.expo/
+/mobile/ios/
+/mobile/android/
+/mobile/dist/
+
