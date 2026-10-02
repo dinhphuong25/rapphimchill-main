@@ -1018,7 +1018,6 @@ export default function VideoPlayer({
 
       if (hlsRef.current) {
         try {
-          try { video.currentTime = targetStartPosition > 0 ? targetStartPosition : 0; } catch (e) {}
           hlsRef.current.stopLoad();
           hlsRef.current.config.startPosition = targetStartPosition;
           hlsRef.current.loadSource(videoUrl);

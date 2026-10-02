@@ -71,12 +71,31 @@ export default function Episode({
     const epIndex = currentServerIndex === index ? currentEpisodeIndex : 0;
     const targetEpisode = serverData[index]?.server_data?.[epIndex] || serverData[index]?.server_data?.[0];
     if (targetEpisode) {
-      if (mode === "m3u8" && targetEpisode.link_m3u8) {
-        onSelectEpisode(targetEpisode.link_m3u8, index, epIndex);
-      } else if (targetEpisode.link_embed) {
-        onSelectEpisode(targetEpisode.link_embed, index, epIndex);
-      } else if (targetEpisode.link_m3u8) {
-        onSelectEpisode(targetEpisode.link_m3u8, index, epIndex);
+      const hasM3u8 = Boolean(targetEpisode.link_m3u8 && targetEpisode.link_m3u8.trim() !== "");
+      const hasEmbed = Boolean(targetEpisode.link_embed && targetEpisode.link_embed.trim() !== "");
+
+      let effectiveMode: "m3u8" | "embed" = mode;
+      let targetLink = "";
+
+      if (effectiveMode === "m3u8") {
+        if (hasM3u8) {
+          targetLink = targetEpisode.link_m3u8;
+        } else if (hasEmbed) {
+          effectiveMode = "embed";
+          targetLink = targetEpisode.link_embed;
+        }
+      } else {
+        if (hasEmbed) {
+          targetLink = targetEpisode.link_embed;
+        } else if (hasM3u8) {
+          effectiveMode = "m3u8";
+          targetLink = targetEpisode.link_m3u8;
+        }
+      }
+
+      onPlayerModeChange(effectiveMode);
+      if (targetLink) {
+        onSelectEpisode(targetLink, index, epIndex);
       }
     }
     onServerChange(index);
@@ -144,62 +163,79 @@ export default function Episode({
 
           {/* Grid of Server Buttons */}
           <div className="grid grid-cols-2 gap-2.5">
-            {serverData.flatMap((server, index) => [
-              <button
-                key={`${index}-m3u8`}
-                onClick={() => {
-                  onPlayerModeChange("m3u8");
-                  handleServerChange(index, "m3u8");
-                }}
-                className={cn(
-                  "w-full py-2.5 px-2 flex flex-col items-center justify-center gap-0.5 rounded-xl transition-all border cursor-pointer",
-                  currentServerIndex === index && playerMode === "m3u8"
-                    ? "bg-brand-green/10 text-brand-green border-brand-green/30"
-                    : "bg-[#222222] text-white/50 border-transparent hover:bg-[#2a2a2a] hover:text-white/80"
-                )}
-              >
-                <span
-                  className={cn(
-                    "text-[13px] font-medium leading-tight",
-                    currentServerIndex === index && playerMode === "m3u8"
-                      ? "text-brand-green"
-                      : "text-white/80"
-                  )}
-                >
-                  {server.server_name}
-                </span>
-                <span className="text-[10px] uppercase font-bold tracking-wider">
-                  Mặc định
-                </span>
-              </button>,
-              <button
-                key={`${index}-embed`}
-                onClick={() => {
-                  onPlayerModeChange("embed");
-                  handleServerChange(index, "embed");
-                }}
-                className={cn(
-                  "w-full py-2.5 px-2 flex flex-col items-center justify-center gap-0.5 rounded-xl transition-all border cursor-pointer",
-                  currentServerIndex === index && playerMode === "embed"
-                    ? "bg-brand-green/10 text-brand-green border-brand-green/30"
-                    : "bg-[#222222] text-white/50 border-transparent hover:bg-[#2a2a2a] hover:text-white/80"
-                )}
-              >
-                <span
-                  className={cn(
-                    "text-[13px] font-medium leading-tight",
-                    currentServerIndex === index && playerMode === "embed"
-                      ? "text-brand-green"
-                      : "text-white/80"
-                  )}
-                >
-                  {server.server_name}
-                </span>
-                <span className="text-[10px] uppercase font-bold tracking-wider">
-                  Dự phòng
-                </span>
-              </button>,
-            ])}
+            {serverData.flatMap((server, index) => {
+              const ep = server.server_data?.[0];
+              const hasM3u8 = Boolean(ep?.link_m3u8 && ep.link_m3u8.trim() !== "");
+              const hasEmbed = Boolean(ep?.link_embed && ep.link_embed.trim() !== "");
+
+              const buttons = [];
+
+              if (hasM3u8 || !hasEmbed) {
+                buttons.push(
+                  <button
+                    key={`${index}-m3u8`}
+                    onClick={() => {
+                      onPlayerModeChange("m3u8");
+                      handleServerChange(index, "m3u8");
+                    }}
+                    className={cn(
+                      "w-full py-2.5 px-2 flex flex-col items-center justify-center gap-0.5 rounded-xl transition-all border cursor-pointer",
+                      currentServerIndex === index && playerMode === "m3u8"
+                        ? "bg-brand-green/10 text-brand-green border-brand-green/30"
+                        : "bg-[#222222] text-white/50 border-transparent hover:bg-[#2a2a2a] hover:text-white/80"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "text-[13px] font-medium leading-tight",
+                        currentServerIndex === index && playerMode === "m3u8"
+                          ? "text-brand-green"
+                          : "text-white/80"
+                      )}
+                    >
+                      {server.server_name}
+                    </span>
+                    <span className="text-[10px] uppercase font-bold tracking-wider">
+                      Mặc định
+                    </span>
+                  </button>
+                );
+              }
+
+              if (hasEmbed || !hasM3u8) {
+                buttons.push(
+                  <button
+                    key={`${index}-embed`}
+                    onClick={() => {
+                      onPlayerModeChange("embed");
+                      handleServerChange(index, "embed");
+                    }}
+                    className={cn(
+                      "w-full py-2.5 px-2 flex flex-col items-center justify-center gap-0.5 rounded-xl transition-all border cursor-pointer",
+                      currentServerIndex === index && playerMode === "embed"
+                        ? "bg-brand-green/10 text-brand-green border-brand-green/30"
+                        : "bg-[#222222] text-white/50 border-transparent hover:bg-[#2a2a2a] hover:text-white/80"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "text-[13px] font-medium leading-tight",
+                        currentServerIndex === index && playerMode === "embed"
+                          ? "text-brand-green"
+                          : "text-white/80"
+                      )}
+                    >
+                      {server.server_name}
+                    </span>
+                    <span className="text-[10px] uppercase font-bold tracking-wider">
+                      Dự phòng
+                    </span>
+                  </button>
+                );
+              }
+
+              return buttons;
+            })}
           </div>
         </div>
 
@@ -276,13 +312,31 @@ export default function Episode({
                   return (
                     <button
                       key={`${currentServerIndex}-${originalIndex}`}
-                      onClick={() =>
-                        handleEpisodeChange(
-                          (playerMode === "m3u8" && episode.link_m3u8) ? episode.link_m3u8 : (episode.link_embed || episode.link_m3u8),
-                          currentServerIndex,
-                          originalIndex
-                        )
-                      }
+                      onClick={() => {
+                        const hasM3u8 = Boolean(episode.link_m3u8 && episode.link_m3u8.trim() !== "");
+                        const hasEmbed = Boolean(episode.link_embed && episode.link_embed.trim() !== "");
+                        let targetLink = "";
+
+                        if (playerMode === "m3u8") {
+                          if (hasM3u8) {
+                            targetLink = episode.link_m3u8;
+                          } else if (hasEmbed) {
+                            onPlayerModeChange("embed");
+                            targetLink = episode.link_embed;
+                          }
+                        } else {
+                          if (hasEmbed) {
+                            targetLink = episode.link_embed;
+                          } else if (hasM3u8) {
+                            onPlayerModeChange("m3u8");
+                            targetLink = episode.link_m3u8;
+                          }
+                        }
+
+                        if (targetLink) {
+                          handleEpisodeChange(targetLink, currentServerIndex, originalIndex);
+                        }
+                      }}
                       className={cn(
                         "relative flex h-10 w-full items-center justify-center px-2 py-1.5 rounded-xl transition-all border group text-center",
                         isActive

@@ -26,6 +26,7 @@ interface ResolvedInitialWatch {
   episodeIndex: number;
   resumeTime: number;
   episodeUrl: string;
+  mode: "m3u8" | "embed";
 }
 
 function resolveInitialWatchState(
@@ -174,9 +175,19 @@ function resolveInitialWatchState(
     serverData?.[resolvedServer]?.server_data?.[resolvedEpisode] ||
     serverData?.[0]?.server_data?.[0];
 
+  const hasM3u8 = Boolean(targetEpisode?.link_m3u8 && targetEpisode.link_m3u8.trim() !== "");
+  const hasEmbed = Boolean(targetEpisode?.link_embed && targetEpisode.link_embed.trim() !== "");
+
+  let resolvedMode: "m3u8" | "embed" = defaultMode;
+  if (!hasM3u8 && hasEmbed) {
+    resolvedMode = "embed";
+  } else if (!hasEmbed && hasM3u8) {
+    resolvedMode = "m3u8";
+  }
+
   const resolvedUrl =
-    defaultMode === "m3u8"
-      ? (targetEpisode?.link_m3u8 || targetEpisode?.link_embed || "")
+    resolvedMode === "m3u8" && hasM3u8
+      ? targetEpisode.link_m3u8
       : (targetEpisode?.link_embed || targetEpisode?.link_m3u8 || "");
 
   return {
@@ -184,6 +195,7 @@ function resolveInitialWatchState(
     episodeIndex: resolvedEpisode,
     resumeTime: resolvedTime,
     episodeUrl: resolvedUrl,
+    mode: resolvedMode,
   };
 }
 
@@ -196,43 +208,42 @@ export default function Description({ movie, serverData }: any) {
     return 'm3u8';
   }, [serverData]);
 
-  const [playerMode, setPlayerMode] = useState<'m3u8' | 'embed'>(defaultMode);
+  const initialWatchState = useMemo(() => {
+    return resolveInitialWatchState(movie?.slug, serverData, defaultMode);
+  }, [movie?.slug, serverData, defaultMode]);
+
+  const [playerMode, setPlayerMode] = useState<'m3u8' | 'embed'>(() => initialWatchState.mode);
   const [currentServerData, setCurrentServerData] = useState<any[]>(() => serverData || []);
   const [newestEpisodeIndices, setNewestEpisodeIndices] = useState<Record<number, boolean>>({});
+
+  const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState<{
+    server: number;
+    episode: number;
+  }>(() => ({ server: initialWatchState.serverIndex, episode: initialWatchState.episodeIndex }));
+
+  const [currentEpisodeUrl, setCurrentEpisodeUrl] = useState<string>(() => initialWatchState.episodeUrl);
+
+  const [resumeTime, setResumeTime] = useState<number>(() => initialWatchState.resumeTime);
 
   useEffect(() => {
     if (Array.isArray(serverData) && serverData.length > 0) {
       setCurrentServerData(serverData);
-      const firstEp = serverData[0]?.server_data?.[0];
-      if (firstEp && !firstEp.link_m3u8 && firstEp.link_embed) {
-        setPlayerMode('embed');
+      const curSv = currentEpisodeIndex?.server || 0;
+      const curEp = currentEpisodeIndex?.episode || 0;
+      const curEpData = serverData[curSv]?.server_data?.[curEp] || serverData[0]?.server_data?.[0];
+      if (curEpData) {
+        const hasM3u8 = Boolean(curEpData.link_m3u8 && curEpData.link_m3u8.trim() !== "");
+        const hasEmbed = Boolean(curEpData.link_embed && curEpData.link_embed.trim() !== "");
+        if (!hasM3u8 && hasEmbed) {
+          setPlayerMode('embed');
+          setCurrentEpisodeUrl(curEpData.link_embed);
+        } else if (!hasEmbed && hasM3u8) {
+          setPlayerMode('m3u8');
+          setCurrentEpisodeUrl(curEpData.link_m3u8);
+        }
       }
     }
-  }, [serverData]);
-  
-  const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState<{
-    server: number;
-    episode: number;
-  }>(() => {
-    const firstEp = serverData?.[0]?.server_data?.[0];
-    const initialMode = firstEp && !firstEp.link_m3u8 && firstEp.link_embed ? 'embed' : 'm3u8';
-    const resolved = resolveInitialWatchState(movie?.slug, serverData, initialMode);
-    return { server: resolved.serverIndex, episode: resolved.episodeIndex };
-  });
-
-  const [currentEpisodeUrl, setCurrentEpisodeUrl] = useState<string>(() => {
-    const firstEp = serverData?.[0]?.server_data?.[0];
-    const initialMode = firstEp && !firstEp.link_m3u8 && firstEp.link_embed ? 'embed' : 'm3u8';
-    const resolved = resolveInitialWatchState(movie?.slug, serverData, initialMode);
-    return resolved.episodeUrl;
-  });
-
-  const [resumeTime, setResumeTime] = useState<number>(() => {
-    const firstEp = serverData?.[0]?.server_data?.[0];
-    const initialMode = firstEp && !firstEp.link_m3u8 && firstEp.link_embed ? 'embed' : 'm3u8';
-    const resolved = resolveInitialWatchState(movie?.slug, serverData, initialMode);
-    return resolved.resumeTime;
-  });
+  }, [serverData, currentEpisodeIndex?.server, currentEpisodeIndex?.episode]);
 
   // Sync document.title with the active movie name and episode on client-side
   useEffect(() => {
@@ -399,6 +410,15 @@ export default function Description({ movie, serverData }: any) {
     serverIndex: number,
     episodeIndex: number
   ) => {
+    const isEmbedLink = !link.includes('.m3u8') || link.includes('embed') || link.includes('streamc') || link.includes('player.phimapi.com');
+    const epData = currentServerData?.[serverIndex]?.server_data?.[episodeIndex];
+
+    if (isEmbedLink) {
+      setPlayerMode('embed');
+    } else if (playerMode === 'embed' && epData?.link_m3u8 === link) {
+      setPlayerMode('m3u8');
+    }
+
     setCurrentEpisodeUrl(link);
     setCurrentEpisodeIndex({ server: serverIndex, episode: episodeIndex });
 
@@ -408,7 +428,6 @@ export default function Description({ movie, serverData }: any) {
     const newResumeTime = Number.isFinite(savedEpProgress) && savedEpProgress > 0 ? savedEpProgress : 0;
     setResumeTime(newResumeTime);
 
-    const epData = currentServerData?.[serverIndex]?.server_data?.[episodeIndex];
     const epName = epData?.name || `Tập ${episodeIndex + 1}`;
     const epSlug = epData?.slug || "";
 
@@ -446,15 +465,37 @@ export default function Description({ movie, serverData }: any) {
     if (user && Array.isArray(updated) && updated.length > 0) {
       updateServerData({ history: updated });
     }
-  }, [currentServerData, movie?.slug, getEpisodeProgressKey, updateHistoryProgress, updateServerData, user]);
+  }, [currentServerData, movie?.slug, getEpisodeProgressKey, updateHistoryProgress, updateServerData, user, playerMode]);
 
   const handleServerChange = (serverIndex: number) => {
     const epIndex = 0;
     if (currentServerData && currentServerData[serverIndex]?.server_data?.length > 0) {
       const firstEpisode = currentServerData[serverIndex].server_data[0];
-      const link = (playerMode === 'm3u8' && firstEpisode?.link_m3u8) ? firstEpisode.link_m3u8 : (firstEpisode?.link_embed || firstEpisode?.link_m3u8);
-      if (link) {
-        handleSelectEpisode(link, serverIndex, epIndex);
+      const hasM3u8 = Boolean(firstEpisode?.link_m3u8 && firstEpisode.link_m3u8.trim() !== "");
+      const hasEmbed = Boolean(firstEpisode?.link_embed && firstEpisode.link_embed.trim() !== "");
+
+      let targetMode: 'm3u8' | 'embed' = playerMode;
+      let targetLink = "";
+
+      if (targetMode === 'm3u8') {
+        if (hasM3u8) {
+          targetLink = firstEpisode.link_m3u8;
+        } else if (hasEmbed) {
+          targetMode = 'embed';
+          targetLink = firstEpisode.link_embed;
+        }
+      } else {
+        if (hasEmbed) {
+          targetLink = firstEpisode.link_embed;
+        } else if (hasM3u8) {
+          targetMode = 'm3u8';
+          targetLink = firstEpisode.link_m3u8;
+        }
+      }
+
+      setPlayerMode(targetMode);
+      if (targetLink) {
+        handleSelectEpisode(targetLink, serverIndex, epIndex);
       }
     }
   };
@@ -707,15 +748,28 @@ export default function Description({ movie, serverData }: any) {
     }
   }, [movie?.slug, user?.id, currentEpisodeIndex?.server, currentEpisodeIndex?.episode]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Update episode URL on playerMode change
+  // Update episode URL and sync playerMode on changes
   useEffect(() => {
     if (!currentEpisodeIndex || !serverData) return;
     const currentEpisode = serverData[currentEpisodeIndex.server]?.server_data?.[currentEpisodeIndex.episode];
     if (currentEpisode) {
-      if (playerMode === 'm3u8' && currentEpisode.link_m3u8) {
-        setCurrentEpisodeUrl(currentEpisode.link_m3u8);
-      } else if (currentEpisode.link_embed) {
-        setCurrentEpisodeUrl(currentEpisode.link_embed);
+      const hasM3u8 = Boolean(currentEpisode.link_m3u8 && currentEpisode.link_m3u8.trim() !== "");
+      const hasEmbed = Boolean(currentEpisode.link_embed && currentEpisode.link_embed.trim() !== "");
+
+      if (playerMode === 'm3u8') {
+        if (hasM3u8) {
+          setCurrentEpisodeUrl(currentEpisode.link_m3u8);
+        } else if (hasEmbed) {
+          setPlayerMode('embed');
+          setCurrentEpisodeUrl(currentEpisode.link_embed);
+        }
+      } else {
+        if (hasEmbed) {
+          setCurrentEpisodeUrl(currentEpisode.link_embed);
+        } else if (hasM3u8) {
+          setPlayerMode('m3u8');
+          setCurrentEpisodeUrl(currentEpisode.link_m3u8);
+        }
       }
     }
   }, [playerMode, currentEpisodeIndex, serverData]);
@@ -822,9 +876,15 @@ export default function Description({ movie, serverData }: any) {
     if (!nextServer || !nextServer.server_data) return;
     const nextEpisode = nextServer.server_data[nextEpisodeIndex];
     if (nextEpisode) {
-      const link = (playerMode === 'm3u8' && nextEpisode.link_m3u8) ? nextEpisode.link_m3u8 : (nextEpisode.link_embed || nextEpisode.link_m3u8);
-      handleSelectEpisode(link, nextServerIndex, nextEpisodeIndex);
-      toast.info(`Đã chuyển sang ${nextEpisode.name}`);
+      const hasM3u8 = Boolean(nextEpisode.link_m3u8 && nextEpisode.link_m3u8.trim() !== "");
+      const hasEmbed = Boolean(nextEpisode.link_embed && nextEpisode.link_embed.trim() !== "");
+      const link = playerMode === 'm3u8' 
+        ? (hasM3u8 ? nextEpisode.link_m3u8 : nextEpisode.link_embed)
+        : (hasEmbed ? nextEpisode.link_embed : nextEpisode.link_m3u8);
+      if (link) {
+        handleSelectEpisode(link, nextServerIndex, nextEpisodeIndex);
+        toast.info(`Đã chuyển sang ${nextEpisode.name}`);
+      }
     }
   }, [currentServerData, currentEpisodeIndex, clearEpisodeProgress, playerMode, handleSelectEpisode]);
 
@@ -834,9 +894,15 @@ export default function Description({ movie, serverData }: any) {
     if (episode > 0) {
       const prevEpisode = currentServerData[server]?.server_data?.[episode - 1];
       if (prevEpisode) {
-        const link = (playerMode === 'm3u8' && prevEpisode.link_m3u8) ? prevEpisode.link_m3u8 : (prevEpisode.link_embed || prevEpisode.link_m3u8);
-        handleSelectEpisode(link, server, episode - 1);
-        toast.info(`Đã chuyển sang ${prevEpisode.name}`);
+        const hasM3u8 = Boolean(prevEpisode.link_m3u8 && prevEpisode.link_m3u8.trim() !== "");
+        const hasEmbed = Boolean(prevEpisode.link_embed && prevEpisode.link_embed.trim() !== "");
+        const link = playerMode === 'm3u8'
+          ? (hasM3u8 ? prevEpisode.link_m3u8 : prevEpisode.link_embed)
+          : (hasEmbed ? prevEpisode.link_embed : prevEpisode.link_m3u8);
+        if (link) {
+          handleSelectEpisode(link, server, episode - 1);
+          toast.info(`Đã chuyển sang ${prevEpisode.name}`);
+        }
       }
     } else if (server > 0) {
       const prevServer = currentServerData[server - 1];
@@ -844,9 +910,15 @@ export default function Description({ movie, serverData }: any) {
         const lastIdx = prevServer.server_data.length - 1;
         const prevEpisode = prevServer.server_data[lastIdx];
         if (prevEpisode) {
-          const link = (playerMode === 'm3u8' && prevEpisode.link_m3u8) ? prevEpisode.link_m3u8 : (prevEpisode.link_embed || prevEpisode.link_m3u8);
-          handleSelectEpisode(link, server - 1, lastIdx);
-          toast.info(`Đã chuyển sang ${prevEpisode.name}`);
+          const hasM3u8 = Boolean(prevEpisode.link_m3u8 && prevEpisode.link_m3u8.trim() !== "");
+          const hasEmbed = Boolean(prevEpisode.link_embed && prevEpisode.link_embed.trim() !== "");
+          const link = playerMode === 'm3u8'
+            ? (hasM3u8 ? prevEpisode.link_m3u8 : prevEpisode.link_embed)
+            : (hasEmbed ? prevEpisode.link_embed : prevEpisode.link_m3u8);
+          if (link) {
+            handleSelectEpisode(link, server - 1, lastIdx);
+            toast.info(`Đã chuyển sang ${prevEpisode.name}`);
+          }
         }
       }
     }

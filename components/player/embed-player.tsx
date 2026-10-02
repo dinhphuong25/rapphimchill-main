@@ -51,8 +51,7 @@ const EmbedPlayer = ({
             <iframe
                 src={videoUrl}
                 className="w-full h-full absolute inset-0 rounded-lg border-0"
-                allow="accelerometer; autoplay *; clipboard-write; encrypted-media *; gyroscope; picture-in-picture *; fullscreen *"
-                sandbox="allow-scripts allow-same-origin allow-presentation allow-forms allow-top-navigation-by-user-activation"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                 allowFullScreen
                 title="Video Player"
                 onLoad={() => setIsLoading(false)}

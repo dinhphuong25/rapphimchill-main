@@ -93,9 +93,9 @@ interface RateLimitConfig {
 }
 
 const RATE_LIMITS: Record<string, RateLimitConfig> = {
-  auth: { windowMs: 30_000, maxRequests: 20 }, // 20 req / 30s for Auth/OTP endpoints (brute-force & email flood shield)
-  api_proxy: { windowMs: 10_000, maxRequests: 150 }, // 150 req / 10s for movie API & search (scraping shield, high concurrency friendly)
-  general: { windowMs: 10_000, maxRequests: 300 }, // 300 req / 10s for normal browsing (NAT / 4G shared IP friendly)
+  auth: { windowMs: 30_000, maxRequests: 30 }, // 30 req / 30s for Auth/OTP endpoints (brute-force & email flood shield)
+  api_proxy: { windowMs: 10_000, maxRequests: 600 }, // 600 req / 10s (60 req/s) for movie API & search (scraping shield, NAT/4G carrier friendly)
+  general: { windowMs: 10_000, maxRequests: 1200 }, // 1200 req / 10s (120 req/s) for normal browsing (NAT / 4G shared IP friendly)
 };
 
 function getRateLimitCategory(pathname: string): 'auth' | 'api_proxy' | 'general' {

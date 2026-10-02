@@ -5,7 +5,7 @@ export const runtime = "edge";
 
 // Rate limiting: in-memory store per Edge worker node
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT = 300; // Allow 300 requests per minute per IP (high-concurrency friendly for NAT/shared networks)
+const RATE_LIMIT = 1200; // Allow 1200 requests per minute per IP (high-concurrency friendly for NAT/shared networks)
 const RATE_WINDOW = 60_000; // 1 minute
 
 function isRateLimited(ip: string): boolean {
