@@ -5,18 +5,15 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Play,
-  Info,
   Star,
   Clock,
   Flame,
-  Film,
   Heart,
   ChevronLeft,
   ChevronRight,
   Tv,
   Users,
   Clapperboard,
-  Sparkles,
   Volume2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -24,41 +21,6 @@ import { useFavorites } from "@/hooks/useLocalStorage";
 import { useUserAuth } from "@/context/user-auth-context";
 import { getMovieImageCandidates } from "@/lib/image-helper";
 
-function HeroThumbImage({ movie, isActive }: { movie: any; isActive: boolean }) {
-  const [candidateIdx, setCandidateIdx] = useState(0);
-  const [hasError, setHasError] = useState(false);
-  const candidates = useMemo(() => getMovieImageCandidates(movie, "thumb"), [movie]);
-  const src = !hasError && candidates.length > 0 ? candidates[candidateIdx] : null;
-
-  if (!src) {
-    return (
-      <div className="w-full h-full bg-[#0c1310] flex items-center justify-center p-2 text-center">
-        <Film className="w-5 h-5 text-brand-green/60" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative w-full h-full overflow-hidden">
-      <Image
-        src={src}
-        alt={movie.name}
-        fill
-        sizes="(max-width: 1024px) 140px, 180px"
-        className="object-cover"
-        quality={70}
-        loading="lazy"
-        onError={() => {
-          if (candidateIdx + 1 < candidates.length) {
-            setCandidateIdx((i) => i + 1);
-          } else {
-            setHasError(true);
-          }
-        }}
-      />
-    </div>
-  );
-}
 
 interface HeroMovie {
   slug: string;
@@ -94,20 +56,6 @@ export default function HeroSection({ movies }: HeroSectionProps) {
   const [isPaused, setIsPaused] = useState(false);
   const { user, checkAuthOrPrompt, updateServerData } = useUserAuth();
   const { toggleFavorite, isFavorite } = useFavorites();
-
-  const thumbnailContainerRef = useRef<HTMLDivElement>(null);
-  const activeThumbnailRef = useRef<HTMLButtonElement>(null);
-
-  // Auto-scroll active thumbnail smoothly into view whenever currentIndex updates
-  useEffect(() => {
-    if (activeThumbnailRef.current && thumbnailContainerRef.current) {
-      activeThumbnailRef.current.scrollIntoView({
-        behavior: "smooth",
-        inline: "center",
-        block: "nearest",
-      });
-    }
-  }, [currentIndex]);
 
   const validMovies = useMemo(() => {
     return (movies || []).filter((m) => m?.thumb_url || m?.poster_url).slice(0, 7);
@@ -286,10 +234,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
 
       {/* 2. Main Editorial Content Container */}
       <div className="relative z-20 h-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col justify-start lg:justify-center pt-24 sm:pt-24 lg:pt-28 pb-6 sm:pb-5 min-h-[inherit]">
-        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          
-          {/* Left Column: Movie Editorial & Rich Information */}
-          <div className="lg:col-span-8 xl:col-span-7 space-y-3.5 sm:space-y-4 pr-0 lg:pr-10 relative z-30">
+        <div className="w-full max-w-3xl lg:max-w-4xl space-y-3.5 sm:space-y-4 relative z-30">
             
             {/* Top Trending Ribbon Badge */}
             <div className="flex items-center gap-3">
@@ -471,149 +416,43 @@ export default function HeroSection({ movies }: HeroSectionProps) {
               </button>
             </div>
 
-            {/* Mobile Navigation Dots */}
-            <div className="flex lg:hidden items-center gap-2 pt-4">
-              {validMovies.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => goTo(idx)}
-                  className={cn(
-                    "h-1.5 rounded-full transition-all duration-300",
-                    idx === currentIndex ? "w-8 bg-brand-green shadow-[0_0_8px_rgba(34,197,94,0.8)]" : "w-2 bg-white/25 hover:bg-white/50"
-                  )}
-                  aria-label={`Slide ${idx + 1}`}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Right Column: Interactive Thumbnail Carousel (Desktop & Large screens) */}
-          <div className="hidden lg:flex lg:col-span-4 xl:col-span-5 flex-col items-end justify-end relative z-30 self-end pb-0 translate-y-3 lg:translate-y-4 xl:translate-y-5">
-            
-            {/* Glassmorphic Cinema Featured Dock */}
-            <div className="w-full max-w-[460px] xl:max-w-[500px] rounded-2xl bg-black/65 backdrop-blur-xl border border-white/10 p-2.5 sm:p-3 shadow-[0_16px_40px_rgba(0,0,0,0.85)]">
-              {/* Carousel Navigation Header */}
-              <div className="flex items-center justify-between w-full mb-2 px-0.5">
+            {/* Slide Navigation Indicators & Controls */}
+            {validMovies.length > 1 && (
+              <div className="flex items-center gap-3 pt-3 sm:pt-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-brand-green/15 border border-brand-green/30 flex items-center justify-center text-brand-green shadow-[0_0_10px_rgba(34,197,94,0.2)]">
-                    <Sparkles className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="text-[11px] font-bold text-white tracking-wider uppercase select-none">
-                    Phim Ghim Nổi Bật
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-brand-green/15 text-brand-green border border-brand-green/30">
-                    {currentIndex + 1} / {validMovies.length}
-                  </span>
+                  {validMovies.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => goTo(idx)}
+                      className={cn(
+                        "h-1.5 sm:h-2 rounded-full transition-all duration-300 cursor-pointer",
+                        idx === currentIndex
+                          ? "w-7 sm:w-8 bg-brand-green shadow-[0_0_10px_rgba(34,197,94,0.8)]"
+                          : "w-2 sm:w-2.5 bg-white/25 hover:bg-white/50"
+                      )}
+                      aria-label={`Chuyển đến phim ${idx + 1}`}
+                    />
+                  ))}
                 </div>
 
-                {/* Arrow Controls */}
-                <div className="flex items-center gap-1.5">
+                <div className="hidden sm:flex items-center gap-1.5 ml-2">
                   <button
                     onClick={prev}
                     aria-label="Phim trước"
-                    className="w-7 h-7 rounded-full bg-white/5 hover:bg-brand-green hover:text-cinema-bg border border-white/10 hover:border-brand-green flex items-center justify-center text-white/80 transition-all active:scale-90 cursor-pointer shadow-sm"
+                    className="w-7 h-7 rounded-full bg-white/10 hover:bg-brand-green hover:text-black border border-white/10 flex items-center justify-center text-white/80 transition-all active:scale-90 cursor-pointer"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     onClick={next}
                     aria-label="Phim tiếp theo"
-                    className="w-7 h-7 rounded-full bg-white/5 hover:bg-brand-green hover:text-cinema-bg border border-white/10 hover:border-brand-green flex items-center justify-center text-white/80 transition-all active:scale-90 cursor-pointer shadow-sm"
+                    className="w-7 h-7 rounded-full bg-white/10 hover:bg-brand-green hover:text-black border border-white/10 flex items-center justify-center text-white/80 transition-all active:scale-90 cursor-pointer"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
-
-              {/* Thumbnails Row with Auto-Scroll & Snap */}
-              <div
-                ref={thumbnailContainerRef}
-                className="flex items-stretch gap-2.5 overflow-x-auto pb-1 max-w-full scrollbar-none scroll-smooth snap-x snap-mandatory"
-                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-              >
-                {validMovies.map((movie, idx) => {
-                  const isActive = idx === currentIndex;
-                  return (
-                    <button
-                      key={movie.slug}
-                      ref={isActive ? activeThumbnailRef : null}
-                      onClick={() => goTo(idx)}
-                      aria-label={`Chọn phim nổi bật ${movie.name}`}
-                      className={cn(
-                        "relative rounded-xl overflow-hidden transition-all duration-300 text-left group border shrink-0 snap-center cursor-pointer",
-                        isActive
-                          ? "w-40 h-[86px] sm:w-44 sm:h-[90px] border-brand-green shadow-[0_0_18px_rgba(32,214,107,0.35)] ring-2 ring-brand-green/40"
-                          : "w-28 h-[86px] sm:w-32 sm:h-[90px] border-white/10 hover:border-white/30 opacity-70 hover:opacity-100 hover:scale-[1.02]"
-                      )}
-                    >
-                      <HeroThumbImage movie={movie} isActive={isActive} />
-
-                      {/* Scrim Gradient for Readable Overlays */}
-                      <div
-                        className={cn(
-                          "absolute inset-0 z-10 transition-opacity",
-                          isActive
-                            ? "bg-gradient-to-t from-black/95 via-black/40 to-transparent"
-                            : "bg-gradient-to-t from-black/90 via-black/50 to-black/30 group-hover:via-black/30"
-                        )}
-                      />
-
-                      {/* Rank Badge */}
-                      <span
-                        className={cn(
-                          "absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md text-[9.5px] font-mono font-bold tracking-tight z-20 shadow-sm",
-                          isActive
-                            ? "bg-brand-green text-cinema-bg font-black shadow-[0_0_8px_rgba(32,214,107,0.6)]"
-                            : "bg-black/80 text-white/80 border border-white/10"
-                        )}
-                      >
-                        #{idx + 1}
-                      </span>
-
-                      {/* Inactive Card: Movie Title Preview */}
-                      {!isActive && (
-                        <div className="absolute bottom-1.5 left-1.5 right-1.5 z-20">
-                          <p className="text-[9.5px] sm:text-[10px] font-semibold text-white/90 truncate leading-tight group-hover:text-brand-green transition-colors">
-                            {movie.name}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Active Card: ĐANG CHIẾU Label + Movie Title + Animated Progress Bar */}
-                      {isActive && (
-                        <>
-                          <div className="absolute bottom-1.5 left-2 right-2 z-20 flex flex-col">
-                            <span className="text-[8px] font-black text-brand-green uppercase tracking-widest leading-none mb-0.5">
-                              ĐANG CHIẾU
-                            </span>
-                            <p className="text-[10.5px] sm:text-[11px] font-bold text-white truncate drop-shadow-md leading-tight">
-                              {movie.name}
-                            </p>
-                          </div>
-
-                          {/* Auto-Slide Progress Bar */}
-                          <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-20 overflow-hidden">
-                            <div
-                              key={currentIndex}
-                              className={cn(
-                                "h-full w-full bg-brand-green origin-left transform-gpu will-change-transform",
-                                !isPaused && "animate-progress-scale"
-                              )}
-                              style={{
-                                animationDuration: `${AUTO_SLIDE_DURATION}ms`,
-                                animationTimingFunction: "linear",
-                              }}
-                            />
-                          </div>
-                        </>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
+            )}
         </div>
       </div>
     </section>
