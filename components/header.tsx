@@ -57,11 +57,22 @@ function HeaderComponent({}: HeaderProps) {
     <>
       <header
         className={cn(
-          "fixed top-0 right-0 z-[90] h-16 flex items-center transition-all duration-300 select-none bg-cinema-sub border-b border-white/10 shadow-none",
-          "left-0 lg:left-[225px]"
+          "fixed top-0 z-[90] transition-all duration-300 select-none pointer-events-none lg:pointer-events-auto",
+          // Mobile: floating wrapper with safe-area padding
+          "left-0 right-0 pt-2 pt-[max(0.5rem,env(safe-area-inset-top))] px-3 pb-1",
+          // Desktop: docked top bar
+          "lg:p-0 lg:left-[225px] lg:right-0 lg:h-16 lg:bg-cinema-sub lg:border-b lg:border-white/10 lg:shadow-none"
         )}
       >
-        <div className="w-full max-w-[1700px] mx-auto px-2.5 sm:px-6 lg:px-8 flex items-center justify-between h-full min-w-0">
+        <div
+          className={cn(
+            "w-full max-w-[1700px] mx-auto flex items-center justify-between min-w-0 pointer-events-auto transition-all duration-300",
+            // Mobile: floating rounded pill bar matching mobile app screenshot
+            "h-[52px] px-2.5 sm:px-3 rounded-full bg-[#0B100E]/95 backdrop-blur-2xl border border-white/12 shadow-[0_4px_20px_rgba(0,0,0,0.5)]",
+            // Desktop: standard container
+            "lg:h-full lg:px-6 lg:px-8 lg:rounded-none lg:bg-transparent lg:border-none lg:shadow-none lg:backdrop-blur-none"
+          )}
+        >
           {/* Left Group: Mobile Menu Button [⊞ Menu] + Brand Logo (Desktop & Mobile) */}
           <div className="flex items-center gap-2 sm:gap-2.5 pointer-events-auto shrink min-w-0">
             <button
