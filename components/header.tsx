@@ -25,6 +25,19 @@ function HeaderComponent({}: HeaderProps) {
   }, []);
 
   const [showSearchOverlay, setShowSearchOverlay] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Synchronize state with MobileExploreSheet
+  useEffect(() => {
+    const handleState = (e: Event) => {
+      const customEvent = e as CustomEvent<{ isOpen: boolean }>;
+      if (customEvent.detail && typeof customEvent.detail.isOpen === "boolean") {
+        setIsMenuOpen(customEvent.detail.isOpen);
+      }
+    };
+    window.addEventListener("mobile-explore-state", handleState);
+    return () => window.removeEventListener("mobile-explore-state", handleState);
+  }, []);
 
   // Hotkey '/' or 'Ctrl+K' to open search overlay
   useEffect(() => {
@@ -48,26 +61,66 @@ function HeaderComponent({}: HeaderProps) {
           "left-0 lg:left-[225px]"
         )}
       >
-        <div className="w-full max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-full">
-          {/* Left Group: Mobile Category Button [⊞] + Brand Logo (Desktop & Mobile) */}
-          <div className="flex items-center gap-2 sm:gap-2.5 pointer-events-auto shrink-0">
+        <div className="w-full max-w-[1700px] mx-auto px-2.5 sm:px-6 lg:px-8 flex items-center justify-between h-full min-w-0">
+          {/* Left Group: Mobile Menu Button [⊞ Menu] + Brand Logo (Desktop & Mobile) */}
+          <div className="flex items-center gap-2 sm:gap-2.5 pointer-events-auto shrink min-w-0">
             <button
               type="button"
               onClick={() => {
                 if (typeof window !== "undefined") {
-                  window.dispatchEvent(new CustomEvent("open-mobile-explore"));
+                  window.dispatchEvent(new CustomEvent("toggle-mobile-explore"));
                 }
               }}
-              className="lg:hidden w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/80 hover:text-brand-green active:scale-90 transition-all cursor-pointer -ml-1"
-              aria-label="Mở danh mục Khám Phá"
-              title="Khám phá danh mục"
+              aria-expanded={isMenuOpen}
+              aria-controls="mobile-explore-sheet"
+              aria-haspopup="dialog"
+              aria-label={isMenuOpen ? "Đóng menu khám phá" : "Mở menu khám phá"}
+              title="Menu khám phá"
+              className={cn(
+                "lg:hidden relative flex items-center gap-1.5 h-9 px-2.5 sm:px-3 rounded-xl border transition-all duration-200 cursor-pointer group shrink-0 select-none touch-manipulation overflow-hidden",
+                // Expanded touch target area (WCAG 44x44px minimum for effortless mobile tapping)
+                "before:absolute before:-inset-2 before:content-[''] before:z-0",
+                // Active / Open State vs Default State
+                isMenuOpen
+                  ? "bg-[#14231b] border-brand-green shadow-[0_0_16px_rgba(32,214,107,0.35)]"
+                  : "bg-[#111714] hover:bg-[#151D19] border-white/10 hover:border-brand-green/50 active:border-brand-green/60 shadow-[0_2px_10px_rgba(0,0,0,0.5)]",
+                "active:scale-95"
+              )}
             >
-              <LayoutGrid className="w-5 h-5" />
+              {/* Ambient Glow */}
+              <div
+                className={cn(
+                  "absolute inset-0 bg-gradient-to-r from-brand-green/15 via-transparent to-brand-green/10 transition-opacity pointer-events-none rounded-xl",
+                  isMenuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                )}
+              />
+
+              {/* 4-square Grid Icon — Hi Phim Emerald */}
+              <LayoutGrid
+                className={cn(
+                  "w-4 h-4 text-brand-green transition-all duration-200 shrink-0 relative z-10",
+                  isMenuOpen
+                    ? "scale-110 drop-shadow-[0_0_8px_rgba(32,214,107,0.9)]"
+                    : "group-hover:scale-105"
+                )}
+              />
+
+              {/* Menu Text */}
+              <span
+                className={cn(
+                  "text-[12px] sm:text-[12.5px] tracking-wide leading-none select-none relative z-10 transition-colors",
+                  isMenuOpen
+                    ? "text-brand-green font-bold"
+                    : "font-semibold text-white/90 group-hover:text-white"
+                )}
+              >
+                Menu
+              </span>
             </button>
 
             <Link
               href="/"
-              className="flex items-center select-none group shrink-0"
+              className="flex items-center select-none group shrink-0 min-w-0"
               aria-label="Về trang chủ Hi Phim"
             >
               <BrandLogo size="md" />

@@ -242,6 +242,10 @@ export default function MobileExploreSheet({
 
       {/* Bottom Sheet Container */}
       <div
+        id="mobile-explore-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menu khám phá danh mục"
         onClick={(e) => e.stopPropagation()}
         className="relative z-10 w-full max-h-[88dvh] sm:max-h-[85vh] flex flex-col bg-[#0B100E] border-t border-white/10 rounded-t-[28px] sm:rounded-t-[32px] shadow-[0_-12px_48px_rgba(0,0,0,0.9)] overflow-hidden animate-in slide-in-from-bottom duration-250 ease-out"
       >
