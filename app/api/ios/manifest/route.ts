@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const ipaUrl =
     searchParams.get("ipa") ||
-    "https://expo.dev/artifacts/eas/LA1x2PlnF7SJ6nYt5l2HR60fPJe6crXVC4LERhkO8d4.ipa";
+    "https://expo.dev/artifacts/eas/971D8ffnbFOxppWb5gTBIij46P-4GW3CwTTJBOr7-W0.ipa";
   const title = searchParams.get("title") || "Hi Phim";
   const bundleId = searchParams.get("bundleId") || "com.hiphim.app";
   const version = searchParams.get("version") || "1.0.0";

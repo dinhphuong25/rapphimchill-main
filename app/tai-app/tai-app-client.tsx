@@ -13,9 +13,9 @@ import { cn } from "@/lib/utils";
 import IosSignerTool from "@/components/app-download/ios-signer-tool";
 
 const IOS_IPA_URL =
-  "https://expo.dev/artifacts/eas/BviAc4LJrwRZNIvfoPGlQHYNoALct4cVIyCIGcNnEbc.ipa";
+  "https://expo.dev/artifacts/eas/971D8ffnbFOxppWb5gTBIij46P-4GW3CwTTJBOr7-W0.ipa";
 const ANDROID_APK_URL =
-  "https://expo.dev/artifacts/eas/3tlvA3rQjRPESpzdwZ4lJcqm6dWQPhlQOaV2FmvyhIU.apk";
+  "https://expo.dev/artifacts/eas/daUKOuSkZ7SlkvL-36TFNLNyHjQAHdu5XSzXaTQmnLE.apk";
 
 export default function TaiAppClient() {
   const [platform, setPlatform] = useState<"ios" | "android">("ios");

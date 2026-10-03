@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 const ANDROID_APK_URL =
-  "https://expo.dev/artifacts/eas/3tlvA3rQjRPESpzdwZ4lJcqm6dWQPhlQOaV2FmvyhIU.apk";
+  "https://expo.dev/artifacts/eas/daUKOuSkZ7SlkvL-36TFNLNyHjQAHdu5XSzXaTQmnLE.apk";
 
 export async function GET() {
   try {
