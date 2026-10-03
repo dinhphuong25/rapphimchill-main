@@ -150,6 +150,7 @@ export default function VideoPlayer({
   const lastTapRef = useRef<{ time: number; side: 'left' | 'right' | 'center' }>({ time: 0, side: 'center' });
   const singleTapTimerRef = useRef<NodeJS.Timeout | null>(null);
   const prevVideoUrlRef = useRef<string>("");
+  const isUserPausedRef = useRef<boolean>(false);
 
   // Callback Refs to keep useEffect pure and prevent unwanted reload loops
   const initialTimeRef = useRef(initialTime);
@@ -442,6 +443,7 @@ export default function VideoPlayer({
       if (videoRef.current.paused) {
         setIsLoading(false);
         autoplayRef.current = true;
+        isUserPausedRef.current = false;
         if (hlsRef.current) {
           hlsRef.current.startLoad();
         }
@@ -453,6 +455,7 @@ export default function VideoPlayer({
         await videoRef.current.play();
       } else {
         autoplayRef.current = false;
+        isUserPausedRef.current = true;
         videoRef.current.pause();
       }
     } catch (err: any) {
@@ -932,7 +935,7 @@ export default function VideoPlayer({
     const playWithAutoplayFallback = () => {
       clearInitialWatchdogs();
       setIsLoading(false);
-      if (!autoplayRef.current || !video) return;
+      if (!autoplayRef.current || isUserPausedRef.current || !video) return;
 
       const savedVol = typeof window !== 'undefined' ? Number(localStorage.getItem('cinema_volume') || 1) : 1;
       const targetVol = savedVol > 0 ? savedVol : 1;
@@ -978,6 +981,8 @@ export default function VideoPlayer({
     // Seamless in-place source switch when changing episode/server (preserves decoder & avoids black flash)
     if (prevVideoUrlRef.current && prevVideoUrlRef.current !== videoUrl) {
       prevVideoUrlRef.current = videoUrl;
+      isUserPausedRef.current = false;
+      autoplayRef.current = true;
       hasExtractedFromHlsRef.current = false;
       setHasRenderedFirstFrame(false);
       setError(null);
@@ -1032,6 +1037,7 @@ export default function VideoPlayer({
     }
 
     prevVideoUrlRef.current = videoUrl;
+    isUserPausedRef.current = false;
     setHasRenderedFirstFrame(false);
     setIsSlowNetwork(false);
 
@@ -1511,7 +1517,7 @@ export default function VideoPlayer({
 
       // Safe recovery: if stalled for 2.0s, trigger HLS load or nudge playhead past hole
       const stallTimeout = setTimeout(() => {
-        if (video.paused) return;
+        if (video.paused || isUserPausedRef.current) return;
         if (hlsRef.current) {
           hlsRef.current.startLoad();
           if (video.buffered.length > 0) {
@@ -1599,6 +1605,7 @@ export default function VideoPlayer({
     const onPlayEvent = () => {
       isPlayingRef.current = true;
       setIsPlaying(true);
+      isUserPausedRef.current = false;
       setHasRenderedFirstFrame(true);
       clearInitialWatchdogs();
       setIsSlowNetwork(false);
@@ -1626,6 +1633,7 @@ export default function VideoPlayer({
       isPlayingRef.current = false;
       setIsPlaying(false);
       autoplayRef.current = false;
+      isUserPausedRef.current = true;
       hideLoading();
       try {
         if ('mediaSession' in navigator) {
