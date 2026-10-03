@@ -19,6 +19,7 @@ import {
   Settings,
   Check,
   Tv,
+  Rewind,
   FastForward,
   X,
   Sun,
@@ -2570,6 +2571,23 @@ export default function VideoPlayer({
             {/* <span className="hidden sm:inline-flex text-[10px] font-black text-brand-green bg-brand-green/10 border border-brand-green/25 px-2 py-0.5 rounded-full uppercase tracking-wider select-none">
               {quality === -1 ? (currentLevelPlaying >= 0 && qualities[currentLevelPlaying] ? `${qualities[currentLevelPlaying].height}p Auto` : "FHD 1080p") : `${qualities.find(q => q.level === quality)?.height || 1080}p FHD`}
             </span> */}
+
+            {/* Nút Lùi Video (-10s) */}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={(e) => {
+                e.stopPropagation();
+                skip(-10);
+                setSkipAnimation({ side: 'left', id: Date.now() });
+                showControlsHandler();
+              }} 
+              title="Lùi video (-10s)"
+              aria-label="Lùi video 10 giây"
+              className="text-white hover:bg-white/10 hover:text-brand-green cursor-pointer w-8 h-8 sm:w-9 sm:h-9 transition-colors flex items-center justify-center relative group"
+            >
+              <Rewind className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110 group-active:scale-95" />
+            </Button>
 
             {/* Nút Xả Video (+10s) */}
             <Button 
