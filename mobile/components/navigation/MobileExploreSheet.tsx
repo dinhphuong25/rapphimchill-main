@@ -182,7 +182,11 @@ const CARDS: ExploreCard[] = [
   },
 ];
 
-const YEARS_LIST = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010];
+const currentYearNum = 2026;
+const YEARS_LIST = Array.from(
+  { length: currentYearNum - 1980 + 1 },
+  (_, i) => currentYearNum - i
+);
 
 export function MobileExploreSheet() {
   const router = useRouter();
@@ -196,6 +200,7 @@ export function MobileExploreSheet() {
   const [searchFilter, setSearchFilter] = useState("");
   const [catGroupFilter, setCatGroupFilter] = useState<"all" | "popular" | "action" | "romance" | "other">("all");
   const [countryRegionFilter, setCountryRegionFilter] = useState<"all" | "popular" | "asia" | "west">("all");
+  const [yearDecadeFilter, setYearDecadeFilter] = useState<"all" | "2020s" | "2010s" | "2000s" | "classic">("all");
 
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -285,9 +290,18 @@ export function MobileExploreSheet() {
     return c.region === "west";
   });
 
-  const filteredYears = YEARS_LIST.filter((y) =>
-    String(y).includes(searchFilter)
-  );
+  let filteredYears = YEARS_LIST;
+  if (searchFilter.trim()) {
+    filteredYears = filteredYears.filter((y) => String(y).includes(searchFilter.trim()));
+  } else if (yearDecadeFilter === "2020s") {
+    filteredYears = filteredYears.filter((y) => y >= 2020);
+  } else if (yearDecadeFilter === "2010s") {
+    filteredYears = filteredYears.filter((y) => y >= 2010 && y <= 2019);
+  } else if (yearDecadeFilter === "2000s") {
+    filteredYears = filteredYears.filter((y) => y >= 2000 && y <= 2009);
+  } else if (yearDecadeFilter === "classic") {
+    filteredYears = filteredYears.filter((y) => y < 2000);
+  }
 
   return (
     <Modal
@@ -336,6 +350,9 @@ export function MobileExploreSheet() {
                   haptic.light();
                   setActiveView("main");
                   setSearchFilter("");
+                  setCatGroupFilter("all");
+                  setCountryRegionFilter("all");
+                  setYearDecadeFilter("all");
                 }}
                 style={({ pressed }) => [
                   styles.backBtn,
@@ -357,7 +374,7 @@ export function MobileExploreSheet() {
                         ? "26 THỂ LOẠI"
                         : activeView === "countries"
                         ? "37 QUỐC GIA"
-                        : "NĂM 2026"}
+                        : `${YEARS_LIST.length} NĂM PHÁT HÀNH`}
                     </Text>
                   </View>
                 </View>
@@ -710,36 +727,96 @@ export function MobileExploreSheet() {
             </View>
           )}
 
-          {/* View: YEARS */}
+          {/* View: YEARS (Đồng bộ chuẩn 2 cột Cinema Card với Thể Loại & Quốc Gia) */}
           {activeView === "years" && (
             <View style={styles.subViewContainer}>
+              {/* Search Bar */}
+              <View style={styles.subSearchWrapper}>
+                <Search size={15} color="#20D66B" strokeWidth={2.2} />
+                <TextInput
+                  value={searchFilter}
+                  onChangeText={setSearchFilter}
+                  placeholder="Lọc nhanh năm phát hành (2026, 2025, 2024...)"
+                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                  style={styles.subSearchInput}
+                  autoCorrect={false}
+                  keyboardType="numeric"
+                />
+                {searchFilter ? (
+                  <Pressable onPress={() => setSearchFilter("")}>
+                    <X size={15} color="rgba(255, 255, 255, 0.5)" />
+                  </Pressable>
+                ) : null}
+              </View>
+
+              {/* Decade Filter Chips (Chuẩn Web) */}
+              {!searchFilter.trim() && (
+                <View style={styles.thematicRow}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.thematicScroll}>
+                    {[
+                      { id: "all", label: "Tất Cả Năm" },
+                      { id: "2020s", label: "2020s Mới" },
+                      { id: "2010s", label: "Thập niên 2010s" },
+                      { id: "2000s", label: "Thập niên 2000s" },
+                      { id: "classic", label: "Kinh Điển (< 2000)" },
+                    ].map((f) => (
+                      <Pressable
+                        key={f.id}
+                        onPress={() => {
+                          haptic.selection();
+                          setYearDecadeFilter(f.id as any);
+                        }}
+                        style={[
+                          styles.thematicChip,
+                          yearDecadeFilter === f.id && styles.thematicChipActive,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.thematicChipText,
+                            yearDecadeFilter === f.id && styles.thematicChipTextActive,
+                          ]}
+                        >
+                          {f.label}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
+              {/* 3-Column Grid of Years */}
               <ScrollView
                 style={styles.subScrollView}
-                contentContainerStyle={styles.yearsGrid}
+                contentContainerStyle={styles.cinemaGridContent}
                 showsVerticalScrollIndicator={false}
                 bounces={true}
               >
-                {filteredYears.map((y) => (
-                  <Pressable
-                    key={y}
-                    onPress={() => handleSelectYear(y)}
-                    style={({ pressed }) => [
-                      styles.yearChip,
-                      y === 2026 && styles.yearChipActive,
-                      pressed && styles.chipPressed,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.yearChipText,
-                        y === 2026 && styles.yearChipActiveText,
+                <View style={styles.yearsGridRow}>
+                  {filteredYears.map((y) => (
+                    <Pressable
+                      key={y}
+                      onPress={() => handleSelectYear(y)}
+                      style={({ pressed }) => [
+                        styles.yearCard3Col,
+                        y === 2026 && styles.yearCard3ColActive,
+                        pressed && styles.cardPressed,
                       ]}
                     >
-                      {y}
-                    </Text>
-                    {y === 2026 && <Text style={styles.yearTag}>MỚI</Text>}
-                  </Pressable>
-                ))}
+                      <Text
+                        style={[
+                          styles.yearCard3ColText,
+                          y === 2026 && styles.yearCard3ColTextActive,
+                        ]}
+                      >
+                        {y}
+                      </Text>
+                      {y === 2026 && (
+                        <Text style={styles.yearTagMini}>MỚI</Text>
+                      )}
+                    </Pressable>
+                  ))}
+                </View>
               </ScrollView>
             </View>
           )}
@@ -1119,15 +1196,14 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-  yearsGrid: {
+  yearsGridRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    paddingBottom: 24,
   },
-  yearChip: {
-    width: (SCREEN_WIDTH - 32 - 16) / 3,
-    height: 44,
+  yearCard3Col: {
+    width: Math.floor((SCREEN_WIDTH - 32 - 16) / 3),
+    height: 46,
     borderRadius: 12,
     backgroundColor: "rgba(255, 255, 255, 0.04)",
     borderWidth: 1,
@@ -1136,29 +1212,26 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     position: "relative",
   },
-  yearChipActive: {
+  yearCard3ColActive: {
     backgroundColor: "rgba(32, 214, 107, 0.15)",
     borderColor: "rgba(32, 214, 107, 0.4)",
   },
-  yearChipText: {
-    fontSize: 14,
+  yearCard3ColText: {
+    fontSize: 15,
     fontWeight: "700",
     color: "#FFFFFF",
+    letterSpacing: -0.3,
   },
-  yearChipActiveText: {
+  yearCard3ColTextActive: {
     color: "#20D66B",
     fontWeight: "900",
   },
-  yearTag: {
+  yearTagMini: {
     position: "absolute",
     top: 3,
-    right: 4,
-    fontSize: 8,
+    right: 5,
+    fontSize: 8.5,
     fontWeight: "900",
     color: "#20D66B",
-  },
-  chipPressed: {
-    opacity: 0.75,
-    transform: [{ scale: 0.96 }],
   },
 });

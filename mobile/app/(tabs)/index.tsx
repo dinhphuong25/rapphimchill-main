@@ -28,13 +28,8 @@ import {
   Sparkles,
   ChevronRight,
   Heart,
-  Globe,
   Clock,
   RotateCcw,
-  Ghost,
-  Compass,
-  Shield,
-  Layers,
   Cat,
 } from "lucide-react-native";
 import { NativeHeader } from "@/components/ui/NativeHeader";
@@ -53,43 +48,13 @@ import {
 import { useUserAuth } from "@/context/UserAuthContext";
 import { Colors } from "@/constants/theme";
 import { haptic } from "@/services/haptics";
-
-const QUICK_TAGS = [
-  { label: "Chiếu Rạp", segment: "cinema", slug: "", icon: Clapperboard, color: "#FB7185" },
-  { label: "Phim Bộ", segment: "type", slug: "phim-bo", icon: Tv, color: "#38BDF8" },
-  { label: "Phim Lẻ", segment: "type", slug: "phim-le", icon: Film, color: "#34D399" },
-  { label: "Hoạt Hình", segment: "type", slug: "hoat-hinh", icon: Cat, color: "#FBBF24" },
-  { label: "Hàn Quốc", segment: "country", slug: "han-quoc", icon: Globe, color: "#2DD4BF" },
-  { label: "Hành Động", segment: "category", slug: "hanh-dong", icon: Flame, color: "#FB923C" },
-  { label: "Tình Cảm", segment: "category", slug: "tinh-cam", icon: Heart, color: "#F43F5E" },
-];
-
-const FEATURED_CATEGORIES = [
-  { slug: "hanh-dong", name: "Hành Động", icon: Flame, color: "#FB923C", bg: "rgba(249, 115, 22, 0.14)", border: "rgba(249, 115, 22, 0.35)", desc: "Kịch tính, gay cấn" },
-  { slug: "co-trang", name: "Cổ Trang", icon: Sparkles, color: "#FBBF24", bg: "rgba(251, 191, 36, 0.14)", border: "rgba(251, 191, 36, 0.35)", desc: "Tiên hiệp, kiếm hiệp" },
-  { slug: "tinh-cam", name: "Tình Cảm", icon: Heart, color: "#F43F5E", bg: "rgba(244, 63, 94, 0.14)", border: "rgba(244, 63, 94, 0.35)", desc: "Lãng mạn, ngọt ngào" },
-  { slug: "kinh-di", name: "Kinh Dị", icon: Ghost, color: "#A855F7", bg: "rgba(168, 85, 247, 0.14)", border: "rgba(168, 85, 247, 0.35)", desc: "Hồi hộp, rùng rợn" },
-  { slug: "vien-tuong", name: "Viễn Tưởng", icon: Compass, color: "#38BDF8", bg: "rgba(56, 189, 248, 0.14)", border: "rgba(56, 189, 248, 0.35)", desc: "Vũ trụ, tương lai" },
-  { slug: "vo-thuat", name: "Võ Thuật", icon: Shield, color: "#34D399", bg: "rgba(52, 211, 153, 0.14)", border: "rgba(52, 211, 153, 0.35)", desc: "Kungfu, đối kháng" },
-  { slug: "hai-huoc", name: "Hài Hước", icon: Sparkles, color: "#F59E0B", bg: "rgba(245, 158, 11, 0.14)", border: "rgba(245, 158, 11, 0.35)", desc: "Giải trí, vui nhộn" },
-  { slug: "tam-ly", name: "Tâm Lý", icon: Film, color: "#818CF8", bg: "rgba(129, 140, 248, 0.14)", border: "rgba(129, 140, 248, 0.35)", desc: "Sâu sắc, cuốn hút" },
-];
-
-const FEATURED_COUNTRIES = [
-  { slug: "han-quoc", name: "Hàn Quốc", flag: "🇰🇷", color: "#2DD4BF", bg: "rgba(45, 212, 191, 0.12)", border: "rgba(45, 212, 191, 0.35)" },
-  { slug: "trung-quoc", name: "Trung Quốc", flag: "🇨🇳", color: "#F43F5E", bg: "rgba(244, 63, 94, 0.12)", border: "rgba(244, 63, 94, 0.35)" },
-  { slug: "au-my", name: "Âu Mỹ", flag: "🇺🇸", color: "#38BDF8", bg: "rgba(56, 189, 248, 0.12)", border: "rgba(56, 189, 248, 0.35)" },
-  { slug: "nhat-ban", name: "Nhật Bản", flag: "🇯🇵", color: "#FB7185", bg: "rgba(251, 113, 133, 0.12)", border: "rgba(251, 113, 133, 0.35)" },
-  { slug: "thai-lan", name: "Thái Lan", flag: "🇹🇭", color: "#FBBF24", bg: "rgba(251, 191, 36, 0.12)", border: "rgba(251, 191, 36, 0.35)" },
-  { slug: "viet-nam", name: "Việt Nam", flag: "🇻🇳", color: "#34D399", bg: "rgba(52, 211, 153, 0.12)", border: "rgba(52, 211, 153, 0.35)" },
-  { slug: "hong-kong", name: "Hồng Kông", flag: "🇭🇰", color: "#A78BFA", bg: "rgba(167, 139, 250, 0.12)", border: "rgba(167, 139, 250, 0.35)" },
-  { slug: "an-do", name: "Ấn Độ", flag: "🇮🇳", color: "#FB923C", bg: "rgba(251, 146, 60, 0.12)", border: "rgba(251, 146, 60, 0.35)" },
-];
+import { useObserve } from "expo-observe";
 
 export default function HomeScreen() {
   const router = useRouter();
   const { user, openAuthModal } = useUserAuth();
   const { width: screenWidth } = useWindowDimensions();
+  const { markInteractive } = useObserve();
 
   const [trending, setTrending] = useState<MovieItem[]>([]);
   const [cinema, setCinema] = useState<MovieItem[]>([]);
@@ -140,6 +105,13 @@ export default function HomeScreen() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Report interactive time to EAS Observe once startup data is ready
+  useEffect(() => {
+    if (!loading) {
+      markInteractive();
+    }
+  }, [loading, markInteractive]);
 
   // Refresh history & favorite whenever tab gains focus
   useFocusEffect(
@@ -197,18 +169,6 @@ export default function HomeScreen() {
     haptic.medium();
     const nextState = await toggleFavorite(current);
     setHeroFav(nextState);
-  };
-
-  const handleQuickTagPress = (tag: (typeof QUICK_TAGS)[0]) => {
-    haptic.selection();
-    if (tag.segment === "cinema") {
-      router.push("/(tabs)/cinema");
-    } else {
-      router.push({
-        pathname: "/explore",
-        params: { segment: tag.segment, slug: tag.slug, name: tag.label },
-      });
-    }
   };
 
   const heroMovies = trending.slice(0, 5);
@@ -383,32 +343,6 @@ export default function HomeScreen() {
         )}
 
         {/* ==================================================== */}
-        {/* QUICK TAGS / CATEGORY PILLS WITH COLOR ICONS         */}
-        {/* ==================================================== */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.quickTagsScroll}
-        >
-          {QUICK_TAGS.map((tag) => {
-            const Icon = tag.icon;
-            return (
-              <Pressable
-                key={tag.label}
-                onPress={() => handleQuickTagPress(tag)}
-                style={({ pressed }) => [
-                  styles.quickTagChip,
-                  pressed && styles.quickTagPressed,
-                ]}
-              >
-                <Icon size={14} color={tag.color} strokeWidth={2.2} />
-                <Text style={styles.quickTagText}>{tag.label}</Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-
-        {/* ==================================================== */}
         {/* TIẾP TỤC XEM (CONTINUE WATCHING ROW)                 */}
         {/* ==================================================== */}
         {continueWatching.length > 0 && (
@@ -549,65 +483,6 @@ export default function HomeScreen() {
         </View>
 
         {/* ==================================================== */}
-        {/* KHÁM PHÁ THEO THỂ LOẠI (FEATURED GENRES)             */}
-        {/* ==================================================== */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionIconBadge, { backgroundColor: "rgba(32, 214, 107, 0.15)", borderColor: "rgba(32, 214, 107, 0.35)" }]}>
-                <Layers size={15} color="#20D66B" strokeWidth={2.4} />
-              </View>
-              <Text style={styles.sectionTitle}>Khám Phá Theo Thể Loại</Text>
-            </View>
-            <Pressable
-              onPress={() => router.push({ pathname: "/explore", params: { segment: "category" } })}
-              style={styles.seeAllBtn}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Text style={styles.seeAllText}>Tất cả thể loại</Text>
-              <ChevronRight size={14} color="#20D66B" strokeWidth={2.4} />
-            </Pressable>
-          </View>
-
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryCardsScroll}
-          >
-            {FEATURED_CATEGORIES.map((cat) => {
-              const Icon = cat.icon;
-              return (
-                <Pressable
-                  key={cat.slug}
-                  onPress={() => {
-                    haptic.selection();
-                    router.push({
-                      pathname: "/explore",
-                      params: { segment: "category", slug: cat.slug, name: cat.name },
-                    });
-                  }}
-                  style={({ pressed }) => [
-                    styles.categoryCard,
-                    { borderColor: cat.border, backgroundColor: cat.bg },
-                    pressed && styles.btnPressed,
-                  ]}
-                >
-                  <View style={[styles.categoryCardIconBox, { backgroundColor: "rgba(0, 0, 0, 0.25)" }]}>
-                    <Icon size={18} color={cat.color} strokeWidth={2.4} />
-                  </View>
-                  <Text style={styles.categoryCardName} numberOfLines={1}>
-                    {cat.name}
-                  </Text>
-                  <Text style={styles.categoryCardDesc} numberOfLines={1}>
-                    {cat.desc}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        {/* ==================================================== */}
         {/* SECTION 03: PHIM BỘ TIÊU ĐIỂM                        */}
         {/* ==================================================== */}
         <View style={styles.section}>
@@ -671,55 +546,6 @@ export default function HomeScreen() {
             initialNumToRender={5}
             renderItem={({ item }) => <MovieCard movie={item} width={142} style={{ marginRight: 12 }} />}
           />
-        </View>
-
-        {/* ==================================================== */}
-        {/* KHÁM PHÁ THEO QUỐC GIA (FEATURED COUNTRIES)          */}
-        {/* ==================================================== */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionIconBadge, { backgroundColor: "rgba(45, 212, 191, 0.15)", borderColor: "rgba(45, 212, 191, 0.35)" }]}>
-                <Globe size={15} color="#2DD4BF" strokeWidth={2.4} />
-              </View>
-              <Text style={styles.sectionTitle}>Điện Ảnh Theo Quốc Gia</Text>
-            </View>
-            <Pressable
-              onPress={() => router.push({ pathname: "/explore", params: { segment: "country" } })}
-              style={styles.seeAllBtn}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Text style={styles.seeAllText}>Tất cả quốc gia</Text>
-              <ChevronRight size={14} color="#20D66B" strokeWidth={2.4} />
-            </Pressable>
-          </View>
-
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryCardsScroll}
-          >
-            {FEATURED_COUNTRIES.map((cty) => (
-              <Pressable
-                key={cty.slug}
-                onPress={() => {
-                  haptic.selection();
-                  router.push({
-                    pathname: "/explore",
-                    params: { segment: "country", slug: cty.slug, name: cty.name },
-                  });
-                }}
-                style={({ pressed }) => [
-                  styles.countryCard,
-                  { borderColor: cty.border, backgroundColor: cty.bg },
-                  pressed && styles.btnPressed,
-                ]}
-              >
-                <Text style={styles.countryFlagText}>{cty.flag}</Text>
-                <Text style={styles.countryCardName}>{cty.name}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
         </View>
 
         {/* ==================================================== */}
@@ -977,32 +803,6 @@ const styles = StyleSheet.create({
     width: 6,
     backgroundColor: "rgba(255, 255, 255, 0.25)",
   },
-  quickTagsScroll: {
-    paddingHorizontal: 14,
-    paddingTop: 14,
-    paddingBottom: 4,
-    gap: 8,
-  },
-  quickTagChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 14,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
-  },
-  quickTagPressed: {
-    opacity: 0.75,
-    transform: [{ scale: 0.95 }],
-  },
-  quickTagText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "700",
-  },
   section: {
     marginTop: 24,
   },
@@ -1114,54 +914,5 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     fontWeight: "600",
     marginTop: 2,
-  },
-  categoryCardsScroll: {
-    paddingLeft: 16,
-    paddingRight: 6,
-    gap: 10,
-  },
-  categoryCard: {
-    width: 130,
-    padding: 12,
-    borderRadius: 16,
-    borderWidth: 1.2,
-    justifyContent: "space-between",
-  },
-  categoryCardIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
-  },
-  categoryCardName: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: "#FFFFFF",
-    letterSpacing: -0.2,
-  },
-  categoryCardDesc: {
-    fontSize: 10.5,
-    fontWeight: "500",
-    color: "rgba(255, 255, 255, 0.5)",
-    marginTop: 2,
-  },
-  countryCard: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: 1.2,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  countryFlagText: {
-    fontSize: 18,
-  },
-  countryCardName: {
-    fontSize: 13,
-    fontWeight: "800",
-    color: "#FFFFFF",
   },
 });

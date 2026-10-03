@@ -4,44 +4,33 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  ScrollView,
-  Pressable,
   ActivityIndicator,
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Compass, Flame, Film, Tv, Globe, Calendar, Layers } from "lucide-react-native";
+import { Compass } from "lucide-react-native";
 import { NativeHeader } from "@/components/ui/NativeHeader";
 import { MovieCard } from "@/components/ui/MovieCard";
 import {
   CATEGORIES_LIST,
-  COUNTRIES_LIST,
-  FORMATS_LIST,
   fetchMoviesByCategory,
   fetchMoviesByCountry,
   fetchMoviesByYear,
   fetchListByType,
   MovieItem,
 } from "@/services/api";
-import { Colors, Radii } from "@/constants/theme";
+import { Colors } from "@/constants/theme";
 import { haptic } from "@/services/haptics";
-
-const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012];
+import { useObserve } from "expo-observe";
 
 type ExploreSegment = "category" | "country" | "type" | "year";
-
-const SEGMENT_TABS: { key: ExploreSegment; label: string; icon: any }[] = [
-  { key: "category", label: "Thể Loại", icon: Layers },
-  { key: "country", label: "Quốc Gia", icon: Globe },
-  { key: "type", label: "Định Dạng", icon: Film },
-  { key: "year", label: "Năm", icon: Calendar },
-];
 
 export default function ExploreScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ segment?: string; slug?: string; name?: string }>();
   const { width: screenWidth } = useWindowDimensions();
+  const { markInteractive } = useObserve();
   const numColumns = 2;
 
   const cardSpacing = 12;
@@ -131,30 +120,12 @@ export default function ExploreScreen() {
     loadData(segment, selectedSlug, 1, false);
   }, [segment, selectedSlug, loadData]);
 
-  const handleSegmentChange = (type: ExploreSegment) => {
-    haptic.selection();
-    setSegment(type);
-    if (type === "category") {
-      setSelectedSlug(CATEGORIES_LIST[0].slug);
-      setSelectedName(CATEGORIES_LIST[0].name);
-    } else if (type === "country") {
-      setSelectedSlug(COUNTRIES_LIST[0].slug);
-      setSelectedName(COUNTRIES_LIST[0].name);
-    } else if (type === "type") {
-      setSelectedSlug(FORMATS_LIST[0].slug);
-      setSelectedName(FORMATS_LIST[0].name);
-    } else {
-      setSelectedSlug(String(YEARS[0]));
-      setSelectedName(`Năm ${YEARS[0]}`);
+  // Report interactive time to EAS Observe once explore list is ready
+  useEffect(() => {
+    if (!loading) {
+      markInteractive();
     }
-  };
-
-  const handleChipSelect = (slug: string, name: string) => {
-    if (slug === selectedSlug) return;
-    haptic.selection();
-    setSelectedSlug(slug);
-    setSelectedName(name);
-  };
+  }, [loading, markInteractive]);
 
   const onRefresh = () => {
     haptic.light();
@@ -169,86 +140,10 @@ export default function ExploreScreen() {
     }
   };
 
-  // List of sub-items for active segment
-  const currentChips =
-    segment === "category"
-      ? CATEGORIES_LIST
-      : segment === "country"
-      ? COUNTRIES_LIST
-      : segment === "type"
-      ? FORMATS_LIST
-      : YEARS.map((y) => ({ slug: String(y), name: `Năm ${y}` }));
-
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       {/* Header with Back button */}
       <NativeHeader showBackButton={true} onBack={() => router.back()} />
-
-      {/* Segment Tabs (Thể Loại / Quốc Gia / Định Dạng / Năm) */}
-      <View style={styles.segmentRow}>
-        {SEGMENT_TABS.map((tab) => {
-          const isActive = segment === tab.key;
-          const Icon = tab.icon;
-          return (
-            <Pressable
-              key={tab.key}
-              onPress={() => handleSegmentChange(tab.key)}
-              style={({ pressed }) => [
-                styles.segmentTab,
-                isActive && styles.segmentTabActive,
-                pressed && styles.btnPressed,
-              ]}
-            >
-              <Icon
-                size={13}
-                color={isActive ? "#050807" : "rgba(255, 255, 255, 0.6)"}
-                strokeWidth={2.4}
-              />
-              <Text
-                style={[
-                  styles.segmentTabText,
-                  isActive && styles.segmentTabTextActive,
-                ]}
-              >
-                {tab.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {/* Sub-item Chip Horizontal Filter */}
-      <View style={styles.chipsWrapper}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipsScroll}
-        >
-          {currentChips.map((c) => {
-            const isChipActive = c.slug === selectedSlug;
-            return (
-              <Pressable
-                key={c.slug}
-                onPress={() => handleChipSelect(c.slug, c.name)}
-                style={({ pressed }) => [
-                  styles.chip,
-                  isChipActive && styles.chipActive,
-                  pressed && styles.btnPressed,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.chipText,
-                    isChipActive && styles.chipTextActive,
-                  ]}
-                >
-                  {c.name}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      </View>
 
       {/* Result Status Title Row */}
       <View style={styles.resultTitleRow}>
@@ -315,67 +210,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: Colors.background,
-  },
-  segmentRow: {
-    flexDirection: "row",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    gap: 6,
-  },
-  segmentTab: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 5,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
-  },
-  segmentTabActive: {
-    backgroundColor: "#20D66B",
-    borderColor: "#20D66B",
-  },
-  segmentTabText: {
-    fontSize: 11.5,
-    fontWeight: "700",
-    color: "rgba(255, 255, 255, 0.65)",
-  },
-  segmentTabTextActive: {
-    color: "#050807",
-    fontWeight: "900",
-  },
-  chipsWrapper: {
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.05)",
-  },
-  chipsScroll: {
-    paddingHorizontal: 12,
-    gap: 8,
-  },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
-    backgroundColor: "rgba(255, 255, 255, 0.04)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.07)",
-  },
-  chipActive: {
-    backgroundColor: "rgba(32, 214, 107, 0.15)",
-    borderColor: "rgba(32, 214, 107, 0.5)",
-  },
-  chipText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "rgba(255, 255, 255, 0.7)",
-  },
-  chipTextActive: {
-    color: "#20D66B",
-    fontWeight: "800",
   },
   resultTitleRow: {
     flexDirection: "row",

@@ -24,11 +24,13 @@ import { syncDataWithServer } from "@/services/auth";
 import { useUserAuth } from "@/context/UserAuthContext";
 import { Colors, Radii } from "@/constants/theme";
 import { haptic } from "@/services/haptics";
+import { useObserve } from "expo-observe";
 
 export default function HistoryScreen() {
   const router = useRouter();
   const { user, loading: authLoading, openAuthModal } = useUserAuth();
   const { width: screenWidth } = useWindowDimensions();
+  const { markInteractive } = useObserve();
   const numColumns = 2;
 
   const cardSpacing = 12;
@@ -38,18 +40,18 @@ export default function HistoryScreen() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Report interactive time to EAS Observe once history is loaded
+  React.useEffect(() => {
+    if (!loading) {
+      markInteractive();
+    }
+  }, [loading, markInteractive]);
+
   useFocusEffect(
     useCallback(() => {
       let isMounted = true;
-      if (!user) {
-        setHistory([]);
-        setLoading(false);
-        return () => {
-          isMounted = false;
-        };
-      }
-
       setLoading(true);
+
       getWatchHistory().then((items) => {
         if (isMounted) {
           setHistory(items);
@@ -67,7 +69,7 @@ export default function HistoryScreen() {
     haptic.medium();
     Alert.alert(
       "Xóa lịch sử xem",
-      "Bạn có chắc muốn xóa toàn bộ lịch sử xem phim trên tài khoản này không?",
+      "Bạn có chắc muốn xóa toàn bộ lịch sử xem phim không?",
       [
         { text: "Hủy", style: "cancel" },
         {
@@ -77,8 +79,9 @@ export default function HistoryScreen() {
             haptic.heavy();
             await clearWatchHistory();
             setHistory([]);
-            // Background sync cloud
-            syncDataWithServer();
+            if (user) {
+              syncDataWithServer();
+            }
           },
         },
       ]
@@ -89,7 +92,7 @@ export default function HistoryScreen() {
     haptic.medium();
     Alert.alert(
       "Xóa khỏi lịch sử",
-      `Bạn có muốn xóa phim "${item.name}" khỏi lịch sử xem của tài khoản không?`,
+      `Bạn có muốn xóa phim "${item.name}" khỏi lịch sử xem không?`,
       [
         { text: "Hủy", style: "cancel" },
         {
@@ -99,8 +102,9 @@ export default function HistoryScreen() {
             haptic.light();
             await removeWatchHistory(item.slug);
             setHistory((prev) => prev.filter((h) => h.slug !== item.slug));
-            // Background sync cloud
-            syncDataWithServer();
+            if (user) {
+              syncDataWithServer();
+            }
           },
         },
       ]
@@ -111,14 +115,23 @@ export default function HistoryScreen() {
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <NativeHeader />
 
-      {/* Header Title with Clear Action */}
-      <View style={styles.headerTitleRow}>
-        <View style={styles.headerTopLine}>
-          <View style={styles.titleRow}>
-            <Clock size={20} color={Colors.primary} strokeWidth={2.4} />
-            <Text style={styles.title}>Lịch Sử Xem</Text>
-          </View>
-          {user && history.length > 0 && (
+      {/* Action Bar when history has items */}
+      {history.length > 0 && (
+        <View style={styles.compactActionBar}>
+          <Text style={styles.historyCountText}>{history.length} phim đã xem</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            {!user && (
+              <Pressable
+                onPress={() => {
+                  haptic.light();
+                  openAuthModal("login");
+                }}
+                style={({ pressed }) => [styles.syncHintBtn, pressed && styles.btnPressed]}
+              >
+                <LogIn size={11} color="#20D66B" />
+                <Text style={styles.syncHintText}>Đăng nhập để đồng bộ</Text>
+              </Pressable>
+            )}
             <Pressable
               onPress={handleClearAll}
               style={({ pressed }) => [styles.clearBtn, pressed && styles.btnPressed]}
@@ -126,70 +139,25 @@ export default function HistoryScreen() {
               <Trash2 size={13} color={Colors.danger} />
               <Text style={styles.clearText}>Xóa hết</Text>
             </Pressable>
-          )}
+          </View>
         </View>
+      )}
 
-        <Text style={styles.sub}>
-          {user
-            ? history.length > 0
-              ? `Tài khoản: ${user.name || user.email} • ${history.length} bộ phim đã xem`
-              : "Danh sách phim đã xem lưu trữ trên tài khoản của bạn"
-            : "Chỉ thành viên đăng nhập mới có thể lưu & xem lại lịch sử"}
-        </Text>
-      </View>
-
-      {/* State 1: Auth Loading */}
-      {authLoading ? (
+      {/* State 1: Loading */}
+      {loading ? (
         <View style={styles.emptyContainer}>
           <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={[styles.emptySub, { marginTop: 12 }]}>Đang kiểm tra tài khoản...</Text>
+          <Text style={[styles.emptySub, { marginTop: 12 }]}>Đang tải lịch sử xem...</Text>
         </View>
-      ) : !user ? (
-        /* State 2: Not Logged In (Requires Account) */
-        <View style={styles.emptyContainer}>
-          <View style={styles.loginRequiredIconCircle}>
-            <Clock size={34} color={Colors.primary} strokeWidth={2.2} />
-            <View style={styles.lockBadge}>
-              <Lock size={12} color="#050807" strokeWidth={2.8} />
-            </View>
-          </View>
-
-          <Text style={styles.emptyTitle}>Yêu Cầu Đăng Nhập</Text>
-          <Text style={styles.emptySub}>
-            Lịch sử xem phim được lưu trữ và đồng bộ an toàn theo tài khoản của bạn. Vui lòng đăng nhập để tiếp tục theo dõi các tập phim đang xem dở dang.
-          </Text>
-
-          <Pressable
-            onPress={() => {
-              haptic.medium();
-              openAuthModal("login");
-            }}
-            style={({ pressed }) => [styles.primaryLoginBtn, pressed && styles.btnPressed]}
-          >
-            <LogIn size={16} color="#050807" strokeWidth={2.6} />
-            <Text style={styles.primaryLoginBtnText}>Đăng Nhập / Đăng Ký Ngay</Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => {
-              haptic.light();
-              router.push("/(tabs)");
-            }}
-            style={({ pressed }) => [styles.secondaryBrowseBtn, pressed && styles.btnPressed]}
-          >
-            <Film size={15} color="rgba(255, 255, 255, 0.7)" />
-            <Text style={styles.secondaryBrowseBtnText}>Khám phá phim trang chủ</Text>
-          </Pressable>
-        </View>
-      ) : history.length === 0 && !loading ? (
-        /* State 3: Logged In but Empty */
+      ) : history.length === 0 ? (
+        /* State 2: Empty History */
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIconCircle}>
             <Clock size={36} color={Colors.textDim} strokeWidth={1.8} />
           </View>
           <Text style={styles.emptyTitle}>Chưa có lịch sử xem</Text>
           <Text style={styles.emptySub}>
-            Khi bạn xem bất kỳ tập phim nào, hệ thống sẽ tự động lưu lại vào tài khoản để bạn có thể xem lại dễ dàng bất cứ lúc nào.
+            Khi bạn xem bất kỳ tập phim nào, hệ thống sẽ tự động ghi nhớ vị trí phát và lưu lại tại đây để bạn tiếp tục xem dễ dàng.
           </Text>
           <Pressable
             onPress={() => {
@@ -203,7 +171,7 @@ export default function HistoryScreen() {
           </Pressable>
         </View>
       ) : (
-        /* State 4: Logged In with History Grid */
+        /* State 3: History Grid */
         <FlatList
           key={String(numColumns)}
           data={history}
@@ -236,31 +204,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  headerTitleRow: {
-    paddingHorizontal: 14,
-    paddingTop: 12,
-    paddingBottom: 8,
-  },
-  headerTopLine: {
+  compactActionBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    paddingBottom: 4,
   },
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  title: {
-    color: "#FFFFFF",
-    fontSize: 20,
-    fontWeight: "900",
-    letterSpacing: -0.4,
-  },
-  sub: {
+  historyCountText: {
     color: Colors.textDim,
     fontSize: 12,
-    marginTop: 4,
+    fontWeight: "600",
   },
   clearBtn: {
     flexDirection: "row",
@@ -276,6 +231,22 @@ const styles = StyleSheet.create({
   clearText: {
     color: Colors.danger,
     fontSize: 11.5,
+    fontWeight: "700",
+  },
+  syncHintBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: Radii.sm,
+    backgroundColor: "rgba(32, 214, 107, 0.10)",
+    borderWidth: 1,
+    borderColor: "rgba(32, 214, 107, 0.25)",
+  },
+  syncHintText: {
+    color: "#20D66B",
+    fontSize: 10.5,
     fontWeight: "700",
   },
   listContent: {

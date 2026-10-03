@@ -39,6 +39,7 @@ import { isFavorite, toggleFavorite } from "@/services/storage";
 import { useUserAuth } from "@/context/UserAuthContext";
 import { Colors, Radii } from "@/constants/theme";
 import { haptic } from "@/services/haptics";
+import { useObserve } from "expo-observe";
 
 function cleanHtml(text?: string): string {
   if (!text) return "";
@@ -50,6 +51,7 @@ export default function MovieDetailScreen() {
   const { user, openAuthModal } = useUserAuth();
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { width: screenWidth } = useWindowDimensions();
+  const { markInteractive } = useObserve();
 
   const [movie, setMovie] = useState<MovieDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -85,6 +87,13 @@ export default function MovieDetailScreen() {
       isMounted = false;
     };
   }, [slug, user?.id]);
+
+  // Report interactive time to EAS Observe once movie detail is ready
+  useEffect(() => {
+    if (!loading && movie) {
+      markInteractive();
+    }
+  }, [loading, movie, markInteractive]);
 
   const handleToggleFav = async () => {
     if (!movie) return;
@@ -123,10 +132,10 @@ export default function MovieDetailScreen() {
   };
 
   const handleWatchPress = (epSlug?: string) => {
-    if (!movie || !movie.episodes?.length) return;
+    if (!movie) return;
     haptic.heavy();
-    const currentServer = movie.episodes[selectedServerIdx] || movie.episodes[0];
-    const targetEp = epSlug || currentServer?.server_data?.[0]?.slug || "1";
+    const currentServer = movie.episodes?.[selectedServerIdx] || movie.episodes?.[0];
+    const targetEp = epSlug || currentServer?.server_data?.[0]?.slug || "";
 
     router.push({
       pathname: "/watch/[slug]",

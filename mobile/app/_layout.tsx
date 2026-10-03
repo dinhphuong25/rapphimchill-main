@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as SplashScreen from "expo-splash-screen";
+import { Observe, ObserveRoot } from "expo-observe";
 import { Colors } from "@/constants/theme";
 import { ExploreSheetProvider } from "@/context/ExploreSheetContext";
 import { UserAuthProvider } from "@/context/UserAuthContext";
@@ -11,10 +12,19 @@ import { AccountSheet } from "@/components/auth/AccountSheet";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { AppLoadingScreen } from "@/components/ui/AppLoadingScreen";
 
+// Configure EAS Observe with Expo Router integration before mount
+Observe.configure({
+  integrations: {
+    "expo-router": {
+      filteredParams: ["token", "password", "secret", "auth"],
+    },
+  },
+});
+
 // Prevent auto hiding of splash screen until custom animation takes over
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-export default function RootLayout() {
+function RootLayout() {
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
@@ -73,3 +83,5 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
+
+export default ObserveRoot.wrap(RootLayout);

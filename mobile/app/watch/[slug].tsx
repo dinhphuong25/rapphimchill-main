@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Linking from "expo-linking";
 import { useVideoPlayer, VideoView } from "expo-video";
+import { Image } from "expo-image";
 import {
   ChevronLeft,
   Tv,
@@ -28,12 +29,14 @@ import {
   AlertCircle,
   RefreshCw,
   ExternalLink,
+  Clock,
 } from "lucide-react-native";
 import { fetchMovieDetail, MovieDetail } from "@/services/api";
-import { saveWatchHistory, isFavorite, toggleFavorite } from "@/services/storage";
+import { saveWatchHistory, isFavorite, toggleFavorite, getMovieWatchProgress } from "@/services/storage";
 import { useUserAuth } from "@/context/UserAuthContext";
 import { Colors, Radii } from "@/constants/theme";
 import { haptic } from "@/services/haptics";
+import { useObserve } from "expo-observe";
 
 function cleanHtml(text?: string): string {
   if (!text) return "";
@@ -50,6 +53,7 @@ interface PlaybackErrorInfo {
 export default function WatchScreen() {
   const router = useRouter();
   const { user, openAuthModal } = useUserAuth();
+  const { markInteractive } = useObserve();
   const { slug, ep, server } = useLocalSearchParams<{
     slug: string;
     ep?: string;
@@ -76,8 +80,12 @@ export default function WatchScreen() {
   const [expandedContent, setExpandedContent] = useState(false);
   const [playbackError, setPlaybackError] = useState<PlaybackErrorInfo | null>(null);
   const [isVerifyingLink, setIsVerifyingLink] = useState(false);
+  const [resumeNotice, setResumeNotice] = useState<string | null>(null);
 
-  // Load movie data
+  const pendingResumeSecondsRef = useRef<number>(0);
+  const hasResumedRef = useRef<boolean>(false);
+
+  // Load movie data and retrieve resume progress
   useEffect(() => {
     if (!slug) return;
     let isMounted = true;
@@ -85,9 +93,10 @@ export default function WatchScreen() {
     async function loadData() {
       setLoading(true);
       try {
-        const [detail, favStatus] = await Promise.all([
+        const [detail, favStatus, savedProgress] = await Promise.all([
           fetchMovieDetail(slug as string),
-          user ? isFavorite(slug as string) : Promise.resolve(false),
+          isFavorite(slug as string),
+          getMovieWatchProgress(slug as string),
         ]);
 
         if (isMounted && detail) {
@@ -96,8 +105,19 @@ export default function WatchScreen() {
 
           const srvIdx = server ? parseInt(server, 10) || 0 : 0;
           const firstEp = detail.episodes?.[srvIdx]?.server_data?.[0]?.slug || "";
-          if (!ep && firstEp) {
-            setCurrentEpSlug(firstEp);
+
+          // Auto select last watched episode if user opened without explicit ep param
+          if (!ep) {
+            if (savedProgress?.lastEpisodeSlug) {
+              setCurrentEpSlug(savedProgress.lastEpisodeSlug);
+            } else if (firstEp) {
+              setCurrentEpSlug(firstEp);
+            }
+          }
+
+          // Remember playback position to resume once player is ready
+          if (savedProgress?.progressSeconds && savedProgress.progressSeconds > 10) {
+            pendingResumeSecondsRef.current = savedProgress.progressSeconds;
           }
         }
       } catch (err) {
@@ -111,7 +131,14 @@ export default function WatchScreen() {
     return () => {
       isMounted = false;
     };
-  }, [slug, user?.id]);
+  }, [slug]);
+
+  // Report interactive time to EAS Observe once watch screen is ready
+  useEffect(() => {
+    if (!loading && movie) {
+      markInteractive();
+    }
+  }, [loading, movie, markInteractive]);
 
   // Current server and current episode object
   const currentServer = movie?.episodes?.[selectedServerIdx] || movie?.episodes?.[0];
@@ -135,12 +162,27 @@ export default function WatchScreen() {
     return episodeList.filter((e) => e.name.toLowerCase().includes(q));
   }, [episodeList, epSearch]);
 
+  // Check if movie is unreleased or in trailer status
+  const isTrailerStatus = useMemo(() => {
+    if (!movie) return false;
+    const epCurr = (movie.episode_current || "").toLowerCase();
+    const st = (movie.status || "").toLowerCase();
+    return epCurr.includes("trailer") || st === "trailer" || epCurr.includes("sắp chiếu");
+  }, [movie]);
+
   // Raw m3u8 link from episode
   const rawStreamUrl = currentEpisode?.link_m3u8 || "";
+  const hasPlayableStream = Boolean(rawStreamUrl && rawStreamUrl.trim() !== "");
+
+  // Unreleased when either it's explicitly a trailer/upcoming movie OR there is no stream available
+  const isUnreleasedMovie = useMemo(() => {
+    if (!movie) return false;
+    return isTrailerStatus || !hasPlayableStream || !episodeList.length;
+  }, [movie, isTrailerStatus, hasPlayableStream, episodeList.length]);
 
   // Structured VideoSource object with anti-hotlink headers and HLS configuration
   const videoSource = useMemo(() => {
-    if (!rawStreamUrl) return null;
+    if (isUnreleasedMovie || !rawStreamUrl) return null;
     return {
       uri: rawStreamUrl,
       headers: {
@@ -150,16 +192,19 @@ export default function WatchScreen() {
       },
       contentType: "hls" as const,
     };
-  }, [rawStreamUrl]);
+  }, [isUnreleasedMovie, rawStreamUrl]);
 
   // Initialize expo-video player
   const player = useVideoPlayer(videoSource, (p) => {
     p.loop = false;
-    p.play();
+    if (videoSource) {
+      p.play();
+    }
   });
 
   // Track episode change to reload player source and record history
   useEffect(() => {
+    if (isUnreleasedMovie) return;
     if (videoSource && player) {
       try {
         if (typeof (player as any).replaceAsync === "function") {
@@ -178,18 +223,20 @@ export default function WatchScreen() {
       }
     }
 
-    if (user && movie && currentEpisode) {
+    // Auto-record movie to history for all users
+    if (movie && currentEpisode) {
       saveWatchHistory(
         movie,
         currentEpisode.name,
-        currentEpisode.slug
+        currentEpisode.slug,
+        pendingResumeSecondsRef.current || 0
       );
     }
-  }, [rawStreamUrl, currentEpisode?.slug, player, user?.id]);
+  }, [isUnreleasedMovie, rawStreamUrl, currentEpisode?.slug, player]);
 
-  // Listen to native player status & playback error events
+  // Listen to native player status & playback error events + Auto-resume
   useEffect(() => {
-    if (!player) return;
+    if (!player || isUnreleasedMovie) return;
 
     const sub = player.addListener("statusChange", ({ status, error }) => {
       if (status === "error") {
@@ -207,6 +254,23 @@ export default function WatchScreen() {
         });
       } else if (status === "readyToPlay") {
         setPlaybackError(null);
+
+        // Auto Resume playback from saved position
+        if (pendingResumeSecondsRef.current > 0 && !hasResumedRef.current) {
+          hasResumedRef.current = true;
+          const target = pendingResumeSecondsRef.current;
+          pendingResumeSecondsRef.current = 0;
+          try {
+            player.currentTime = target;
+            const minutes = Math.floor(target / 60);
+            const seconds = Math.floor(target % 60);
+            const timeStr = `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+            setResumeNotice(`Tiếp tục xem từ ${timeStr}`);
+            setTimeout(() => setResumeNotice(null), 3500);
+          } catch (e) {
+            console.warn("Resume currentTime error:", e);
+          }
+        }
       }
     });
 
@@ -215,9 +279,47 @@ export default function WatchScreen() {
     };
   }, [player, episodeList, currentEpisode?.slug]);
 
+  // Periodic background auto-save of playback progress (Heartbeat every 5s)
+  useEffect(() => {
+    if (!player || !movie || !currentEpisode || isUnreleasedMovie) return;
+
+    const interval = setInterval(() => {
+      try {
+        const cur = Math.floor(player.currentTime || 0);
+        const dur = Math.floor(player.duration || 0);
+        if (cur > 0) {
+          saveWatchHistory(
+            movie,
+            currentEpisode.name,
+            currentEpisode.slug,
+            cur,
+            dur
+          );
+        }
+      } catch {}
+    }, 5000);
+
+    return () => {
+      clearInterval(interval);
+      try {
+        const cur = Math.floor(player.currentTime || 0);
+        const dur = Math.floor(player.duration || 0);
+        if (cur > 0 && movie && currentEpisode) {
+          saveWatchHistory(
+            movie,
+            currentEpisode.name,
+            currentEpisode.slug,
+            cur,
+            dur
+          );
+        }
+      } catch {}
+    };
+  }, [player, movie, currentEpisode, isUnreleasedMovie]);
+
   // Proactively check episode stream reachability (detect HTTP 404 / 5xx)
   useEffect(() => {
-    if (!rawStreamUrl) return;
+    if (!rawStreamUrl || isUnreleasedMovie) return;
 
     let isMounted = true;
     setIsVerifyingLink(true);
@@ -324,9 +426,10 @@ export default function WatchScreen() {
     if (!movie) return;
     haptic.light();
     try {
+      const epText = currentEpisode?.name ? ` - Tập ${currentEpisode.name}` : "";
       await Share.share({
         title: movie.name,
-        message: `Đang xem ${movie.name} (${movie.origin_name}) - Tập ${currentEpisode?.name || ""}: https://hiphim.one/phim/${movie.slug}`,
+        message: `Xem phim ${movie.name} (${movie.origin_name || ""})${epText}: https://hiphim.one/phim/${movie.slug}`,
       });
     } catch (err) {
       console.error("Share error:", err);
@@ -342,13 +445,13 @@ export default function WatchScreen() {
     );
   }
 
-  if (!movie || !currentEpisode) {
+  if (!movie) {
     return (
       <SafeAreaView style={styles.centerContainer}>
         <Tv size={44} color={Colors.primary} />
-        <Text style={styles.errorTitle}>Không tìm thấy nguồn phát</Text>
+        <Text style={styles.errorTitle}>Không tìm thấy phim</Text>
         <Text style={styles.errorSubtitle}>
-          Vui lòng thử lại sau hoặc chọn tập phim khác.
+          Vui lòng thử lại sau hoặc chọn phim khác.
         </Text>
         <Pressable
           onPress={() => router.back()}
@@ -433,76 +536,170 @@ export default function WatchScreen() {
       {/* Modern Cinema Video Frame (Ô phát video mới với cơ chế bắt lỗi thông minh) */}
       <View style={styles.playerFrameContainer}>
         <View style={[styles.playerSurface, { width: screenWidth, height: videoHeight }]}>
-          <VideoView
-            style={styles.video}
-            player={player}
-            allowsPictureInPicture
-            startsPictureInPictureAutomatically
-            nativeControls={!playbackError}
-          />
+          {isUnreleasedMovie ? (
+            <View style={styles.unreleasedOverlay}>
+              {/* Subtle Poster Backdrop */}
+              {movie.poster_url || movie.thumb_url ? (
+                <Image
+                  source={{ uri: movie.poster_url || movie.thumb_url }}
+                  style={styles.unreleasedBackdrop}
+                  blurRadius={16}
+                  contentFit="cover"
+                />
+              ) : null}
+              <View style={styles.unreleasedBackdropDim} />
 
-          {/* Luxury Error Overlay khi video lỗi hoặc đang đồng bộ */}
-          {playbackError && (
-            <View style={styles.errorOverlay}>
-              <View style={styles.errorIconWrap}>
-                <AlertCircle size={26} color="#EF4444" strokeWidth={2.2} />
-              </View>
+              {/* Decorative Accent Lines */}
+              <View style={styles.unreleasedAccentLineTop} />
+              <View style={styles.unreleasedAccentLineBottom} />
 
-              <Text style={styles.errorOverlayTitle} numberOfLines={1}>
-                {playbackError.title}
-              </Text>
+              {/* In-Player System Notification Content matching Web */}
+              <View style={styles.unreleasedContent}>
+                <View style={styles.unreleasedBadge}>
+                  <AlertCircle size={13} color="#20D66B" strokeWidth={2.4} />
+                  <Text style={styles.unreleasedBadgeText}>THÔNG BÁO TỪ HỆ THỐNG</Text>
+                </View>
 
-              <Text style={styles.errorOverlaySub} numberOfLines={3}>
-                {playbackError.message}
-              </Text>
+                <Text style={styles.unreleasedTitle}>
+                  Phim Chưa Phát Hành Chính Thức
+                </Text>
 
-              {/* Action Buttons Row */}
-              <View style={styles.errorActionsRow}>
-                {playbackError.canRetry && (
+                <Text style={styles.unreleasedDesc}>
+                  Phim hiện tại mới chỉ có thông tin giới thiệu hoặc bản phát hành chính thức chưa được nhà sản xuất công bố trên hệ thống phát trực tuyến.
+                </Text>
+
+                <Text style={styles.unreleasedSubNotice}>
+                  Bản phim đầy đủ chuẩn FHD/4K sẽ tự động cập nhật ngay khi được phát hành.
+                </Text>
+
+                {/* Quick Actions */}
+                <View style={styles.unreleasedActions}>
+                  {movie.trailer_url ? (
+                    <Pressable
+                      onPress={() => {
+                        haptic.selection();
+                        Linking.openURL(movie.trailer_url!).catch(() => {});
+                      }}
+                      style={({ pressed }) => [
+                        styles.unreleasedBtn,
+                        styles.unreleasedTrailerBtn,
+                        pressed && styles.btnPressed,
+                      ]}
+                    >
+                      <Play size={12} color="#050807" fill="#050807" />
+                      <Text style={styles.unreleasedTrailerText}>Xem Trailer</Text>
+                    </Pressable>
+                  ) : null}
+
                   <Pressable
-                    onPress={handleRetry}
+                    onPress={handleToggleFav}
                     style={({ pressed }) => [
-                      styles.errorBtn,
-                      styles.errorRetryBtn,
+                      styles.unreleasedBtn,
+                      styles.unreleasedFavBtn,
+                      fav && styles.unreleasedFavBtnActive,
                       pressed && styles.btnPressed,
                     ]}
                   >
-                    <RefreshCw size={12} color="#050807" strokeWidth={2.4} />
-                    <Text style={styles.errorRetryText}>Thử lại</Text>
-                  </Pressable>
-                )}
-
-                {playbackError.suggestedEp && (
-                  <Pressable
-                    onPress={() => handleSelectEpisode(playbackError.suggestedEp!.slug)}
-                    style={({ pressed }) => [
-                      styles.errorBtn,
-                      styles.errorNextBtn,
-                      pressed && styles.btnPressed,
-                    ]}
-                  >
-                    <Play size={11} color="#FFFFFF" fill="#FFFFFF" />
-                    <Text style={styles.errorNextText}>
-                      Đổi sang {playbackError.suggestedEp.name}
+                    <Heart
+                      size={12}
+                      color={fav ? "#EF4444" : "#20D66B"}
+                      fill={fav ? "#EF4444" : "transparent"}
+                      strokeWidth={2}
+                    />
+                    <Text
+                      style={[
+                        styles.unreleasedFavText,
+                        fav && styles.unreleasedFavTextActive,
+                      ]}
+                    >
+                      {fav ? "Đã Lưu Yêu Thích" : "Lưu Yêu Thích"}
                     </Text>
                   </Pressable>
-                )}
-
-                {currentEpisode?.link_embed ? (
-                  <Pressable
-                    onPress={handleOpenEmbedBrowser}
-                    style={({ pressed }) => [
-                      styles.errorBtn,
-                      styles.errorBrowserBtn,
-                      pressed && styles.btnPressed,
-                    ]}
-                  >
-                    <ExternalLink size={12} color="#20D66B" strokeWidth={2.2} />
-                    <Text style={styles.errorBrowserText}>Mở Web Player</Text>
-                  </Pressable>
-                ) : null}
+                </View>
               </View>
             </View>
+          ) : (
+            <>
+              <VideoView
+                style={styles.video}
+                player={player}
+                allowsPictureInPicture
+                startsPictureInPictureAutomatically
+                nativeControls={!playbackError}
+              />
+
+              {/* Resume Playback Toast Badge */}
+              {resumeNotice ? (
+                <View style={styles.resumeNoticeBadge}>
+                  <Clock size={12} color="#20D66B" strokeWidth={2.5} />
+                  <Text style={styles.resumeNoticeText}>{resumeNotice}</Text>
+                </View>
+              ) : null}
+
+              {/* Luxury Error Overlay khi video lỗi hoặc đang đồng bộ */}
+              {playbackError && (
+                <View style={styles.errorOverlay}>
+                  <View style={styles.errorIconWrap}>
+                    <AlertCircle size={26} color="#EF4444" strokeWidth={2.2} />
+                  </View>
+
+                  <Text style={styles.errorOverlayTitle} numberOfLines={1}>
+                    {playbackError.title}
+                  </Text>
+
+                  <Text style={styles.errorOverlaySub} numberOfLines={3}>
+                    {playbackError.message}
+                  </Text>
+
+                  {/* Action Buttons Row */}
+                  <View style={styles.errorActionsRow}>
+                    {playbackError.canRetry && (
+                      <Pressable
+                        onPress={handleRetry}
+                        style={({ pressed }) => [
+                          styles.errorBtn,
+                          styles.errorRetryBtn,
+                          pressed && styles.btnPressed,
+                        ]}
+                      >
+                        <RefreshCw size={12} color="#050807" strokeWidth={2.4} />
+                        <Text style={styles.errorRetryText}>Thử lại</Text>
+                      </Pressable>
+                    )}
+
+                    {playbackError.suggestedEp && (
+                      <Pressable
+                        onPress={() => handleSelectEpisode(playbackError.suggestedEp!.slug)}
+                        style={({ pressed }) => [
+                          styles.errorBtn,
+                          styles.errorNextBtn,
+                          pressed && styles.btnPressed,
+                        ]}
+                      >
+                        <Play size={11} color="#FFFFFF" fill="#FFFFFF" />
+                        <Text style={styles.errorNextText}>
+                          Đổi sang {playbackError.suggestedEp.name}
+                        </Text>
+                      </Pressable>
+                    )}
+
+                    {currentEpisode?.link_embed ? (
+                      <Pressable
+                        onPress={handleOpenEmbedBrowser}
+                        style={({ pressed }) => [
+                          styles.errorBtn,
+                          styles.errorBrowserBtn,
+                          pressed && styles.btnPressed,
+                        ]}
+                      >
+                        <ExternalLink size={12} color="#20D66B" strokeWidth={2.2} />
+                        <Text style={styles.errorBrowserText}>Mở Web Player</Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                </View>
+              )}
+            </>
           )}
         </View>
       </View>
@@ -546,7 +743,7 @@ export default function WatchScreen() {
         </View>
 
         {/* Server Selector (Nguồn Phát) */}
-        {movie.episodes && movie.episodes.length > 1 && (
+        {!isUnreleasedMovie && movie.episodes && movie.episodes.length > 1 && (
           <View style={styles.sectionBlock}>
             <View style={styles.sectionHeaderRow}>
               <Layers size={14} color="#20D66B" strokeWidth={2.4} />
@@ -598,11 +795,11 @@ export default function WatchScreen() {
             <View style={styles.sectionHeaderRow}>
               <Tv size={14} color="#20D66B" strokeWidth={2.4} />
               <Text style={styles.sectionHeader}>
-                Danh Sách Tập ({episodeList.length})
+                {isUnreleasedMovie ? "Danh Sách Tập Phim" : `Danh Sách Tập (${episodeList.length})`}
               </Text>
             </View>
 
-            {episodeList.length > 12 && (
+            {!isUnreleasedMovie && episodeList.length > 12 && (
               <View style={styles.miniSearch}>
                 <Search size={12} color="rgba(255, 255, 255, 0.5)" />
                 <TextInput
@@ -616,8 +813,16 @@ export default function WatchScreen() {
             )}
           </View>
 
-          {/* Single Episode Movie: Cinema Ticket Card */}
-          {isSingleEp ? (
+          {/* If unreleased: show helpful notice card */}
+          {isUnreleasedMovie ? (
+            <View style={styles.unreleasedEpBox}>
+              <Clock size={20} color="#20D66B" strokeWidth={2.2} />
+              <Text style={styles.unreleasedEpBoxTitle}>Các tập phim đang được cập nhật</Text>
+              <Text style={styles.unreleasedEpBoxSub}>
+                Hệ thống sẽ tự động đồng bộ và hiển thị đầy đủ danh sách tập ngay khi bản chiếu chính thức được phát hành.
+              </Text>
+            </View>
+          ) : isSingleEp ? (
             <View style={styles.singleEpCard}>
               <View style={styles.singleEpLeft}>
                 <View style={styles.playIconCircle}>
@@ -625,7 +830,7 @@ export default function WatchScreen() {
                 </View>
                 <View style={styles.singleEpInfo}>
                   <Text style={styles.singleEpTitle}>
-                    Bản Chiếu Đầy Đủ ({currentEpisode.name || "Full Movie"})
+                    Bản Chiếu Đầy Đủ ({currentEpisode?.name || "Full Movie"})
                   </Text>
                   <Text style={styles.singleEpSub}>
                     Trọn bộ không gián đoạn • {movie.time || "Độ nét cao"}
@@ -638,10 +843,9 @@ export default function WatchScreen() {
               </View>
             </View>
           ) : (
-            /* Multi-Episode Series Grid */
             <View style={styles.epGrid}>
               {filteredEpisodes.map((ep) => {
-                const isActive = ep.slug === currentEpisode.slug;
+                const isActive = ep.slug === currentEpisode?.slug;
                 const isCurrentWithError = isActive && !!playbackError;
 
                 return (
@@ -1232,5 +1436,176 @@ const styles = StyleSheet.create({
   btnPressed: {
     opacity: 0.75,
     transform: [{ scale: 0.95 }],
+  },
+  resumeNoticeBadge: {
+    position: "absolute",
+    bottom: 12,
+    left: 12,
+    backgroundColor: "rgba(5, 8, 7, 0.88)",
+    borderWidth: 1,
+    borderColor: "rgba(32, 214, 107, 0.5)",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    zIndex: 30,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  resumeNoticeText: {
+    color: "#20D66B",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  unreleasedOverlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "#080D0B",
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+    padding: 16,
+  },
+  unreleasedBackdrop: {
+    ...StyleSheet.absoluteFill,
+    opacity: 0.18,
+  },
+  unreleasedBackdropDim: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "rgba(5, 8, 7, 0.75)",
+  },
+  unreleasedAccentLineTop: {
+    position: "absolute",
+    top: 0,
+    left: 16,
+    right: 16,
+    height: 1,
+    backgroundColor: "rgba(32, 214, 107, 0.35)",
+  },
+  unreleasedAccentLineBottom: {
+    position: "absolute",
+    bottom: 0,
+    left: 16,
+    right: 16,
+    height: 1,
+    backgroundColor: "rgba(32, 214, 107, 0.2)",
+  },
+  unreleasedContent: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+    zIndex: 10,
+    maxWidth: 440,
+    gap: 7,
+  },
+  unreleasedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 3.5,
+    borderRadius: 20,
+    backgroundColor: "rgba(32, 214, 107, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(32, 214, 107, 0.28)",
+    marginBottom: 2,
+  },
+  unreleasedBadgeText: {
+    color: "#20D66B",
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+  },
+  unreleasedTitle: {
+    color: "#FFFFFF",
+    fontSize: 14.5,
+    fontWeight: "800",
+    textAlign: "center",
+    letterSpacing: 0.2,
+  },
+  unreleasedDesc: {
+    color: "rgba(255, 255, 255, 0.88)",
+    fontSize: 12,
+    lineHeight: 17.5,
+    textAlign: "center",
+    fontWeight: "500",
+  },
+  unreleasedSubNotice: {
+    color: "rgba(255, 255, 255, 0.5)",
+    fontSize: 10.5,
+    lineHeight: 15.5,
+    textAlign: "center",
+    marginTop: 2,
+  },
+  unreleasedActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 6,
+  },
+  unreleasedBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6.5,
+    borderRadius: 10,
+  },
+  unreleasedTrailerBtn: {
+    backgroundColor: "#20D66B",
+  },
+  unreleasedTrailerText: {
+    color: "#050807",
+    fontSize: 11.5,
+    fontWeight: "800",
+  },
+  unreleasedFavBtn: {
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.14)",
+  },
+  unreleasedFavBtnActive: {
+    backgroundColor: "rgba(239, 68, 68, 0.15)",
+    borderColor: "rgba(239, 68, 68, 0.35)",
+  },
+  unreleasedFavText: {
+    color: "#20D66B",
+    fontSize: 11.5,
+    fontWeight: "700",
+  },
+  unreleasedFavTextActive: {
+    color: "#EF4444",
+  },
+  unreleasedEpBox: {
+    backgroundColor: "rgba(13, 20, 17, 0.7)",
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "rgba(32, 214, 107, 0.25)",
+    borderRadius: 16,
+    padding: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  unreleasedEpBoxTitle: {
+    color: "#FFFFFF",
+    fontSize: 13.5,
+    fontWeight: "700",
+    textAlign: "center",
+    marginTop: 4,
+  },
+  unreleasedEpBoxSub: {
+    color: "rgba(255, 255, 255, 0.55)",
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: "center",
+    maxWidth: 320,
   },
 });

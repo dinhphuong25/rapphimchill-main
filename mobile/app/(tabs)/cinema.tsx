@@ -9,24 +9,16 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Film, Sparkles } from "lucide-react-native";
 import { NativeHeader } from "@/components/ui/NativeHeader";
 import { MovieCard } from "@/components/ui/MovieCard";
-import { fetchListByType, fetchMoviesByCategory, MovieItem } from "@/services/api";
-import { Colors, Radii } from "@/constants/theme";
+import { fetchListByType, MovieItem } from "@/services/api";
+import { Colors } from "@/constants/theme";
 import { haptic } from "@/services/haptics";
-
-const CINEMA_FILTERS = [
-  { label: "Tất cả", slug: "all" },
-  { label: "Hành Động", slug: "hanh-dong" },
-  { label: "Kinh Dị", slug: "kinh-di" },
-  { label: "Viễn Tưởng", slug: "vien-tuong" },
-  { label: "Hài Hước", slug: "hai-huoc" },
-  { label: "Tình Cảm", slug: "tinh-cam" },
-];
+import { useObserve } from "expo-observe";
 
 export default function CinemaScreen() {
   const { width: screenWidth } = useWindowDimensions();
+  const { markInteractive } = useObserve();
   const numColumns = 2;
 
   const cardSpacing = 12;
@@ -34,22 +26,15 @@ export default function CinemaScreen() {
   const cardWidth = Math.floor((screenWidth - horizontalPadding * 2 - cardSpacing) / 2);
 
   const [movies, setMovies] = useState<MovieItem[]>([]);
-  const [selectedFilter, setSelectedFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadData = useCallback(async (filterSlug = selectedFilter, p = 1, append = false) => {
+  const loadData = useCallback(async (p = 1, append = false) => {
     try {
-      let res;
-      if (filterSlug === "all") {
-        res = await fetchListByType("phim-chieu-rap", p);
-      } else {
-        res = await fetchMoviesByCategory(filterSlug, p);
-      }
-
+      const res = await fetchListByType("phim-chieu-rap", p);
       if (append) {
         setMovies((prev) => {
           const seen = new Set(prev.map((m) => m.slug));
@@ -68,29 +53,29 @@ export default function CinemaScreen() {
       setLoadingMore(false);
       setRefreshing(false);
     }
-  }, [selectedFilter]);
+  }, []);
 
   useEffect(() => {
-    loadData(selectedFilter, 1, false);
-  }, [selectedFilter, loadData]);
+    loadData(1, false);
+  }, [loadData]);
 
-  const handleFilterSelect = (slug: string) => {
-    if (slug === selectedFilter) return;
-    haptic.selection();
-    setSelectedFilter(slug);
-    setLoading(true);
-  };
+  // Report interactive time to EAS Observe once cinema list is loaded
+  useEffect(() => {
+    if (!loading) {
+      markInteractive();
+    }
+  }, [loading, markInteractive]);
 
   const onRefresh = () => {
     haptic.light();
     setRefreshing(true);
-    loadData(selectedFilter, 1, false);
+    loadData(1, false);
   };
 
   const onEndReached = () => {
     if (!loadingMore && page < totalPages) {
       setLoadingMore(true);
-      loadData(selectedFilter, page + 1, true);
+      loadData(page + 1, true);
     }
   };
 
@@ -98,43 +83,7 @@ export default function CinemaScreen() {
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <NativeHeader />
 
-      {/* Header Info with Grid Switcher */}
-      <View style={styles.headerTitleRow}>
-        <View style={styles.headerTopLine}>
-          <View style={styles.titleIconRow}>
-            <Film size={22} color={Colors.primary} strokeWidth={2.4} />
-            <Text style={styles.title}>Phim Chiếu Rạp</Text>
-          </View>
-        </View>
 
-        <Text style={styles.sub}>
-          Tuyển chọn bom tấn rạp chiếu phim chất lượng cao Vietsub & Thuyết minh
-        </Text>
-      </View>
-
-      {/* Filter Horizontal Chips */}
-      <View style={styles.filterBar}>
-        <FlatList
-          data={CINEMA_FILTERS}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(item) => item.slug}
-          contentContainerStyle={styles.filterScroll}
-          renderItem={({ item }) => {
-            const active = item.slug === selectedFilter;
-            return (
-              <Pressable
-                onPress={() => handleFilterSelect(item.slug)}
-                style={[styles.filterChip, active && styles.filterChipActive]}
-              >
-                <Text style={[styles.filterText, active && styles.filterTextActive]}>
-                  {item.label}
-                </Text>
-              </Pressable>
-            );
-          }}
-        />
-      </View>
 
       {/* Movie Grid */}
       {loading ? (
@@ -175,69 +124,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: Colors.background,
-  },
-  headerTitleRow: {
-    paddingHorizontal: 14,
-    paddingTop: 12,
-    paddingBottom: 6,
-  },
-  headerTopLine: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  titleIconRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  title: {
-    color: "#FFFFFF",
-    fontSize: 20,
-    fontWeight: "900",
-    letterSpacing: -0.4,
-  },
-
-  sub: {
-    color: Colors.textDim,
-    fontSize: 12,
-    marginTop: 4,
-    lineHeight: 16,
-  },
-  filterBar: {
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.cardBorder,
-  },
-  filterScroll: {
-    paddingHorizontal: 14,
-    gap: 8,
-  },
-  filterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: Radii.full,
-    backgroundColor: Colors.card,
-    borderWidth: 1,
-    borderColor: Colors.cardBorder,
-  },
-  filterChipActive: {
-    backgroundColor: "#20D66B",
-    borderColor: "#20D66B",
-    shadowColor: "#20D66B",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  filterText: {
-    color: Colors.textMuted,
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  filterTextActive: {
-    color: "#050807",
-    fontWeight: "900",
   },
   listContent: {
     paddingHorizontal: 14,

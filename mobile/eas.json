@@ -14,15 +14,20 @@
     },
     "preview": {
       "distribution": "internal",
-      "credentialsSource": "local",
+      "uploadSourceMaps": true,
       "ios": {
+        "credentialsSource": "local",
         "simulator": false
+      },
+      "android": {
+        "buildType": "apk"
       }
     },
     "production": {
       "distribution": "internal",
       "credentialsSource": "local",
       "autoIncrement": true,
+      "uploadSourceMaps": true,
       "ios": {
         "simulator": false
       }

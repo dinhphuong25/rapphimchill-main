@@ -46,7 +46,17 @@
     },
     "android": {
       "userInterfaceStyle": "dark",
-      "backgroundColor": "#050807"
+      "backgroundColor": "#050807",
+      "package": "com.dinhphuongkim.hiphim",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#050807"
+      },
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ]
     },
     "plugins": [
       "expo-router",

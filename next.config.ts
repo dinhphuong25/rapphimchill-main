@@ -174,6 +174,8 @@ const nextConfig: NextConfig = {
     return [
       { source: "/home", destination: "/", permanent: true },
       { source: "/yeu-thich", destination: "/favorites", permanent: true },
+      { source: "/app", destination: "/tai-app", permanent: false },
+      { source: "/download", destination: "/tai-app", permanent: false },
     ];
   },
 };

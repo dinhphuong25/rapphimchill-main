@@ -206,15 +206,6 @@ export function AppLoadingScreen({
           colors={["#030605", "#070E0B", "#030605"]}
           style={StyleSheet.absoluteFill}
         />
-        {/* Ambient Emerald Center Glow */}
-        <Animated.View
-          style={[
-            styles.ambientGlow,
-            {
-              transform: [{ scale: pulseGlow }],
-            },
-          ]}
-        />
       </View>
 
       {/* Center Cinematic Emblem Cluster */}
@@ -335,11 +326,11 @@ export function AppLoadingScreen({
           </View>
         </View>
 
-        {/* Brand Typography (RẠP PHIM CHILL) */}
+        {/* Brand Typography (Hi Phim) */}
         <View style={styles.brandContainer}>
           <View style={styles.brandTitleRow}>
-            <Text style={styles.brandTitleLight}>RẠP PHIM </Text>
-            <Text style={styles.brandTitleAccent}>CHILL</Text>
+            <Text style={styles.brandTitleLight}>Hi </Text>
+            <Text style={styles.brandTitleAccent}>Phim</Text>
           </View>
           <Text style={styles.brandSubtitle}>
             TRẢI NGHIỆM ĐIỆN ẢNH ĐỈNH CAO
@@ -392,19 +383,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  ambientGlow: {
-    position: "absolute",
-    top: SCREEN_HEIGHT * 0.32,
-    left: SCREEN_WIDTH * 0.15,
-    width: SCREEN_WIDTH * 0.7,
-    height: SCREEN_WIDTH * 0.7,
-    borderRadius: (SCREEN_WIDTH * 0.7) / 2,
-    backgroundColor: "rgba(32, 214, 107, 0.09)",
-    shadowColor: "#20D66B",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.95,
-    shadowRadius: 80,
-  },
   centerCluster: {
     alignItems: "center",
     justifyContent: "center",
@@ -418,11 +396,6 @@ const styles = StyleSheet.create({
     borderColor: "rgba(32, 214, 107, 0.35)",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#20D66B",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 30,
-    elevation: 16,
     position: "relative",
   },
   neonHalo: {
@@ -450,11 +423,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingLeft: 4, // Optical centering of play triangle
     overflow: "hidden",
-    shadowColor: "#20D66B",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 6,
   },
   brandContainer: {
     alignItems: "center",
@@ -466,19 +434,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   brandTitleLight: {
-    fontSize: 25,
+    fontSize: 27,
     fontWeight: "900",
     color: "#FFFFFF",
-    letterSpacing: 2.5,
+    letterSpacing: 2,
   },
   brandTitleAccent: {
-    fontSize: 25,
+    fontSize: 27,
     fontWeight: "900",
     color: "#20D66B",
-    letterSpacing: 2.5,
-    textShadowColor: "rgba(32, 214, 107, 0.6)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 12,
+    letterSpacing: 2,
   },
   brandSubtitle: {
     fontSize: 10,
@@ -505,10 +470,6 @@ const styles = StyleSheet.create({
   progressBar: {
     height: "100%",
     borderRadius: 2,
-    shadowColor: "#20D66B",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.9,
-    shadowRadius: 8,
   },
   statusText: {
     fontSize: 12,

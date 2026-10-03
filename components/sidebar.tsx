@@ -37,6 +37,8 @@ import {
   Users,
   Settings,
   ArrowRight,
+  Smartphone,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sortCountriesByPopularity, getCountryCode, POPULAR_COUNTRIES } from "@/lib/countries";
@@ -1204,6 +1206,37 @@ function SidebarContent({
                 </Link>
               );
             })}
+          </div>
+
+          {/* Download App Banner Card (iOS .IPA & Android .APK) */}
+          <div className="pt-3 pb-1 px-1">
+            <Link
+              href="/tai-app"
+              onClick={() => setIsMobileOpen(false)}
+              className={cn(
+                "w-full relative flex items-center gap-2.5 p-2.5 rounded-2xl transition-all duration-200 group overflow-hidden block",
+                pathname === "/tai-app"
+                  ? "bg-brand-green/20 border border-brand-green/50 shadow-[0_0_15px_rgba(32,214,107,0.25)]"
+                  : "bg-gradient-to-br from-emerald-950/40 via-[#0e1713] to-black border border-emerald-500/25 hover:border-brand-green/60 shadow-[0_4px_20px_rgba(0,0,0,0.5)] hover:shadow-[0_0_20px_rgba(32,214,107,0.2)]"
+              )}
+            >
+              <div className="w-8 h-8 rounded-xl bg-brand-green/15 border border-brand-green/30 flex items-center justify-center text-brand-green group-hover:scale-110 transition-transform shrink-0 shadow-[0_0_10px_rgba(32,214,107,0.3)]">
+                <Smartphone className="w-4 h-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold text-[12px] text-white group-hover:text-brand-green transition-colors truncate">
+                    Tải App Mobile
+                  </span>
+                  <span className="text-[8px] font-black px-1.5 py-0.2 rounded-full bg-brand-green/20 text-brand-green border border-brand-green/40 uppercase tracking-tighter shrink-0">
+                    MỚI
+                  </span>
+                </div>
+                <p className="text-[10px] text-white/45 truncate mt-0.5">
+                  Bản iOS (.IPA) & Android
+                </p>
+              </div>
+            </Link>
           </div>
 
         </div>
