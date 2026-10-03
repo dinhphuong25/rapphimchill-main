@@ -282,7 +282,7 @@ export default function IosSignerTool() {
   };
 
   const ipaDownloadUrl =
-    "https://expo.dev/artifacts/eas/LA1x2PlnF7SJ6nYt5l2HR60fPJe6crXVC4LERhkO8d4.ipa";
+    "https://expo.dev/artifacts/eas/BviAc4LJrwRZNIvfoPGlQHYNoALct4cVIyCIGcNnEbc.ipa";
 
   // Dedicated, Apple ATS-compliant HTTPS raw manifest endpoint (No localhost, valid SSL, matching bundle-id)
   const publicManifestUrl = "https://dpaste.org/hrYGb/raw";
