@@ -308,58 +308,49 @@ export default function VideoPlayer({
 
 
 
-  // Auto Unmute Helper - immediately unmute and restore audio whenever called
+  // Auto Unmute Helper - immediately unmute and restore audio whenever called (never forces play if paused)
   const attemptUnmute = useCallback(() => {
     userExplicitlyMutedRef.current = false;
     const video = videoRef.current;
     if (!video) return;
 
-    video.muted = false;
-    const targetVolume = lastNonZeroVolumeRef.current > 0 ? lastNonZeroVolumeRef.current : 1;
-    try { video.volume = targetVolume; } catch (e) {}
-    setVolume(targetVolume);
-    setIsMuted(false);
-    setIsAutoplayMuted(false);
-    autoplayMutedRef.current = false;
-    try {
-      const p = video.play();
-      if (p !== undefined) p.catch(() => {});
-    } catch (e) {}
-    try { localStorage.setItem('cinema_muted', 'false'); } catch (e) {}
-    try { localStorage.setItem('cinema_volume', String(targetVolume)); } catch (e) {}
-  }, []);
+    if (video.muted || isMuted || autoplayMutedRef.current) {
+      video.muted = false;
+      const targetVolume = lastNonZeroVolumeRef.current > 0 ? lastNonZeroVolumeRef.current : 1;
+      try { video.volume = targetVolume; } catch (e) {}
+      setVolume(targetVolume);
+      setIsMuted(false);
+      setIsAutoplayMuted(false);
+      autoplayMutedRef.current = false;
+      try { localStorage.setItem('cinema_muted', 'false'); } catch (e) {}
+      try { localStorage.setItem('cinema_volume', String(targetVolume)); } catch (e) {}
+    }
+  }, [isMuted]);
 
-  // Global user interaction listener to unmute & ensure audio is always active on any interaction
+  // User interaction listener to unmute audio if browser started playback muted
   useEffect(() => {
     const onUserInteraction = () => {
       hasUserInteractedRef.current = true;
-      userExplicitlyMutedRef.current = false;
       const video = videoRef.current;
-      if (video) {
-        video.muted = false;
-        const targetVol = lastNonZeroVolumeRef.current > 0 ? lastNonZeroVolumeRef.current : 1;
-        try { video.volume = targetVol; } catch (e) {}
-        setIsMuted(false);
-        setIsAutoplayMuted(false);
-        autoplayMutedRef.current = false;
-        if (video.paused && autoplayRef.current) {
-          video.play().catch(() => {});
+      // Only unmute audio if currently playing and muted. NEVER resume or touch playback if paused!
+      if (video && !video.paused && (video.muted || autoplayMutedRef.current)) {
+        if (!userExplicitlyMutedRef.current) {
+          video.muted = false;
+          const targetVol = lastNonZeroVolumeRef.current > 0 ? lastNonZeroVolumeRef.current : 1;
+          try { video.volume = targetVol; } catch (e) {}
+          setIsMuted(false);
+          setIsAutoplayMuted(false);
+          autoplayMutedRef.current = false;
         }
       }
     };
 
-    window.addEventListener('click', onUserInteraction, { capture: true, passive: true });
-    window.addEventListener('pointerdown', onUserInteraction, { capture: true, passive: true });
-    window.addEventListener('touchstart', onUserInteraction, { capture: true, passive: true });
-    window.addEventListener('touchend', onUserInteraction, { capture: true, passive: true });
-    window.addEventListener('keydown', onUserInteraction, { capture: true, passive: true });
+    window.addEventListener('click', onUserInteraction, { passive: true });
+    window.addEventListener('keydown', onUserInteraction, { passive: true });
 
     return () => {
-      window.removeEventListener('click', onUserInteraction, { capture: true });
-      window.removeEventListener('pointerdown', onUserInteraction, { capture: true });
-      window.removeEventListener('touchstart', onUserInteraction, { capture: true });
-      window.removeEventListener('touchend', onUserInteraction, { capture: true });
-      window.removeEventListener('keydown', onUserInteraction, { capture: true });
+      window.removeEventListener('click', onUserInteraction);
+      window.removeEventListener('keydown', onUserInteraction);
     };
   }, []);
 
@@ -445,10 +436,12 @@ export default function VideoPlayer({
   const togglePlay = useCallback(async () => {
     if (!videoRef.current) return;
     attemptUnmute();
+    lastTapRef.current = { time: 0, side: 'center' };
 
     try {
       if (videoRef.current.paused) {
         setIsLoading(false);
+        autoplayRef.current = true;
         if (hlsRef.current) {
           hlsRef.current.startLoad();
         }
@@ -459,6 +452,7 @@ export default function VideoPlayer({
         autoplayMutedRef.current = false;
         await videoRef.current.play();
       } else {
+        autoplayRef.current = false;
         videoRef.current.pause();
       }
     } catch (err: any) {
@@ -586,10 +580,6 @@ export default function VideoPlayer({
         setVolume(restoredVolume);
         try { localStorage.setItem('cinema_volume', String(restoredVolume)); } catch (e) {}
         try { localStorage.setItem('cinema_muted', 'false'); } catch (e) {}
-        try {
-          const p = videoRef.current.play();
-          if (p !== undefined) p.catch(() => {});
-        } catch (e) {}
       }
     }
   }, []);
@@ -1635,6 +1625,7 @@ export default function VideoPlayer({
     const onPauseEvent = () => {
       isPlayingRef.current = false;
       setIsPlaying(false);
+      autoplayRef.current = false;
       hideLoading();
       try {
         if ('mediaSession' in navigator) {
@@ -2054,6 +2045,14 @@ export default function VideoPlayer({
 
     const isMobileDevice = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
+    // When paused: clicking anywhere on the video resumes playback IMMEDIATELY on first click (no double-click needed!)
+    if (videoRef.current?.paused) {
+      lastTapRef.current = { time: 0, side };
+      showControlsHandler();
+      togglePlay();
+      return;
+    }
+
     const now = Date.now();
     const isDoubleTap = now - lastTapRef.current.time < 320 && lastTapRef.current.side === side;
     lastTapRef.current = { time: now, side };
@@ -2082,13 +2081,6 @@ export default function VideoPlayer({
       return;
     }
 
-    // On Mobile: Tap when paused starts playing immediately
-    if (videoRef.current?.paused) {
-      togglePlay();
-      showControlsHandler();
-      return;
-    }
-
     // On Mobile: Single tap when playing toggles controls overlay
     if (singleTapTimerRef.current) clearTimeout(singleTapTimerRef.current);
     singleTapTimerRef.current = setTimeout(() => {
@@ -2112,8 +2104,6 @@ export default function VideoPlayer({
       style={{ transform: "translateZ(0)" }}
       onMouseMove={showControlsHandler} 
       onMouseLeave={() => isPlaying && setShowControls(false)}
-      onTouchStart={attemptUnmute}
-      onPointerDown={attemptUnmute}
     >
       <video 
         ref={(el) => {
@@ -2191,20 +2181,14 @@ export default function VideoPlayer({
         <div 
           className="w-[35%] h-full z-20 cursor-pointer" 
           onClick={(e) => handleSmartClick(e, 'left')} 
-          onTouchStart={attemptUnmute}
-          onPointerDown={attemptUnmute}
         />
         <div 
           className="w-[30%] h-full z-20 cursor-pointer" 
           onClick={(e) => handleSmartClick(e, 'center')} 
-          onTouchStart={attemptUnmute}
-          onPointerDown={attemptUnmute}
         />
         <div 
           className="w-[35%] h-full z-20 cursor-pointer" 
           onClick={(e) => handleSmartClick(e, 'right')} 
-          onTouchStart={attemptUnmute}
-          onPointerDown={attemptUnmute}
         />
       </div>
 
