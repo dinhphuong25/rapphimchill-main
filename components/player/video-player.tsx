@@ -25,7 +25,6 @@ import {
   Subtitles,
   Upload,
   Zap,
-  Shield,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -260,12 +259,7 @@ export default function VideoPlayer({
   const prevFrameLuminanceRef = useRef<Uint8Array | null>(null);
   const isVisualAdDetectedRef = useRef(false);
 
-  const handleSetAdShieldMode = useCallback((mode: 'auto' | 'always' | 'off') => {
-    setAdShieldMode(mode);
-    try {
-      localStorage.setItem('cinema_ad_shield', mode);
-    } catch (e) {}
-  }, []);
+
 
   // Auto-Skip Video Ads (Tự động phát hiện & bỏ qua các đoạn video clip quảng cáo nổ hũ/cá độ chèn cắt ngang phim)
   const [autoSkipAds, setAutoSkipAds] = useState<boolean>(true);
@@ -907,6 +901,14 @@ export default function VideoPlayer({
       return () => clearTimeout(timer);
     }
   }, [shortcutFeedback]);
+
+  // Clear skip animation feedback automatically
+  useEffect(() => {
+    if (skipAnimation) {
+      const timer = setTimeout(() => setSkipAnimation(null), 700);
+      return () => clearTimeout(timer);
+    }
+  }, [skipAnimation]);
 
   // HLS/Video Setup
   useEffect(() => {
@@ -2201,24 +2203,17 @@ export default function VideoPlayer({
         </div>
       )}
 
-      {/* Intelligent Anti-Ad Banner Shield (Tự động che dải quảng cáo bài bạc ở mép trên) */}
+      {/* Intelligent Anti-Ad Banner Shield (Tự động che dải quảng cáo bài bạc ở mép trên, siêu thông minh, hoàn toàn tự động không hiện thông báo, hết QC tự tắt) */}
       <div 
         className={cn(
           "absolute top-0 left-0 right-0 z-[28] transition-all duration-500 overflow-hidden pointer-events-none select-none",
-          (adShieldMode === 'always' || (adShieldMode === 'auto' && isAdDetected))
+          isAdDetected
             ? "opacity-100 h-[24%] sm:h-[23%]" 
             : "opacity-0 h-0 pointer-events-none"
         )}
       >
         {/* Cinematic gradient mask with frosted blur to obliterate gambling text */}
         <div className="w-full h-full bg-gradient-to-b from-[#050807]/98 via-[#050807]/92 via-75% to-transparent backdrop-blur-[3px]" />
-
-        {/* Small subtle badge informing user that ad is shielded and will auto-dismiss */}
-        <div className="absolute top-2.5 left-2.5 sm:top-3.5 sm:left-4 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-md border border-brand-green/35 text-[10.5px] sm:text-[11px] text-white shadow-lg pointer-events-auto animate-in fade-in duration-300">
-          <Shield className="w-3.5 h-3.5 text-brand-green fill-brand-green/20" />
-          <span className="font-bold text-brand-green">Chặn QC:</span>
-          <span className="text-white/80">Đang che quảng cáo nhà tài trợ (Tự tắt khi hết)</span>
-        </div>
       </div>
 
 
@@ -2576,45 +2571,22 @@ export default function VideoPlayer({
               {quality === -1 ? (currentLevelPlaying >= 0 && qualities[currentLevelPlaying] ? `${qualities[currentLevelPlaying].height}p Auto` : "FHD 1080p") : `${qualities.find(q => q.level === quality)?.height || 1080}p FHD`}
             </span> */}
 
-            {/* Quick Anti-Ad Shield Toggle Button */}
+            {/* Nút Xả Video (+10s) */}
             <Button 
               variant="ghost" 
               size="icon" 
               onClick={(e) => {
                 e.stopPropagation();
-                setAdShieldMode((prev) => {
-                  const next = prev === 'auto' ? 'always' : prev === 'always' ? 'off' : 'auto';
-                  if (next === 'auto') {
-                    toast.success("Khiên chặn quảng cáo: Tự động (Tự che khi có QC, tự tắt khi hết)", { duration: 3000 });
-                  } else if (next === 'always') {
-                    toast.info("Khiên chặn quảng cáo: Luôn che mép trên", { duration: 3000 });
-                  } else {
-                    toast.warning("Khiên chặn quảng cáo: Đã tắt", { duration: 3000 });
-                  }
-                  try { localStorage.setItem('cinema_ad_shield', next); } catch (err) {}
-                  return next;
-                });
+                skip(10);
+                setSkipAnimation({ side: 'right', id: Date.now() });
+                showControlsHandler();
               }} 
-              title={
-                adShieldMode === 'auto' 
-                  ? "Khiên chặn QC: Tự động (Đang bật - Tự tắt khi hết QC)" 
-                  : adShieldMode === 'always' 
-                  ? "Khiên chặn QC: Luôn che mép trên" 
-                  : "Khiên chặn QC: Đang tắt (Bấm để bật)"
-              }
-              className={cn(
-                "cursor-pointer w-8 h-8 sm:w-9 sm:h-9 transition-colors relative",
-                adShieldMode !== 'off'
-                  ? "text-brand-green hover:text-brand-green/80 hover:bg-brand-green/10"
-                  : "text-white/60 hover:text-white hover:bg-white/10"
-              )}
+              title="Xả video (+10s)"
+              aria-label="Xả video 10 giây"
+              className="text-white hover:bg-white/10 hover:text-brand-green cursor-pointer w-8 h-8 sm:w-9 sm:h-9 transition-colors flex items-center justify-center relative group"
             >
-              <Shield className={cn("w-4 h-4 sm:w-4.5 sm:h-4.5", adShieldMode !== 'off' && "fill-brand-green/20 stroke-[2.2]")} />
-              {adShieldMode === 'auto' && (
-                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-brand-green shadow-[0_0_6px_rgba(32,214,107,0.9)]" />
-              )}
+              <FastForward className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110 group-active:scale-95" />
             </Button>
-
 
             {/* Fullscreen Button */}
             <Button 
