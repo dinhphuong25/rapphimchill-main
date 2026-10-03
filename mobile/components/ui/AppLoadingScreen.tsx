@@ -47,7 +47,6 @@ export function AppLoadingScreen({
   const emblemOpacity = useRef(new Animated.Value(0)).current;
   const rotateReel = useRef(new Animated.Value(0)).current;
   const rotateCounter = useRef(new Animated.Value(0)).current;
-  const pulseGlow = useRef(new Animated.Value(1)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const textFadeAnim = useRef(new Animated.Value(1)).current;
 
@@ -93,25 +92,6 @@ export function AppLoadingScreen({
     );
     counterLoop.start();
 
-    // 4. Ambient breathing glow pulse
-    const glowLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseGlow, {
-          toValue: 1.15,
-          duration: 1200,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseGlow, {
-          toValue: 0.95,
-          duration: 1200,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    glowLoop.start();
-
     // 5. Progress bar fill animation
     Animated.timing(progressAnim, {
       toValue: 1,
@@ -151,7 +131,6 @@ export function AppLoadingScreen({
     const finishTimer = setTimeout(() => {
       reelLoop.stop();
       counterLoop.stop();
-      glowLoop.stop();
 
       Animated.parallel([
         Animated.timing(containerOpacity, {
@@ -183,7 +162,6 @@ export function AppLoadingScreen({
       intervals.forEach((i) => clearTimeout(i));
       reelLoop.stop();
       counterLoop.stop();
-      glowLoop.stop();
     };
   }, [minDuration, onFinish]);
 
@@ -215,16 +193,6 @@ export function AppLoadingScreen({
       ]}
       pointerEvents={visible ? "auto" : "none"}
     >
-      {/* Ambient Breathing Neon Glow */}
-      <Animated.View
-        style={[
-          styles.ambientGlow,
-          {
-            transform: [{ scale: pulseGlow }],
-          },
-        ]}
-      />
-
       {/* Center Cinematic Cluster */}
       <Animated.View
         style={[
@@ -396,19 +364,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#030605",
     alignItems: "center",
     justifyContent: "center",
-  },
-  ambientGlow: {
-    position: "absolute",
-    top: SCREEN_HEIGHT * 0.3,
-    left: SCREEN_WIDTH * 0.15,
-    width: SCREEN_WIDTH * 0.7,
-    height: SCREEN_WIDTH * 0.7,
-    borderRadius: (SCREEN_WIDTH * 0.7) / 2,
-    backgroundColor: "rgba(32, 214, 107, 0.09)",
-    shadowColor: "#20D66B",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.95,
-    shadowRadius: 80,
   },
   centerCluster: {
     alignItems: "center",
