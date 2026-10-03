@@ -71,7 +71,7 @@ export function getOptimizedImageUrl(
     } else if (type === "thumb") {
       params += "&w=240&quality=70";
     } else {
-      params += "&w=1280&quality=78";
+      params += "&w=1920&quality=85";
     }
     return `https://i0.wp.com/${clean}?${params}`;
   }

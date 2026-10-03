@@ -187,7 +187,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
   return (
     <section
       className="relative w-full overflow-hidden select-none bg-cinema-bg touch-pan-y"
-      style={{ minHeight: "clamp(500px, 60vh, 580px)" }}
+      style={{ minHeight: "clamp(520px, 62vh, 620px)" }}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onTouchStart={handleTouchStart}
@@ -210,9 +210,9 @@ export default function HeroSection({ movies }: HeroSectionProps) {
             priority
             loading="eager"
             fetchPriority="high"
-            className="object-cover object-top"
+            className="object-cover object-center lg:object-[68%_center] xl:object-[64%_center]"
             sizes="(max-width: 768px) 100vw, (max-width: 1440px) 100vw, 1920px"
-            quality={80}
+            quality={85}
             onError={() => {
               if (backdropIdx + 1 < backdropCandidates.length) {
                 setBackdropIdx((i) => i + 1);
@@ -225,16 +225,25 @@ export default function HeroSection({ movies }: HeroSectionProps) {
           <div className="absolute inset-0 bg-[#070b09]" />
         )}
 
-        {/* Ambient Glow — desktop only, too heavy for mobile GPU */}
+        {/* Ambient Glow — subtle cinema lighting */}
         <div className="hidden lg:block absolute -top-32 -left-32 w-96 h-96 bg-brand-green/10 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#050807] via-[#050807]/90 to-transparent w-full md:w-[78%] lg:w-[70%]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#050807] via-[#050807]/30 to-transparent opacity-100" />
-        <div className="absolute inset-0 bg-black/20" />
+
+        {/* Desktop horizontal text protection scrim: leaves center & right artwork vibrant and 100% visible */}
+        <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-[#050807] via-[#050807]/80 via-35% to-transparent w-[65%] lg:w-[50%] pointer-events-none" />
+
+        {/* Mobile full-width protection gradient: solid at bottom for text, fades up to showcase upper artwork */}
+        <div className="md:hidden absolute inset-0 bg-gradient-to-t from-[#050807] via-[#050807]/80 via-55% to-transparent pointer-events-none" />
+
+        {/* Smooth bottom blend into subsequent page sections */}
+        <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-[#050807] via-[#050807]/50 to-transparent pointer-events-none" />
+
+        {/* Subtle top shade for top nav readability */}
+        <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-[#050807]/70 via-transparent to-transparent pointer-events-none" />
       </div>
 
       {/* 2. Main Editorial Content Container */}
-      <div className="relative z-20 h-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col justify-start lg:justify-center pt-24 sm:pt-24 lg:pt-28 pb-6 sm:pb-5 min-h-[inherit]">
-        <div className="w-full max-w-3xl lg:max-w-4xl space-y-3.5 sm:space-y-4 relative z-30">
+      <div className="relative z-20 h-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col justify-start lg:justify-center pt-24 sm:pt-24 lg:pt-28 pb-8 min-h-[inherit]">
+        <div className="w-full max-w-xl lg:max-w-2xl space-y-3.5 sm:space-y-4 relative z-30">
             
             {/* Top Trending Ribbon Badge */}
             <div className="flex items-center gap-3">
