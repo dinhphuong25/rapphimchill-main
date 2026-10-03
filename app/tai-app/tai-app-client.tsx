@@ -26,15 +26,15 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-// Links & Artifacts
+// Links & Artifacts (EAS Observe Integrated Builds)
 const IOS_IPA_DOWNLOAD_URL =
-  "https://expo.dev/artifacts/eas/ivj0iswL0Av_P3RlAA5OWHSgrO5hVAy_cZ_8g2xyMxQ.ipa";
+  "https://expo.dev/artifacts/eas/LA1x2PlnF7SJ6nYt5l2HR60fPJe6crXVC4LERhkO8d4.ipa";
 const IOS_INSTALL_PAGE_URL =
-  "https://expo.dev/accounts/dinhphuongkim/projects/hiphim-mobile/builds/9169b1c1-8fe7-4380-9248-2018a7e1734e";
+  "https://expo.dev/accounts/dinhphuongkim/projects/hiphim-mobile/builds/136a3607-54dc-4cad-a614-d69a779b33a0";
 const ANDROID_APK_DOWNLOAD_URL =
-  "https://expo.dev/artifacts/eas/IlkZ3zC9aJu-l19DN8GV3VZVDrerNWlJ4loOZcgFkjk.apk";
+  "https://expo.dev/artifacts/eas/kpg96Rywf2HL8M7PTjBRjUKUgpXPHVv7bKCgwLwD_68.apk";
 const ANDROID_BUILD_PAGE_URL =
-  "https://expo.dev/accounts/dinhphuongkim/projects/hiphim-mobile/builds/763a35f9-8d5d-40f3-b3ef-7242a66d5f5b";
+  "https://expo.dev/accounts/dinhphuongkim/projects/hiphim-mobile/builds/5302f13b-590f-4fbc-b2a0-3e49b2b8694c";
 
 export default function TaiAppClient() {
   const [activePlatform, setActivePlatform] = useState<"ios" | "android">("ios");
