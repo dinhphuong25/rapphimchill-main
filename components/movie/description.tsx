@@ -340,10 +340,10 @@ export default function Description({ movie, serverData }: any) {
     <button
       onClick={handleToggleFavorite}
       className={cn(
-        "w-full max-w-[260px] sm:max-w-[280px] mx-auto py-2 px-4 rounded-xl border transition-all duration-200 flex items-center justify-center gap-2 font-semibold text-xs active:scale-[0.98] cursor-pointer group shadow-sm",
+        "w-full max-w-[260px] sm:max-w-[280px] mx-auto py-2 px-4 rounded-xl border transition-all duration-200 flex items-center justify-center gap-2 font-medium text-xs active:scale-[0.98] cursor-pointer group shadow-sm",
         isFav
-          ? "bg-brand-green/15 border-brand-green/40 text-brand-green hover:bg-brand-green/20 shadow-[0_0_15px_rgba(34,197,94,0.15)]"
-          : "bg-[#222222] hover:bg-[#2a2a2a] text-white/80 hover:text-white border-transparent hover:border-white/10"
+          ? "bg-brand-green/[0.12] border-brand-green/30 text-brand-green/90 hover:bg-brand-green/15"
+          : "bg-white/[0.025] hover:bg-white/[0.06] text-white/50 hover:text-white/80 border-white/[0.04]"
       )}
       title={isFav ? "Bấm để xóa khỏi danh sách yêu thích" : "Bấm để thêm vào danh sách yêu thích"}
     >
@@ -351,8 +351,8 @@ export default function Description({ movie, serverData }: any) {
         className={cn(
           "w-3.5 h-3.5 transition-transform group-hover:scale-110 shrink-0",
           isFav
-            ? "fill-brand-green text-brand-green"
-            : "text-white/60 group-hover:text-brand-green"
+            ? "fill-brand-green/80 text-brand-green/90"
+            : "text-white/40 group-hover:text-brand-green/80"
         )}
       />
       <span>{isFav ? "Đã Thêm Vào Yêu Thích" : "Thêm Vào Phim Yêu Thích"}</span>
@@ -365,10 +365,10 @@ export default function Description({ movie, serverData }: any) {
       <button
         type="button"
         onClick={() => setShowReportModal(true)}
-        className="py-2 px-3 rounded-xl bg-[#222222] hover:bg-[#2a2a2a] text-white/80 hover:text-amber-400 border border-transparent hover:border-amber-400/30 flex items-center justify-center gap-1.5 text-xs font-semibold transition-all cursor-pointer active:scale-95 shadow-sm shrink-0"
+        className="py-2 px-3 rounded-xl bg-white/[0.025] hover:bg-white/[0.06] text-white/50 hover:text-amber-400 border border-white/[0.04] hover:border-amber-400/25 flex items-center justify-center gap-1.5 text-xs font-medium transition-all cursor-pointer active:scale-95 shadow-sm shrink-0"
         title="Báo lỗi nếu video không xem được, mất tiếng hoặc sai tập"
       >
-        <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+        <AlertTriangle className="w-3.5 h-3.5 text-amber-400/80 shrink-0" />
         <span className="hidden sm:inline">Báo lỗi tập</span>
         <span className="sm:hidden">Báo lỗi</span>
       </button>
