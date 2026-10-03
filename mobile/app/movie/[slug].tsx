@@ -39,7 +39,7 @@ import { isFavorite, toggleFavorite } from "@/services/storage";
 import { useUserAuth } from "@/context/UserAuthContext";
 import { Colors, Radii } from "@/constants/theme";
 import { haptic } from "@/services/haptics";
-import { useObserve } from "expo-observe";
+import { useObserve } from "@/services/observe";
 
 function cleanHtml(text?: string): string {
   if (!text) return "";

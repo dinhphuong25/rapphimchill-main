@@ -18,7 +18,7 @@ import { MovieItem } from "@/services/api";
 import { useUserAuth } from "@/context/UserAuthContext";
 import { Colors, Radii } from "@/constants/theme";
 import { haptic } from "@/services/haptics";
-import { useObserve } from "expo-observe";
+import { useObserve } from "@/services/observe";
 
 export default function FavoritesScreen() {
   const router = useRouter();
@@ -65,33 +65,47 @@ export default function FavoritesScreen() {
 
 
 
-      {/* Sync Hint Bar for guests with favorites */}
-      {!user && favorites.length > 0 && (
-        <View style={styles.guestSyncBar}>
-          <Text style={styles.guestSyncText}>
-            {favorites.length} phim đã lưu trên thiết bị
-          </Text>
-          <Pressable
-            onPress={() => {
-              haptic.light();
-              openAuthModal("login");
-            }}
-            style={({ pressed }) => [styles.syncActionBtn, pressed && styles.btnPressed]}
-          >
-            <LogIn size={11} color="#20D66B" />
-            <Text style={styles.syncActionText}>Đăng nhập để đồng bộ</Text>
-          </Pressable>
-        </View>
-      )}
-
       {/* State 1: Loading */}
       {loading ? (
         <View style={styles.emptyContainer}>
           <ActivityIndicator size="large" color={Colors.primary} />
           <Text style={[styles.emptySub, { marginTop: 12 }]}>Đang tải phim yêu thích...</Text>
         </View>
+      ) : !user ? (
+        /* State 2: Login Required */
+        <View style={styles.emptyContainer}>
+          <View style={styles.loginRequiredIconCircle}>
+            <Heart size={36} color="#EF4444" strokeWidth={1.8} fill="rgba(239, 68, 68, 0.2)" />
+            <View style={styles.lockBadge}>
+              <Lock size={12} color="#050807" strokeWidth={2.4} />
+            </View>
+          </View>
+          <Text style={styles.emptyTitle}>Đăng nhập để lưu yêu thích</Text>
+          <Text style={styles.emptySub}>
+            Vui lòng đăng nhập tài khoản để lưu trữ các bộ phim yêu thích của bạn và đồng bộ trên mọi thiết bị.
+          </Text>
+          <Pressable
+            onPress={() => {
+              haptic.medium();
+              openAuthModal("login");
+            }}
+            style={({ pressed }) => [styles.primaryLoginBtn, pressed && styles.btnPressed]}
+          >
+            <LogIn size={16} color="#050807" strokeWidth={2.4} />
+            <Text style={styles.primaryLoginBtnText}>Đăng nhập ngay</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              haptic.light();
+              openAuthModal("register");
+            }}
+            style={({ pressed }) => [styles.secondaryBrowseBtn, pressed && styles.btnPressed]}
+          >
+            <Text style={styles.secondaryBrowseBtnText}>Chưa có tài khoản? Đăng ký</Text>
+          </Pressable>
+        </View>
       ) : favorites.length === 0 ? (
-        /* State 2: Empty Favorites */
+        /* State 3: Empty Favorites */
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIconCircle}>
             <Heart size={36} color={Colors.textDim} strokeWidth={1.8} />
@@ -112,7 +126,7 @@ export default function FavoritesScreen() {
           </Pressable>
         </View>
       ) : (
-        /* State 3: Favorites Grid */
+        /* State 4: Favorites Grid */
         <FlatList
           key={String(numColumns)}
           data={favorites}

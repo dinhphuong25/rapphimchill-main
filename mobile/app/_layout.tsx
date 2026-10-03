@@ -3,7 +3,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as SplashScreen from "expo-splash-screen";
-import { Observe, ObserveRoot } from "expo-observe";
+import { Observe, ObserveRoot } from "@/services/observe";
 import { Colors } from "@/constants/theme";
 import { ExploreSheetProvider } from "@/context/ExploreSheetContext";
 import { UserAuthProvider } from "@/context/UserAuthContext";
@@ -25,6 +25,18 @@ Observe.configure({
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function RootLayout() {
+  React.useEffect(() => {
+    // Dismiss native splash screen immediately when React Native tree mounts
+    SplashScreen.hideAsync().catch(() => {});
+
+    // Failsafe dismiss in case of any platform delay
+    const safety = setTimeout(() => {
+      SplashScreen.hideAsync().catch(() => {});
+    }, 1500);
+
+    return () => clearTimeout(safety);
+  }, []);
+
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
@@ -77,7 +89,7 @@ function RootLayout() {
           <AuthModal />
 
           {/* Cinematic Animated Startup Loading Screen */}
-          <AppLoadingScreen minDuration={700} />
+          <AppLoadingScreen minDuration={1800} />
         </ExploreSheetProvider>
       </UserAuthProvider>
     </SafeAreaProvider>

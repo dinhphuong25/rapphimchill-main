@@ -24,7 +24,7 @@ import { syncDataWithServer } from "@/services/auth";
 import { useUserAuth } from "@/context/UserAuthContext";
 import { Colors, Radii } from "@/constants/theme";
 import { haptic } from "@/services/haptics";
-import { useObserve } from "expo-observe";
+import { useObserve } from "@/services/observe";
 
 export default function HistoryScreen() {
   const router = useRouter();
@@ -115,31 +115,17 @@ export default function HistoryScreen() {
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <NativeHeader />
 
-      {/* Action Bar when history has items */}
-      {history.length > 0 && (
+      {/* Action Bar when logged-in user has history items */}
+      {user && history.length > 0 && (
         <View style={styles.compactActionBar}>
           <Text style={styles.historyCountText}>{history.length} phim đã xem</Text>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            {!user && (
-              <Pressable
-                onPress={() => {
-                  haptic.light();
-                  openAuthModal("login");
-                }}
-                style={({ pressed }) => [styles.syncHintBtn, pressed && styles.btnPressed]}
-              >
-                <LogIn size={11} color="#20D66B" />
-                <Text style={styles.syncHintText}>Đăng nhập để đồng bộ</Text>
-              </Pressable>
-            )}
-            <Pressable
-              onPress={handleClearAll}
-              style={({ pressed }) => [styles.clearBtn, pressed && styles.btnPressed]}
-            >
-              <Trash2 size={13} color={Colors.danger} />
-              <Text style={styles.clearText}>Xóa hết</Text>
-            </Pressable>
-          </View>
+          <Pressable
+            onPress={handleClearAll}
+            style={({ pressed }) => [styles.clearBtn, pressed && styles.btnPressed]}
+          >
+            <Trash2 size={13} color={Colors.danger} />
+            <Text style={styles.clearText}>Xóa hết</Text>
+          </Pressable>
         </View>
       )}
 
@@ -149,8 +135,41 @@ export default function HistoryScreen() {
           <ActivityIndicator size="large" color={Colors.primary} />
           <Text style={[styles.emptySub, { marginTop: 12 }]}>Đang tải lịch sử xem...</Text>
         </View>
+      ) : !user ? (
+        /* State 2: Login Required */
+        <View style={styles.emptyContainer}>
+          <View style={styles.loginRequiredIconCircle}>
+            <Clock size={36} color={Colors.primary} strokeWidth={1.8} />
+            <View style={styles.lockBadge}>
+              <Lock size={12} color="#050807" strokeWidth={2.4} />
+            </View>
+          </View>
+          <Text style={styles.emptyTitle}>Đăng nhập để lưu lịch sử</Text>
+          <Text style={styles.emptySub}>
+            Vui lòng đăng nhập tài khoản để tự động ghi nhớ và lưu lại lịch sử xem phim trên mọi thiết bị.
+          </Text>
+          <Pressable
+            onPress={() => {
+              haptic.medium();
+              openAuthModal("login");
+            }}
+            style={({ pressed }) => [styles.primaryLoginBtn, pressed && styles.btnPressed]}
+          >
+            <LogIn size={16} color="#050807" strokeWidth={2.4} />
+            <Text style={styles.primaryLoginBtnText}>Đăng nhập ngay</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              haptic.light();
+              openAuthModal("register");
+            }}
+            style={({ pressed }) => [styles.secondaryBrowseBtn, pressed && styles.btnPressed]}
+          >
+            <Text style={styles.secondaryBrowseBtnText}>Chưa có tài khoản? Đăng ký</Text>
+          </Pressable>
+        </View>
       ) : history.length === 0 ? (
-        /* State 2: Empty History */
+        /* State 3: Empty History */
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIconCircle}>
             <Clock size={36} color={Colors.textDim} strokeWidth={1.8} />

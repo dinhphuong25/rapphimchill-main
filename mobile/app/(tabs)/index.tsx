@@ -34,6 +34,7 @@ import {
 } from "lucide-react-native";
 import { NativeHeader } from "@/components/ui/NativeHeader";
 import { MovieCard } from "@/components/ui/MovieCard";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 import {
   fetchNewReleases,
   fetchListByType,
@@ -48,7 +49,7 @@ import {
 import { useUserAuth } from "@/context/UserAuthContext";
 import { Colors } from "@/constants/theme";
 import { haptic } from "@/services/haptics";
-import { useObserve } from "expo-observe";
+import { useObserve } from "@/services/observe";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -78,7 +79,7 @@ export default function HomeScreen() {
           fetchListByType("phim-bo", 1),
           fetchListByType("phim-le", 1),
           fetchListByType("hoat-hinh", 1),
-          getWatchHistory(),
+          user ? getWatchHistory() : Promise.resolve([]),
         ]);
 
       setTrending(trendRes.items.slice(0, 15));
@@ -86,7 +87,19 @@ export default function HomeScreen() {
       setSeries(seriesRes.items.slice(0, 12));
       setSingles(singleRes.items.slice(0, 12));
       setAnime(animeRes.items.slice(0, 12));
-      setContinueWatching(history.slice(0, 6));
+
+      // Continue watching matches web behavior: only for logged in user, excluding finished items
+      if (user && Array.isArray(history)) {
+        const activeItems = history.filter((item) => {
+          const time = item.progressSeconds || 0;
+          const dur = item.duration || 0;
+          if (dur > 0 && time >= dur - 15) return false;
+          return true;
+        }).slice(0, 8);
+        setContinueWatching(activeItems);
+      } else {
+        setContinueWatching([]);
+      }
 
       if (user && trendRes.items[0]) {
         const fav = await isFavorite(trendRes.items[0].slug);
@@ -113,12 +126,23 @@ export default function HomeScreen() {
     }
   }, [loading, markInteractive]);
 
-  // Refresh history & favorite whenever tab gains focus
+  // Refresh history & favorite whenever tab gains focus (only when logged in)
   useFocusEffect(
     useCallback(() => {
       let isMounted = true;
+      if (!user) {
+        setContinueWatching([]);
+        return;
+      }
       getWatchHistory().then((hist) => {
-        if (isMounted) setContinueWatching(hist.slice(0, 6));
+        if (!isMounted) return;
+        const activeItems = (hist || []).filter((item) => {
+          const time = item.progressSeconds || 0;
+          const dur = item.duration || 0;
+          if (dur > 0 && time >= dur - 15) return false;
+          return true;
+        }).slice(0, 8);
+        setContinueWatching(activeItems);
       });
       return () => {
         isMounted = false;
@@ -176,8 +200,11 @@ export default function HomeScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.loadingText}>Đang tải phim điện ảnh mới nhất...</Text>
+        <BrandLogo size="lg" showSlogan centered />
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 18 }}>
+          <ActivityIndicator size="small" color={Colors.primary} />
+          <Text style={styles.loadingText}>Đang tải phim điện ảnh mới nhất...</Text>
+        </View>
       </View>
     );
   }
@@ -344,8 +371,9 @@ export default function HomeScreen() {
 
         {/* ==================================================== */}
         {/* TIẾP TỤC XEM (CONTINUE WATCHING ROW)                 */}
+        {/* Chỉ hiện khi người dùng đã đăng nhập & có lịch sử   */}
         {/* ==================================================== */}
-        {continueWatching.length > 0 && (
+        {Boolean(user && continueWatching.length > 0) && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleRow}>
@@ -369,49 +397,62 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalList}
             >
-              {continueWatching.map((item) => (
-                <Pressable
-                  key={item.slug}
-                  onPress={() => {
-                    haptic.heavy();
-                    router.push({
-                      pathname: "/watch/[slug]",
-                      params: {
-                        slug: item.slug,
-                        ep: item.lastEpisodeSlug || "1",
-                      },
-                    });
-                  }}
-                  style={({ pressed }) => [
-                    styles.continueCard,
-                    pressed && styles.btnPressed,
-                  ]}
-                >
-                  <View style={styles.continueThumbWrapper}>
-                    <Image
-                      source={{ uri: item.thumb_url || item.poster_url }}
-                      style={styles.continueThumb}
-                      contentFit="cover"
-                      cachePolicy="memory-disk"
-                    />
-                    <View style={styles.continuePlayOverlay}>
-                      <View style={styles.continuePlayCircle}>
-                        <Play size={12} color="#050807" fill="#050807" />
+              {continueWatching.map((item) => {
+                const percent =
+                  item.duration && item.duration > 0 && typeof item.progressSeconds === "number"
+                    ? Math.min(100, Math.max(8, (item.progressSeconds / item.duration) * 100))
+                    : 30;
+
+                return (
+                  <Pressable
+                    key={item.slug}
+                    onPress={() => {
+                      haptic.heavy();
+                      router.push({
+                        pathname: "/watch/[slug]",
+                        params: {
+                          slug: item.slug,
+                          ep: item.lastEpisodeSlug || undefined,
+                          t: item.progressSeconds ? String(item.progressSeconds) : undefined,
+                        },
+                      });
+                    }}
+                    style={({ pressed }) => [
+                      styles.continueCard,
+                      pressed && styles.btnPressed,
+                    ]}
+                  >
+                    <View style={styles.continueThumbWrapper}>
+                      <Image
+                        source={{ uri: item.thumb_url || item.poster_url }}
+                        style={styles.continueThumb}
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                      />
+                      <View style={styles.continuePlayOverlay}>
+                        <View style={styles.continuePlayCircle}>
+                          <Play size={12} color="#050807" fill="#050807" />
+                        </View>
+                      </View>
+                      {/* Dynamic Progress Bar */}
+                      <View style={styles.continueProgressBar}>
+                        <View
+                          style={[
+                            styles.continueProgressFill,
+                            { width: `${percent}%` },
+                          ]}
+                        />
                       </View>
                     </View>
-                    {/* Progress Bar */}
-                    <View style={styles.continueProgressBar}>
-                      <View style={styles.continueProgressFill} />
-                    </View>
-                  </View>
-                  <Text style={styles.continueName} numberOfLines={1}>
-                    {item.name}
-                  </Text>
-                  <Text style={styles.continueEp} numberOfLines={1}>
-                    {item.lastEpisodeName ? `Xem tiếp: ${item.lastEpisodeName}` : "Xem tiếp ngay"}
-                  </Text>
-                </Pressable>
-              ))}
+                    <Text style={styles.continueName} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                    <Text style={styles.continueEp} numberOfLines={1}>
+                      {item.lastEpisodeName ? `Xem tiếp: ${item.lastEpisodeName}` : "Xem tiếp ngay"}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </ScrollView>
           </View>
         )}
@@ -899,7 +940,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.3)",
   },
   continueProgressFill: {
-    width: "60%",
     height: "100%",
     backgroundColor: "#20D66B",
   },

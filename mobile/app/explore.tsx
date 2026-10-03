@@ -22,7 +22,7 @@ import {
 } from "@/services/api";
 import { Colors } from "@/constants/theme";
 import { haptic } from "@/services/haptics";
-import { useObserve } from "expo-observe";
+import { useObserve } from "@/services/observe";
 
 type ExploreSegment = "category" | "country" | "type" | "year";
 

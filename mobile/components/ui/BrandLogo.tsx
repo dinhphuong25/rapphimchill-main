@@ -1,25 +1,44 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
+import { Play } from "lucide-react-native";
 import { Colors } from "@/constants/theme";
 
 interface BrandLogoProps {
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
   showSlogan?: boolean;
+  centered?: boolean;
 }
 
-export function BrandLogo({ size = "md", showSlogan = true }: BrandLogoProps) {
+export function BrandLogo({ size = "md", showSlogan = true, centered = false }: BrandLogoProps) {
   const isSm = size === "sm";
   const isLg = size === "lg";
+  const isXl = size === "xl";
 
-  const fontSize = isSm ? 15 : isLg ? 24 : 18;
-  const sloganSize = isSm ? 8 : isLg ? 11 : 9.5;
+  const fontSize = isSm ? 15 : isXl ? 32 : isLg ? 24 : 18;
+  const sloganSize = isSm ? 8 : isXl ? 12 : isLg ? 11 : 9.5;
+  const badgeSize = isSm ? 22 : isXl ? 44 : isLg ? 34 : 26;
+  const playIconSize = isSm ? 9 : isXl ? 18 : isLg ? 14 : 11;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, centered && styles.centered]}>
       <View style={styles.logoRow}>
         {/* Play Icon Badge */}
-        <View style={[styles.iconBadge, { width: fontSize + 6, height: fontSize + 6 }]}>
-          <Text style={{ fontSize: fontSize * 0.55, color: Colors.primary, fontWeight: "900" }}>▶</Text>
+        <View
+          style={[
+            styles.iconBadge,
+            {
+              width: badgeSize,
+              height: badgeSize,
+              borderRadius: badgeSize / 2,
+            },
+          ]}
+        >
+          <Play
+            size={playIconSize}
+            color="#20D66B"
+            fill="#20D66B"
+            style={{ marginLeft: 1 }}
+          />
         </View>
 
         {/* Wordmark */}
@@ -43,13 +62,15 @@ const styles = StyleSheet.create({
   container: {
     justifyContent: "center",
   },
+  centered: {
+    alignItems: "center",
+  },
   logoRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
   },
   iconBadge: {
-    borderRadius: 999,
     backgroundColor: "rgba(32, 214, 107, 0.15)",
     borderWidth: 1.5,
     borderColor: "rgba(32, 214, 107, 0.5)",
@@ -64,15 +85,16 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
   titlePhim: {
-    color: Colors.primary,
+    color: "#20D66B",
   },
   titleDot: {
-    color: Colors.primaryHover,
+    color: "#00FF87",
   },
   slogan: {
     color: Colors.textDim,
-    fontWeight: "500",
-    marginTop: 1,
-    letterSpacing: 0.2,
+    fontWeight: "600",
+    marginTop: 2,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
 });

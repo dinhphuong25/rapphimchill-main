@@ -14,7 +14,7 @@ import { MovieCard } from "@/components/ui/MovieCard";
 import { fetchListByType, MovieItem } from "@/services/api";
 import { Colors } from "@/constants/theme";
 import { haptic } from "@/services/haptics";
-import { useObserve } from "expo-observe";
+import { useObserve } from "@/services/observe";
 
 export default function CinemaScreen() {
   const { width: screenWidth } = useWindowDimensions();

@@ -287,7 +287,13 @@ export async function syncDataWithServer(): Promise<{
       method: "POST",
       body: JSON.stringify({
         favorites,
-        history,
+        history: history.map((h) => ({
+          ...h,
+          currentTime: h.progressSeconds || 0,
+          episodeName: h.lastEpisodeName,
+          episodeSlug: h.lastEpisodeSlug,
+          watchedAt: h.lastWatchedAt || Date.now(),
+        })),
         mode: "merge",
       }),
     });

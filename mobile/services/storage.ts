@@ -117,14 +117,22 @@ async function migrateLegacyDataIfNeeded(userId: string): Promise<void> {
   }
 }
 
+// Always purge legacy guest data so unauthenticated visits never retain or show lingering items
+AsyncStorage.multiRemove([
+  GUEST_HISTORY_KEY,
+  GUEST_FAVORITES_KEY,
+  LEGACY_HISTORY_KEY,
+  LEGACY_FAVORITES_KEY,
+]).catch(() => {});
+
 /**
- * Get watch history: returns current user history if logged in, or local guest history if guest.
+ * Get watch history: strictly requires an authenticated user.
+ * Unauthenticated guests have no watch history saved or returned.
  */
 export async function getWatchHistory(): Promise<HistoryItem[]> {
   const userId = await resolveUserId();
 
   if (userId) {
-    await migrateLegacyDataIfNeeded(userId);
     try {
       const raw = await AsyncStorage.getItem(getHistoryKey(userId));
       return raw ? JSON.parse(raw) : [];
@@ -134,20 +142,16 @@ export async function getWatchHistory(): Promise<HistoryItem[]> {
     }
   }
 
-  // Guest fallback
-  try {
-    const raw = await AsyncStorage.getItem(GUEST_HISTORY_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (err) {
-    console.error("getGuestWatchHistory error:", err);
-    return [];
-  }
+  return [];
 }
 
 /**
  * Retrieve watch progress of a specific movie by slug.
  */
 export async function getMovieWatchProgress(slug: string): Promise<HistoryItem | null> {
+  const userId = await resolveUserId();
+  if (!userId) return null;
+
   try {
     const history = await getWatchHistory();
     return history.find((h) => h.slug === slug) || null;
@@ -157,8 +161,8 @@ export async function getMovieWatchProgress(slug: string): Promise<HistoryItem |
 }
 
 /**
- * Save movie into watch history for the current session (guest or logged-in).
- * Always auto-saves like the Web experience.
+ * Save movie into watch history: ONLY for authenticated users.
+ * Unauthenticated guests are not recorded.
  */
 export async function saveWatchHistory(
   item: MovieItem,
@@ -168,6 +172,9 @@ export async function saveWatchHistory(
   duration?: number
 ): Promise<void> {
   const userId = await resolveUserId();
+  if (!userId) {
+    return;
+  }
 
   try {
     const history = await getWatchHistory();
@@ -191,11 +198,7 @@ export async function saveWatchHistory(
     const filtered = history.filter((h) => h.slug !== item.slug);
     const updated = [newEntry, ...filtered].slice(0, 50);
 
-    if (userId) {
-      await AsyncStorage.setItem(getHistoryKey(userId), JSON.stringify(updated));
-    }
-    // Always persist to local guest storage as instant cache
-    await AsyncStorage.setItem(GUEST_HISTORY_KEY, JSON.stringify(updated));
+    await AsyncStorage.setItem(getHistoryKey(userId), JSON.stringify(updated));
   } catch (err) {
     console.error("saveWatchHistory error:", err);
   }
@@ -206,15 +209,12 @@ export async function saveWatchHistory(
  */
 export async function removeWatchHistory(slug: string): Promise<void> {
   const userId = await resolveUserId();
+  if (!userId) return;
 
   try {
     const history = await getWatchHistory();
     const updated = history.filter((h) => h.slug !== slug);
-
-    if (userId) {
-      await AsyncStorage.setItem(getHistoryKey(userId), JSON.stringify(updated));
-    }
-    await AsyncStorage.setItem(GUEST_HISTORY_KEY, JSON.stringify(updated));
+    await AsyncStorage.setItem(getHistoryKey(userId), JSON.stringify(updated));
   } catch (err) {
     console.error("removeWatchHistory error:", err);
   }
@@ -230,20 +230,19 @@ export async function clearWatchHistory(): Promise<void> {
     if (userId) {
       await AsyncStorage.removeItem(getHistoryKey(userId));
     }
-    await AsyncStorage.removeItem(GUEST_HISTORY_KEY);
+    await AsyncStorage.multiRemove([GUEST_HISTORY_KEY, LEGACY_HISTORY_KEY]);
   } catch (err) {
     console.error("clearWatchHistory error:", err);
   }
 }
 
 /**
- * Get favorites list (supports both guest and authenticated users).
+ * Get favorites list: strictly requires an authenticated user.
  */
 export async function getFavorites(): Promise<MovieItem[]> {
   const userId = await resolveUserId();
 
   if (userId) {
-    await migrateLegacyDataIfNeeded(userId);
     try {
       const raw = await AsyncStorage.getItem(getFavoritesKey(userId));
       return raw ? JSON.parse(raw) : [];
@@ -253,19 +252,16 @@ export async function getFavorites(): Promise<MovieItem[]> {
     }
   }
 
-  try {
-    const raw = await AsyncStorage.getItem(GUEST_FAVORITES_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (err) {
-    console.error("getGuestFavorites error:", err);
-    return [];
-  }
+  return [];
 }
 
 /**
  * Check if a movie is favorite.
  */
 export async function isFavorite(slug: string): Promise<boolean> {
+  const userId = await resolveUserId();
+  if (!userId) return false;
+
   try {
     const favorites = await getFavorites();
     return favorites.some((f) => f.slug === slug);
@@ -275,10 +271,11 @@ export async function isFavorite(slug: string): Promise<boolean> {
 }
 
 /**
- * Toggle favorite (works seamlessly for guests and logged-in users).
+ * Toggle favorite: strictly requires an authenticated user.
  */
 export async function toggleFavorite(movie: MovieItem): Promise<boolean> {
   const userId = await resolveUserId();
+  if (!userId) return false;
 
   try {
     const favorites = await getFavorites();
@@ -290,10 +287,7 @@ export async function toggleFavorite(movie: MovieItem): Promise<boolean> {
       updated = [movie, ...favorites];
     }
 
-    if (userId) {
-      await AsyncStorage.setItem(getFavoritesKey(userId), JSON.stringify(updated));
-    }
-    await AsyncStorage.setItem(GUEST_FAVORITES_KEY, JSON.stringify(updated));
+    await AsyncStorage.setItem(getFavoritesKey(userId), JSON.stringify(updated));
     return !exists;
   } catch (err) {
     console.error("toggleFavorite error:", err);
@@ -314,10 +308,30 @@ export async function setUserFavorites(userId: string, items: MovieItem[]): Prom
 
 /**
  * Override/sync history for a specific user ID.
+ * Normalizes web & server history items into standard HistoryItem format.
  */
-export async function setUserHistory(userId: string, items: HistoryItem[]): Promise<void> {
+export async function setUserHistory(userId: string, items: any[]): Promise<void> {
   try {
-    await AsyncStorage.setItem(getHistoryKey(userId), JSON.stringify(items));
+    const normalized: HistoryItem[] = (items || []).map((h: any) => ({
+      ...h,
+      lastWatchedAt: Number(h.lastWatchedAt || h.watchedAt || h.timestamp) || Date.now(),
+      lastEpisodeName:
+        h.lastEpisodeName ||
+        h.episodeName ||
+        (typeof h.episodeIndex === "number" ? `Tập ${h.episodeIndex + 1}` : undefined),
+      lastEpisodeSlug:
+        h.lastEpisodeSlug ||
+        h.episodeSlug ||
+        (typeof h.episodeIndex === "number" ? `${h.episodeIndex + 1}` : undefined),
+      progressSeconds:
+        typeof h.progressSeconds === "number"
+          ? h.progressSeconds
+          : typeof h.currentTime === "number"
+          ? Math.floor(h.currentTime)
+          : 0,
+      duration: typeof h.duration === "number" ? Math.floor(h.duration) : 0,
+    }));
+    await AsyncStorage.setItem(getHistoryKey(userId), JSON.stringify(normalized));
   } catch (err) {
     console.error("setUserHistory error:", err);
   }

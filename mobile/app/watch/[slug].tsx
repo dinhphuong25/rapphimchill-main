@@ -11,7 +11,9 @@ import {
   Share,
   Alert,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
+import * as ScreenOrientation from "expo-screen-orientation";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Linking from "expo-linking";
 import { useVideoPlayer, VideoView } from "expo-video";
@@ -29,6 +31,7 @@ import {
   SkipBack,
   SkipForward,
   Maximize2,
+  Minimize2,
   PictureInPicture,
   Layers,
   FileText,
@@ -43,7 +46,7 @@ import { saveWatchHistory, isFavorite, toggleFavorite, getMovieWatchProgress } f
 import { useUserAuth } from "@/context/UserAuthContext";
 import { Colors, Radii } from "@/constants/theme";
 import { haptic } from "@/services/haptics";
-import { useObserve } from "expo-observe";
+import { useObserve } from "@/services/observe";
 
 function cleanHtml(text?: string): string {
   if (!text) return "";
@@ -61,12 +64,26 @@ export default function WatchScreen() {
   const router = useRouter();
   const { user, openAuthModal } = useUserAuth();
   const { markInteractive } = useObserve();
-  const { slug, ep, server } = useLocalSearchParams<{
+  const { slug, ep, server, t } = useLocalSearchParams<{
     slug: string;
     ep?: string;
     server?: string;
+    t?: string;
   }>();
-  const { width: screenWidth } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const isLandscape = screenWidth > screenHeight;
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const activeFullscreen = isFullscreen || isLandscape;
+  const [scrubberWidth, setScrubberWidth] = useState(0);
+
+  useEffect(() => {
+    return () => {
+      try {
+        ScreenOrientation.unlockAsync().catch(() => {});
+      } catch {}
+    };
+  }, []);
 
   // 5-column episode item width (screenWidth - 28 padding - 4 * 8 gap) / 5
   const epColumns = 5;
@@ -134,7 +151,10 @@ export default function WatchScreen() {
           }
 
           // Remember playback position to resume once player is ready
-          if (savedProgress?.progressSeconds && savedProgress.progressSeconds > 10) {
+          const parsedParamTime = t ? parseInt(t, 10) : 0;
+          if (parsedParamTime > 5) {
+            pendingResumeSecondsRef.current = parsedParamTime;
+          } else if (savedProgress?.progressSeconds && savedProgress.progressSeconds > 10) {
             pendingResumeSecondsRef.current = savedProgress.progressSeconds;
           }
         }
@@ -241,8 +261,8 @@ export default function WatchScreen() {
       }
     }
 
-    // Auto-record movie to history for all users
-    if (movie && currentEpisode) {
+    // Auto-record movie to history only for authenticated users
+    if (user && movie && currentEpisode) {
       saveWatchHistory(
         movie,
         currentEpisode.name,
@@ -250,7 +270,7 @@ export default function WatchScreen() {
         pendingResumeSecondsRef.current || 0
       );
     }
-  }, [isUnreleasedMovie, rawStreamUrl, currentEpisode?.slug, player]);
+  }, [isUnreleasedMovie, rawStreamUrl, currentEpisode?.slug, player, user]);
 
   // Listen to native player status & playback error events + Auto-resume
   useEffect(() => {
@@ -409,12 +429,48 @@ export default function WatchScreen() {
     resetControlsTimeout();
   };
 
-  const handleFullscreen = async () => {
+  const handleToggleFullscreen = async () => {
     haptic.medium();
+    resetControlsTimeout();
     try {
-      await videoViewRef.current?.enterFullscreen();
+      if (!activeFullscreen) {
+        setIsFullscreen(true);
+        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+      } else {
+        setIsFullscreen(false);
+        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+        setTimeout(() => {
+          ScreenOrientation.unlockAsync().catch(() => {});
+        }, 600);
+      }
     } catch (e) {
-      console.warn("enterFullscreen error:", e);
+      console.warn("Fullscreen toggle error:", e);
+      setIsFullscreen((prev) => !prev);
+    }
+  };
+
+  const handleExitFullscreen = async () => {
+    haptic.medium();
+    resetControlsTimeout();
+    setIsFullscreen(false);
+    try {
+      await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+      setTimeout(() => {
+        ScreenOrientation.unlockAsync().catch(() => {});
+      }, 600);
+    } catch (e) {
+      console.warn("Exit fullscreen error:", e);
+    }
+  };
+
+  const handleScrubTouch = (locationX: number) => {
+    if (scrubberWidth > 0 && duration > 0) {
+      const ratio = Math.max(0, Math.min(1, locationX / scrubberWidth));
+      const target = ratio * duration;
+      if (player) {
+        player.currentTime = target;
+        setCurrentTime(target);
+      }
     }
   };
 
@@ -443,13 +499,13 @@ export default function WatchScreen() {
 
   // Periodic background auto-save of playback progress (Heartbeat every 5s)
   useEffect(() => {
-    if (!player || !movie || !currentEpisode || isUnreleasedMovie) return;
+    if (!player || !movie || !currentEpisode || isUnreleasedMovie || !user) return;
 
     const interval = setInterval(() => {
       try {
         const cur = Math.floor(player.currentTime || 0);
         const dur = Math.floor(player.duration || 0);
-        if (cur > 0) {
+        if (cur > 0 && user) {
           saveWatchHistory(
             movie,
             currentEpisode.name,
@@ -466,7 +522,7 @@ export default function WatchScreen() {
       try {
         const cur = Math.floor(player.currentTime || 0);
         const dur = Math.floor(player.duration || 0);
-        if (cur > 0 && movie && currentEpisode) {
+        if (cur > 0 && movie && currentEpisode && user) {
           saveWatchHistory(
             movie,
             currentEpisode.name,
@@ -477,7 +533,7 @@ export default function WatchScreen() {
         }
       } catch {}
     };
-  }, [player, movie, currentEpisode, isUnreleasedMovie]);
+  }, [player, movie, currentEpisode, isUnreleasedMovie, user]);
 
   // Proactively check episode stream reachability (detect HTTP 404 / 5xx)
   useEffect(() => {
@@ -630,74 +686,84 @@ export default function WatchScreen() {
   const isSingleEp = episodeList.length <= 1;
 
   return (
-    <View style={styles.container}>
-      {/* Top Navigation Bar with Safe Area (Không che khuất player) */}
-      <SafeAreaView edges={["top"]} style={styles.topSafeArea}>
-        <View style={styles.navBar}>
-          <Pressable
-            onPress={() => {
-              haptic.light();
-              router.back();
-            }}
-            style={({ pressed }) => [
-              styles.navBackBtn,
-              pressed && styles.navBtnPressed,
-            ]}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            accessibilityLabel="Quay lại"
-          >
-            <ChevronLeft size={20} color="#FFFFFF" strokeWidth={2.4} />
-            <Text style={styles.navBackText}>Quay lại</Text>
-          </Pressable>
+    <View style={activeFullscreen ? styles.fullscreenContainer : styles.container}>
+      <StatusBar hidden={activeFullscreen} style="light" />
 
-          <View style={styles.navCenter}>
-            <Text style={styles.navTitle} numberOfLines={1}>
-              {movie.name}
-            </Text>
-            {formattedEpName ? (
-              <Text style={styles.navSubtitle} numberOfLines={1}>
-                {formattedEpName}
+      {/* Top Navigation Bar with Safe Area (An khi toan man hinh) */}
+      {!activeFullscreen && (
+        <SafeAreaView edges={["top"]} style={styles.topSafeArea}>
+          <View style={styles.navBar}>
+            <Pressable
+              onPress={() => {
+                haptic.light();
+                router.back();
+              }}
+              style={({ pressed }) => [
+                styles.navBackBtn,
+                pressed && styles.navBtnPressed,
+              ]}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityLabel="Quay lại"
+            >
+              <ChevronLeft size={20} color="#FFFFFF" strokeWidth={2.4} />
+              <Text style={styles.navBackText}>Quay lại</Text>
+            </Pressable>
+
+            <View style={styles.navCenter}>
+              <Text style={styles.navTitle} numberOfLines={1}>
+                {movie.name}
               </Text>
-            ) : null}
+              {formattedEpName ? (
+                <Text style={styles.navSubtitle} numberOfLines={1}>
+                  {formattedEpName}
+                </Text>
+              ) : null}
+            </View>
+
+            <View style={styles.navRight}>
+              <Pressable
+                onPress={handleToggleFav}
+                style={({ pressed }) => [
+                  styles.navIconBtn,
+                  fav && styles.navFavActive,
+                  pressed && styles.navBtnPressed,
+                ]}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityLabel="Yêu thích"
+              >
+                <Heart
+                  size={17}
+                  color={fav ? "#EF4444" : "#FFFFFF"}
+                  fill={fav ? "#EF4444" : "transparent"}
+                  strokeWidth={2.2}
+                />
+              </Pressable>
+
+              <Pressable
+                onPress={handleShare}
+                style={({ pressed }) => [
+                  styles.navIconBtn,
+                  pressed && styles.navBtnPressed,
+                ]}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityLabel="Chia sẻ"
+              >
+                <Share2 size={17} color="#FFFFFF" strokeWidth={2.2} />
+              </Pressable>
+            </View>
           </View>
+        </SafeAreaView>
+      )}
 
-          <View style={styles.navRight}>
-            <Pressable
-              onPress={handleToggleFav}
-              style={({ pressed }) => [
-                styles.navIconBtn,
-                fav && styles.navFavActive,
-                pressed && styles.navBtnPressed,
-              ]}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityLabel="Yêu thích"
-            >
-              <Heart
-                size={17}
-                color={fav ? "#EF4444" : "#FFFFFF"}
-                fill={fav ? "#EF4444" : "transparent"}
-                strokeWidth={2.2}
-              />
-            </Pressable>
-
-            <Pressable
-              onPress={handleShare}
-              style={({ pressed }) => [
-                styles.navIconBtn,
-                pressed && styles.navBtnPressed,
-              ]}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityLabel="Chia sẻ"
-            >
-              <Share2 size={17} color="#FFFFFF" strokeWidth={2.2} />
-            </Pressable>
-          </View>
-        </View>
-      </SafeAreaView>
-
-      {/* Modern Cinema Video Frame (Ô phát video mới với cơ chế bắt lỗi thông minh) */}
-      <View style={styles.playerFrameContainer}>
-        <View style={[styles.playerSurface, { width: screenWidth, height: videoHeight }]}>
+      {/* Modern Cinema Video Frame */}
+      <View style={activeFullscreen ? styles.fullscreenPlayerFrame : styles.playerFrameContainer}>
+        <View
+          style={
+            activeFullscreen
+              ? [styles.playerFullscreenSurface, { width: screenWidth, height: screenHeight }]
+              : [styles.playerSurface, { width: screenWidth, height: videoHeight }]
+          }
+        >
           {isUnreleasedMovie ? (
             <View style={styles.unreleasedOverlay}>
               {/* Subtle Poster Backdrop */}
@@ -807,25 +873,50 @@ export default function WatchScreen() {
 
                 {/* Custom Cinema Video Player Controls */}
                 {showControls && !playbackError && (
-                  <View style={styles.controlsOverlay}>
-                    {/* Top Row: Info + Speed + PiP + Fullscreen */}
+                  <View
+                    style={[
+                      styles.controlsOverlay,
+                      activeFullscreen && {
+                        paddingLeft: Math.max(16, insets.left + 8),
+                        paddingRight: Math.max(16, insets.right + 8),
+                        paddingTop: Math.max(12, insets.top),
+                        paddingBottom: Math.max(12, insets.bottom + 4),
+                      },
+                    ]}
+                  >
+                    {/* Top Row: Exit Fullscreen / Title & Episode + Speed + PiP + Fullscreen */}
                     <View style={styles.controlsTopRow}>
                       <View style={styles.controlsTopLeft}>
-                        <Text style={styles.controlsTitle} numberOfLines={1}>
-                          {movie.name}
-                        </Text>
-                        {formattedEpName ? (
-                          <Text style={styles.controlsSubTitle} numberOfLines={1}>
-                            {formattedEpName}
-                          </Text>
+                        {activeFullscreen ? (
+                          <Pressable
+                            onPress={handleExitFullscreen}
+                            style={({ pressed }) => [styles.exitFsBtn, pressed && styles.btnPressed]}
+                            hitSlop={10}
+                            accessibilityLabel="Thoát toàn màn hình"
+                          >
+                            <ChevronLeft size={22} color="#FFFFFF" strokeWidth={2.4} />
+                            <Text style={styles.exitFsText}>Thu nhỏ</Text>
+                          </Pressable>
                         ) : null}
+
+                        <View style={styles.controlsTitleTextWrap}>
+                          <Text style={styles.controlsTitle} numberOfLines={1}>
+                            {movie.name}
+                          </Text>
+                          {formattedEpName ? (
+                            <Text style={styles.controlsSubTitle} numberOfLines={1}>
+                              {formattedEpName}
+                            </Text>
+                          ) : null}
+                        </View>
                       </View>
 
                       <View style={styles.controlsTopRight}>
                         <Pressable
                           onPress={toggleSpeed}
                           style={({ pressed }) => [styles.ctrlSpeedBtn, pressed && styles.btnPressed]}
-                          hitSlop={6}
+                          hitSlop={8}
+                          accessibilityLabel="Tốc độ phát"
                         >
                           <Text style={styles.ctrlSpeedText}>{playbackSpeed}x</Text>
                         </Pressable>
@@ -833,98 +924,103 @@ export default function WatchScreen() {
                         <Pressable
                           onPress={handlePiP}
                           style={({ pressed }) => [styles.ctrlIconBtn, pressed && styles.btnPressed]}
-                          hitSlop={6}
+                          hitSlop={8}
+                          accessibilityLabel="Hình trong hình"
                         >
-                          <PictureInPicture size={16} color="#FFFFFF" strokeWidth={2.2} />
+                          <PictureInPicture size={17} color="#FFFFFF" strokeWidth={2.2} />
                         </Pressable>
 
                         <Pressable
-                          onPress={handleFullscreen}
+                          onPress={handleToggleFullscreen}
                           style={({ pressed }) => [styles.ctrlIconBtn, pressed && styles.btnPressed]}
-                          hitSlop={6}
+                          hitSlop={8}
+                          accessibilityLabel={activeFullscreen ? "Thoát toàn màn hình" : "Toàn màn hình"}
                         >
-                          <Maximize2 size={16} color="#FFFFFF" strokeWidth={2.2} />
+                          {activeFullscreen ? (
+                            <Minimize2 size={17} color="#20D66B" strokeWidth={2.2} />
+                          ) : (
+                            <Maximize2 size={17} color="#FFFFFF" strokeWidth={2.2} />
+                          )}
                         </Pressable>
                       </View>
                     </View>
 
-                    {/* Center Controls: Prev Ep | -10s | Play/Pause | +10s | Next Ep */}
-                    <View style={styles.controlsCenterRow}>
-                      {prevEp ? (
-                        <Pressable
-                          onPress={handlePrevEp}
-                          style={({ pressed }) => [styles.centerCtrlBtn, pressed && styles.btnPressed]}
-                          hitSlop={8}
-                        >
-                          <SkipBack size={20} color="#FFFFFF" />
-                        </Pressable>
-                      ) : (
-                        <View style={styles.centerCtrlBtnDisabled}>
-                          <SkipBack size={20} color="rgba(255, 255, 255, 0.2)" />
-                        </View>
-                      )}
-
+                    {/* Center Controls: Tua -10s | Nút Play/Pause Nổi Bật | Tua +10s */}
+                    <View style={[styles.controlsCenterRow, activeFullscreen && styles.controlsCenterRowFs]}>
+                      {/* Rewind 10s */}
                       <Pressable
                         onPress={() => handleSeek(-10)}
-                        style={({ pressed }) => [styles.centerCtrlBtn, pressed && styles.btnPressed]}
-                        hitSlop={8}
+                        style={({ pressed }) => [
+                          styles.centerSeekBtn,
+                          activeFullscreen && styles.centerSeekBtnFs,
+                          pressed && styles.btnPressed,
+                        ]}
+                        hitSlop={12}
+                        accessibilityLabel="Tua lại 10 giây"
                       >
-                        <RotateCcw size={20} color="#FFFFFF" strokeWidth={2.2} />
-                        <Text style={styles.centerCtrlLabel}>10s</Text>
+                        <RotateCcw size={activeFullscreen ? 24 : 20} color="#FFFFFF" strokeWidth={2.4} />
+                        <Text style={styles.centerSeekLabel}>-10s</Text>
                       </Pressable>
 
                       {/* Primary Play / Pause Circle */}
                       <Pressable
                         onPress={togglePlayPause}
-                        style={({ pressed }) => [styles.primaryPlayBtn, pressed && styles.btnPressed]}
-                        hitSlop={10}
+                        style={({ pressed }) => [
+                          styles.primaryPlayBtn,
+                          activeFullscreen && styles.primaryPlayBtnFs,
+                          pressed && styles.playBtnPressed,
+                        ]}
+                        hitSlop={16}
+                        accessibilityLabel={isPlaying ? "Tạm dừng" : "Phát tiếp"}
                       >
                         {isPlaying ? (
-                          <Pause size={26} color="#FFFFFF" fill="#FFFFFF" />
+                          <Pause
+                            size={activeFullscreen ? 32 : 28}
+                            color="#050807"
+                            fill="#050807"
+                            strokeWidth={1.5}
+                          />
                         ) : (
-                          <Play size={26} color="#FFFFFF" fill="#FFFFFF" style={{ marginLeft: 2 }} />
+                          <Play
+                            size={activeFullscreen ? 32 : 28}
+                            color="#050807"
+                            fill="#050807"
+                            style={{ marginLeft: 3 }}
+                          />
                         )}
                       </Pressable>
 
+                      {/* Forward 10s */}
                       <Pressable
                         onPress={() => handleSeek(10)}
-                        style={({ pressed }) => [styles.centerCtrlBtn, pressed && styles.btnPressed]}
-                        hitSlop={8}
+                        style={({ pressed }) => [
+                          styles.centerSeekBtn,
+                          activeFullscreen && styles.centerSeekBtnFs,
+                          pressed && styles.btnPressed,
+                        ]}
+                        hitSlop={12}
+                        accessibilityLabel="Tua đi 10 giây"
                       >
-                        <RotateCw size={20} color="#FFFFFF" strokeWidth={2.2} />
-                        <Text style={styles.centerCtrlLabel}>10s</Text>
+                        <RotateCw size={activeFullscreen ? 24 : 20} color="#FFFFFF" strokeWidth={2.2} />
+                        <Text style={styles.centerSeekLabel}>+10s</Text>
                       </Pressable>
-
-                      {nextEp ? (
-                        <Pressable
-                          onPress={handleNextEp}
-                          style={({ pressed }) => [styles.centerCtrlBtn, pressed && styles.btnPressed]}
-                          hitSlop={8}
-                        >
-                          <SkipForward size={20} color="#FFFFFF" />
-                        </Pressable>
-                      ) : (
-                        <View style={styles.centerCtrlBtnDisabled}>
-                          <SkipForward size={20} color="rgba(255, 255, 255, 0.2)" />
-                        </View>
-                      )}
                     </View>
 
-                    {/* Bottom Bar: Progress Track & Time Text */}
+                    {/* Bottom Bar: Thanh Tua Mượt mà + Thời gian + Nút chuyển tập + Nút Fullscreen */}
                     <View style={styles.controlsBottomRow}>
-                      <Pressable
+                      <View
                         style={styles.scrubberContainer}
-                        onPress={(e) => {
-                          const { locationX } = e.nativeEvent;
-                          const width = screenWidth - 24;
-                          if (width > 0 && duration > 0) {
-                            const ratio = Math.max(0, Math.min(1, locationX / width));
-                            const target = ratio * duration;
-                            if (player) {
-                              player.currentTime = target;
-                              setCurrentTime(target);
-                            }
-                          }
+                        onLayout={(e) => {
+                          setScrubberWidth(e.nativeEvent.layout.width);
+                        }}
+                        onStartShouldSetResponder={() => true}
+                        onResponderGrant={(e) => {
+                          handleScrubTouch(e.nativeEvent.locationX);
+                        }}
+                        onResponderMove={(e) => {
+                          handleScrubTouch(e.nativeEvent.locationX);
+                        }}
+                        onResponderRelease={() => {
                           resetControlsTimeout();
                         }}
                       >
@@ -933,27 +1029,70 @@ export default function WatchScreen() {
                             style={[
                               styles.scrubberProgress,
                               {
-                                width: `${duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0}%`,
+                                width: `${duration > 0 ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0}%`,
                               },
                             ]}
                           />
                         </View>
-                      </Pressable>
+                        <View
+                          style={[
+                            styles.scrubberThumb,
+                            {
+                              left: `${duration > 0 ? Math.min(98.5, Math.max(0, (currentTime / duration) * 100)) : 0}%`,
+                            },
+                          ]}
+                        />
+                      </View>
 
-                      <View style={styles.timeRow}>
-                        <Text style={styles.timeText}>
-                          {formatTime(currentTime)} / {formatTime(duration)}
-                        </Text>
+                      <View style={styles.bottomInfoRow}>
+                        <View style={styles.timeWrap}>
+                          <Text style={styles.timeCurrentText}>{formatTime(currentTime)}</Text>
+                          <Text style={styles.timeDivider}>/</Text>
+                          <Text style={styles.timeDurationText}>{formatTime(duration)}</Text>
+                        </View>
 
-                        {nextEp ? (
+                        <View style={styles.bottomActionsRight}>
+                          {prevEp ? (
+                            <Pressable
+                              onPress={handlePrevEp}
+                              style={({ pressed }) => [styles.quickEpBtn, pressed && styles.btnPressed]}
+                              hitSlop={6}
+                              accessibilityLabel="Tập trước"
+                            >
+                              <SkipBack size={13} color="#FFFFFF" strokeWidth={2.2} />
+                              <Text style={styles.quickEpText}>Tập trước</Text>
+                            </Pressable>
+                          ) : null}
+
+                          {nextEp ? (
+                            <Pressable
+                              onPress={handleNextEp}
+                              style={({ pressed }) => [
+                                styles.quickEpBtn,
+                                styles.quickEpNextBtn,
+                                pressed && styles.btnPressed,
+                              ]}
+                              hitSlop={6}
+                              accessibilityLabel="Tập tiếp theo"
+                            >
+                              <Text style={styles.quickEpNextText}>Tập tiếp theo</Text>
+                              <SkipForward size={13} color="#20D66B" strokeWidth={2.2} />
+                            </Pressable>
+                          ) : null}
+
                           <Pressable
-                            onPress={handleNextEp}
-                            style={({ pressed }) => [styles.nextEpQuickBtn, pressed && styles.btnPressed]}
-                            hitSlop={6}
+                            onPress={handleToggleFullscreen}
+                            style={({ pressed }) => [styles.bottomFsBtn, pressed && styles.btnPressed]}
+                            hitSlop={8}
+                            accessibilityLabel={activeFullscreen ? "Thoát toàn màn hình" : "Toàn màn hình"}
                           >
-                            <Text style={styles.nextEpQuickText}>Tập tiếp theo &rarr;</Text>
+                            {activeFullscreen ? (
+                              <Minimize2 size={18} color="#20D66B" strokeWidth={2.4} />
+                            ) : (
+                              <Maximize2 size={18} color="#FFFFFF" strokeWidth={2.2} />
+                            )}
                           </Pressable>
-                        ) : null}
+                        </View>
                       </View>
                     </View>
                   </View>
@@ -971,6 +1110,17 @@ export default function WatchScreen() {
               {/* Luxury Error Overlay khi video lỗi hoặc đang đồng bộ */}
               {playbackError && (
                 <View style={styles.errorOverlay}>
+                  {activeFullscreen ? (
+                    <Pressable
+                      onPress={handleExitFullscreen}
+                      style={styles.errorExitFsBtn}
+                      hitSlop={10}
+                    >
+                      <ChevronLeft size={20} color="#FFFFFF" />
+                      <Text style={styles.exitFsText}>Thu nhỏ</Text>
+                    </Pressable>
+                  ) : null}
+
                   <View style={styles.errorIconWrap}>
                     <AlertCircle size={26} color="#EF4444" strokeWidth={2.2} />
                   </View>
@@ -1036,8 +1186,9 @@ export default function WatchScreen() {
         </View>
       </View>
 
-      {/* Episode Controls & Metadata */}
-      <ScrollView contentContainerStyle={styles.metaScroll} bounces={false}>
+      {/* Episode Controls & Metadata (Chỉ hiện khi không ở toàn màn hình) */}
+      {!activeFullscreen && (
+        <ScrollView contentContainerStyle={styles.metaScroll} bounces={false}>
         {/* Title, Badges & Metadata */}
         <View style={styles.headerCard}>
           <View style={styles.badgeRow}>
@@ -1250,6 +1401,7 @@ export default function WatchScreen() {
           </View>
         ) : null}
       </ScrollView>
+      )}
     </View>
   );
 }
@@ -1258,6 +1410,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#050807",
+  },
+  fullscreenContainer: {
+    flex: 1,
+    backgroundColor: "#000000",
   },
   centerContainer: {
     flex: 1,
@@ -1374,12 +1530,24 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 6,
   },
+  fullscreenPlayerFrame: {
+    flex: 1,
+    backgroundColor: "#000000",
+    width: "100%",
+    height: "100%",
+  },
   playerSurface: {
     backgroundColor: "#000000",
     overflow: "hidden",
     position: "relative",
     borderBottomWidth: 1,
     borderBottomColor: "rgba(32, 214, 107, 0.18)",
+  },
+  playerFullscreenSurface: {
+    flex: 1,
+    backgroundColor: "#000000",
+    position: "relative",
+    overflow: "hidden",
   },
   video: {
     width: "100%",
@@ -1400,10 +1568,10 @@ const styles = StyleSheet.create({
   },
   controlsOverlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.45)",
     justifyContent: "space-between",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     zIndex: 20,
   },
   controlsTopRow: {
@@ -1413,16 +1581,38 @@ const styles = StyleSheet.create({
   },
   controlsTopLeft: {
     flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
     paddingRight: 10,
+  },
+  exitFsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingVertical: 5,
+    paddingHorizontal: 9,
+    borderRadius: 14,
+    backgroundColor: "rgba(255, 255, 255, 0.16)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.22)",
+    marginRight: 10,
+  },
+  exitFsText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  controlsTitleTextWrap: {
+    flex: 1,
   },
   controlsTitle: {
     color: "#FFFFFF",
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: "800",
     letterSpacing: -0.2,
   },
   controlsSubTitle: {
-    color: "rgba(255, 255, 255, 0.65)",
+    color: "#20D66B",
     fontSize: 11,
     fontWeight: "600",
     marginTop: 1,
@@ -1433,12 +1623,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   ctrlSpeedBtn: {
-    paddingHorizontal: 7,
+    paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    backgroundColor: "rgba(255, 255, 255, 0.16)",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: "rgba(255, 255, 255, 0.22)",
   },
   ctrlSpeedText: {
     color: "#FFFFFF",
@@ -1446,12 +1636,12 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   ctrlIconBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(255, 255, 255, 0.16)",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: "rgba(255, 255, 255, 0.22)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1459,78 +1649,162 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 18,
+    gap: 34,
   },
-  centerCtrlBtn: {
+  controlsCenterRowFs: {
+    gap: 56,
+  },
+  centerSeekBtn: {
     alignItems: "center",
     justifyContent: "center",
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(255, 255, 255, 0.14)",
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(0, 0, 0, 0.55)",
+    borderWidth: 1.2,
+    borderColor: "rgba(255, 255, 255, 0.22)",
   },
-  centerCtrlBtnDisabled: {
-    alignItems: "center",
-    justifyContent: "center",
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+  centerSeekBtnFs: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
   },
-  centerCtrlLabel: {
-    color: "rgba(255, 255, 255, 0.8)",
-    fontSize: 9,
-    fontWeight: "700",
+  centerSeekLabel: {
+    color: "#FFFFFF",
+    fontSize: 9.5,
+    fontWeight: "800",
     marginTop: -2,
+    letterSpacing: -0.2,
   },
   primaryPlayBtn: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: "rgba(255, 255, 255, 0.25)",
-    borderWidth: 1.5,
-    borderColor: "rgba(255, 255, 255, 0.6)",
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    backgroundColor: "#20D66B",
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#20D66B",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  primaryPlayBtnFs: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+  },
+  playBtnPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.93 }],
   },
   controlsBottomRow: {
-    gap: 6,
+    gap: 4,
   },
   scrubberContainer: {
-    height: 20,
+    height: 28,
     justifyContent: "center",
+    position: "relative",
   },
   scrubberTrack: {
-    height: 4,
-    borderRadius: 2,
+    height: 5,
+    borderRadius: 2.5,
     backgroundColor: "rgba(255, 255, 255, 0.25)",
     overflow: "hidden",
   },
   scrubberProgress: {
     height: "100%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 2,
+    backgroundColor: "#20D66B",
+    borderRadius: 2.5,
   },
-  timeRow: {
+  scrubberThumb: {
+    position: "absolute",
+    top: 7,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 2,
+    borderColor: "#20D66B",
+    marginLeft: -7,
+  },
+  bottomInfoRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    marginTop: 2,
   },
-  timeText: {
+  timeWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  timeCurrentText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
+    fontVariant: ["tabular-nums"],
+  },
+  timeDivider: {
+    color: "rgba(255, 255, 255, 0.4)",
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  timeDurationText: {
+    color: "rgba(255, 255, 255, 0.65)",
+    fontSize: 12,
+    fontWeight: "600",
+    fontVariant: ["tabular-nums"],
+  },
+  bottomActionsRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  quickEpBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+  },
+  quickEpText: {
     color: "rgba(255, 255, 255, 0.85)",
     fontSize: 11,
     fontWeight: "600",
   },
-  nextEpQuickBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    backgroundColor: "rgba(255, 255, 255, 0.12)",
+  quickEpNextBtn: {
+    backgroundColor: "rgba(32, 214, 107, 0.16)",
+    borderWidth: 1,
+    borderColor: "rgba(32, 214, 107, 0.35)",
   },
-  nextEpQuickText: {
-    color: "#FFFFFF",
-    fontSize: 10.5,
+  quickEpNextText: {
+    color: "#20D66B",
+    fontSize: 11,
     fontWeight: "700",
+  },
+  bottomFsBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  errorExitFsBtn: {
+    position: "absolute",
+    top: 16,
+    left: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    zIndex: 15,
   },
   errorOverlay: {
     ...StyleSheet.absoluteFill,
