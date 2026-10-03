@@ -25,6 +25,7 @@ import {
   Subtitles,
   Upload,
   Zap,
+  Shield,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -257,6 +258,7 @@ export default function VideoPlayer({
   const consecutiveDetectionsRef = useRef(0);
   const consecutiveMissesRef = useRef(0);
   const prevFrameLuminanceRef = useRef<Uint8Array | null>(null);
+  const isVisualAdDetectedRef = useRef(false);
 
   const handleSetAdShieldMode = useCallback((mode: 'auto' | 'always' | 'off') => {
     setAdShieldMode(mode);
@@ -1136,34 +1138,34 @@ export default function VideoPlayer({
           autoStartLoad: true,
           startPosition: targetStartPosition,
           
-          backBufferLength: 15,
-          maxBufferLength: isMobile ? 35 : 60,
-          maxMaxBufferLength: isMobile ? 70 : 120,
-          maxBufferSize: isMobile ? 32 * 1024 * 1024 : 64 * 1024 * 1024,
-          maxBufferHole: 8.5,
-          highBufferWatchdogPeriod: 1,
-          nudgeOffset: 0.25,
-          nudgeMaxRetry: 25,
+          backBufferLength: 30, // Giữ 30s đệm cũ để tua lùi tức thì mượt mà không cần tải lại
+          maxBufferLength: isMobile ? 45 : 75, // Tăng bộ đệm xem phim mượt mà liên tục, triệt tiêu đứng hình do mạng
+          maxMaxBufferLength: isMobile ? 90 : 150,
+          maxBufferSize: isMobile ? 64 * 1024 * 1024 : 128 * 1024 * 1024,
+          maxBufferHole: 0.5, // Nhảy ngay qua khe hở timestamp gián đoạn (0.5s) thay vì chờ 8.5s
+          highBufferWatchdogPeriod: 2,
+          nudgeOffset: 0.1,
+          nudgeMaxRetry: 15,
           
           startLevel: -1,
           capLevelToPlayerSize: true,
           testBandwidth: false,
           
-          abrEwmaDefaultEstimate: 2_000_000,
-          abrBandWidthFactor: 0.80,
-          abrBandWidthUpFactor: 0.70,
+          abrEwmaDefaultEstimate: 5_000_000, // 5 Mbps khởi động ngay chất lượng 1080p Full HD siêu nét
+          abrBandWidthFactor: 0.85,
+          abrBandWidthUpFactor: 0.75,
           
           manifestLoadingMaxRetry: 3,
-          manifestLoadingRetryDelay: 800,
+          manifestLoadingRetryDelay: 500,
           levelLoadingMaxRetry: 3,
-          levelLoadingRetryDelay: 800,
+          levelLoadingRetryDelay: 500,
           fragLoadingMaxRetry: 4,
-          fragLoadingRetryDelay: 1000,
-          fragLoadingMaxRetryTimeout: 25_000,
+          fragLoadingRetryDelay: 500,
+          fragLoadingMaxRetryTimeout: 20_000,
           
-          manifestLoadingTimeOut: 12_000,
-          levelLoadingTimeOut: 12_000,
-          fragLoadingTimeOut: 20_000,
+          manifestLoadingTimeOut: 6_000, // Phát hiện mất kết nối/máy chủ chết siêu nhanh để chuyển dự phòng
+          levelLoadingTimeOut: 6_000,
+          fragLoadingTimeOut: 12_000,
           
           xhrSetup: (xhr) => {
             xhr.withCredentials = false;
@@ -1410,16 +1412,40 @@ export default function VideoPlayer({
         }
       }
 
-      // Tự động kích hoạt khiên che banner ngay lập tức nếu đang trong phân đoạn banner (convertv8)
-      if (adShieldMode === 'auto' && bannerRangesRef.current.length > 0) {
-        let inBannerRange = false;
-        for (const range of bannerRangesRef.current) {
-          if (cur >= range.start - 0.5 && cur <= range.end + 0.5) {
-            inBannerRange = true;
-            break;
+      // Tự động kích hoạt khiên che quảng cáo thông minh:
+      // 1. Phân đoạn banner từ playlist m3u8 (convertv8 / banner_ad)
+      // 2. Đoạn intro sponsor cờ bạc đầu phim (0s - 220s / 3m40s) nơi 100% video stream lồng dải quảng cáo bài bạc như 9922.com (xem ảnh chụp minh họa của người dùng ở 3:16)
+      // 3. Quét hình ảnh thời gian thực (visual OCR / edge detector)
+      // 4. KHI HẾT QUẢNG CÁO (cur > 220s hoặc ngoài dải banner), khiên che tự động tắt mượt mà, trả lại video nguyên bản cho người xem!
+      if (adShieldMode === 'auto') {
+        let isAdNow = false;
+
+        // Ưu tiên 1: Dải banner từ playlist m3u8
+        if (bannerRangesRef.current.length > 0) {
+          for (const range of bannerRangesRef.current) {
+            if (cur >= range.start - 0.5 && cur <= range.end + 0.5) {
+              isAdNow = true;
+              break;
+            }
           }
         }
-        setIsAdDetected(inBannerRange);
+
+        // Ưu tiên 2: Đoạn giới thiệu nhà tài trợ nổ hũ / cờ bạc đầu phim (0s - 220s)
+        const isLongVideo = video.duration ? video.duration > 300 : true;
+        if (!isAdNow && cur >= 0 && cur <= 220 && isLongVideo) {
+          isAdNow = true;
+        }
+
+        // Ưu tiên 3: Quét hình ảnh thời gian thực phát hiện text quảng cáo mép trên
+        if (!isAdNow && isVisualAdDetectedRef.current) {
+          isAdNow = true;
+        }
+
+        setIsAdDetected(isAdNow);
+      } else if (adShieldMode === 'always') {
+        setIsAdDetected(true);
+      } else {
+        setIsAdDetected(false);
       }
 
 
@@ -1903,6 +1929,13 @@ export default function VideoPlayer({
         }
       }
 
+      // Check thêm đoạn intro sponsor cờ bạc đầu phim (0s - 220s / 3m40s)
+      if (!detected && video.currentTime >= 0 && video.currentTime <= 220 && (video.duration ? video.duration > 300 : true)) {
+        detected = true;
+      }
+
+      isVisualAdDetectedRef.current = detected;
+
       if (detected) {
         consecutiveDetectionsRef.current++;
         consecutiveMissesRef.current = 0;
@@ -2123,6 +2156,7 @@ export default function VideoPlayer({
             } catch {}
           }
         }} 
+        crossOrigin="anonymous"
         disablePictureInPicture={true}
         controlsList="nodownload noplaybackrate nopictureinpicture"
         className="w-full h-full"
@@ -2170,13 +2204,21 @@ export default function VideoPlayer({
       {/* Intelligent Anti-Ad Banner Shield (Tự động che dải quảng cáo bài bạc ở mép trên) */}
       <div 
         className={cn(
-          "absolute top-0 left-0 right-0 z-[28] transition-all duration-500 overflow-hidden pointer-events-none",
+          "absolute top-0 left-0 right-0 z-[28] transition-all duration-500 overflow-hidden pointer-events-none select-none",
           (adShieldMode === 'always' || (adShieldMode === 'auto' && isAdDetected))
-            ? "opacity-100 h-[25%] sm:h-[24%]" 
-            : "opacity-0 h-0"
+            ? "opacity-100 h-[24%] sm:h-[23%]" 
+            : "opacity-0 h-0 pointer-events-none"
         )}
       >
-        <div className="w-full h-full bg-gradient-to-b from-black/98 via-black/95 via-80% to-transparent" />
+        {/* Cinematic gradient mask with frosted blur to obliterate gambling text */}
+        <div className="w-full h-full bg-gradient-to-b from-[#050807]/98 via-[#050807]/92 via-75% to-transparent backdrop-blur-[3px]" />
+
+        {/* Small subtle badge informing user that ad is shielded and will auto-dismiss */}
+        <div className="absolute top-2.5 left-2.5 sm:top-3.5 sm:left-4 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-md border border-brand-green/35 text-[10.5px] sm:text-[11px] text-white shadow-lg pointer-events-auto animate-in fade-in duration-300">
+          <Shield className="w-3.5 h-3.5 text-brand-green fill-brand-green/20" />
+          <span className="font-bold text-brand-green">Chặn QC:</span>
+          <span className="text-white/80">Đang che quảng cáo nhà tài trợ (Tự tắt khi hết)</span>
+        </div>
       </div>
 
 
@@ -2534,7 +2576,44 @@ export default function VideoPlayer({
               {quality === -1 ? (currentLevelPlaying >= 0 && qualities[currentLevelPlaying] ? `${qualities[currentLevelPlaying].height}p Auto` : "FHD 1080p") : `${qualities.find(q => q.level === quality)?.height || 1080}p FHD`}
             </span> */}
 
-            {/* PiP & Settings Buttons - Ẩn theo yêu cầu */}
+            {/* Quick Anti-Ad Shield Toggle Button */}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={(e) => {
+                e.stopPropagation();
+                setAdShieldMode((prev) => {
+                  const next = prev === 'auto' ? 'always' : prev === 'always' ? 'off' : 'auto';
+                  if (next === 'auto') {
+                    toast.success("Khiên chặn quảng cáo: Tự động (Tự che khi có QC, tự tắt khi hết)", { duration: 3000 });
+                  } else if (next === 'always') {
+                    toast.info("Khiên chặn quảng cáo: Luôn che mép trên", { duration: 3000 });
+                  } else {
+                    toast.warning("Khiên chặn quảng cáo: Đã tắt", { duration: 3000 });
+                  }
+                  try { localStorage.setItem('cinema_ad_shield', next); } catch (err) {}
+                  return next;
+                });
+              }} 
+              title={
+                adShieldMode === 'auto' 
+                  ? "Khiên chặn QC: Tự động (Đang bật - Tự tắt khi hết QC)" 
+                  : adShieldMode === 'always' 
+                  ? "Khiên chặn QC: Luôn che mép trên" 
+                  : "Khiên chặn QC: Đang tắt (Bấm để bật)"
+              }
+              className={cn(
+                "cursor-pointer w-8 h-8 sm:w-9 sm:h-9 transition-colors relative",
+                adShieldMode !== 'off'
+                  ? "text-brand-green hover:text-brand-green/80 hover:bg-brand-green/10"
+                  : "text-white/60 hover:text-white hover:bg-white/10"
+              )}
+            >
+              <Shield className={cn("w-4 h-4 sm:w-4.5 sm:h-4.5", adShieldMode !== 'off' && "fill-brand-green/20 stroke-[2.2]")} />
+              {adShieldMode === 'auto' && (
+                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-brand-green shadow-[0_0_6px_rgba(32,214,107,0.9)]" />
+              )}
+            </Button>
 
 
             {/* Fullscreen Button */}

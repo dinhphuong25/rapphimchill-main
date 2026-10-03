@@ -279,6 +279,37 @@ export default function MobileExploreSheet({
           className="relative z-10 flex-1 overflow-y-auto pr-1 modal-scroll custom-scrollbar overscroll-contain -webkit-overflow-scrolling-touch p-3 sm:p-4 pb-10 pb-[max(2.5rem,calc(env(safe-area-inset-bottom)+1.5rem))]"
         >
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+            {/* Featured Download App Card at TOP for instant visibility */}
+            <Link
+              href="/tai-app"
+              onClick={onClose}
+              className="col-span-2 relative overflow-hidden rounded-2xl border border-brand-green/50 p-3 h-[68px] sm:h-[72px] flex items-center justify-between group active:scale-[0.98] transition-all duration-200 cursor-pointer shadow-[0_4px_25px_rgba(32,214,107,0.28)] bg-gradient-to-r from-[#082317] via-[#0d2d1f] to-[#123827]"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-green/10 via-transparent to-brand-green/5 pointer-events-none" />
+              <div className="flex items-center gap-3 z-10 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-brand-green/20 border border-brand-green/40 flex items-center justify-center text-brand-green shrink-0 shadow-[0_0_12px_rgba(32,214,107,0.4)]">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <div className="min-w-0 text-left">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-extrabold text-[13px] sm:text-[14px] text-white group-hover:text-brand-green transition-colors truncate">
+                      Tải App Hi Phim Mobile
+                    </span>
+                    <span className="text-[8.5px] font-black px-1.5 py-0.5 rounded-full bg-brand-green text-black uppercase tracking-tighter shrink-0 shadow-sm">
+                      MỚI
+                    </span>
+                  </div>
+                  <p className="text-[10.5px] sm:text-[11px] text-white/70 truncate mt-0.5">
+                    Bản cài iOS (.IPA) & Android (.APK)
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 text-brand-green shrink-0 z-10">
+                <span className="text-[11px] font-bold hidden xs:inline-block">Tải ngay</span>
+                <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </Link>
+
             {CARDS.map((card) => {
               const Icon = card.icon;
 
@@ -362,33 +393,6 @@ export default function MobileExploreSheet({
                 </Link>
               );
             })}
-
-            {/* Download App Card spanning 2 columns */}
-            <Link
-              href="/tai-app"
-              onClick={onClose}
-              className="col-span-2 relative overflow-hidden rounded-2xl border border-brand-green/40 p-3 h-[68px] sm:h-[72px] flex items-center justify-between group active:scale-[0.97] transition-all duration-200 cursor-pointer shadow-[0_4px_25px_rgba(32,214,107,0.25)] bg-gradient-to-r from-[#082317] via-[#0d2d1f] to-[#123827]"
-            >
-              <div className="flex items-center gap-3 z-10 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-brand-green/20 border border-brand-green/40 flex items-center justify-center text-brand-green shrink-0 shadow-[0_0_12px_rgba(32,214,107,0.4)]">
-                  <Smartphone className="w-5 h-5" />
-                </div>
-                <div className="min-w-0 text-left">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-extrabold text-[13px] text-white group-hover:text-brand-green transition-colors truncate">
-                      Tải App Hi Phim Mobile
-                    </span>
-                    <span className="text-[8.5px] font-black px-1.5 py-0.2 rounded-full bg-brand-green text-black uppercase tracking-tighter shrink-0">
-                      MỚI
-                    </span>
-                  </div>
-                  <p className="text-[10.5px] text-white/60 truncate mt-0.5">
-                    Bản cài iOS (.IPA) & Android (.APK)
-                  </p>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-brand-green shrink-0 group-hover:translate-x-0.5 transition-transform" />
-            </Link>
           </div>
         </div>
 

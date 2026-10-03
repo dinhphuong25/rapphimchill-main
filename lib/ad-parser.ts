@@ -21,8 +21,15 @@ const adRangesCache = new Map<string, ParsedAdData>();
 export function isBannerSegment(url: any): boolean {
   if (!url || typeof url !== 'string') return false;
   const lower = url.toLowerCase();
-  if (lower.includes('convertv8')) return true;
-  if (lower.includes('banner_ad')) return true;
+  if (
+    lower.includes('convertv8') ||
+    lower.includes('banner_ad') ||
+    lower.includes('sponsor') ||
+    lower.includes('watermark') ||
+    lower.includes('qc_banner')
+  ) {
+    return true;
+  }
   return false;
 }
 
@@ -35,7 +42,7 @@ export function isCommercialSegment(url: any, duration?: any): boolean {
   const lower = url.toLowerCase();
 
   // Re-encoded film segments with banners are handled by isBannerSegment, do not skip film
-  if (lower.includes('convertv8')) return false;
+  if (lower.includes('convertv8') || lower.includes('qc_banner')) return false;
 
   const numDur = typeof duration === 'number' && !isNaN(duration) ? duration : undefined;
 
@@ -43,10 +50,37 @@ export function isCommercialSegment(url: any, duration?: any): boolean {
   if (lower.includes('/v8/') && (lower.includes('segment_') || (numDur !== undefined && numDur < 6))) {
     return true;
   }
-  if (lower.includes('advert') || lower.includes('/ad/') || lower.includes('quangcao') || lower.includes('commercial')) {
+  if (
+    lower.includes('advert') ||
+    lower.includes('/ad/') ||
+    lower.includes('quangcao') ||
+    lower.includes('commercial') ||
+    lower.includes('promo') ||
+    lower.includes('sponsor_clip')
+  ) {
     return true;
   }
-  if (lower.includes('9922') || lower.includes('okvip') || lower.includes('shbet') || lower.includes('789bet')) {
+  if (
+    lower.includes('9922') ||
+    lower.includes('okvip') ||
+    lower.includes('shbet') ||
+    lower.includes('789bet') ||
+    lower.includes('f8bet') ||
+    lower.includes('jun88') ||
+    lower.includes('hi88') ||
+    lower.includes('kubet') ||
+    lower.includes('thabet') ||
+    lower.includes('w88') ||
+    lower.includes('fun88') ||
+    lower.includes('m88') ||
+    lower.includes('bk8') ||
+    lower.includes('fb88') ||
+    lower.includes('sin88') ||
+    lower.includes('may88') ||
+    lower.includes('yo88') ||
+    lower.includes('sunwin') ||
+    lower.includes('go88')
+  ) {
     return true;
   }
 
