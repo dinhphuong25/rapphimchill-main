@@ -23,6 +23,13 @@ import {
   Heart,
   Share2,
   Play,
+  Pause,
+  RotateCcw,
+  RotateCw,
+  SkipBack,
+  SkipForward,
+  Maximize2,
+  PictureInPicture,
   Layers,
   FileText,
   Zap,
@@ -81,6 +88,17 @@ export default function WatchScreen() {
   const [playbackError, setPlaybackError] = useState<PlaybackErrorInfo | null>(null);
   const [isVerifyingLink, setIsVerifyingLink] = useState(false);
   const [resumeNotice, setResumeNotice] = useState<string | null>(null);
+
+  // Video player custom controls states
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
+  const [showControls, setShowControls] = useState(true);
+
+  const videoViewRef = useRef<any>(null);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const pendingResumeSecondsRef = useRef<number>(0);
   const hasResumedRef = useRef<boolean>(false);
@@ -278,6 +296,150 @@ export default function WatchScreen() {
       sub.remove();
     };
   }, [player, episodeList, currentEpisode?.slug]);
+
+  // Track playback time, buffering and playing state
+  useEffect(() => {
+    if (!player) return;
+
+    const playingSub = player.addListener("playingChange", ({ isPlaying }) => {
+      setIsPlaying(isPlaying);
+      if (isPlaying) {
+        resetControlsTimeout();
+      }
+    });
+
+    const statusSub = player.addListener("statusChange", ({ status }) => {
+      setIsBuffering(status === "loading");
+    });
+
+    const timeSub = player.addListener("timeUpdate", ({ currentTime }) => {
+      setCurrentTime(currentTime);
+      if (player.duration) {
+        setDuration(player.duration);
+      }
+    });
+
+    const loadSub = player.addListener("sourceLoad", ({ duration }) => {
+      if (duration) {
+        setDuration(duration);
+      }
+    });
+
+    return () => {
+      playingSub.remove();
+      statusSub.remove();
+      timeSub.remove();
+      loadSub.remove();
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    };
+  }, [player]);
+
+  const resetControlsTimeout = () => {
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+    }
+    controlsTimeoutRef.current = setTimeout(() => {
+      if (player?.playing) {
+        setShowControls(false);
+      }
+    }, 3500);
+  };
+
+  const handleToggleControls = () => {
+    setShowControls((prev) => {
+      const next = !prev;
+      if (next) resetControlsTimeout();
+      return next;
+    });
+  };
+
+  const togglePlayPause = () => {
+    haptic.light();
+    if (!player) return;
+    if (isPlaying) {
+      player.pause();
+      setShowControls(true);
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    } else {
+      player.play();
+      resetControlsTimeout();
+    }
+  };
+
+  const handleSeek = (seconds: number) => {
+    haptic.selection();
+    if (!player) return;
+    try {
+      if (typeof (player as any).seekBy === "function") {
+        (player as any).seekBy(seconds);
+      } else {
+        const cur = player.currentTime || 0;
+        player.currentTime = Math.max(0, cur + seconds);
+      }
+    } catch {}
+    resetControlsTimeout();
+  };
+
+  const currEpIdx = episodeList.findIndex((e) => e.slug === currentEpisode?.slug);
+  const prevEp = currEpIdx > 0 ? episodeList[currEpIdx - 1] : null;
+  const nextEp = currEpIdx >= 0 && currEpIdx < episodeList.length - 1 ? episodeList[currEpIdx + 1] : null;
+
+  const handlePrevEp = () => {
+    if (prevEp) {
+      handleSelectEpisode(prevEp.slug);
+    }
+  };
+
+  const handleNextEp = () => {
+    if (nextEp) {
+      handleSelectEpisode(nextEp.slug);
+    }
+  };
+
+  const SPEEDS = [1.0, 1.25, 1.5, 2.0];
+  const toggleSpeed = () => {
+    haptic.selection();
+    if (!player) return;
+    const nextIdx = (SPEEDS.indexOf(playbackSpeed) + 1) % SPEEDS.length;
+    const nextSpeed = SPEEDS[nextIdx];
+    setPlaybackSpeed(nextSpeed);
+    try {
+      player.playbackRate = nextSpeed;
+    } catch {}
+    resetControlsTimeout();
+  };
+
+  const handleFullscreen = async () => {
+    haptic.medium();
+    try {
+      await videoViewRef.current?.enterFullscreen();
+    } catch (e) {
+      console.warn("enterFullscreen error:", e);
+    }
+  };
+
+  const handlePiP = async () => {
+    haptic.medium();
+    try {
+      await videoViewRef.current?.startPictureInPicture();
+    } catch (e) {
+      console.warn("PiP error:", e);
+    }
+  };
+
+  const formatTime = (secs: number) => {
+    if (isNaN(secs) || secs <= 0) return "00:00";
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = Math.floor(secs % 60);
+    const mStr = m < 10 ? `0${m}` : `${m}`;
+    const sStr = s < 10 ? `0${s}` : `${s}`;
+    if (h > 0) {
+      const hStr = h < 10 ? `0${h}` : `${h}`;
+      return `${hStr}:${mStr}:${sStr}`;
+    }
+    return `${mStr}:${sStr}`;
+  };
 
   // Periodic background auto-save of playback progress (Heartbeat every 5s)
   useEffect(() => {
@@ -619,19 +781,189 @@ export default function WatchScreen() {
               </View>
             </View>
           ) : (
-            <>
+            <View style={StyleSheet.absoluteFill}>
               <VideoView
+                ref={videoViewRef}
                 style={styles.video}
                 player={player}
                 allowsPictureInPicture
                 startsPictureInPictureAutomatically
-                nativeControls={!playbackError}
+                nativeControls={false}
+                contentFit="contain"
               />
+
+              {/* Tap to Toggle Controls Surface */}
+              <Pressable
+                onPress={handleToggleControls}
+                style={StyleSheet.absoluteFill}
+              >
+                {/* Buffering Indicator */}
+                {isBuffering && (
+                  <View style={styles.bufferingCenter}>
+                    <ActivityIndicator size="large" color="#FFFFFF" />
+                    <Text style={styles.bufferingText}>Đang tải video...</Text>
+                  </View>
+                )}
+
+                {/* Custom Cinema Video Player Controls */}
+                {showControls && !playbackError && (
+                  <View style={styles.controlsOverlay}>
+                    {/* Top Row: Info + Speed + PiP + Fullscreen */}
+                    <View style={styles.controlsTopRow}>
+                      <View style={styles.controlsTopLeft}>
+                        <Text style={styles.controlsTitle} numberOfLines={1}>
+                          {movie.name}
+                        </Text>
+                        {formattedEpName ? (
+                          <Text style={styles.controlsSubTitle} numberOfLines={1}>
+                            {formattedEpName}
+                          </Text>
+                        ) : null}
+                      </View>
+
+                      <View style={styles.controlsTopRight}>
+                        <Pressable
+                          onPress={toggleSpeed}
+                          style={({ pressed }) => [styles.ctrlSpeedBtn, pressed && styles.btnPressed]}
+                          hitSlop={6}
+                        >
+                          <Text style={styles.ctrlSpeedText}>{playbackSpeed}x</Text>
+                        </Pressable>
+
+                        <Pressable
+                          onPress={handlePiP}
+                          style={({ pressed }) => [styles.ctrlIconBtn, pressed && styles.btnPressed]}
+                          hitSlop={6}
+                        >
+                          <PictureInPicture size={16} color="#FFFFFF" strokeWidth={2.2} />
+                        </Pressable>
+
+                        <Pressable
+                          onPress={handleFullscreen}
+                          style={({ pressed }) => [styles.ctrlIconBtn, pressed && styles.btnPressed]}
+                          hitSlop={6}
+                        >
+                          <Maximize2 size={16} color="#FFFFFF" strokeWidth={2.2} />
+                        </Pressable>
+                      </View>
+                    </View>
+
+                    {/* Center Controls: Prev Ep | -10s | Play/Pause | +10s | Next Ep */}
+                    <View style={styles.controlsCenterRow}>
+                      {prevEp ? (
+                        <Pressable
+                          onPress={handlePrevEp}
+                          style={({ pressed }) => [styles.centerCtrlBtn, pressed && styles.btnPressed]}
+                          hitSlop={8}
+                        >
+                          <SkipBack size={20} color="#FFFFFF" />
+                        </Pressable>
+                      ) : (
+                        <View style={styles.centerCtrlBtnDisabled}>
+                          <SkipBack size={20} color="rgba(255, 255, 255, 0.2)" />
+                        </View>
+                      )}
+
+                      <Pressable
+                        onPress={() => handleSeek(-10)}
+                        style={({ pressed }) => [styles.centerCtrlBtn, pressed && styles.btnPressed]}
+                        hitSlop={8}
+                      >
+                        <RotateCcw size={20} color="#FFFFFF" strokeWidth={2.2} />
+                        <Text style={styles.centerCtrlLabel}>10s</Text>
+                      </Pressable>
+
+                      {/* Primary Play / Pause Circle */}
+                      <Pressable
+                        onPress={togglePlayPause}
+                        style={({ pressed }) => [styles.primaryPlayBtn, pressed && styles.btnPressed]}
+                        hitSlop={10}
+                      >
+                        {isPlaying ? (
+                          <Pause size={26} color="#FFFFFF" fill="#FFFFFF" />
+                        ) : (
+                          <Play size={26} color="#FFFFFF" fill="#FFFFFF" style={{ marginLeft: 2 }} />
+                        )}
+                      </Pressable>
+
+                      <Pressable
+                        onPress={() => handleSeek(10)}
+                        style={({ pressed }) => [styles.centerCtrlBtn, pressed && styles.btnPressed]}
+                        hitSlop={8}
+                      >
+                        <RotateCw size={20} color="#FFFFFF" strokeWidth={2.2} />
+                        <Text style={styles.centerCtrlLabel}>10s</Text>
+                      </Pressable>
+
+                      {nextEp ? (
+                        <Pressable
+                          onPress={handleNextEp}
+                          style={({ pressed }) => [styles.centerCtrlBtn, pressed && styles.btnPressed]}
+                          hitSlop={8}
+                        >
+                          <SkipForward size={20} color="#FFFFFF" />
+                        </Pressable>
+                      ) : (
+                        <View style={styles.centerCtrlBtnDisabled}>
+                          <SkipForward size={20} color="rgba(255, 255, 255, 0.2)" />
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Bottom Bar: Progress Track & Time Text */}
+                    <View style={styles.controlsBottomRow}>
+                      <Pressable
+                        style={styles.scrubberContainer}
+                        onPress={(e) => {
+                          const { locationX } = e.nativeEvent;
+                          const width = screenWidth - 24;
+                          if (width > 0 && duration > 0) {
+                            const ratio = Math.max(0, Math.min(1, locationX / width));
+                            const target = ratio * duration;
+                            if (player) {
+                              player.currentTime = target;
+                              setCurrentTime(target);
+                            }
+                          }
+                          resetControlsTimeout();
+                        }}
+                      >
+                        <View style={styles.scrubberTrack}>
+                          <View
+                            style={[
+                              styles.scrubberProgress,
+                              {
+                                width: `${duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0}%`,
+                              },
+                            ]}
+                          />
+                        </View>
+                      </Pressable>
+
+                      <View style={styles.timeRow}>
+                        <Text style={styles.timeText}>
+                          {formatTime(currentTime)} / {formatTime(duration)}
+                        </Text>
+
+                        {nextEp ? (
+                          <Pressable
+                            onPress={handleNextEp}
+                            style={({ pressed }) => [styles.nextEpQuickBtn, pressed && styles.btnPressed]}
+                            hitSlop={6}
+                          >
+                            <Text style={styles.nextEpQuickText}>Tập tiếp theo &rarr;</Text>
+                          </Pressable>
+                        ) : null}
+                      </View>
+                    </View>
+                  </View>
+                )}
+              </Pressable>
 
               {/* Resume Playback Toast Badge */}
               {resumeNotice ? (
                 <View style={styles.resumeNoticeBadge}>
-                  <Clock size={12} color="#20D66B" strokeWidth={2.5} />
+                  <Clock size={12} color="#FFFFFF" strokeWidth={2.5} />
                   <Text style={styles.resumeNoticeText}>{resumeNotice}</Text>
                 </View>
               ) : null}
@@ -692,14 +1024,14 @@ export default function WatchScreen() {
                           pressed && styles.btnPressed,
                         ]}
                       >
-                        <ExternalLink size={12} color="#20D66B" strokeWidth={2.2} />
+                        <ExternalLink size={12} color="#FFFFFF" strokeWidth={2.2} />
                         <Text style={styles.errorBrowserText}>Mở Web Player</Text>
                       </Pressable>
                     ) : null}
                   </View>
                 </View>
               )}
-            </>
+            </View>
           )}
         </View>
       </View>
@@ -710,13 +1042,13 @@ export default function WatchScreen() {
         <View style={styles.headerCard}>
           <View style={styles.badgeRow}>
             {movie.quality ? (
-              <View style={styles.badgeQuality}>
-                <Text style={styles.badgeQualityText}>{movie.quality}</Text>
+              <View style={styles.badgeNeutral}>
+                <Text style={styles.badgeNeutralText}>{movie.quality}</Text>
               </View>
             ) : null}
             {movie.lang ? (
-              <View style={styles.badgeLang}>
-                <Text style={styles.badgeLangText}>{movie.lang}</Text>
+              <View style={styles.badgeNeutral}>
+                <Text style={styles.badgeNeutralText}>{movie.lang}</Text>
               </View>
             ) : null}
             {movie.year ? (
@@ -746,8 +1078,8 @@ export default function WatchScreen() {
         {!isUnreleasedMovie && movie.episodes && movie.episodes.length > 1 && (
           <View style={styles.sectionBlock}>
             <View style={styles.sectionHeaderRow}>
-              <Layers size={14} color="#20D66B" strokeWidth={2.4} />
-              <Text style={styles.sectionHeader}>Nguồn Phát (Server)</Text>
+              <Layers size={14} color="rgba(255, 255, 255, 0.5)" strokeWidth={2.2} />
+              <Text style={styles.sectionHeader}>Nguồn Phát</Text>
             </View>
             <ScrollView
               horizontal
@@ -769,11 +1101,6 @@ export default function WatchScreen() {
                       isActive && styles.serverChipActive,
                     ]}
                   >
-                    <Zap
-                      size={12}
-                      color={isActive ? "#20D66B" : "rgba(255, 255, 255, 0.5)"}
-                      strokeWidth={2.4}
-                    />
                     <Text
                       style={[
                         styles.serverChipText,
@@ -793,20 +1120,20 @@ export default function WatchScreen() {
         <View style={styles.sectionBlock}>
           <View style={styles.epHeaderWithSearch}>
             <View style={styles.sectionHeaderRow}>
-              <Tv size={14} color="#20D66B" strokeWidth={2.4} />
+              <Tv size={14} color="rgba(255, 255, 255, 0.5)" strokeWidth={2.2} />
               <Text style={styles.sectionHeader}>
-                {isUnreleasedMovie ? "Danh Sách Tập Phim" : `Danh Sách Tập (${episodeList.length})`}
+                {isUnreleasedMovie ? "Danh Sách Tập" : `Danh Sách Tập (${episodeList.length})`}
               </Text>
             </View>
 
             {!isUnreleasedMovie && episodeList.length > 12 && (
               <View style={styles.miniSearch}>
-                <Search size={12} color="rgba(255, 255, 255, 0.5)" />
+                <Search size={12} color="rgba(255, 255, 255, 0.4)" />
                 <TextInput
                   value={epSearch}
                   onChangeText={setEpSearch}
                   placeholder="Lọc số tập..."
-                  placeholderTextColor="rgba(255, 255, 255, 0.35)"
+                  placeholderTextColor="rgba(255, 255, 255, 0.3)"
                   style={styles.miniSearchInput}
                 />
               </View>
@@ -816,7 +1143,7 @@ export default function WatchScreen() {
           {/* If unreleased: show helpful notice card */}
           {isUnreleasedMovie ? (
             <View style={styles.unreleasedEpBox}>
-              <Clock size={20} color="#20D66B" strokeWidth={2.2} />
+              <Clock size={18} color="rgba(255, 255, 255, 0.5)" strokeWidth={2} />
               <Text style={styles.unreleasedEpBoxTitle}>Các tập phim đang được cập nhật</Text>
               <Text style={styles.unreleasedEpBoxSub}>
                 Hệ thống sẽ tự động đồng bộ và hiển thị đầy đủ danh sách tập ngay khi bản chiếu chính thức được phát hành.
@@ -826,7 +1153,7 @@ export default function WatchScreen() {
             <View style={styles.singleEpCard}>
               <View style={styles.singleEpLeft}>
                 <View style={styles.playIconCircle}>
-                  <Play size={15} color="#050807" fill="#050807" />
+                  <Play size={14} color="#FFFFFF" fill="#FFFFFF" />
                 </View>
                 <View style={styles.singleEpInfo}>
                   <Text style={styles.singleEpTitle}>
@@ -838,7 +1165,6 @@ export default function WatchScreen() {
                 </View>
               </View>
               <View style={styles.playingBadge}>
-                <View style={styles.playingDot} />
                 <Text style={styles.playingBadgeText}>ĐANG PHÁT</Text>
               </View>
             </View>
@@ -860,11 +1186,6 @@ export default function WatchScreen() {
                       pressed && styles.epItemPressed,
                     ]}
                   >
-                    {isCurrentWithError ? (
-                      <AlertCircle size={10} color="#EF4444" style={{ marginRight: 4 }} />
-                    ) : isActive ? (
-                      <Play size={10} color="#20D66B" fill="#20D66B" style={{ marginRight: 4 }} />
-                    ) : null}
                     <Text
                       style={[
                         styles.epItemText,
@@ -886,7 +1207,7 @@ export default function WatchScreen() {
         {movie.content ? (
           <View style={styles.synopsisCard}>
             <View style={styles.sectionHeaderRow}>
-              <FileText size={14} color="#20D66B" strokeWidth={2.4} />
+              <FileText size={14} color="rgba(255, 255, 255, 0.5)" strokeWidth={2.2} />
               <Text style={styles.sectionHeader}>Tóm Tắt Phim</Text>
             </View>
 
@@ -1064,6 +1385,153 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
+  bufferingCenter: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 15,
+    gap: 8,
+  },
+  bufferingText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  controlsOverlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "space-between",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    zIndex: 20,
+  },
+  controlsTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  controlsTopLeft: {
+    flex: 1,
+    paddingRight: 10,
+  },
+  controlsTitle: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: -0.2,
+  },
+  controlsSubTitle: {
+    color: "rgba(255, 255, 255, 0.65)",
+    fontSize: 11,
+    fontWeight: "600",
+    marginTop: 1,
+  },
+  controlsTopRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  ctrlSpeedBtn: {
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+  },
+  ctrlSpeedText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  ctrlIconBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  controlsCenterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 18,
+  },
+  centerCtrlBtn: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255, 255, 255, 0.14)",
+  },
+  centerCtrlBtnDisabled: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+  },
+  centerCtrlLabel: {
+    color: "rgba(255, 255, 255, 0.8)",
+    fontSize: 9,
+    fontWeight: "700",
+    marginTop: -2,
+  },
+  primaryPlayBtn: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    borderWidth: 1.5,
+    borderColor: "rgba(255, 255, 255, 0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  controlsBottomRow: {
+    gap: 6,
+  },
+  scrubberContainer: {
+    height: 20,
+    justifyContent: "center",
+  },
+  scrubberTrack: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    overflow: "hidden",
+  },
+  scrubberProgress: {
+    height: "100%",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 2,
+  },
+  timeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  timeText: {
+    color: "rgba(255, 255, 255, 0.85)",
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  nextEpQuickBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+  },
+  nextEpQuickText: {
+    color: "#FFFFFF",
+    fontSize: 10.5,
+    fontWeight: "700",
+  },
   errorOverlay: {
     ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(5, 8, 7, 0.94)",
@@ -1161,40 +1629,55 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: 2,
   },
-  badgeQuality: {
-    backgroundColor: "rgba(32, 214, 107, 0.18)",
-    paddingHorizontal: 7,
-    paddingVertical: 2,
+  badgeNeutral: {
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: "rgba(32, 214, 107, 0.4)",
+    borderColor: "rgba(255, 255, 255, 0.14)",
+  },
+  badgeNeutralText: {
+    color: "#FFFFFF",
+    fontSize: 10.5,
+    fontWeight: "700",
+  },
+  badgeQuality: {
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.14)",
   },
   badgeQualityText: {
-    color: "#20D66B",
+    color: "#FFFFFF",
     fontSize: 10.5,
-    fontWeight: "800",
+    fontWeight: "700",
   },
   badgeLang: {
-    backgroundColor: "rgba(59, 130, 246, 0.18)",
-    paddingHorizontal: 7,
-    paddingVertical: 2,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: "rgba(59, 130, 246, 0.4)",
+    borderColor: "rgba(255, 255, 255, 0.14)",
   },
   badgeLangText: {
-    color: "#60A5FA",
+    color: "#FFFFFF",
     fontSize: 10.5,
     fontWeight: "700",
   },
   badgeMuted: {
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
-    paddingHorizontal: 7,
-    paddingVertical: 2,
+    backgroundColor: "rgba(255, 255, 255, 0.04)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
   },
   badgeMutedText: {
-    color: "rgba(255, 255, 255, 0.65)",
+    color: "rgba(255, 255, 255, 0.6)",
     fontSize: 10.5,
     fontWeight: "600",
   },
@@ -1234,22 +1717,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.08)",
   },
   serverChipActive: {
-    backgroundColor: "rgba(32, 214, 107, 0.12)",
-    borderColor: "#20D66B",
+    backgroundColor: "rgba(255, 255, 255, 0.16)",
+    borderColor: "rgba(255, 255, 255, 0.35)",
   },
   serverChipText: {
-    color: "rgba(255, 255, 255, 0.65)",
+    color: "rgba(255, 255, 255, 0.6)",
     fontSize: 12,
     fontWeight: "600",
   },
   serverChipTextActive: {
-    color: "#20D66B",
-    fontWeight: "800",
+    color: "#FFFFFF",
+    fontWeight: "700",
   },
   epHeaderWithSearch: {
     flexDirection: "row",
@@ -1277,10 +1760,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "rgba(13, 20, 17, 0.85)",
-    borderRadius: 16,
-    borderWidth: 1.2,
-    borderColor: "rgba(32, 214, 107, 0.4)",
+    backgroundColor: "rgba(255, 255, 255, 0.04)",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
     padding: 12,
   },
   singleEpLeft: {
@@ -1293,13 +1776,11 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: "#20D66B",
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.16)",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#20D66B",
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 4,
   },
   singleEpInfo: {
     flex: 1,
@@ -1319,23 +1800,24 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    backgroundColor: "rgba(32, 214, 107, 0.15)",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: "rgba(32, 214, 107, 0.3)",
+    borderColor: "rgba(255, 255, 255, 0.16)",
   },
   playingDot: {
     width: 5,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: "#20D66B",
+    backgroundColor: "#FFFFFF",
   },
   playingBadgeText: {
-    color: "#20D66B",
+    color: "#FFFFFF",
     fontSize: 10,
-    fontWeight: "900",
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
   epGrid: {
     flexDirection: "row",
@@ -1344,8 +1826,8 @@ const styles = StyleSheet.create({
   },
   epItem: {
     height: 38,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.04)",
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.08)",
     alignItems: "center",
@@ -1353,8 +1835,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   epItemActive: {
-    backgroundColor: "rgba(32, 214, 107, 0.16)",
-    borderColor: "#20D66B",
+    backgroundColor: "rgba(255, 255, 255, 0.18)",
+    borderColor: "rgba(255, 255, 255, 0.45)",
     borderWidth: 1.2,
   },
   epItemError: {
@@ -1367,23 +1849,23 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.96 }],
   },
   epItemText: {
-    color: "rgba(255, 255, 255, 0.7)",
+    color: "rgba(255, 255, 255, 0.65)",
     fontSize: 12,
     fontWeight: "600",
   },
   epItemTextActive: {
-    color: "#20D66B",
-    fontWeight: "900",
+    color: "#FFFFFF",
+    fontWeight: "800",
   },
   epItemTextError: {
     color: "#EF4444",
     fontWeight: "800",
   },
   synopsisCard: {
-    backgroundColor: "rgba(13, 20, 17, 0.75)",
-    borderRadius: 18,
+    backgroundColor: "rgba(255, 255, 255, 0.03)",
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
+    borderColor: "rgba(255, 255, 255, 0.07)",
     padding: 14,
     gap: 8,
   },
@@ -1397,9 +1879,9 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   expandText: {
-    color: "#20D66B",
+    color: "rgba(255, 255, 255, 0.75)",
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
   },
   catChipsRow: {
     flexDirection: "row",
@@ -1410,15 +1892,15 @@ const styles = StyleSheet.create({
   catChip: {
     paddingHorizontal: 9,
     paddingVertical: 4,
-    backgroundColor: "rgba(32, 214, 107, 0.10)",
-    borderRadius: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: "rgba(32, 214, 107, 0.25)",
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
   catChipText: {
-    color: "#20D66B",
+    color: "rgba(255, 255, 255, 0.75)",
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "600",
   },
   countryChip: {
     paddingHorizontal: 9,

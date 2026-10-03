@@ -36,7 +36,7 @@ export default function IosSignerTool() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [appName, setAppName] = useState("Hi Phim");
-  const [bundleId, setBundleId] = useState("com.hiphim.app");
+  const [bundleId, setBundleId] = useState("app.horizon8414.bear6238");
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Certificate and Password validation state
@@ -284,8 +284,8 @@ export default function IosSignerTool() {
   const ipaDownloadUrl =
     "https://expo.dev/artifacts/eas/LA1x2PlnF7SJ6nYt5l2HR60fPJe6crXVC4LERhkO8d4.ipa";
 
-  // Dedicated, Apple ATS-compliant HTTPS raw manifest endpoint (No localhost, valid SSL)
-  const publicManifestUrl = "https://dpaste.org/msB7a/raw";
+  // Dedicated, Apple ATS-compliant HTTPS raw manifest endpoint (No localhost, valid SSL, matching bundle-id)
+  const publicManifestUrl = "https://dpaste.org/hrYGb/raw";
 
   // When developing locally (localhost, 127.0.0.1, or local Wi-Fi IP), Apple ATS strictly blocks HTTP.
   // We ALWAYS route to the public trusted HTTPS manifest so iPhone Camera / Safari can download and install 100%!
@@ -342,14 +342,14 @@ export default function IosSignerTool() {
   };
 
   return (
-    <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-5 sm:p-6 lg:p-7 transition-all text-white">
+    <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-4 sm:p-5 lg:p-6 transition-all text-white">
       {/* Title */}
-      <div className="flex items-center justify-between pb-4 sm:pb-5 border-b border-white/10 mb-5 sm:mb-6">
+      <div className="flex items-center justify-between pb-3.5 sm:pb-4 border-b border-white/10 mb-4 sm:mb-5">
         <div>
-          <h3 className="text-base sm:text-lg lg:text-xl font-bold text-white">
+          <h3 className="text-base sm:text-[17px] font-bold text-white">
             Công Cụ Ký Trực Tuyến & Cài Trực Tiếp
           </h3>
-          <p className="text-xs sm:text-sm text-white/50 mt-1">
+          <p className="text-xs text-white/50 mt-1">
             Nhập chứng chỉ cá nhân hoặc doanh nghiệp để ký và cài thẳng lên thiết bị.
           </p>
         </div>
@@ -474,7 +474,7 @@ export default function IosSignerTool() {
                       : "Mật khẩu .p12 (nếu có)"
                   }
                   className={cn(
-                    "w-full h-[52px] sm:h-[56px] lg:h-[58px] px-3.5 sm:px-4 pr-11 rounded-xl bg-white/[0.02] border text-xs sm:text-sm text-white placeholder:text-white/30 transition-all font-mono focus:outline-none",
+                    "w-full h-[48px] sm:h-[50px] lg:h-[52px] px-3.5 sm:px-4 pr-11 rounded-xl bg-white/[0.02] border text-xs sm:text-sm text-white placeholder:text-white/30 transition-all font-mono focus:outline-none",
                     passwordError
                       ? "border-rose-500/50 focus:border-rose-400 bg-rose-500/[0.02]"
                       : passwordStatus === "valid" && p12Status === "requires_password"
@@ -598,7 +598,7 @@ export default function IosSignerTool() {
               type="button"
               disabled={isVerifying}
               onClick={handleStartSign}
-              className="w-full py-3 sm:py-3.5 lg:py-4 rounded-xl bg-white hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed text-black font-bold text-xs sm:text-sm lg:text-base transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
+              className="w-full py-2.5 sm:py-3 rounded-xl bg-white hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed text-black font-bold text-xs sm:text-sm transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
             >
               {isVerifying && <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-black" />}
               <span>

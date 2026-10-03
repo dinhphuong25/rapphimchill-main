@@ -4,159 +4,43 @@ import {
   Text,
   StyleSheet,
   Animated,
-  Dimensions,
+  ActivityIndicator,
   Easing,
   Platform,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import Svg, {
-  Circle,
-  Path,
-  Defs,
-  LinearGradient as SvgGradient,
-  Stop,
-  G,
-  Rect,
-} from "react-native-svg";
 import * as SplashScreen from "expo-splash-screen";
-import { haptic } from "@/services/haptics";
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+import { BrandLogo } from "./BrandLogo";
 
 interface AppLoadingScreenProps {
   onFinish?: () => void;
   minDuration?: number;
 }
 
-const LOADING_STEPS = [
-  "Khởi tạo không gian điện ảnh...",
-  "Đang kết nối kho phim chuẩn 4K...",
-  "Tải danh mục rạp chiếu & thịnh hành...",
-  "Sẵn sàng trải nghiệm tuyệt đỉnh!",
-];
-
 export function AppLoadingScreen({
   onFinish,
-  minDuration = 2200,
+  minDuration = 700,
 }: AppLoadingScreenProps) {
   const [visible, setVisible] = useState(true);
-  const [stepIndex, setStepIndex] = useState(0);
 
-  // Animation values
-  const containerOpacity = useRef(new Animated.Value(1)).current;
-  const containerScale = useRef(new Animated.Value(1)).current;
-  const emblemScale = useRef(new Animated.Value(0.8)).current;
-  const emblemOpacity = useRef(new Animated.Value(0)).current;
-  const rotateReel = useRef(new Animated.Value(0)).current;
-  const rotateCounter = useRef(new Animated.Value(0)).current;
-  const pulseGlow = useRef(new Animated.Value(1)).current;
-  const progressAnim = useRef(new Animated.Value(0)).current;
-  const textFadeAnim = useRef(new Animated.Value(1)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // 1. Initial entrance animation
-    Animated.parallel([
-      Animated.timing(emblemOpacity, {
-        toValue: 1,
-        duration: 600,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.spring(emblemScale, {
-        toValue: 1,
-        friction: 6,
-        tension: 70,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    // Hide native splash screen immediately when this component mounts
+    SplashScreen.hideAsync().catch(() => {});
 
-    // 2. Continuous rotating cinema film reel animation
-    Animated.loop(
-      Animated.timing(rotateReel, {
-        toValue: 1,
-        duration: 3500,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    ).start();
-
-    // 3. Counter-rotating inner aperture ring
-    Animated.loop(
-      Animated.timing(rotateCounter, {
-        toValue: 1,
-        duration: 2200,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    ).start();
-
-    // 4. Ambient breathing glow pulse
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseGlow, {
-          toValue: 1.15,
-          duration: 1200,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseGlow, {
-          toValue: 0.95,
-          duration: 1200,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-
-    // 5. Progress bar fill animation
-    Animated.timing(progressAnim, {
-      toValue: 1,
-      duration: minDuration - 250,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-
-    // 6. Cycling status text
-    const stepDuration = Math.floor((minDuration - 300) / LOADING_STEPS.length);
-    const intervals: ReturnType<typeof setTimeout>[] = [];
-
-    LOADING_STEPS.forEach((_, idx) => {
-      if (idx === 0) return;
-      const t = setTimeout(() => {
-        Animated.sequence([
-          Animated.timing(textFadeAnim, {
-            toValue: 0,
-            duration: 120,
-            useNativeDriver: true,
-          }),
-          Animated.timing(textFadeAnim, {
-            toValue: 1,
-            duration: 160,
-            useNativeDriver: true,
-          }),
-        ]).start();
-        setStepIndex(idx);
-        if (idx === LOADING_STEPS.length - 1) {
-          haptic.light();
-        }
-      }, idx * stepDuration);
-      intervals.push(t);
-    });
-
-    // 7. Curtain exit to main app
-    const finishTimer = setTimeout(() => {
-      SplashScreen.hideAsync().catch(() => {});
-
+    // Fast, smooth transition to main app
+    const timer = setTimeout(() => {
       Animated.parallel([
-        Animated.timing(containerOpacity, {
+        Animated.timing(fadeAnim, {
           toValue: 0,
-          duration: 400,
-          easing: Easing.in(Easing.cubic),
+          duration: 350,
+          easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
-        Animated.timing(containerScale, {
-          toValue: 1.06,
-          duration: 400,
+        Animated.timing(scaleAnim, {
+          toValue: 1.04,
+          duration: 350,
           easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
@@ -166,210 +50,35 @@ export function AppLoadingScreen({
       });
     }, minDuration);
 
-    return () => {
-      clearTimeout(finishTimer);
-      intervals.forEach((i) => clearTimeout(i));
-    };
-  }, [minDuration, onFinish]);
+    return () => clearTimeout(timer);
+  }, [minDuration, onFinish, fadeAnim, scaleAnim]);
 
   if (!visible) return null;
-
-  const spinReel = rotateReel.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "360deg"],
-  });
-
-  const spinCounter = rotateCounter.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["360deg", "0deg"],
-  });
-
-  const progressWidth = progressAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0%", "100%"],
-  });
 
   return (
     <Animated.View
       style={[
         styles.overlay,
         {
-          opacity: containerOpacity,
-          transform: [{ scale: containerScale }],
+          opacity: fadeAnim,
+          transform: [{ scale: scaleAnim }],
         },
       ]}
-      pointerEvents={containerOpacity ? "auto" : "none"}
+      pointerEvents={visible ? "auto" : "none"}
     >
-      {/* Background Deep Obsidian Cinema Surface */}
-      <View style={StyleSheet.absoluteFill}>
-        <LinearGradient
-          colors={["#030605", "#070E0B", "#030605"]}
-          style={StyleSheet.absoluteFill}
-        />
+      {/* Centered Brand & Minimalist Cinema Loader */}
+      <View style={styles.centerBox}>
+        <BrandLogo size="lg" />
+
+        <View style={styles.loaderRow}>
+          <ActivityIndicator size="small" color="#20D66B" />
+          <Text style={styles.loadingText}>Đang tải ứng dụng...</Text>
+        </View>
       </View>
 
-      {/* Center Cinematic Emblem Cluster */}
-      <Animated.View
-        style={[
-          styles.centerCluster,
-          {
-            opacity: emblemOpacity,
-            transform: [{ scale: emblemScale }],
-          },
-        ]}
-      >
-        {/* Cinema Film Reel & Lens Shutter */}
-        <View style={styles.reelChassis}>
-          {/* Subtle Outer Neon Ring */}
-          <View style={styles.neonHalo} />
-
-          {/* Rotating Cinema Film Reel Spool SVG */}
-          <Animated.View
-            style={[
-              styles.rotatingLayer,
-              {
-                transform: [{ rotate: spinReel }],
-              },
-            ]}
-          >
-            <Svg width={128} height={128} viewBox="0 0 128 128">
-              <Defs>
-                <SvgGradient id="emeraldGrad" x1="0" y1="0" x2="1" y2="1">
-                  <Stop offset="0" stopColor="#20D66B" stopOpacity="1" />
-                  <Stop offset="0.6" stopColor="#00E676" stopOpacity="0.75" />
-                  <Stop offset="1" stopColor="#059669" stopOpacity="0.15" />
-                </SvgGradient>
-                <SvgGradient id="subtleGrad" x1="0" y1="0" x2="1" y2="1">
-                  <Stop offset="0" stopColor="#20D66B" stopOpacity="0.5" />
-                  <Stop offset="1" stopColor="#20D66B" stopOpacity="0.05" />
-                </SvgGradient>
-              </Defs>
-
-              {/* Outer Film Wheel Rim */}
-              <Circle
-                cx="64"
-                cy="64"
-                r="56"
-                stroke="url(#emeraldGrad)"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeDasharray="160 80"
-                fill="none"
-              />
-
-              {/* 35mm Film Frame Perforations around outer circle */}
-              <Circle
-                cx="64"
-                cy="64"
-                r="50"
-                stroke="rgba(32, 214, 107, 0.3)"
-                strokeWidth="1.5"
-                strokeDasharray="6 6"
-                fill="none"
-              />
-
-              {/* 4 Cinema Spool Holes */}
-              <Circle cx="64" cy="28" r="7" fill="rgba(32, 214, 107, 0.25)" />
-              <Circle cx="100" cy="64" r="7" fill="rgba(32, 214, 107, 0.25)" />
-              <Circle cx="64" cy="100" r="7" fill="rgba(32, 214, 107, 0.25)" />
-              <Circle cx="28" cy="64" r="7" fill="rgba(32, 214, 107, 0.25)" />
-
-              {/* Spool Accent Dots */}
-              <Circle cx="64" cy="8" r="3" fill="#20D66B" />
-              <Circle cx="120" cy="64" r="3" fill="#20D66B" />
-              <Circle cx="64" cy="120" r="3" fill="#20D66B" />
-              <Circle cx="8" cy="64" r="3" fill="#20D66B" />
-            </Svg>
-          </Animated.View>
-
-          {/* Counter-rotating Inner Aperture Track */}
-          <Animated.View
-            style={[
-              styles.rotatingLayer,
-              {
-                transform: [{ rotate: spinCounter }],
-              },
-            ]}
-          >
-            <Svg width={80} height={80} viewBox="0 0 80 80">
-              <Circle
-                cx="40"
-                cy="40"
-                r="34"
-                stroke="#20D66B"
-                strokeWidth="1.8"
-                strokeDasharray="40 30"
-                strokeOpacity="0.6"
-                strokeLinecap="round"
-                fill="none"
-              />
-            </Svg>
-          </Animated.View>
-
-          {/* Center Play Core / Cinema Crystal */}
-          <View style={styles.playButtonCore}>
-            <LinearGradient
-              colors={["rgba(32, 214, 107, 0.25)", "rgba(11, 18, 14, 0.95)"]}
-              style={StyleSheet.absoluteFill}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            />
-            <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M7 4.5V19.5L19 12L7 4.5Z"
-                fill="#20D66B"
-                stroke="#FFFFFF"
-                strokeWidth="1.2"
-                strokeLinejoin="round"
-              />
-            </Svg>
-          </View>
-        </View>
-
-        {/* Brand Typography (Hi Phim) */}
-        <View style={styles.brandContainer}>
-          <View style={styles.brandTitleRow}>
-            <Text style={styles.brandTitleLight}>Hi </Text>
-            <Text style={styles.brandTitleAccent}>Phim</Text>
-          </View>
-          <Text style={styles.brandSubtitle}>
-            TRẢI NGHIỆM ĐIỆN ẢNH ĐỈNH CAO
-          </Text>
-        </View>
-      </Animated.View>
-
-      {/* Bottom Loading Progress Cluster */}
-      <View style={styles.bottomCluster}>
-        {/* Cinema Neon Progress Track */}
-        <View style={styles.progressTrack}>
-          <Animated.View
-            style={[
-              styles.progressBar,
-              {
-                width: progressWidth,
-              },
-            ]}
-          >
-            <LinearGradient
-              colors={["#00E676", "#20D66B", "#34D399"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={StyleSheet.absoluteFill}
-            />
-          </Animated.View>
-        </View>
-
-        {/* Dynamic Status Text */}
-        <Animated.Text
-          style={[
-            styles.statusText,
-            {
-              opacity: textFadeAnim,
-            },
-          ]}
-        >
-          {LOADING_STEPS[stepIndex]}
-        </Animated.Text>
+      {/* Subtle bottom tagline */}
+      <View style={styles.bottomBox}>
+        <Text style={styles.tagline}>TRẢI NGHIỆM ĐIỆN ẢNH ĐỈNH CAO</Text>
       </View>
     </Animated.View>
   );
@@ -379,103 +88,38 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFill,
     zIndex: 99999,
-    backgroundColor: "#030605",
+    backgroundColor: "#050807",
     alignItems: "center",
     justifyContent: "center",
   },
-  centerCluster: {
+  centerBox: {
     alignItems: "center",
     justifyContent: "center",
+    gap: 20,
   },
-  reelChassis: {
-    width: 128,
-    height: 128,
-    borderRadius: 64,
-    backgroundColor: "rgba(8, 14, 11, 0.92)",
-    borderWidth: 1.5,
-    borderColor: "rgba(32, 214, 107, 0.35)",
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-  },
-  neonHalo: {
-    position: "absolute",
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 1,
-    borderColor: "rgba(32, 214, 107, 0.15)",
-  },
-  rotatingLayer: {
-    position: "absolute",
-    width: 128,
-    height: 128,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  playButtonCore: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 1.5,
-    borderColor: "rgba(32, 214, 107, 0.6)",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingLeft: 4, // Optical centering of play triangle
-    overflow: "hidden",
-  },
-  brandContainer: {
-    alignItems: "center",
-    marginTop: 26,
-  },
-  brandTitleRow: {
+  loaderRow: {
     flexDirection: "row",
-    alignItems: "baseline",
-    justifyContent: "center",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 8,
   },
-  brandTitleLight: {
-    fontSize: 27,
-    fontWeight: "900",
-    color: "#FFFFFF",
-    letterSpacing: 2,
+  loadingText: {
+    color: "rgba(255, 255, 255, 0.6)",
+    fontSize: 12.5,
+    fontWeight: "600",
+    letterSpacing: 0.3,
   },
-  brandTitleAccent: {
-    fontSize: 27,
-    fontWeight: "900",
-    color: "#20D66B",
-    letterSpacing: 2,
-  },
-  brandSubtitle: {
-    fontSize: 10,
-    fontWeight: "800",
-    color: "rgba(255, 255, 255, 0.45)",
-    letterSpacing: 2.5,
-    marginTop: 6,
-    textTransform: "uppercase",
-  },
-  bottomCluster: {
+  bottomBox: {
     position: "absolute",
-    bottom: Platform.OS === "ios" ? 64 : 44,
+    bottom: Platform.OS === "ios" ? 48 : 32,
     alignItems: "center",
     width: "100%",
   },
-  progressTrack: {
-    width: 200,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    overflow: "hidden",
-    marginBottom: 12,
-  },
-  progressBar: {
-    height: "100%",
-    borderRadius: 2,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "rgba(255, 255, 255, 0.45)",
-    letterSpacing: 0.3,
+  tagline: {
+    color: "rgba(255, 255, 255, 0.28)",
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 2,
+    textTransform: "uppercase",
   },
 });
-

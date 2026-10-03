@@ -77,7 +77,7 @@ function RootLayout() {
           <AuthModal />
 
           {/* Cinematic Animated Startup Loading Screen */}
-          <AppLoadingScreen minDuration={2200} />
+          <AppLoadingScreen minDuration={700} />
         </ExploreSheetProvider>
       </UserAuthProvider>
     </SafeAreaProvider>

@@ -26,7 +26,6 @@ import {
   Search,
   Check,
   Calendar,
-  Trophy,
   User,
   LogIn,
   LogOut,
@@ -60,7 +59,6 @@ const NAV_MAIN = [
   { href: "/?typeList=phim-le", label: "Phim Lẻ", icon: Film, typeList: "phim-le" },
   { href: "/?typeList=hoat-hinh", label: "Hoạt Hình", icon: Cat, typeList: "hoat-hinh" },
   { href: "/new-updates", label: "Mới Cập Nhật", icon: Flame },
-  { href: "/bang-xep-hang", label: "Bảng Xếp Hạng", icon: Trophy },
 ];
 
 const NAV_PERSONAL = [
@@ -189,6 +187,7 @@ function SidebarContent({
   // Prefetch mobile bottom nav routes for instant 0ms transition on single tap
   useEffect(() => {
     router.prefetch("/");
+    router.prefetch("/tai-app");
     router.prefetch("/recently");
     router.prefetch("/favorites");
   }, [router]);
@@ -268,18 +267,15 @@ function SidebarContent({
 
   const currentActiveTab = useMemo(() => {
     if (isAccountOpen) return "account";
-    if (
-      activeTab === "/?typeList=phim-chieu-rap" ||
-      (pathname === "/" && (currentTypeList === "phim-chieu-rap" || searchParams.get("typelist") === "phim-chieu-rap"))
-    ) {
-      return "chieu-rap";
+    if (pathname === "/tai-app" || activeTab === "/tai-app") {
+      return "/tai-app";
     }
     if (activeTab) return activeTab;
     if (pathname === "/recently") return "/recently";
     if (pathname === "/favorites") return "/favorites";
     if (pathname === "/" && !hasActiveFilters) return "/";
     return null;
-  }, [isAccountOpen, activeTab, pathname, currentTypeList, searchParams, hasActiveFilters]);
+  }, [isAccountOpen, activeTab, pathname, hasActiveFilters]);
 
   const sortedCountries = useMemo(() => {
     return sortCountriesByPopularity(countries);
@@ -443,9 +439,9 @@ function SidebarContent({
                 <defs>
                   <linearGradient id="hiphimNotchStroke" x1="0" y1="0" x2="88" y2="0" gradientUnits="userSpaceOnUse">
                     <stop offset="0%" stopColor="rgba(255,255,255,0.08)" />
-                    <stop offset="35%" stopColor={currentActiveTab === "/" ? "rgba(32,214,107,0.4)" : "rgba(255,255,255,0.08)"} />
-                    <stop offset="50%" stopColor={currentActiveTab === "/" ? "rgba(32,214,107,0.75)" : "rgba(255,255,255,0.12)"} />
-                    <stop offset="65%" stopColor={currentActiveTab === "/" ? "rgba(32,214,107,0.4)" : "rgba(255,255,255,0.08)"} />
+                    <stop offset="35%" stopColor={currentActiveTab === "/tai-app" ? "rgba(32,214,107,0.4)" : "rgba(255,255,255,0.08)"} />
+                    <stop offset="50%" stopColor={currentActiveTab === "/tai-app" ? "rgba(32,214,107,0.75)" : "rgba(255,255,255,0.12)"} />
+                    <stop offset="65%" stopColor={currentActiveTab === "/tai-app" ? "rgba(32,214,107,0.4)" : "rgba(255,255,255,0.08)"} />
                     <stop offset="100%" stopColor="rgba(255,255,255,0.08)" />
                   </linearGradient>
                 </defs>
@@ -479,22 +475,22 @@ function SidebarContent({
         {/* Interactive Navigation Elements Layer */}
         <div className="relative z-10 w-full max-w-lg mx-auto h-[58px]">
           <div className="w-full h-full flex items-center justify-between px-1">
-            {/* Left 2 Items: Chiếu Rạp & Lịch Sử */}
+            {/* Left 2 Items: Trang Chủ & Lịch Sử */}
             <div className="flex-1 flex items-center justify-around pr-1 h-full">
-              {/* Tab 1: Chiếu Rạp */}
+              {/* Tab 1: Trang Chủ */}
               {(() => {
-                const active = currentActiveTab === "chieu-rap";
+                const active = currentActiveTab === "/";
                 return (
                   <Link
-                    href="/?typeList=phim-chieu-rap"
+                    href="/"
                     prefetch={true}
-                    onClick={(e) => handleBottomNavNavigate("/?typeList=phim-chieu-rap", e)}
+                    onClick={(e) => handleBottomNavNavigate("/", e)}
                     className="flex-1 h-full flex flex-col items-center justify-center gap-1 relative select-none touch-manipulation cursor-pointer active:scale-90 transition-transform duration-75 group"
                     style={{ WebkitTapHighlightColor: "transparent" }}
-                    aria-label="Chiếu Rạp"
+                    aria-label="Trang Chủ"
                   >
                     <div className="relative flex items-center justify-center">
-                      <Clapperboard
+                      <Home
                         className={cn(
                           "w-[19px] h-[19px] transition-colors duration-150",
                           active ? "text-brand-green stroke-[2.4]" : "text-white/50 group-hover:text-white"
@@ -510,7 +506,7 @@ function SidebarContent({
                         active ? "text-brand-green font-bold" : "text-white/50 group-hover:text-white font-medium"
                       )}
                     >
-                      Chiếu rạp
+                      Trang chủ
                     </span>
                   </Link>
                 );
@@ -552,18 +548,18 @@ function SidebarContent({
               })()}
             </div>
 
-            {/* Center Elevated Action: Home Button */}
+            {/* Center Elevated Action: Tải App Mobile */}
             <div className="w-[88px] h-full relative shrink-0 flex items-center justify-center">
               {(() => {
-                const active = currentActiveTab === "/";
+                const active = currentActiveTab === "/tai-app";
                 return (
                   <Link
-                    href="/"
+                    href="/tai-app"
                     prefetch={true}
-                    onClick={(e) => handleBottomNavNavigate("/", e)}
+                    onClick={(e) => handleBottomNavNavigate("/tai-app", e)}
                     className="w-full h-full flex flex-col items-center justify-end pb-[12px] relative select-none touch-manipulation cursor-pointer active:scale-90 transition-transform duration-100 group"
                     style={{ WebkitTapHighlightColor: "transparent" }}
-                    aria-label="Trang Chủ"
+                    aria-label="Tải App Mobile"
                   >
                     {/* Elevated Button Wrapper */}
                     <div className="absolute -top-[18px] w-[48px] h-[48px] flex items-center justify-center">
@@ -590,23 +586,23 @@ function SidebarContent({
                         {active && (
                           <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/35 to-transparent pointer-events-none rounded-t-full" />
                         )}
-                        <Home
+                        <Smartphone
                           className={cn(
-                            "w-[22px] h-[22px] transition-transform group-hover:scale-105",
+                            "w-[21px] h-[21px] transition-transform group-hover:scale-105",
                             active ? "stroke-[2.5] text-black" : "stroke-[2] text-white/70 group-hover:text-brand-green"
                           )}
                         />
                       </div>
                     </div>
 
-                    {/* Text Label under House Icon */}
+                    {/* Text Label under Smartphone Icon */}
                     <span
                       className={cn(
                         "text-[11px] tracking-tight whitespace-nowrap transition-colors duration-150 leading-none",
                         active ? "text-brand-green font-bold" : "text-white/60 group-hover:text-white font-semibold"
                       )}
                     >
-                      Trang chủ
+                      Tải app
                     </span>
                   </Link>
                 );
@@ -1000,7 +996,7 @@ function SidebarContent({
         </div>
 
         {/* Scrollable Navigation Body - Balanced spacing to fit frame seamlessly and prevent cutoff */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 lg:p-2 lg:pt-3.5 lg:pb-6 space-y-3 lg:space-y-1 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 lg:p-2 lg:pt-3 lg:pb-2 space-y-2.5 lg:space-y-0.5 custom-scrollbar">
           
           {/* Main Nav Section */}
           <div className="space-y-1 lg:space-y-1">
@@ -1208,34 +1204,62 @@ function SidebarContent({
             })}
           </div>
 
-          {/* Download App Banner Card (iOS .IPA & Android .APK) */}
-          <div className="pt-3 pb-1 px-1">
+          {/* Divider 3 */}
+          <div className="h-[1px] bg-white/5 mx-2 lg:mx-1 my-2 lg:my-1.5" />
+
+          {/* Download App Navigation Entry */}
+          <div className="pt-1 pb-6 lg:pb-8">
             <Link
               href="/tai-app"
-              onClick={() => setIsMobileOpen(false)}
+              prefetch={true}
+              onClick={() => {
+                setIsMobileOpen(false);
+                navigateToTab("/tai-app");
+              }}
               className={cn(
-                "w-full relative flex items-center gap-2.5 p-2.5 rounded-2xl transition-all duration-200 group overflow-hidden block",
+                "w-full relative flex items-center justify-between px-3 lg:px-2 py-2.5 lg:py-2 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-all duration-200 group overflow-hidden border text-left cursor-pointer",
+                "border-brand-green/40 hover:border-brand-green/80 shadow-[0_0_12px_rgba(32,214,107,0.12)] hover:shadow-[0_0_16px_rgba(32,214,107,0.22)]",
                 pathname === "/tai-app"
-                  ? "bg-brand-green/20 border border-brand-green/50 shadow-[0_0_15px_rgba(32,214,107,0.25)]"
-                  : "bg-gradient-to-br from-emerald-950/40 via-[#0e1713] to-black border border-emerald-500/25 hover:border-brand-green/60 shadow-[0_4px_20px_rgba(0,0,0,0.5)] hover:shadow-[0_0_20px_rgba(32,214,107,0.2)]"
+                  ? "bg-brand-green/15 text-white border-brand-green/70"
+                  : "bg-white/[0.03] hover:bg-white/[0.07] text-white/80 hover:text-white"
               )}
+              aria-current={pathname === "/tai-app" ? "page" : undefined}
             >
-              <div className="w-8 h-8 rounded-xl bg-brand-green/15 border border-brand-green/30 flex items-center justify-center text-brand-green group-hover:scale-110 transition-transform shrink-0 shadow-[0_0_10px_rgba(32,214,107,0.3)]">
-                <Smartphone className="w-4 h-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-[12px] text-white group-hover:text-brand-green transition-colors truncate">
+              {pathname === "/tai-app" && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 lg:h-3.5 bg-brand-green rounded-r-full shadow-[0_0_8px_rgba(32,214,107,0.8)]" />
+              )}
+
+              <div className="flex items-center gap-2.5 lg:gap-2 min-w-0">
+                <div
+                  className={cn(
+                    "w-6 h-6 lg:w-5 lg:h-5 rounded-lg flex items-center justify-center transition-colors shrink-0",
+                    pathname === "/tai-app"
+                      ? "bg-brand-green/20 text-brand-green"
+                      : "bg-brand-green/10 text-brand-green group-hover:bg-brand-green/20 border border-brand-green/20"
+                  )}
+                >
+                  <Smartphone className="w-3.5 h-3.5 lg:w-3 lg:h-3" />
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="truncate leading-tight font-semibold text-white group-hover:text-brand-green transition-colors">
                     Tải App Mobile
                   </span>
-                  <span className="text-[8px] font-black px-1.5 py-0.2 rounded-full bg-brand-green/20 text-brand-green border border-brand-green/40 uppercase tracking-tighter shrink-0">
-                    MỚI
+                  <span className="text-[10px] lg:text-[9px] text-white/40 group-hover:text-white/60 leading-none truncate mt-0.5">
+                    iOS & Android
                   </span>
                 </div>
-                <p className="text-[10px] text-white/45 truncate mt-0.5">
-                  Bản iOS (.IPA) & Android
-                </p>
               </div>
+
+              <span
+                className={cn(
+                  "text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border shrink-0 transition-colors ml-1",
+                  pathname === "/tai-app"
+                    ? "bg-brand-green/20 border-brand-green/50 text-brand-green"
+                    : "bg-brand-green/10 border-brand-green/30 text-brand-green group-hover:bg-brand-green/20"
+                )}
+              >
+                IPA/APK
+              </span>
             </Link>
           </div>
 
@@ -1401,7 +1425,7 @@ function SidebarContent({
                 {/* Genre Cards Grid (KHÔNG EMOJI - Minimalist Cinema Style) */}
                 <div
                   ref={categoriesScrollRef}
-                  className="relative z-10 flex-1 overflow-y-auto pr-1 modal-scroll custom-scrollbar overscroll-contain -webkit-overflow-scrolling-touch"
+                  className="relative z-10 flex-1 overflow-y-auto pr-2 sm:pr-3 modal-scroll custom-scrollbar overscroll-contain -webkit-overflow-scrolling-touch"
                 >
                   {displayedCategories.length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 sm:gap-3.5 md:gap-4 pb-4">
@@ -1549,7 +1573,7 @@ function SidebarContent({
                 {/* Country Cards Grid */}
                 <div
                   ref={countriesScrollRef}
-                  className="relative z-10 flex-1 overflow-y-auto pr-1 modal-scroll custom-scrollbar overscroll-contain -webkit-overflow-scrolling-touch"
+                  className="relative z-10 flex-1 overflow-y-auto pr-2 sm:pr-3 modal-scroll custom-scrollbar overscroll-contain -webkit-overflow-scrolling-touch"
                 >
                   {displayedCountries.length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 sm:gap-3.5 md:gap-4 pb-4">
@@ -1704,7 +1728,7 @@ function SidebarContent({
                 {/* Years Grid */}
                 <div
                   ref={yearsScrollRef}
-                  className="relative z-10 flex-1 overflow-y-auto pr-1 modal-scroll custom-scrollbar overscroll-contain -webkit-overflow-scrolling-touch"
+                  className="relative z-10 flex-1 overflow-y-auto pr-2 sm:pr-3 modal-scroll custom-scrollbar overscroll-contain -webkit-overflow-scrolling-touch"
                 >
                   {displayedYears.length > 0 ? (
                     <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2.5 sm:gap-3 md:gap-3.5 pb-4">

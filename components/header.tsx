@@ -18,6 +18,8 @@ interface HeaderProps {
 }
 
 function HeaderComponent({}: HeaderProps) {
+  const pathname = usePathname();
+
   useEffect(() => {
     preconnect("https://phimapi.com", { crossOrigin: "anonymous" });
     preconnect("https://img.phimapi.com", { crossOrigin: "anonymous" });
@@ -52,6 +54,10 @@ function HeaderComponent({}: HeaderProps) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  if (pathname === "/tai-app") {
+    return null;
+  }
 
   return (
     <>
@@ -164,22 +170,6 @@ function HeaderComponent({}: HeaderProps) {
                 <span className="text-[9.5px]">Ctrl</span>K
               </kbd>
             </button>
-
-            {/* Download Mobile App Button */}
-            <Link
-              href="/tai-app"
-              className="relative flex items-center gap-1.5 h-9 sm:h-10 px-2.5 sm:px-3 rounded-full bg-[#111714] hover:bg-[#151D19] border border-white/10 hover:border-brand-green/50 backdrop-blur-xl text-white transition-all duration-300 cursor-pointer group shadow-[0_4px_24px_rgba(0,0,0,0.7)] active:scale-95 shrink-0 overflow-hidden"
-              title="Tải ứng dụng Hi Phim cho điện thoại iOS & Android"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-brand-green/10 via-transparent to-brand-green/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-              <Smartphone className="w-3.5 h-3.5 text-brand-green group-hover:scale-110 transition-transform shrink-0" />
-              <span className="hidden sm:inline-block text-[11.5px] sm:text-[12.5px] font-semibold text-white/90 group-hover:text-brand-green transition-colors">
-                Tải App
-              </span>
-              <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-brand-green/20 text-brand-green border border-brand-green/40 uppercase">
-                IPA/APK
-              </span>
-            </Link>
 
             {/* User Profile / Admin Control — Hidden on mobile since it's already in the bottom nav dock */}
             <div className="hidden lg:flex items-center shrink-0">
