@@ -99,6 +99,7 @@ interface VideoPlayerProps {
   onNextEpisode?: () => void;
   movieName?: string;
   movieSlug?: string;
+  onFullscreenChange?: (isFullscreen: boolean) => void;
 }
 
 const formatTime = (seconds: number) => {
@@ -123,6 +124,7 @@ export default function VideoPlayer({
   onNextEpisode,
   movieName,
   movieSlug,
+  onFullscreenChange,
 }: VideoPlayerProps) {
   // 1. REFS (Defined at the very top)
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -168,6 +170,8 @@ export default function VideoPlayer({
   onEndedRef.current = onEnded;
   const onErrorRef = useRef(onError);
   onErrorRef.current = onError;
+  const onFullscreenChangeRef = useRef(onFullscreenChange);
+  onFullscreenChangeRef.current = onFullscreenChange;
 
   // 2. STATES
   const [isPlaying, setIsPlaying] = useState(false);
@@ -180,6 +184,7 @@ export default function VideoPlayer({
   const [isMuted, setIsMuted] = useState(false);
   const [isAutoplayMuted, setIsAutoplayMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMobileRotated, setIsMobileRotated] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [buffered, setBuffered] = useState(0);
@@ -616,6 +621,15 @@ export default function VideoPlayer({
         // Instead, CSS Pseudo-Fullscreen seamlessly expands the container to full-window (100dvh/100vw).
         setIsFullscreen(true);
 
+        const isMobile = typeof navigator !== 'undefined' && (
+          /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+          (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 1024px) and (pointer: coarse)').matches)
+        );
+        const isPortrait = typeof window !== 'undefined' && window.innerWidth < window.innerHeight;
+        if (isMobile && isPortrait) {
+          setIsMobileRotated(true);
+        }
+
         // Try locking orientation to landscape on mobile devices if supported
         try {
           if (typeof screen !== 'undefined' && screen.orientation && (screen.orientation as any).lock) {
@@ -629,6 +643,7 @@ export default function VideoPlayer({
           try { await (document as any).webkitExitFullscreen(); } catch (e) {}
         }
         setIsFullscreen(false);
+        setIsMobileRotated(false);
 
         try {
           if (typeof screen !== 'undefined' && screen.orientation && screen.orientation.unlock) {
@@ -639,6 +654,7 @@ export default function VideoPlayer({
     } catch (err) {
       console.error('Fullscreen error:', err);
       setIsFullscreen((prev) => !prev);
+      setIsMobileRotated(false);
     }
   }, [isFullscreen]);
 
@@ -721,10 +737,64 @@ export default function VideoPlayer({
       window.removeEventListener('resize', updateAspect);
       window.removeEventListener('orientationchange', updateAspect);
     };
+  }, [isFullscreen, isMobileRotated]);
+
+  // Synchronize HTML5 fullscreen events (e.g. user presses Esc or hardware gesture)
+  useEffect(() => {
+    const onFsChange = () => {
+      const isHtml5Fs = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
+        (document as any).msFullscreenElement
+      );
+      if (!isHtml5Fs && isFullscreen) {
+        setIsFullscreen(false);
+        setIsMobileRotated(false);
+      }
+    };
+    document.addEventListener('fullscreenchange', onFsChange);
+    document.addEventListener('webkitfullscreenchange', onFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', onFsChange);
+      document.removeEventListener('webkitfullscreenchange', onFsChange);
+    };
   }, [isFullscreen]);
 
-  // Prevent background scrolling when in fullscreen mode on mobile and desktop
+  // Check orientation dynamically on mobile while fullscreen is active
   useEffect(() => {
+    if (!isFullscreen) {
+      setIsMobileRotated(false);
+      return;
+    }
+
+    const checkOrientation = () => {
+      if (typeof window === 'undefined') return;
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+        (window.matchMedia && window.matchMedia('(max-width: 1024px) and (pointer: coarse)').matches);
+      const isPortrait = window.innerWidth < window.innerHeight;
+      setIsMobileRotated(isMobile && isPortrait);
+    };
+
+    checkOrientation();
+    window.addEventListener('resize', checkOrientation);
+    window.addEventListener('orientationchange', checkOrientation);
+    return () => {
+      window.removeEventListener('resize', checkOrientation);
+      window.removeEventListener('orientationchange', checkOrientation);
+    };
+  }, [isFullscreen]);
+
+  // Prevent background scrolling and dispatch global events when in fullscreen mode
+  useEffect(() => {
+    onFullscreenChangeRef.current?.(isFullscreen);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('video-fullscreen-change', {
+        detail: { isFullscreen }
+      }));
+      document.body.classList.toggle('has-video-fullscreen', isFullscreen);
+      document.documentElement.classList.toggle('has-video-fullscreen', isFullscreen);
+    }
     if (isFullscreen) {
       document.body.style.overflow = 'hidden';
     } else {
@@ -734,6 +804,25 @@ export default function VideoPlayer({
       document.body.style.overflow = '';
     };
   }, [isFullscreen]);
+
+  // Full clean-up on unmount
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('video-fullscreen-change', {
+          detail: { isFullscreen: false }
+        }));
+        document.body.classList.remove('has-video-fullscreen');
+        document.documentElement.classList.remove('has-video-fullscreen');
+        document.body.style.overflow = '';
+        try {
+          if (screen?.orientation?.unlock) {
+            screen.orientation.unlock();
+          }
+        } catch (e) {}
+      }
+    };
+  }, []);
 
   // Compute CSS transform & fit styling for <video>
   const getVideoTransformStyle = useCallback((): React.CSSProperties => {
@@ -2041,7 +2130,9 @@ export default function VideoPlayer({
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    const relX = (touch.clientX - rect.left) / rect.width;
+    const relX = isMobileRotated
+      ? (touch.clientY - rect.top) / rect.height
+      : (touch.clientX - rect.left) / rect.width;
     const zone: 'left' | 'center' | 'right' = relX < 0.35 ? 'left' : relX > 0.65 ? 'right' : 'center';
 
     touchStartRef.current = {
@@ -2063,8 +2154,22 @@ export default function VideoPlayer({
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    const deltaX = touch.clientX - touchStartRef.current.x;
-    const deltaY = touchStartRef.current.y - touch.clientY; // positive = dragging UP
+    let deltaX: number;
+    let deltaY: number;
+
+    if (isMobileRotated) {
+      // In 90deg rotated landscape:
+      // Dragging right across the rotated player corresponds to moving downwards in screen Y
+      deltaX = touch.clientY - touchStartRef.current.y;
+      // Dragging up across the rotated player corresponds to moving rightwards in screen X
+      deltaY = touch.clientX - touchStartRef.current.x;
+    } else {
+      deltaX = touch.clientX - touchStartRef.current.x;
+      deltaY = touchStartRef.current.y - touch.clientY; // positive = dragging UP
+    }
+
+    const effectiveWidth = isMobileRotated ? rect.height : rect.width;
+    const effectiveHeight = isMobileRotated ? rect.width : rect.height;
 
     // Gesture detection threshold
     if (!touchStartRef.current.lockedGesture) {
@@ -2084,19 +2189,19 @@ export default function VideoPlayer({
     if (gestureHUDTimerRef.current) clearTimeout(gestureHUDTimerRef.current);
 
     if (touchStartRef.current.lockedGesture === 'brightness') {
-      const step = (deltaY / (rect.height * 0.7)) * 100;
+      const step = (deltaY / (effectiveHeight * 0.7)) * 100;
       const nextBrightness = Math.round(Math.min(150, Math.max(30, touchStartRef.current.startBrightness + step)));
       setBrightness(nextBrightness);
       setGestureHUD({ type: 'brightness', value: nextBrightness });
     } else if (touchStartRef.current.lockedGesture === 'volume') {
-      const step = deltaY / (rect.height * 0.7);
+      const step = deltaY / (effectiveHeight * 0.7);
       const nextVol = Math.min(1, Math.max(0, touchStartRef.current.startVolume + step));
       setVolume(nextVol);
       if (videoRef.current) videoRef.current.volume = nextVol;
       if (nextVol > 0 && isMuted) setIsMuted(false);
       setGestureHUD({ type: 'volume', value: Math.round(nextVol * 100) });
     } else if (touchStartRef.current.lockedGesture === 'seek') {
-      const seekSec = Math.round((deltaX / rect.width) * 90);
+      const seekSec = Math.round((deltaX / effectiveWidth) * 90);
       const targetTime = Math.min(duration, Math.max(0, touchStartRef.current.startTime + seekSec));
       targetSeekRef.current = targetTime;
       setGestureHUD({ type: 'seek', value: targetTime, delta: seekSec });
@@ -2177,10 +2282,40 @@ export default function VideoPlayer({
     <div 
       ref={containerRef} 
       className={cn(
-        "relative bg-black group overflow-hidden select-none w-full aspect-video rounded-xl lg:rounded-2xl touch-manipulation", 
-        isFullscreen && "fixed inset-0 z-[99999] w-screen h-[100dvh] rounded-none aspect-auto bg-black"
+        "relative bg-black group overflow-hidden select-none w-full touch-manipulation", 
+        isFullscreen 
+          ? "fixed z-[99999] rounded-none aspect-auto bg-black" 
+          : "aspect-video rounded-xl lg:rounded-2xl",
+        isFullscreen && !isMobileRotated && "inset-0 w-screen h-[100dvh]"
       )} 
-      style={{ transform: "translateZ(0)" }}
+      style={
+        isFullscreen && isMobileRotated
+          ? {
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              width: "100dvh",
+              height: "100dvw",
+              transform: "translate(-50%, -50%) rotate(90deg)",
+              transformOrigin: "center center",
+              zIndex: 99999,
+              maxWidth: "none",
+              maxHeight: "none",
+            }
+          : isFullscreen
+          ? {
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: "100dvh",
+              zIndex: 99999,
+              maxWidth: "none",
+              maxHeight: "none",
+              transform: "translateZ(0)",
+            }
+          : { transform: "translateZ(0)" }
+      }
       onMouseMove={showControlsHandler} 
       onMouseLeave={() => isPlaying && setShowControls(false)}
     >

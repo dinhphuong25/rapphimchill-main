@@ -224,6 +224,7 @@ export default function Description({ movie, serverData }: any) {
   const [currentEpisodeUrl, setCurrentEpisodeUrl] = useState<string>(() => initialWatchState.episodeUrl);
 
   const [resumeTime, setResumeTime] = useState<number>(() => initialWatchState.resumeTime);
+  const [isPlayerFullscreen, setIsPlayerFullscreen] = useState(false);
 
   useEffect(() => {
     if (Array.isArray(serverData) && serverData.length > 0) {
@@ -1011,13 +1012,15 @@ export default function Description({ movie, serverData }: any) {
     <div className="w-full flex flex-col gap-3.5 sm:gap-6 z-10 relative">
       
       {/* Standalone Cinema Header */}
-      <WatchHeader
-        movieName={movie.name}
-        movieSlug={movie.slug}
-        currentEpName={currentEpName}
-        currentTime={lastSavedProgressRef.current || resumeTime || 0}
-        episodeIndex={currentEpisodeIndex?.episode ?? 0}
-      />
+      {!isPlayerFullscreen && (
+        <WatchHeader
+          movieName={movie.name}
+          movieSlug={movie.slug}
+          currentEpName={currentEpName}
+          currentTime={lastSavedProgressRef.current || resumeTime || 0}
+          episodeIndex={currentEpisodeIndex?.episode ?? 0}
+        />
+      )}
 
       {/* 2-Column Cinema Layout */}
       <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 items-start w-full max-w-[1600px] mx-auto pt-1 sm:pt-2">
@@ -1026,12 +1029,15 @@ export default function Description({ movie, serverData }: any) {
         <div className="flex-1 w-full min-w-0 flex flex-col gap-4 sm:gap-6 lg:sticky lg:top-[60px]">
           
           {/* Video Player Container */}
-          <div className="relative group/player w-full">
+          <div className={cn("relative group/player w-full", isPlayerFullscreen && "static z-[99999]")}>
             <Card className={cn(
-              "border border-white/10 overflow-hidden w-full rounded-2xl lg:rounded-3xl bg-black relative z-10 shadow-none",
+              "border border-white/10 w-full rounded-2xl lg:rounded-3xl bg-black relative shadow-none",
+              isPlayerFullscreen 
+                ? "z-[99999] overflow-visible border-0 rounded-none static aspect-auto" 
+                : "overflow-hidden z-10",
               isUserBanned ? "min-h-[430px] sm:min-h-[500px]" : isUnreleasedMovie ? "min-h-[380px] sm:min-h-[480px] aspect-video" : "aspect-video"
             )}>
-              <CardContent className="p-0 h-full w-full">
+              <CardContent className={cn("p-0 h-full w-full", isPlayerFullscreen && "static")}>
                 {isUserBanned ? (
                   <div className="w-full min-h-[430px] sm:min-h-[500px] flex flex-col items-center justify-center p-5 sm:p-10 text-center bg-[#160d0d] border border-red-500/20 select-none">
                     <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-[#2a1515] border border-red-500/30 flex items-center justify-center text-red-400 mb-4">
@@ -1096,6 +1102,7 @@ export default function Description({ movie, serverData }: any) {
                       hasNextEpisode={hasNextEpisode()}
                       onNextEpisode={handleNextEpisode}
                       onEnded={handleEnded}
+                      onFullscreenChange={setIsPlayerFullscreen}
                     />
                   </SafePlayerErrorBoundary>
                 ) : (

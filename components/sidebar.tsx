@@ -82,6 +82,15 @@ function SidebarContent({
   const [isExploreOpen, setIsExploreOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isPlayerFullscreen, setIsPlayerFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFs = (e: any) => {
+      setIsPlayerFullscreen(!!e.detail?.isFullscreen);
+    };
+    window.addEventListener('video-fullscreen-change', handleFs);
+    return () => window.removeEventListener('video-fullscreen-change', handleFs);
+  }, []);
 
   // Active selection modal: 'categories' | 'countries' | 'years' | null
   const [activeModal, setActiveModal] = useState<"categories" | "countries" | "years" | null>(null);
@@ -418,7 +427,10 @@ function SidebarContent({
       {/* ======================================================== */}
       <nav
         aria-label="Điều hướng chính"
-        className="lg:hidden fixed left-3 right-3 bottom-0 z-[140] pointer-events-auto select-none touch-manipulation"
+        className={cn(
+          "lg:hidden fixed left-3 right-3 bottom-0 z-[140] pointer-events-auto select-none touch-manipulation",
+          isPlayerFullscreen && "hidden pointer-events-none"
+        )}
         style={{
           bottom: "max(0.6rem, env(safe-area-inset-bottom, 0px))",
         }}

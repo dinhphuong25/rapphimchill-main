@@ -28,6 +28,16 @@ function HeaderComponent({}: HeaderProps) {
 
   const [showSearchOverlay, setShowSearchOverlay] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isPlayerFullscreen, setIsPlayerFullscreen] = useState(false);
+
+  // Synchronize fullscreen state with VideoPlayer
+  useEffect(() => {
+    const handleFs = (e: any) => {
+      setIsPlayerFullscreen(!!e.detail?.isFullscreen);
+    };
+    window.addEventListener("video-fullscreen-change", handleFs);
+    return () => window.removeEventListener("video-fullscreen-change", handleFs);
+  }, []);
 
   // Synchronize state with MobileExploreSheet
   useEffect(() => {
@@ -55,7 +65,7 @@ function HeaderComponent({}: HeaderProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  if (pathname === "/tai-app") {
+  if (pathname === "/tai-app" || isPlayerFullscreen) {
     return null;
   }
 
