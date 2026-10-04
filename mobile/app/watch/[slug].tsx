@@ -32,7 +32,6 @@ import {
   SkipForward,
   Maximize2,
   Minimize2,
-  PictureInPicture,
   Layers,
   FileText,
   Zap,
@@ -115,7 +114,7 @@ export default function WatchScreen() {
   const [showControls, setShowControls] = useState(true);
 
   const videoViewRef = useRef<any>(null);
-  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const pendingResumeSecondsRef = useRef<number>(0);
   const hasResumedRef = useRef<boolean>(false);
@@ -471,15 +470,6 @@ export default function WatchScreen() {
         player.currentTime = target;
         setCurrentTime(target);
       }
-    }
-  };
-
-  const handlePiP = async () => {
-    haptic.medium();
-    try {
-      await videoViewRef.current?.startPictureInPicture();
-    } catch (e) {
-      console.warn("PiP error:", e);
     }
   };
 
@@ -879,74 +869,15 @@ export default function WatchScreen() {
                       activeFullscreen && {
                         paddingLeft: Math.max(16, insets.left + 8),
                         paddingRight: Math.max(16, insets.right + 8),
-                        paddingTop: Math.max(12, insets.top),
-                        paddingBottom: Math.max(12, insets.bottom + 4),
+                        paddingBottom: Math.max(12, insets.bottom + 6),
                       },
                     ]}
                   >
-                    {/* Top Row: Exit Fullscreen / Title & Episode + Speed + PiP + Fullscreen */}
-                    <View style={styles.controlsTopRow}>
-                      <View style={styles.controlsTopLeft}>
-                        {activeFullscreen ? (
-                          <Pressable
-                            onPress={handleExitFullscreen}
-                            style={({ pressed }) => [styles.exitFsBtn, pressed && styles.btnPressed]}
-                            hitSlop={10}
-                            accessibilityLabel="Thoát toàn màn hình"
-                          >
-                            <ChevronLeft size={22} color="#FFFFFF" strokeWidth={2.4} />
-                            <Text style={styles.exitFsText}>Thu nhỏ</Text>
-                          </Pressable>
-                        ) : null}
-
-                        <View style={styles.controlsTitleTextWrap}>
-                          <Text style={styles.controlsTitle} numberOfLines={1}>
-                            {movie.name}
-                          </Text>
-                          {formattedEpName ? (
-                            <Text style={styles.controlsSubTitle} numberOfLines={1}>
-                              {formattedEpName}
-                            </Text>
-                          ) : null}
-                        </View>
-                      </View>
-
-                      <View style={styles.controlsTopRight}>
-                        <Pressable
-                          onPress={toggleSpeed}
-                          style={({ pressed }) => [styles.ctrlSpeedBtn, pressed && styles.btnPressed]}
-                          hitSlop={8}
-                          accessibilityLabel="Tốc độ phát"
-                        >
-                          <Text style={styles.ctrlSpeedText}>{playbackSpeed}x</Text>
-                        </Pressable>
-
-                        <Pressable
-                          onPress={handlePiP}
-                          style={({ pressed }) => [styles.ctrlIconBtn, pressed && styles.btnPressed]}
-                          hitSlop={8}
-                          accessibilityLabel="Hình trong hình"
-                        >
-                          <PictureInPicture size={17} color="#FFFFFF" strokeWidth={2.2} />
-                        </Pressable>
-
-                        <Pressable
-                          onPress={handleToggleFullscreen}
-                          style={({ pressed }) => [styles.ctrlIconBtn, pressed && styles.btnPressed]}
-                          hitSlop={8}
-                          accessibilityLabel={activeFullscreen ? "Thoát toàn màn hình" : "Toàn màn hình"}
-                        >
-                          {activeFullscreen ? (
-                            <Minimize2 size={17} color="#20D66B" strokeWidth={2.2} />
-                          ) : (
-                            <Maximize2 size={17} color="#FFFFFF" strokeWidth={2.2} />
-                          )}
-                        </Pressable>
-                      </View>
-                    </View>
-
                     {/* Center Controls: Tua -10s | Nút Play/Pause Nổi Bật | Tua +10s */}
-                    <View style={[styles.controlsCenterRow, activeFullscreen && styles.controlsCenterRowFs]}>
+                    <View 
+                      pointerEvents="box-none"
+                      style={[styles.controlsCenterRow, activeFullscreen && styles.controlsCenterRowFs]}
+                    >
                       {/* Rewind 10s */}
                       <Pressable
                         onPress={() => handleSeek(-10)}
@@ -1079,6 +1010,15 @@ export default function WatchScreen() {
                               <SkipForward size={13} color="#20D66B" strokeWidth={2.2} />
                             </Pressable>
                           ) : null}
+
+                          <Pressable
+                            onPress={toggleSpeed}
+                            style={({ pressed }) => [styles.bottomSpeedBtn, pressed && styles.btnPressed]}
+                            hitSlop={6}
+                            accessibilityLabel="Tốc độ phát"
+                          >
+                            <Text style={styles.bottomSpeedText}>{playbackSpeed}x</Text>
+                          </Pressable>
 
                           <Pressable
                             onPress={handleToggleFullscreen}
@@ -1569,83 +1509,18 @@ const styles = StyleSheet.create({
   controlsOverlay: {
     ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0, 0, 0, 0.45)",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     paddingHorizontal: 16,
     paddingVertical: 12,
     zIndex: 20,
-  },
-  controlsTopRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  controlsTopLeft: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingRight: 10,
-  },
-  exitFsBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    paddingVertical: 5,
-    paddingHorizontal: 9,
-    borderRadius: 14,
-    backgroundColor: "rgba(255, 255, 255, 0.16)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.22)",
-    marginRight: 10,
   },
   exitFsText: {
     color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "700",
   },
-  controlsTitleTextWrap: {
-    flex: 1,
-  },
-  controlsTitle: {
-    color: "#FFFFFF",
-    fontSize: 13.5,
-    fontWeight: "800",
-    letterSpacing: -0.2,
-  },
-  controlsSubTitle: {
-    color: "#20D66B",
-    fontSize: 11,
-    fontWeight: "600",
-    marginTop: 1,
-  },
-  controlsTopRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  ctrlSpeedBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: "rgba(255, 255, 255, 0.16)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.22)",
-  },
-  ctrlSpeedText: {
-    color: "#FFFFFF",
-    fontSize: 11,
-    fontWeight: "800",
-  },
-  ctrlIconBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "rgba(255, 255, 255, 0.16)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.22)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
   controlsCenterRow: {
+    ...StyleSheet.absoluteFill,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -1653,6 +1528,19 @@ const styles = StyleSheet.create({
   },
   controlsCenterRowFs: {
     gap: 56,
+  },
+  bottomSpeedBtn: {
+    paddingHorizontal: 7,
+    paddingVertical: 3.5,
+    borderRadius: 8,
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bottomSpeedText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "800",
   },
   centerSeekBtn: {
     alignItems: "center",
