@@ -32,7 +32,7 @@ function AppShellComponent({ children }: AppShellProps) {
   const showInstantFavorites = activeTab === "/favorites" && pathname !== "/favorites";
 
   return (
-    <div className="min-h-screen bg-cinema-bg text-cinema-text relative">
+    <div className="min-h-screen bg-cinema-bg text-cinema-text">
       {/* Persistent Left Sidebar & Mobile Bottom Dock - Kept in DOM across transitions */}
       <Sidebar />
 

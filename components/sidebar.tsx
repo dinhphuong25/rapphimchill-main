@@ -431,6 +431,8 @@ function SidebarContent({
         )}
         style={{
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          transform: "translate3d(0, 0, 0)",
+          WebkitTransform: "translate3d(0, 0, 0)",
         }}
       >
         <div className="w-full max-w-lg mx-auto h-[58px] flex items-center justify-between px-1.5">

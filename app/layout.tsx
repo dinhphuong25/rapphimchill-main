@@ -172,8 +172,8 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               *,*::before,*::after{box-sizing:border-box}
-              html{line-height:1.5;-webkit-text-size-adjust:100%;overflow-x:hidden}
-              body{min-height:100dvh;background:#050a0f;color:#f7f8f9;margin:0}
+              html{line-height:1.5;-webkit-text-size-adjust:100%}
+              body{min-height:100dvh;background:#050a0f;color:#f7f8f9;margin:0;overflow-x:hidden}
             `,
           }}
         />
