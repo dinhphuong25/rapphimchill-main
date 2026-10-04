@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 const IOS_IPA_URL =
-  "https://expo.dev/artifacts/eas/971D8ffnbFOxppWb5gTBIij46P-4GW3CwTTJBOr7-W0.ipa";
+  "https://expo.dev/artifacts/eas/6ahM1Trwhg6kUcIHiO2Bt-j60VPaxwqo1doGY24SvAQ.ipa";
 
 export async function GET() {
   try {
