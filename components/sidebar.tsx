@@ -276,16 +276,13 @@ function SidebarContent({
 
   const currentActiveTab = useMemo(() => {
     if (isAccountOpen) return "account";
-    if (currentTypeList === "phim-chieu-rap" || activeTab === "/?typeList=phim-chieu-rap") {
-      return "cinema";
-    }
     if (pathname === "/recently" || activeTab === "/recently") return "/recently";
     if (pathname === "/favorites" || activeTab === "/favorites") return "/favorites";
     if (pathname === "/tai-app" || activeTab === "/tai-app") return "/tai-app";
     if (activeTab) return activeTab;
     if (pathname === "/" && !hasActiveFilters) return "/";
     return null;
-  }, [isAccountOpen, currentTypeList, activeTab, pathname, hasActiveFilters]);
+  }, [isAccountOpen, activeTab, pathname, hasActiveFilters]);
 
   const sortedCountries = useMemo(() => {
     return sortCountriesByPopularity(countries);
@@ -466,29 +463,29 @@ function SidebarContent({
             );
           })()}
 
-          {/* Tab 2: Chiếu Rạp */}
+          {/* Tab 2: Lịch Sử */}
           {(() => {
-            const active = currentActiveTab === "cinema";
+            const active = currentActiveTab === "/recently";
             return (
               <Link
-                href="/?typeList=phim-chieu-rap"
+                href="/recently"
                 prefetch={true}
-                onClick={(e) => handleBottomNavNavigate("/?typeList=phim-chieu-rap", e)}
+                onClick={(e) => handleBottomNavNavigate("/recently", e)}
                 className="flex-1 h-full flex items-center justify-center select-none touch-manipulation active:scale-95 transition-transform"
-                aria-label="Chiếu Rạp"
+                aria-label="Lịch Sử Xem"
               >
                 {active ? (
                   <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(32,214,107,0.45)]">
-                    <Film className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
+                    <Clock className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
                     <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
-                      Chiếu rạp
+                      Lịch sử
                     </span>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-1 py-1">
-                    <Film className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
+                    <Clock className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
                     <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
-                      Chiếu rạp
+                      Lịch sử
                     </span>
                   </div>
                 )}
@@ -526,37 +523,7 @@ function SidebarContent({
             );
           })()}
 
-          {/* Tab 4: Lịch Sử */}
-          {(() => {
-            const active = currentActiveTab === "/recently";
-            return (
-              <Link
-                href="/recently"
-                prefetch={true}
-                onClick={(e) => handleBottomNavNavigate("/recently", e)}
-                className="flex-1 h-full flex items-center justify-center select-none touch-manipulation active:scale-95 transition-transform"
-                aria-label="Lịch Sử Xem"
-              >
-                {active ? (
-                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(32,214,107,0.45)]">
-                    <Clock className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
-                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
-                      Lịch sử
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center gap-1 py-1">
-                    <Clock className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
-                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
-                      Lịch sử
-                    </span>
-                  </div>
-                )}
-              </Link>
-            );
-          })()}
-
-          {/* Tab 5: Tài Khoản */}
+          {/* Tab 4: Tài Khoản */}
           {(() => {
             const active = currentActiveTab === "account";
             return (
@@ -603,6 +570,36 @@ function SidebarContent({
                   </div>
                 )}
               </button>
+            );
+          })()}
+
+          {/* Tab 5: Tải App */}
+          {(() => {
+            const active = currentActiveTab === "/tai-app";
+            return (
+              <Link
+                href="/tai-app"
+                prefetch={true}
+                onClick={(e) => handleBottomNavNavigate("/tai-app", e)}
+                className="flex-1 h-full flex items-center justify-center select-none touch-manipulation active:scale-95 transition-transform"
+                aria-label="Tải App"
+              >
+                {active ? (
+                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(32,214,107,0.45)]">
+                    <Smartphone className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
+                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
+                      Tải app
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-1 py-1">
+                    <Smartphone className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
+                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
+                      Tải app
+                    </span>
+                  </div>
+                )}
+              </Link>
             );
           })()}
         </div>
@@ -1109,8 +1106,8 @@ function SidebarContent({
           {/* Divider 3 */}
           <div className="h-[1px] bg-white/5 mx-2 lg:mx-1 my-2 lg:my-1.5" />
 
-          {/* Download App Navigation Entry */}
-          <div className="pt-1 pb-6 lg:pb-8">
+          {/* Download App Navigation Entry (Desktop only; on mobile it is in the bottom nav bar) */}
+          <div className="hidden lg:block pt-1 pb-6 lg:pb-8">
             <Link
               href="/tai-app"
               prefetch={true}
