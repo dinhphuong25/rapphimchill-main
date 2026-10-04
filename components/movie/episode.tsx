@@ -156,8 +156,8 @@ export default function Episode({
       <div className="bg-[#0b0e0c]/90 backdrop-blur-md rounded-2xl border border-white/[0.05] p-5 flex flex-col gap-5 relative shadow-lg">
         {/* Máy Chủ Phát Section */}
         <div className="space-y-3 min-w-0 z-10 relative">
-          <h4 className="text-white/40 text-[12px] font-bold uppercase tracking-widest flex items-center gap-2 whitespace-nowrap">
-            <Server className="w-3.5 h-3.5 text-brand-green/60 shrink-0" />
+          <h4 className="text-white/80 text-[12px] font-extrabold uppercase tracking-widest flex items-center gap-2 whitespace-nowrap">
+            <Server className="w-3.5 h-3.5 text-brand-green shrink-0" />
             Máy chủ phát
           </h4>
 
@@ -181,21 +181,28 @@ export default function Episode({
                     className={cn(
                       "w-full py-2.5 px-2 flex flex-col items-center justify-center gap-0.5 rounded-xl transition-all border cursor-pointer",
                       currentServerIndex === index && playerMode === "m3u8"
-                        ? "bg-brand-green/[0.08] text-brand-green/90 border-brand-green/25"
-                        : "bg-white/[0.025] text-white/40 border-white/[0.04] hover:bg-white/[0.06] hover:text-white/70"
+                        ? "bg-brand-green/[0.12] text-brand-green border-brand-green/35 shadow-[0_0_12px_rgba(32,214,107,0.15)]"
+                        : "bg-white/[0.04] text-white/90 border-white/[0.08] hover:bg-white/[0.08] hover:border-white/15 hover:text-white"
                     )}
                   >
                     <span
                       className={cn(
-                        "text-[13px] font-medium leading-tight",
+                        "text-[13.5px] leading-tight",
                         currentServerIndex === index && playerMode === "m3u8"
-                          ? "text-brand-green/90 font-semibold"
-                          : "text-white/70"
+                          ? "text-brand-green font-black"
+                          : "text-white font-bold"
                       )}
                     >
                       {server.server_name}
                     </span>
-                    <span className="text-[10px] uppercase font-bold tracking-wider opacity-70">
+                    <span
+                      className={cn(
+                        "text-[10px] uppercase font-extrabold tracking-wider",
+                        currentServerIndex === index && playerMode === "m3u8"
+                          ? "text-brand-green/80"
+                          : "text-white/60"
+                      )}
+                    >
                       Mặc định
                     </span>
                   </button>
@@ -213,21 +220,28 @@ export default function Episode({
                     className={cn(
                       "w-full py-2.5 px-2 flex flex-col items-center justify-center gap-0.5 rounded-xl transition-all border cursor-pointer",
                       currentServerIndex === index && playerMode === "embed"
-                        ? "bg-brand-green/[0.08] text-brand-green/90 border-brand-green/25"
-                        : "bg-white/[0.025] text-white/40 border-white/[0.04] hover:bg-white/[0.06] hover:text-white/70"
+                        ? "bg-brand-green/[0.12] text-brand-green border-brand-green/35 shadow-[0_0_12px_rgba(32,214,107,0.15)]"
+                        : "bg-white/[0.04] text-white/90 border-white/[0.08] hover:bg-white/[0.08] hover:border-white/15 hover:text-white"
                     )}
                   >
                     <span
                       className={cn(
-                        "text-[13px] font-medium leading-tight",
+                        "text-[13.5px] leading-tight",
                         currentServerIndex === index && playerMode === "embed"
-                          ? "text-brand-green/90 font-semibold"
-                          : "text-white/70"
+                          ? "text-brand-green font-black"
+                          : "text-white font-bold"
                       )}
                     >
                       {server.server_name}
                     </span>
-                    <span className="text-[10px] uppercase font-bold tracking-wider opacity-70">
+                    <span
+                      className={cn(
+                        "text-[10px] uppercase font-extrabold tracking-wider",
+                        currentServerIndex === index && playerMode === "embed"
+                          ? "text-brand-green/80"
+                          : "text-white/60"
+                      )}
+                    >
                       Dự phòng
                     </span>
                   </button>
@@ -240,16 +254,16 @@ export default function Episode({
         </div>
 
         {/* Divider between Server and Episode List */}
-        <div className="h-[1px] bg-white/[0.04] w-full" />
+        <div className="h-[1px] bg-white/[0.08] w-full" />
 
         {/* Danh Sách Tập Section (Replacing Phím tắt) */}
         <div className="flex flex-col gap-3.5 min-w-0 z-10 relative">
           <div className="flex items-center justify-between gap-2">
-            <h4 className="text-white/40 text-[12px] font-bold uppercase tracking-widest flex items-center gap-2 whitespace-nowrap">
-              <Film className="w-3.5 h-3.5 text-brand-green/60 shrink-0" />
+            <h4 className="text-white/80 text-[12px] font-extrabold uppercase tracking-widest flex items-center gap-2 whitespace-nowrap">
+              <Film className="w-3.5 h-3.5 text-brand-green shrink-0" />
               Danh sách tập
             </h4>
-            <span className="text-white/30 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-white/[0.02] rounded-full border border-white/[0.05]">
+            <span className="text-white/70 text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 bg-white/[0.06] rounded-full border border-white/10">
               {allEpisodes.length === 1 && !allEpisodes[0]?.name?.trim() && !allEpisodes[0]?.link_m3u8 && !allEpisodes[0]?.link_embed ? "Trailer" : `${allEpisodes.length} tập`}
             </span>
           </div>
@@ -257,13 +271,13 @@ export default function Episode({
           {/* Search input for quick episode lookup */}
           {allEpisodes.length > 8 && (
             <div className="relative w-full">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-white/50" />
               <Input
                 type="text"
                 placeholder="Tìm tập phim..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 pr-3 py-1 h-8 bg-white/[0.025] border-white/[0.05] text-xs text-white/80 placeholder:text-white/30 rounded-xl focus:border-brand-green/30 focus:ring-brand-green/10"
+                className="pl-8 pr-3 py-1 h-8 bg-white/[0.04] border-white/10 text-xs font-semibold text-white placeholder:text-white/40 rounded-xl focus:border-brand-green/40 focus:ring-brand-green/20"
               />
             </div>
           )}
@@ -281,10 +295,10 @@ export default function Episode({
                     key={rIdx}
                     onClick={() => setActiveRangeIndex(rIdx)}
                     className={cn(
-                      "px-2 py-1 text-[11px] font-bold rounded-lg border transition-all shrink-0",
+                      "px-2.5 py-1 text-[11px] font-extrabold rounded-lg border transition-all shrink-0",
                       isSelected
-                        ? "bg-brand-green/[0.12] text-brand-green/90 border-brand-green/30"
-                        : "bg-white/[0.02] text-white/40 border-white/[0.05] hover:bg-white/[0.05] hover:text-white/70"
+                        ? "bg-brand-green/[0.15] text-brand-green border-brand-green/35 shadow-sm"
+                        : "bg-white/[0.04] text-white/80 border-white/[0.08] hover:bg-white/[0.08] hover:text-white"
                     )}
                   >
                     Tập {startEp}-{endEp}
@@ -340,40 +354,40 @@ export default function Episode({
                       className={cn(
                         "relative flex h-10 w-full items-center justify-center px-2 py-1.5 rounded-xl transition-all border group text-center",
                         isActive
-                          ? "bg-brand-green/[0.12] text-brand-green/90 border-brand-green/30 font-bold"
+                          ? "bg-brand-green/[0.15] text-brand-green border-brand-green/40 font-black shadow-[0_0_12px_rgba(32,214,107,0.18)]"
                           : isNew
-                          ? "bg-emerald-500/[0.06] text-emerald-400/80 border-emerald-500/25 hover:bg-emerald-500/10"
+                          ? "bg-emerald-500/[0.08] text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/15 font-bold"
                           : isWatched
-                          ? "bg-white/[0.015] text-brand-green/60 border-brand-green/15 hover:bg-white/[0.04]"
-                          : "bg-white/[0.025] text-white/40 border-white/[0.04] hover:bg-white/[0.06] hover:text-white/80"
+                          ? "bg-white/[0.02] text-brand-green/80 border-brand-green/20 hover:bg-white/[0.05] font-bold"
+                          : "bg-white/[0.04] text-white/90 border-white/[0.08] hover:bg-white/[0.08] hover:border-white/15 hover:text-white font-bold"
                       )}
                       title={epDisplayName}
                     >
                       {/* Equalizer Playing Indicator for active episode */}
                       {isActive ? (
-                        <div className="absolute top-1 right-1 flex items-end gap-[1.5px] h-2.5 opacity-80">
+                        <div className="absolute top-1 right-1 flex items-end gap-[1.5px] h-2.5 opacity-90">
                           <span className="w-[1.5px] h-full bg-brand-green rounded-full animate-bounce [animation-delay:-0.3s]" />
                           <span className="w-[1.5px] h-full bg-brand-green rounded-full animate-bounce [animation-delay:-0.15s]" />
                           <span className="w-[1.5px] h-full bg-brand-green rounded-full animate-bounce" />
                         </div>
                       ) : isNew ? (
-                        <span className="absolute -top-1.5 -right-1 px-1.5 py-0.5 bg-emerald-500/80 text-black text-[7px] font-black rounded-full uppercase tracking-wider z-10">
+                        <span className="absolute -top-1.5 -right-1 px-1.5 py-0.5 bg-emerald-500 text-black text-[7.5px] font-black rounded-full uppercase tracking-wider z-10">
                           MỚI
                         </span>
                       ) : isWatched ? (
-                        <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-brand-green/10 border border-brand-green/30 text-brand-green/70 rounded-full flex items-center justify-center text-[8px] font-bold z-10">
+                        <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-brand-green/20 border border-brand-green/40 text-brand-green rounded-full flex items-center justify-center text-[8px] font-black z-10">
                           ✓
                         </div>
                       ) : null}
 
                       <span
                         className={cn(
-                          "font-bold text-xs leading-tight truncate w-full text-center transition-colors duration-200",
+                          "font-extrabold text-xs leading-tight truncate w-full text-center transition-colors duration-200",
                           isActive
-                            ? "text-brand-green/90"
+                            ? "text-brand-green font-black"
                             : isWatched
-                            ? "text-brand-green/60"
-                            : "text-white/60 group-hover:text-white/90"
+                            ? "text-brand-green/90 font-bold"
+                            : "text-white/90 group-hover:text-white font-bold"
                         )}
                       >
                         {epDisplayName}
@@ -383,7 +397,7 @@ export default function Episode({
                 })}
               </div>
             ) : (
-              <div className="col-span-full text-center py-6 text-white/50 border border-dashed border-white/10 rounded-xl">
+              <div className="col-span-full text-center py-6 text-white/60 font-semibold border border-dashed border-white/10 rounded-xl">
                 <p className="text-xs">Không tìm thấy tập phù hợp</p>
               </div>
             )}
