@@ -267,15 +267,16 @@ function SidebarContent({
 
   const currentActiveTab = useMemo(() => {
     if (isAccountOpen) return "account";
-    if (pathname === "/tai-app" || activeTab === "/tai-app") {
-      return "/tai-app";
+    if (currentTypeList === "phim-chieu-rap" || activeTab === "/?typeList=phim-chieu-rap") {
+      return "cinema";
     }
+    if (pathname === "/recently" || activeTab === "/recently") return "/recently";
+    if (pathname === "/favorites" || activeTab === "/favorites") return "/favorites";
+    if (pathname === "/tai-app" || activeTab === "/tai-app") return "/tai-app";
     if (activeTab) return activeTab;
-    if (pathname === "/recently") return "/recently";
-    if (pathname === "/favorites") return "/favorites";
     if (pathname === "/" && !hasActiveFilters) return "/";
     return null;
-  }, [isAccountOpen, activeTab, pathname, hasActiveFilters]);
+  }, [isAccountOpen, currentTypeList, activeTab, pathname, hasActiveFilters]);
 
   const sortedCountries = useMemo(() => {
     return sortCountriesByPopularity(countries);
@@ -413,296 +414,185 @@ function SidebarContent({
   return (
     <>
       {/* ======================================================== */}
-      {/* MOBILE BOTTOM NAVIGATION BAR (AURAFLIX CURVED NOTCH DOCK) */}
+      {/* MOBILE BOTTOM NAVIGATION BAR (MATCHING NATIVE APP TAB BAR) */}
       {/* ======================================================== */}
       <nav
         aria-label="Điều hướng chính"
-        className="lg:hidden fixed left-0 right-0 bottom-0 z-[140] w-full pointer-events-auto select-none touch-manipulation"
+        className="lg:hidden fixed left-3 right-3 bottom-0 z-[140] pointer-events-auto select-none touch-manipulation"
         style={{
-          paddingBottom: "max(0.35rem, env(safe-area-inset-bottom, 0px))",
+          bottom: "max(0.6rem, env(safe-area-inset-bottom, 0px))",
         }}
       >
-        {/* Seamless Full-Width Background Underlay spanning notch to screen bottom */}
-        <div className="absolute inset-0 flex flex-col pointer-events-none">
-          {/* Top Notch Row (58px) */}
-          <div className="w-full h-[58px] flex items-stretch">
-            {/* Left Wing with Top Border */}
-            <div className="flex-1 bg-[#0B100E]/95 backdrop-blur-2xl border-t border-white/[0.08]" />
-
-            {/* Center Notch SVG Cutout */}
-            <div className="w-[88px] h-full relative shrink-0">
-              <svg
-                viewBox="0 0 88 58"
-                className="w-[88px] h-[58px] block"
-                preserveAspectRatio="none"
+        <div className="w-full max-w-lg mx-auto h-[64px] rounded-[32px] bg-[#223128] border-[1.2px] border-white/20 border-t-white/30 shadow-[0_8px_24px_rgba(0,0,0,0.6)] backdrop-blur-2xl flex items-center justify-between px-1.5">
+          {/* Tab 1: Trang Chủ */}
+          {(() => {
+            const active = currentActiveTab === "/";
+            return (
+              <Link
+                href="/"
+                prefetch={true}
+                onClick={(e) => handleBottomNavNavigate("/", e)}
+                className="flex-1 h-full flex items-center justify-center select-none touch-manipulation active:scale-95 transition-transform"
+                aria-label="Trang Chủ"
               >
-                <defs>
-                  <linearGradient id="hiphimNotchStroke" x1="0" y1="0" x2="88" y2="0" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="rgba(255,255,255,0.08)" />
-                    <stop offset="35%" stopColor={currentActiveTab === "/tai-app" ? "rgba(32,214,107,0.4)" : "rgba(255,255,255,0.08)"} />
-                    <stop offset="50%" stopColor={currentActiveTab === "/tai-app" ? "rgba(32,214,107,0.75)" : "rgba(255,255,255,0.12)"} />
-                    <stop offset="65%" stopColor={currentActiveTab === "/tai-app" ? "rgba(32,214,107,0.4)" : "rgba(255,255,255,0.08)"} />
-                    <stop offset="100%" stopColor="rgba(255,255,255,0.08)" />
-                  </linearGradient>
-                </defs>
-                {/* Notch body fill matching bar background */}
-                <path
-                  d="M 0 0 C 16 0, 24 16, 44 16 C 64 16, 72 0, 88 0 L 88 58 L 0 58 Z"
-                  fill="#0B100E"
-                  fillOpacity="0.95"
-                />
-                {/* Notch top contour stroke */}
-                <path
-                  d="M 0 0 C 16 0, 24 16, 44 16 C 64 16, 72 0, 88 0"
-                  fill="none"
-                  stroke="url(#hiphimNotchStroke)"
-                  strokeWidth="1.2"
-                />
-              </svg>
-            </div>
-
-            {/* Right Wing with Top Border */}
-            <div className="flex-1 bg-[#0B100E]/95 backdrop-blur-2xl border-t border-white/[0.08]" />
-          </div>
-
-          {/* Bottom Extension: Seamlessly fills safe-area-inset-bottom and padding to screen bottom */}
-          <div className="flex-1 w-full bg-[#0B100E]/95 backdrop-blur-2xl -mt-px" />
-        </div>
-
-        {/* Rubber-band overscroll protection for iOS bouncing */}
-        <div className="absolute -bottom-12 left-0 right-0 h-12 bg-[#0B100E] pointer-events-none" />
-
-        {/* Interactive Navigation Elements Layer */}
-        <div className="relative z-10 w-full max-w-lg mx-auto h-[58px]">
-          <div className="w-full h-full flex items-center justify-between px-1">
-            {/* Left 2 Items: Trang Chủ & Lịch Sử */}
-            <div className="flex-1 flex items-center justify-around pr-1 h-full">
-              {/* Tab 1: Trang Chủ */}
-              {(() => {
-                const active = currentActiveTab === "/";
-                return (
-                  <Link
-                    href="/"
-                    prefetch={true}
-                    onClick={(e) => handleBottomNavNavigate("/", e)}
-                    className="flex-1 h-full flex flex-col items-center justify-center gap-1 relative select-none touch-manipulation cursor-pointer active:scale-90 transition-transform duration-75 group"
-                    style={{ WebkitTapHighlightColor: "transparent" }}
-                    aria-label="Trang Chủ"
-                  >
-                    <div className="relative flex items-center justify-center">
-                      <Home
-                        className={cn(
-                          "w-[19px] h-[19px] transition-colors duration-150",
-                          active ? "text-brand-green stroke-[2.4]" : "text-white/50 group-hover:text-white"
-                        )}
-                      />
-                      {active && (
-                        <span className="absolute -inset-1.5 rounded-full bg-brand-green/20 blur-sm pointer-events-none" />
-                      )}
-                    </div>
-                    <span
-                      className={cn(
-                        "text-[10px] tracking-tight whitespace-nowrap transition-colors duration-150 leading-none",
-                        active ? "text-brand-green font-bold" : "text-white/50 group-hover:text-white font-medium"
-                      )}
-                    >
+                {active ? (
+                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(32,214,107,0.45)]">
+                    <Home className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
+                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
                       Trang chủ
                     </span>
-                  </Link>
-                );
-              })()}
-
-              {/* Tab 2: Lịch Sử Xem */}
-              {(() => {
-                const active = currentActiveTab === "/recently";
-                return (
-                  <Link
-                    href="/recently"
-                    prefetch={true}
-                    onClick={(e) => handleBottomNavNavigate("/recently", e)}
-                    className="flex-1 h-full flex flex-col items-center justify-center gap-1 relative select-none touch-manipulation cursor-pointer active:scale-90 transition-transform duration-75 group"
-                    style={{ WebkitTapHighlightColor: "transparent" }}
-                    aria-label="Lịch Sử Xem"
-                  >
-                    <div className="relative flex items-center justify-center">
-                      <History
-                        className={cn(
-                          "w-[19px] h-[19px] transition-colors duration-150",
-                          active ? "text-brand-green stroke-[2.4]" : "text-white/50 group-hover:text-white"
-                        )}
-                      />
-                      {active && (
-                        <span className="absolute -inset-1.5 rounded-full bg-brand-green/20 blur-sm pointer-events-none" />
-                      )}
-                    </div>
-                    <span
-                      className={cn(
-                        "text-[10px] tracking-tight whitespace-nowrap transition-colors duration-150 leading-none",
-                        active ? "text-brand-green font-bold" : "text-white/50 group-hover:text-white font-medium"
-                      )}
-                    >
-                      Lịch sử
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-1 py-1">
+                    <Home className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
+                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
+                      Trang chủ
                     </span>
-                  </Link>
-                );
-              })()}
-            </div>
+                  </div>
+                )}
+              </Link>
+            );
+          })()}
 
-            {/* Center Elevated Action: Tải App Mobile */}
-            <div className="w-[88px] h-full relative shrink-0 flex items-center justify-center">
-              {(() => {
-                const active = currentActiveTab === "/tai-app";
-                return (
-                  <Link
-                    href="/tai-app"
-                    prefetch={true}
-                    onClick={(e) => handleBottomNavNavigate("/tai-app", e)}
-                    className="w-full h-full flex flex-col items-center justify-end pb-[12px] relative select-none touch-manipulation cursor-pointer active:scale-90 transition-transform duration-100 group"
-                    style={{ WebkitTapHighlightColor: "transparent" }}
-                    aria-label="Tải App Mobile"
-                  >
-                    {/* Elevated Button Wrapper */}
-                    <div className="absolute -top-[18px] w-[48px] h-[48px] flex items-center justify-center">
-                      {/* Ambient Glow Halo behind Elevated Button */}
-                      <div
-                        className={cn(
-                          "absolute -inset-1.5 rounded-full blur-md transition-opacity duration-300 pointer-events-none",
-                          active
-                            ? "bg-brand-green/45 opacity-100"
-                            : "bg-brand-green/15 opacity-40 group-hover:opacity-80"
-                        )}
-                      />
-
-                      {/* Elevated Button Body */}
-                      <div
-                        className={cn(
-                          "w-full h-full rounded-full flex items-center justify-center transition-all duration-200 relative overflow-hidden",
-                          active
-                            ? "bg-gradient-to-tr from-[#20D66B] via-[#2AE376] to-[#10B981] text-black shadow-[0_0_24px_rgba(32,214,107,0.6),0_6px_20px_rgba(0,0,0,0.7)] border-2 border-brand-green"
-                            : "bg-[#111915] text-white/70 hover:text-white border border-white/15 hover:border-brand-green/40 shadow-[0_6px_18px_rgba(0,0,0,0.8)]"
-                        )}
-                      >
-                        {/* Top highlight shine on active button */}
-                        {active && (
-                          <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/35 to-transparent pointer-events-none rounded-t-full" />
-                        )}
-                        <Smartphone
-                          className={cn(
-                            "w-[21px] h-[21px] transition-transform group-hover:scale-105",
-                            active ? "stroke-[2.5] text-black" : "stroke-[2] text-white/70 group-hover:text-brand-green"
-                          )}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Text Label under Smartphone Icon */}
-                    <span
-                      className={cn(
-                        "text-[11px] tracking-tight whitespace-nowrap transition-colors duration-150 leading-none",
-                        active ? "text-brand-green font-bold" : "text-white/60 group-hover:text-white font-semibold"
-                      )}
-                    >
-                      Tải app
+          {/* Tab 2: Chiếu Rạp */}
+          {(() => {
+            const active = currentActiveTab === "cinema";
+            return (
+              <Link
+                href="/?typeList=phim-chieu-rap"
+                prefetch={true}
+                onClick={(e) => handleBottomNavNavigate("/?typeList=phim-chieu-rap", e)}
+                className="flex-1 h-full flex items-center justify-center select-none touch-manipulation active:scale-95 transition-transform"
+                aria-label="Chiếu Rạp"
+              >
+                {active ? (
+                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(32,214,107,0.45)]">
+                    <Film className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
+                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
+                      Chiếu rạp
                     </span>
-                  </Link>
-                );
-              })()}
-            </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-1 py-1">
+                    <Film className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
+                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
+                      Chiếu rạp
+                    </span>
+                  </div>
+                )}
+              </Link>
+            );
+          })()}
 
-            {/* Right 2 Items: Yêu Thích & Tài Khoản */}
-            <div className="flex-1 flex items-center justify-around pl-1 h-full">
-              {/* Tab 4: Phim Yêu Thích */}
-              {(() => {
-                const active = currentActiveTab === "/favorites";
-                return (
-                  <Link
-                    href="/favorites"
-                    prefetch={true}
-                    onClick={(e) => handleBottomNavNavigate("/favorites", e)}
-                    className="flex-1 h-full flex flex-col items-center justify-center gap-1 relative select-none touch-manipulation cursor-pointer active:scale-90 transition-transform duration-75 group"
-                    style={{ WebkitTapHighlightColor: "transparent" }}
-                    aria-label="Phim Yêu Thích"
-                  >
-                    <div className="relative flex items-center justify-center">
-                      <Heart
-                        className={cn(
-                          "w-[19px] h-[19px] transition-colors duration-150",
-                          active
-                            ? "text-brand-green fill-brand-green stroke-[2.4]"
-                            : "text-white/50 group-hover:text-white"
-                        )}
-                      />
-                      {active && (
-                        <span className="absolute -inset-1.5 rounded-full bg-brand-green/20 blur-sm pointer-events-none" />
-                      )}
-                    </div>
-                    <span
-                      className={cn(
-                        "text-[10px] tracking-tight whitespace-nowrap transition-colors duration-150 leading-none",
-                        active ? "text-brand-green font-bold" : "text-white/50 group-hover:text-white font-medium"
-                      )}
-                    >
+          {/* Tab 3: Yêu Thích */}
+          {(() => {
+            const active = currentActiveTab === "/favorites";
+            return (
+              <Link
+                href="/favorites"
+                prefetch={true}
+                onClick={(e) => handleBottomNavNavigate("/favorites", e)}
+                className="flex-1 h-full flex items-center justify-center select-none touch-manipulation active:scale-95 transition-transform"
+                aria-label="Yêu Thích"
+              >
+                {active ? (
+                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(32,214,107,0.45)]">
+                    <Heart className="w-[18px] h-[18px] text-[#051309] fill-[#051309] stroke-[2.6]" />
+                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
                       Yêu thích
                     </span>
-                  </Link>
-                );
-              })()}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-1 py-1">
+                    <Heart className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
+                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
+                      Yêu thích
+                    </span>
+                  </div>
+                )}
+              </Link>
+            );
+          })()}
 
-              {/* Tab 5: Tài Khoản */}
-              {(() => {
-                const active = currentActiveTab === "account";
-                return (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsExploreOpen(false);
-                      setIsMobileOpen(false);
-                      setActiveModal(null);
-                      if (user) {
-                        setIsAccountOpen((prev) => !prev);
-                      } else {
-                        openAuthModal("login");
-                      }
-                    }}
-                    className="flex-1 h-full flex flex-col items-center justify-center gap-1 relative select-none touch-manipulation cursor-pointer active:scale-90 transition-transform duration-75 group"
-                    style={{ WebkitTapHighlightColor: "transparent" }}
-                    aria-label="Tài Khoản"
-                  >
-                    <div className="relative flex items-center justify-center">
-                      {user?.avatar ? (
-                        <div
-                          className={cn(
-                            "w-[21px] h-[21px] rounded-full overflow-hidden shrink-0 border relative transition-colors",
-                            active ? "border-brand-green ring-2 ring-brand-green/30" : "border-white/20"
-                          )}
-                        >
-                          <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="21px" />
-                        </div>
-                      ) : (
-                        <User
-                          className={cn(
-                            "w-[19px] h-[19px] transition-colors duration-150",
-                            active ? "text-brand-green stroke-[2.4]" : "text-white/50 group-hover:text-white"
-                          )}
-                        />
-                      )}
-                      {active && (
-                        <span className="absolute -inset-1.5 rounded-full bg-brand-green/20 blur-sm pointer-events-none" />
-                      )}
-                    </div>
-                    <span
-                      className={cn(
-                        "text-[10px] tracking-tight whitespace-nowrap transition-colors duration-150 leading-none",
-                        active ? "text-brand-green font-bold" : "text-white/50 group-hover:text-white font-medium"
-                      )}
-                    >
+          {/* Tab 4: Lịch Sử */}
+          {(() => {
+            const active = currentActiveTab === "/recently";
+            return (
+              <Link
+                href="/recently"
+                prefetch={true}
+                onClick={(e) => handleBottomNavNavigate("/recently", e)}
+                className="flex-1 h-full flex items-center justify-center select-none touch-manipulation active:scale-95 transition-transform"
+                aria-label="Lịch Sử Xem"
+              >
+                {active ? (
+                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(32,214,107,0.45)]">
+                    <Clock className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
+                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
+                      Lịch sử
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-1 py-1">
+                    <Clock className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
+                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
+                      Lịch sử
+                    </span>
+                  </div>
+                )}
+              </Link>
+            );
+          })()}
+
+          {/* Tab 5: Tài Khoản */}
+          {(() => {
+            const active = currentActiveTab === "account";
+            return (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsExploreOpen(false);
+                  setIsMobileOpen(false);
+                  setActiveModal(null);
+                  if (user) {
+                    setIsAccountOpen((prev) => !prev);
+                  } else {
+                    openAuthModal("login");
+                  }
+                }}
+                className="flex-1 h-full flex items-center justify-center select-none touch-manipulation active:scale-95 transition-transform"
+                aria-label="Tài Khoản"
+              >
+                {active ? (
+                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(32,214,107,0.45)]">
+                    {user?.avatar ? (
+                      <div className="w-[19px] h-[19px] rounded-full overflow-hidden shrink-0 border border-[#051309] relative">
+                        <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="19px" />
+                      </div>
+                    ) : (
+                      <User className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
+                    )}
+                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
                       Tài khoản
                     </span>
-                  </button>
-                );
-              })()}
-            </div>
-          </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-1 py-1">
+                    {user?.avatar ? (
+                      <div className="w-[20px] h-[20px] rounded-full overflow-hidden shrink-0 border border-white/20 relative">
+                        <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="20px" />
+                      </div>
+                    ) : (
+                      <User className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
+                    )}
+                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
+                      Tài khoản
+                    </span>
+                  </div>
+                )}
+              </button>
+            );
+          })()}
         </div>
       </nav>
 
