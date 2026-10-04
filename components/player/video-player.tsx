@@ -588,40 +588,59 @@ export default function VideoPlayer({
     if (!containerRef.current || !videoRef.current) return;
     
     try {
-      // Check for iOS Safari specifically
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-      const video = videoRef.current;
-      
-      const isCurrentlyFullscreen = !!(
+      const isHtml5Fullscreen = !!(
         document.fullscreenElement || 
         (document as any).webkitFullscreenElement || 
         (document as any).mozFullScreenElement ||
         (document as any).msFullscreenElement
       );
 
-      if (!isCurrentlyFullscreen) {
+      const isCurrent = isHtml5Fullscreen || isFullscreen;
+
+      if (!isCurrent) {
+        // Try HTML5 Fullscreen on container element first (supported on Desktop, Android, iPadOS)
         if (containerRef.current.requestFullscreen) {
-          await containerRef.current.requestFullscreen();
+          try {
+            await containerRef.current.requestFullscreen();
+          } catch (e) {}
         } else if ((containerRef.current as any).webkitRequestFullscreen) {
-          await (containerRef.current as any).webkitRequestFullscreen();
-        } else if (isIOS && (video as any).webkitEnterFullscreen) {
-          // Special case for iPhone: use native video fullscreen
-          (video as any).webkitEnterFullscreen();
-          return; // The browser handles the state for native video fullscreen
+          try {
+            await (containerRef.current as any).webkitRequestFullscreen();
+          } catch (e) {}
         }
+
+        // On iPhone Safari (or mobile browsers where Element.requestFullscreen is not supported):
+        // NEVER use video.webkitEnterFullscreen()!
+        // webkitEnterFullscreen() delegates video playback to the iOS native system player,
+        // which completely strips all DOM overlays, breaking our Anti-Ad Shield and custom controls.
+        // Instead, CSS Pseudo-Fullscreen seamlessly expands the container to full-window (100dvh/100vw).
         setIsFullscreen(true);
+
+        // Try locking orientation to landscape on mobile devices if supported
+        try {
+          if (typeof screen !== 'undefined' && screen.orientation && (screen.orientation as any).lock) {
+            (screen.orientation as any).lock('landscape').catch(() => {});
+          }
+        } catch (e) {}
       } else {
-        if (document.exitFullscreen) {
-          await document.exitFullscreen();
-        } else if ((document as any).webkitExitFullscreen) {
-          await (document as any).webkitExitFullscreen();
+        if (document.fullscreenElement && document.exitFullscreen) {
+          try { await document.exitFullscreen(); } catch (e) {}
+        } else if ((document as any).webkitFullscreenElement && (document as any).webkitExitFullscreen) {
+          try { await (document as any).webkitExitFullscreen(); } catch (e) {}
         }
         setIsFullscreen(false);
+
+        try {
+          if (typeof screen !== 'undefined' && screen.orientation && screen.orientation.unlock) {
+            screen.orientation.unlock();
+          }
+        } catch (e) {}
       }
     } catch (err) {
       console.error('Fullscreen error:', err);
+      setIsFullscreen((prev) => !prev);
     }
-  }, []);
+  }, [isFullscreen]);
 
   const handlePlaybackRateChange = useCallback((rate: number) => {
     if (videoRef.current) {
@@ -697,7 +716,23 @@ export default function VideoPlayer({
     };
     updateAspect();
     window.addEventListener('resize', updateAspect);
-    return () => window.removeEventListener('resize', updateAspect);
+    window.addEventListener('orientationchange', updateAspect);
+    return () => {
+      window.removeEventListener('resize', updateAspect);
+      window.removeEventListener('orientationchange', updateAspect);
+    };
+  }, [isFullscreen]);
+
+  // Prevent background scrolling when in fullscreen mode on mobile and desktop
+  useEffect(() => {
+    if (isFullscreen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [isFullscreen]);
 
   // Compute CSS transform & fit styling for <video>
@@ -1417,9 +1452,9 @@ export default function VideoPlayer({
 
       // Tự động kích hoạt khiên che quảng cáo thông minh:
       // 1. Phân đoạn banner từ playlist m3u8 (convertv8 / banner_ad)
-      // 2. Đoạn intro sponsor cờ bạc đầu phim (0s - 220s / 3m40s) nơi 100% video stream lồng dải quảng cáo bài bạc như 9922.com (xem ảnh chụp minh họa của người dùng ở 3:16)
+      // 2. Đoạn intro sponsor cờ bạc đầu phim (0s - 480s / 8 phút) nơi video stream lồng dải quảng cáo bài bạc như 9922.com (cả chế độ thường & toàn màn hình web mobile)
       // 3. Quét hình ảnh thời gian thực (visual OCR / edge detector)
-      // 4. KHI HẾT QUẢNG CÁO (cur > 220s hoặc ngoài dải banner), khiên che tự động tắt mượt mà, trả lại video nguyên bản cho người xem!
+      // 4. KHI HẾT QUẢNG CÁO (cur > 480s hoặc ngoài dải banner), khiên che tự động tắt mượt mà, trả lại video nguyên bản cho người xem!
       if (adShieldMode === 'auto') {
         let isAdNow = false;
 
@@ -1433,9 +1468,9 @@ export default function VideoPlayer({
           }
         }
 
-        // Ưu tiên 2: Đoạn giới thiệu nhà tài trợ nổ hũ / cờ bạc đầu phim (0s - 220s)
-        const isLongVideo = video.duration ? video.duration > 300 : true;
-        if (!isAdNow && cur >= 0 && cur <= 220 && isLongVideo) {
+        // Ưu tiên 2: Đoạn giới thiệu nhà tài trợ nổ hũ / cờ bạc đầu phim (0s - 480s / 8 phút)
+        const isLongVideo = video.duration ? video.duration > 180 : true;
+        if (!isAdNow && cur >= 0 && cur <= 480 && isLongVideo) {
           isAdNow = true;
         }
 
@@ -2143,7 +2178,7 @@ export default function VideoPlayer({
       ref={containerRef} 
       className={cn(
         "relative bg-black group overflow-hidden select-none w-full aspect-video rounded-xl lg:rounded-2xl touch-manipulation", 
-        isFullscreen && "fixed inset-0 z-[99999] w-screen h-[100dvh] rounded-none aspect-auto"
+        isFullscreen && "fixed inset-0 z-[99999] w-screen h-[100dvh] rounded-none aspect-auto bg-black"
       )} 
       style={{ transform: "translateZ(0)" }}
       onMouseMove={showControlsHandler} 
@@ -2207,9 +2242,9 @@ export default function VideoPlayer({
       {/* Intelligent Anti-Ad Banner Shield (Tự động che dải quảng cáo bài bạc ở mép trên, siêu thông minh, hoàn toàn tự động không hiện thông báo, hết QC tự tắt) */}
       <div 
         className={cn(
-          "absolute top-0 left-0 right-0 z-[28] transition-all duration-500 overflow-hidden pointer-events-none select-none",
+          "absolute top-0 left-0 right-0 z-[45] transition-all duration-500 overflow-hidden pointer-events-none select-none",
           isAdDetected
-            ? "opacity-100 h-[24%] sm:h-[23%]" 
+            ? "opacity-100 h-[25%] sm:h-[24%]" 
             : "opacity-0 h-0 pointer-events-none"
         )}
       >
