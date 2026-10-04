@@ -184,7 +184,6 @@ export default function VideoPlayer({
   const [isMuted, setIsMuted] = useState(false);
   const [isAutoplayMuted, setIsAutoplayMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isMobileRotated, setIsMobileRotated] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [buffered, setBuffered] = useState(0);
@@ -603,34 +602,47 @@ export default function VideoPlayer({
       const isCurrent = isHtml5Fullscreen || isFullscreen;
 
       if (!isCurrent) {
-        // Try HTML5 Fullscreen on container element first (supported on Desktop, Android, iPadOS)
+        // 1. On iPhone / iOS Safari where container Element.requestFullscreen is NOT supported:
+        // Use video.webkitEnterFullscreen() to launch the REAL native fullscreen player directly!
+        const isIos = typeof navigator !== 'undefined' && /iPhone|iPod|iPad/i.test(navigator.userAgent);
+        const canWebkitFs = typeof (videoRef.current as any).webkitEnterFullscreen === 'function';
+
+        if ((isIos || !containerRef.current.requestFullscreen) && canWebkitFs) {
+          try {
+            (videoRef.current as any).webkitEnterFullscreen();
+            setIsFullscreen(true);
+            return;
+          } catch (e) {
+            console.warn('iOS webkitEnterFullscreen error:', e);
+          }
+        }
+
+        // 2. Try HTML5 Fullscreen on container element (Desktop, Android, iPadOS)
+        let enteredContainerFullscreen = false;
         if (containerRef.current.requestFullscreen) {
           try {
             await containerRef.current.requestFullscreen();
+            enteredContainerFullscreen = true;
           } catch (e) {}
         } else if ((containerRef.current as any).webkitRequestFullscreen) {
           try {
             await (containerRef.current as any).webkitRequestFullscreen();
+            enteredContainerFullscreen = true;
           } catch (e) {}
         }
 
-        // On iPhone Safari (or mobile browsers where Element.requestFullscreen is not supported):
-        // NEVER use video.webkitEnterFullscreen()!
-        // webkitEnterFullscreen() delegates video playback to the iOS native system player,
-        // which completely strips all DOM overlays, breaking our Anti-Ad Shield and custom controls.
-        // Instead, CSS Pseudo-Fullscreen seamlessly expands the container to full-window (100dvh/100vw).
-        setIsFullscreen(true);
-
-        const isMobile = typeof navigator !== 'undefined' && (
-          /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
-          (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 1024px) and (pointer: coarse)').matches)
-        );
-        const isPortrait = typeof window !== 'undefined' && window.innerWidth < window.innerHeight;
-        if (isMobile && isPortrait) {
-          setIsMobileRotated(true);
+        // Fallback for any other device supporting webkitEnterFullscreen if container FS failed
+        if (!enteredContainerFullscreen && canWebkitFs) {
+          try {
+            (videoRef.current as any).webkitEnterFullscreen();
+            setIsFullscreen(true);
+            return;
+          } catch (e) {}
         }
 
-        // Try locking orientation to landscape on mobile devices if supported
+        setIsFullscreen(true);
+
+        // Lock orientation to landscape on Android / devices that support Screen Orientation API
         try {
           if (typeof screen !== 'undefined' && screen.orientation && (screen.orientation as any).lock) {
             (screen.orientation as any).lock('landscape').catch(() => {});
@@ -642,8 +654,12 @@ export default function VideoPlayer({
         } else if ((document as any).webkitFullscreenElement && (document as any).webkitExitFullscreen) {
           try { await (document as any).webkitExitFullscreen(); } catch (e) {}
         }
+
+        if (typeof (videoRef.current as any).webkitExitFullscreen === 'function') {
+          try { (videoRef.current as any).webkitExitFullscreen(); } catch (e) {}
+        }
+
         setIsFullscreen(false);
-        setIsMobileRotated(false);
 
         try {
           if (typeof screen !== 'undefined' && screen.orientation && screen.orientation.unlock) {
@@ -654,7 +670,6 @@ export default function VideoPlayer({
     } catch (err) {
       console.error('Fullscreen error:', err);
       setIsFullscreen((prev) => !prev);
-      setIsMobileRotated(false);
     }
   }, [isFullscreen]);
 
@@ -737,7 +752,7 @@ export default function VideoPlayer({
       window.removeEventListener('resize', updateAspect);
       window.removeEventListener('orientationchange', updateAspect);
     };
-  }, [isFullscreen, isMobileRotated]);
+  }, [isFullscreen]);
 
   // Synchronize HTML5 fullscreen events (e.g. user presses Esc or hardware gesture)
   useEffect(() => {
@@ -750,7 +765,6 @@ export default function VideoPlayer({
       );
       if (!isHtml5Fs && isFullscreen) {
         setIsFullscreen(false);
-        setIsMobileRotated(false);
       }
     };
     document.addEventListener('fullscreenchange', onFsChange);
@@ -758,30 +772,6 @@ export default function VideoPlayer({
     return () => {
       document.removeEventListener('fullscreenchange', onFsChange);
       document.removeEventListener('webkitfullscreenchange', onFsChange);
-    };
-  }, [isFullscreen]);
-
-  // Check orientation dynamically on mobile while fullscreen is active
-  useEffect(() => {
-    if (!isFullscreen) {
-      setIsMobileRotated(false);
-      return;
-    }
-
-    const checkOrientation = () => {
-      if (typeof window === 'undefined') return;
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
-        (window.matchMedia && window.matchMedia('(max-width: 1024px) and (pointer: coarse)').matches);
-      const isPortrait = window.innerWidth < window.innerHeight;
-      setIsMobileRotated(isMobile && isPortrait);
-    };
-
-    checkOrientation();
-    window.addEventListener('resize', checkOrientation);
-    window.addEventListener('orientationchange', checkOrientation);
-    return () => {
-      window.removeEventListener('resize', checkOrientation);
-      window.removeEventListener('orientationchange', checkOrientation);
     };
   }, [isFullscreen]);
 
@@ -1855,6 +1845,14 @@ export default function VideoPlayer({
       setVolume(video.volume);
     };
 
+    const onWebkitBeginFs = () => setIsFullscreen(true);
+    const onWebkitEndFs = () => setIsFullscreen(false);
+    const onWebkitPresMode = () => {
+      if ((video as any).webkitPresentationMode) {
+        setIsFullscreen((video as any).webkitPresentationMode === 'fullscreen');
+      }
+    };
+
     video.addEventListener('canplay', hideLoading);
     video.addEventListener('canplaythrough', hideLoading);
     video.addEventListener('loadeddata', hideLoading);
@@ -1870,6 +1868,9 @@ export default function VideoPlayer({
     video.addEventListener('volumechange', onVolumeChangeEvent);
     video.addEventListener('waiting', onWaiting);
     video.addEventListener('error', onErrorEvent);
+    video.addEventListener('webkitbeginfullscreen', onWebkitBeginFs);
+    video.addEventListener('webkitendfullscreen', onWebkitEndFs);
+    video.addEventListener('webkitpresentationmodechanged', onWebkitPresMode);
     
     return () => {
       if (waitingTimerRef.current) {
@@ -1890,6 +1891,9 @@ export default function VideoPlayer({
       video.removeEventListener('volumechange', onVolumeChangeEvent);
       video.removeEventListener('waiting', onWaiting);
       video.removeEventListener('error', onErrorEvent);
+      video.removeEventListener('webkitbeginfullscreen', onWebkitBeginFs);
+      video.removeEventListener('webkitendfullscreen', onWebkitEndFs);
+      video.removeEventListener('webkitpresentationmodechanged', onWebkitPresMode);
       if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
     };
   }, [hasNextEpisode]);
@@ -2130,9 +2134,7 @@ export default function VideoPlayer({
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    const relX = isMobileRotated
-      ? (touch.clientY - rect.top) / rect.height
-      : (touch.clientX - rect.left) / rect.width;
+    const relX = (touch.clientX - rect.left) / rect.width;
     const zone: 'left' | 'center' | 'right' = relX < 0.35 ? 'left' : relX > 0.65 ? 'right' : 'center';
 
     touchStartRef.current = {
@@ -2154,22 +2156,8 @@ export default function VideoPlayer({
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    let deltaX: number;
-    let deltaY: number;
-
-    if (isMobileRotated) {
-      // In 90deg rotated landscape:
-      // Dragging right across the rotated player corresponds to moving downwards in screen Y
-      deltaX = touch.clientY - touchStartRef.current.y;
-      // Dragging up across the rotated player corresponds to moving rightwards in screen X
-      deltaY = touch.clientX - touchStartRef.current.x;
-    } else {
-      deltaX = touch.clientX - touchStartRef.current.x;
-      deltaY = touchStartRef.current.y - touch.clientY; // positive = dragging UP
-    }
-
-    const effectiveWidth = isMobileRotated ? rect.height : rect.width;
-    const effectiveHeight = isMobileRotated ? rect.width : rect.height;
+    const deltaX = touch.clientX - touchStartRef.current.x;
+    const deltaY = touchStartRef.current.y - touch.clientY; // positive = dragging UP
 
     // Gesture detection threshold
     if (!touchStartRef.current.lockedGesture) {
@@ -2189,19 +2177,19 @@ export default function VideoPlayer({
     if (gestureHUDTimerRef.current) clearTimeout(gestureHUDTimerRef.current);
 
     if (touchStartRef.current.lockedGesture === 'brightness') {
-      const step = (deltaY / (effectiveHeight * 0.7)) * 100;
+      const step = (deltaY / (rect.height * 0.7)) * 100;
       const nextBrightness = Math.round(Math.min(150, Math.max(30, touchStartRef.current.startBrightness + step)));
       setBrightness(nextBrightness);
       setGestureHUD({ type: 'brightness', value: nextBrightness });
     } else if (touchStartRef.current.lockedGesture === 'volume') {
-      const step = deltaY / (effectiveHeight * 0.7);
+      const step = deltaY / (rect.height * 0.7);
       const nextVol = Math.min(1, Math.max(0, touchStartRef.current.startVolume + step));
       setVolume(nextVol);
       if (videoRef.current) videoRef.current.volume = nextVol;
       if (nextVol > 0 && isMuted) setIsMuted(false);
       setGestureHUD({ type: 'volume', value: Math.round(nextVol * 100) });
     } else if (touchStartRef.current.lockedGesture === 'seek') {
-      const seekSec = Math.round((deltaX / effectiveWidth) * 90);
+      const seekSec = Math.round((deltaX / rect.width) * 90);
       const targetTime = Math.min(duration, Math.max(0, touchStartRef.current.startTime + seekSec));
       targetSeekRef.current = targetTime;
       setGestureHUD({ type: 'seek', value: targetTime, delta: seekSec });
@@ -2284,38 +2272,10 @@ export default function VideoPlayer({
       className={cn(
         "relative bg-black group overflow-hidden select-none w-full touch-manipulation", 
         isFullscreen 
-          ? "fixed z-[99999] rounded-none aspect-auto bg-black" 
-          : "aspect-video rounded-xl lg:rounded-2xl",
-        isFullscreen && !isMobileRotated && "inset-0 w-screen h-[100dvh]"
+          ? "fixed inset-0 z-[99999] w-screen h-[100dvh] rounded-none aspect-auto bg-black" 
+          : "aspect-video rounded-xl lg:rounded-2xl"
       )} 
-      style={
-        isFullscreen && isMobileRotated
-          ? {
-              position: "fixed",
-              top: "50%",
-              left: "50%",
-              width: "100dvh",
-              height: "100dvw",
-              transform: "translate(-50%, -50%) rotate(90deg)",
-              transformOrigin: "center center",
-              zIndex: 99999,
-              maxWidth: "none",
-              maxHeight: "none",
-            }
-          : isFullscreen
-          ? {
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100vw",
-              height: "100dvh",
-              zIndex: 99999,
-              maxWidth: "none",
-              maxHeight: "none",
-              transform: "translateZ(0)",
-            }
-          : { transform: "translateZ(0)" }
-      }
+      style={{ transform: "translateZ(0)" }}
       onMouseMove={showControlsHandler} 
       onMouseLeave={() => isPlaying && setShowControls(false)}
     >
