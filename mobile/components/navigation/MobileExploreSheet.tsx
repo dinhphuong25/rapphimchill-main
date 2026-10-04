@@ -23,7 +23,6 @@ import {
   Globe,
   Calendar,
   Layers,
-  Trophy,
   Sparkles,
   X,
   ChevronLeft,
@@ -168,18 +167,7 @@ const CARDS: ExploreCard[] = [
     iconBg: "rgba(249, 115, 22, 0.2)",
     image: "https://images.unsplash.com/photo-1501139083538-0139583c060f?w=400&auto=format&fit=crop&q=85",
   },
-  {
-    id: "bang-xep-hang",
-    label: "Bảng Xếp Hạng",
-    icon: Trophy,
-    route: "/(tabs)/cinema",
-    gradient: ["#281f07", "#332809", "#3f320b"],
-    fadeOverlay: ["#281f07", "rgba(40, 31, 7, 0.6)", "transparent"],
-    borderColor: "rgba(234, 179, 8, 0.35)",
-    iconColor: "#facc15",
-    iconBg: "rgba(234, 179, 8, 0.2)",
-    image: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400&auto=format&fit=crop&q=85",
-  },
+
 ];
 
 const currentYearNum = 2026;
@@ -482,16 +470,18 @@ export function MobileExploreSheet() {
                 </View>
               </Pressable>
 
-              {/* 10 Cards in 2 Columns Grid */}
+              {/* Explore Cards Grid */}
               <View style={styles.cardsGrid}>
                 {CARDS.map((card) => {
                   const Icon = card.icon;
+                  const isFullWidth = card.id === "years";
                   return (
                     <Pressable
                       key={card.id}
                       onPress={() => handleCardPress(card)}
                       style={({ pressed }) => [
                         styles.cardContainer,
+                        isFullWidth && styles.cardContainerFullWidth,
                         {
                           borderColor: card.borderColor,
                         },
@@ -1045,6 +1035,9 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     position: "relative",
     justifyContent: "center",
+  },
+  cardContainerFullWidth: {
+    width: "100%",
   },
   cardTopHighlight: {
     position: "absolute",

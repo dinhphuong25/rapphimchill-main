@@ -14,7 +14,6 @@ import {
   Globe,
   Calendar,
   Layers,
-  Trophy,
   ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -169,18 +168,6 @@ export default function MobileExploreSheet({
       iconBg: "bg-orange-500/20",
       image: "https://images.unsplash.com/photo-1501139083538-0139583c060f?w=400&auto=format&fit=crop&q=85",
     },
-    {
-      id: "bang-xep-hang",
-      label: "Bảng Xếp Hạng",
-      icon: Trophy,
-      href: "/bang-xep-hang",
-      gradient: "from-[#281f07] via-[#332809] to-[#3f320b]",
-      fadeOverlay: "from-[#281f07] via-[#281f07]/60 to-transparent",
-      border: "border-yellow-500/30 hover:border-yellow-500/60",
-      iconColor: "text-yellow-400",
-      iconBg: "bg-yellow-500/20",
-      image: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400&auto=format&fit=crop&q=85",
-    },
   ];
 
   // Lock body scroll when opened
@@ -279,6 +266,7 @@ export default function MobileExploreSheet({
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
             {CARDS.map((card) => {
               const Icon = card.icon;
+              const isFullWidth = card.id === "years";
 
               const cardContent = (
                 <div
@@ -335,7 +323,7 @@ export default function MobileExploreSheet({
                       if (card.action === "countries") onOpenCountries();
                       if (card.action === "years") onOpenYears();
                     }}
-                    className="w-full text-left"
+                    className={cn("w-full text-left", isFullWidth && "col-span-2")}
                   >
                     {cardContent}
                   </button>
@@ -354,7 +342,7 @@ export default function MobileExploreSheet({
                   onMouseEnter={() => {
                     if (card.typeList) instantMovieStore.prefetch(card.typeList);
                   }}
-                  className="w-full"
+                  className={cn("w-full", isFullWidth && "col-span-2")}
                 >
                   {cardContent}
                 </Link>
