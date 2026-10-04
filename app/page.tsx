@@ -75,6 +75,30 @@ export async function generateMetadata({ searchParams }: HomeProps) {
       "Hi Phim - Trang xem phim online HD miễn phí hàng đầu. Kho 50,000+ phim bộ, phim lẻ, anime vietsub cập nhật mới nhất 2026. Tốc độ nhanh, không quảng cáo.",
     keywords:
       "hi phim, hiphim, xem phim online, phim HD miễn phí, phim mới nhất, phim bộ hay, anime vietsub, phim Hàn Quốc, phim hành động",
+    openGraph: {
+      title: postTitle ? `${postTitle.name} | Hi Phim` : "Hi Phim - Xem Phim Online HD Vietsub Miễn Phí",
+      description:
+        "Kho 50,000+ phim bộ, phim lẻ chiếu rạp, anime vietsub mới nhất 2026. Tốc độ cao, chuẩn Full HD/4K, cập nhật liên tục hàng ngày.",
+      url: "https://hiphim.one",
+      siteName: "Hi Phim",
+      type: "website",
+      locale: "vi_VN",
+      images: [
+        {
+          url: "/og-image.jpg",
+          width: 1200,
+          height: 630,
+          alt: "Hi Phim - Xem Phim Online HD Vietsub Miễn Phí",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: postTitle ? `${postTitle.name} | Hi Phim` : "Hi Phim - Xem Phim Online HD Vietsub Miễn Phí",
+      description:
+        "Kho 50,000+ phim bộ, phim lẻ chiếu rạp, anime vietsub mới nhất 2026. Tốc độ cao, chuẩn Full HD/4K, cập nhật liên tục hàng ngày.",
+      images: ["/og-image.jpg"],
+    },
   };
 }
 

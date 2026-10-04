@@ -75,19 +75,29 @@ export const metadata: Metadata = {
   ],
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://hiphim.one"),
   openGraph: {
-    title: "Hi Phim - Xem phim theo cách của bạn",
+    title: "Hi Phim - Xem Phim Online HD Vietsub Miễn Phí",
     description:
       "Kho 50,000+ phim bộ, phim lẻ chiếu rạp, anime vietsub mới nhất 2026. Tốc độ cao, chuẩn Full HD/4K, cập nhật liên tục hàng ngày.",
     url: "https://hiphim.one",
     siteName: "Hi Phim",
     type: "website",
     locale: "vi_VN",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Hi Phim - Xem Phim Online HD Vietsub Miễn Phí",
+        type: "image/jpeg",
+      },
+    ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     site: "@hiphim",
-    title: "Hi Phim - Xem phim theo cách của bạn",
+    title: "Hi Phim - Xem Phim Online HD Vietsub Miễn Phí",
     description: "Kho 50,000+ phim HD. Phim bộ, phim lẻ chiếu rạp, anime vietsub mới nhất 2026.",
+    images: ["/og-image.jpg"],
   },
   applicationName: "Hi Phim",
   referrer: "origin-when-cross-origin",
