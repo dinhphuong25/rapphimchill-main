@@ -425,14 +425,15 @@ function SidebarContent({
       <nav
         aria-label="Điều hướng chính"
         className={cn(
-          "lg:hidden fixed left-3 right-3 bottom-0 z-[140] pointer-events-auto select-none touch-manipulation",
+          "lg:hidden fixed inset-x-0 bottom-0 left-0 right-0 z-[140] w-full pointer-events-auto select-none touch-manipulation",
+          "bg-[#131d17]/95 backdrop-blur-2xl border-t border-white/10 shadow-[0_-4px_24px_rgba(0,0,0,0.7)]",
           isPlayerFullscreen && "hidden pointer-events-none"
         )}
         style={{
-          bottom: "max(0.6rem, env(safe-area-inset-bottom, 0px))",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
         }}
       >
-        <div className="w-full max-w-lg mx-auto h-[64px] rounded-[32px] bg-[#223128] border-[1.2px] border-white/20 border-t-white/30 shadow-[0_8px_24px_rgba(0,0,0,0.6)] backdrop-blur-2xl flex items-center justify-between px-1.5">
+        <div className="w-full max-w-lg mx-auto h-[58px] flex items-center justify-between px-1.5">
           {/* Tab 1: Trang Chủ */}
           {(() => {
             const active = currentActiveTab === "/";
@@ -617,7 +618,7 @@ function SidebarContent({
       {isAccountOpen && (
         <div
           className="lg:hidden fixed left-1/2 -translate-x-1/2 z-[130] w-[calc(100%-24px)] max-w-[390px] max-h-[calc(100dvh-5.5rem)] overflow-y-auto overscroll-contain bg-[#0B100E]/95 backdrop-blur-2xl border border-white/[0.08] rounded-3xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.85)] animate-in fade-in slide-in-from-bottom-5 duration-200 pointer-events-auto select-none"
-          style={{ bottom: "max(5.25rem, calc(env(safe-area-inset-bottom) + 4.75rem))" }}
+          style={{ bottom: "max(4.5rem, calc(env(safe-area-inset-bottom, 0px) + 4.25rem))" }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Top Pill Handle */}
