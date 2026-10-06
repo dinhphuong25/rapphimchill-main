@@ -3,13 +3,13 @@ import PhimApi from "@/libs/phimapi.com";
 import { getSiteConfig } from "@/lib/site-config";
 
 export const TRENDING_FEATURED_SLUGS = [
-  "deadpool-va-wolverine",
+  "nguoi-nhen-khoi-dau-moi",
   "godzilla-x-kong-de-che-moi",
+  "deadpool-va-wolverine",
   "quat-mo-trung-ma",
   "arcane-lien-minh-huyen-thoai-phan-2",
   "nu-hoang-nuoc-mat",
   "avatar-lua-va-tro-tan",
-  "nguoi-nhen-khoi-dau-moi",
 ];
 
 const api = new PhimApi();
@@ -28,22 +28,49 @@ export const getCachedCountries = unstable_cache(
   { revalidate: 86400, tags: ["countries"] }
 );
 
-/** Multiple Featured movies cached 1h with full detailed metadata */
+/** Multiple Featured movies cached 30m with full detailed metadata */
 export const getCachedFeaturedMovies = unstable_cache(
   async () => {
     try {
       let slugs = TRENDING_FEATURED_SLUGS;
+      let autoPin = true;
+      let autoPinLimit = 5;
+
       try {
         const config = getSiteConfig();
         if (config.featuredSlugs && config.featuredSlugs.length > 0) {
           slugs = config.featuredSlugs;
         }
+        if (typeof config.autoPinNewMovies === "boolean") {
+          autoPin = config.autoPinNewMovies;
+        }
+        if (typeof config.autoPinLimit === "number") {
+          autoPinLimit = config.autoPinLimit;
+        }
       } catch (err) {
         console.warn("Could not load featuredSlugs from config:", err);
       }
 
+      // Tự động ghim các phim mới cập nhật nếu được cấu hình
+      let extraSlugs: string[] = [];
+      if (autoPin) {
+        try {
+          const newMovies = await getCachedNewUpdates();
+          if (Array.isArray(newMovies) && newMovies.length > 0) {
+            extraSlugs = newMovies
+              .map((m: any) => m?.slug)
+              .filter((s: string) => Boolean(s) && !slugs.includes(s))
+              .slice(0, autoPinLimit);
+          }
+        } catch (e) {
+          console.warn("Could not fetch new updates for auto-pin:", e);
+        }
+      }
+
+      const combinedSlugs = Array.from(new Set([...slugs, ...extraSlugs]));
+
       const results = await Promise.allSettled(
-        slugs.map((slug) => api.get(slug))
+        combinedSlugs.map((slug) => api.get(slug))
       );
       const movies = results
         .filter((r): r is PromiseFulfilledResult<{ movie: any; server: any[] }> => r.status === "fulfilled" && Boolean(r.value?.movie))
@@ -53,8 +80,8 @@ export const getCachedFeaturedMovies = unstable_cache(
       return [];
     }
   },
-  ["featured-movies-v4"],
-  { revalidate: 3600, tags: ["featured-movies"] }
+  ["featured-movies-v5"],
+  { revalidate: 1800, tags: ["featured-movies"] }
 );
 
 /** Single featured movie fallback */

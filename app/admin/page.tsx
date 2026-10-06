@@ -1803,6 +1803,60 @@ export default function AdminDashboardPage() {
                 </p>
               </div>
 
+              {/* Cấu hình tự động ghim phim mới */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.04] border border-white/10 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="text-sm font-extrabold text-white flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-400" />
+                      <span>Tự động ghim phim mới cập nhật lên Hero Banner</span>
+                    </div>
+                    <p className="text-xs text-white/50 max-w-xl">
+                      Khi bật, hệ thống sẽ tự động đưa các phim mới phát hành vào danh sách ghim (sau các phim ghim cố định bên dưới), giúp trang chủ luôn tươi mới.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = {
+                        ...config,
+                        autoPinNewMovies: config.autoPinNewMovies === false ? true : false,
+                      };
+                      setConfig(updated);
+                      handleSaveConfig(updated);
+                    }}
+                    className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 ${
+                      config.autoPinNewMovies !== false
+                        ? "bg-brand-green/20 text-brand-green border border-brand-green/40 shadow-[0_0_15px_rgba(34,197,94,0.2)]"
+                        : "bg-white/5 text-white/40 border border-white/10"
+                    }`}
+                  >
+                    {config.autoPinNewMovies !== false ? "ĐANG BẬT" : "ĐANG TẮT"}
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-3 pt-2 border-t border-white/5 text-xs text-white/70">
+                  <span>Số lượng phim mới tự động ghim thêm:</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={12}
+                    value={config.autoPinLimit ?? 5}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value) || 5;
+                      const updated = {
+                        ...config,
+                        autoPinLimit: val,
+                      };
+                      setConfig(updated);
+                      handleSaveConfig(updated);
+                    }}
+                    className="w-16 bg-black/60 border border-white/15 rounded-lg px-2.5 py-1 text-center font-bold text-white focus:outline-none focus:border-brand-green"
+                  />
+                  <span className="text-white/40">phim</span>
+                </div>
+              </div>
+
               {/* Add New Movie Slug Form */}
               <form onSubmit={handleAddSlug} className="flex gap-2">
                 <input

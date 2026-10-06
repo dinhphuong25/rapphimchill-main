@@ -13,6 +13,8 @@ export interface SiteConfig {
     type: "info" | "warning" | "success";
   };
   featuredSlugs: string[];
+  autoPinNewMovies?: boolean;
+  autoPinLimit?: number;
   maintenance: {
     enabled: boolean;
     reason: string;
@@ -38,14 +40,16 @@ export const DEFAULT_SITE_CONFIG: SiteConfig = {
     type: "info",
   },
   featuredSlugs: [
-    "deadpool-va-wolverine",
+    "nguoi-nhen-khoi-dau-moi",
     "godzilla-x-kong-de-che-moi",
+    "deadpool-va-wolverine",
     "quat-mo-trung-ma",
     "arcane-lien-minh-huyen-thoai-phan-2",
     "nu-hoang-nuoc-mat",
     "avatar-lua-va-tro-tan",
-    "nguoi-nhen-khoi-dau-moi",
   ],
+  autoPinNewMovies: true,
+  autoPinLimit: 5,
   maintenance: {
     enabled: false,
     reason: "Hệ thống đang được nâng cấp định kỳ để cải thiện trải nghiệm xem phim.",
