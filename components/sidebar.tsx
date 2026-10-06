@@ -1215,7 +1215,7 @@ function SidebarContent({
           <div
             onClick={(e) => e.stopPropagation()}
             className={cn(
-              "relative z-10 w-full sm:max-w-3xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl max-h-[92dvh] sm:max-h-[88vh] lg:max-h-[86vh] bg-[#0C1310]/98 backdrop-blur-2xl border-t sm:border border-emerald-500/25 rounded-t-[28px] sm:rounded-[32px] p-4 sm:p-7 md:p-8 flex flex-col shadow-[0_25px_70px_rgba(0,0,0,0.95),0_0_40px_rgba(32,214,107,0.1)] overflow-hidden transform-gpu",
+              "relative z-10 w-full sm:max-w-4xl md:max-w-5xl lg:max-w-6xl xl:max-w-7xl max-h-[94dvh] sm:max-h-none sm:h-auto bg-[#0A120E]/98 backdrop-blur-2xl border-t sm:border border-emerald-500/25 rounded-t-[28px] sm:rounded-[28px] p-3.5 sm:p-5 md:p-6 flex flex-col shadow-[0_25px_80px_rgba(0,0,0,0.95),0_0_50px_rgba(32,214,107,0.12)] overflow-hidden transform-gpu",
               isClosing ? "scale-95 opacity-0 duration-150" : "animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
             )}
           >
@@ -1225,28 +1225,28 @@ function SidebarContent({
             {/* Mobile Sheet Handle Bar */}
             <div className="sm:hidden w-12 h-1 bg-white/20 hover:bg-white/30 rounded-full mx-auto mb-2 shrink-0" />
 
-            {/* Modal Header: 1 Danh Mục Duy Nhất (Không Switcher, Không Emoji) */}
-            <div className="relative z-10 flex items-center justify-between pb-3.5 sm:pb-4 border-b border-white/[0.08] shrink-0 gap-3">
-              <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
-                <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#20D66B]/15 border border-[#20D66B]/30 flex items-center justify-center text-[#20D66B] shrink-0 shadow-[0_0_15px_rgba(32,214,107,0.2)]">
-                  {activeModal === "categories" && <Layers className="w-4.5 h-4.5 sm:w-6 sm:h-6" />}
-                  {activeModal === "countries" && <Globe className="w-4.5 h-4.5 sm:w-6 sm:h-6" />}
-                  {activeModal === "years" && <Calendar className="w-4.5 h-4.5 sm:w-6 sm:h-6" />}
+            {/* Modal Header */}
+            <div className="relative z-10 flex items-center justify-between pb-3 border-b border-white/[0.08] shrink-0 gap-3">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#20D66B]/15 border border-[#20D66B]/30 flex items-center justify-center text-[#20D66B] shrink-0 shadow-[0_0_15px_rgba(32,214,107,0.2)]">
+                  {activeModal === "categories" && <Layers className="w-4 h-4 sm:w-5 sm:h-5" />}
+                  {activeModal === "countries" && <Globe className="w-4 h-4 sm:w-5 sm:h-5" />}
+                  {activeModal === "years" && <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />}
                 </div>
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2.5">
-                    <h3 className="text-lg sm:text-2xl font-black text-white tracking-tight truncate">
+                  <div className="flex items-center gap-2 sm:gap-2.5">
+                    <h3 className="text-base sm:text-xl font-black text-white tracking-tight truncate">
                       {activeModal === "categories" && "Thể Loại Phim"}
                       {activeModal === "countries" && "Quốc Gia Điện Ảnh"}
                       {activeModal === "years" && "Năm Phát Hành"}
                     </h3>
-                    <span className="text-[11px] sm:text-xs font-mono font-bold text-[#20D66B] bg-[#20D66B]/10 border border-[#20D66B]/25 px-2.5 py-0.5 sm:py-1 rounded-full shrink-0">
+                    <span className="text-[10px] sm:text-xs font-mono font-bold text-[#20D66B] bg-[#20D66B]/10 border border-[#20D66B]/25 px-2.5 py-0.5 rounded-full shrink-0">
                       {activeModal === "categories" && `${categories.length} THỂ LOẠI`}
                       {activeModal === "countries" && `${countries.length} QUỐC GIA`}
                       {activeModal === "years" && `NĂM ${currentYearNum}`}
                     </span>
                   </div>
-                  <p className="hidden sm:block text-xs sm:text-sm text-white/45 mt-0.5">
+                  <p className="hidden sm:block text-xs text-white/45 mt-0.5 truncate">
                     {activeModal === "categories" && "Khám phá kho phim phong phú theo thể loại bạn yêu thích"}
                     {activeModal === "countries" && "Lọc phim theo xuất xứ và nền điện ảnh quốc gia"}
                     {activeModal === "years" && "Tìm kiếm các tác phẩm theo năm phát hành và thập niên"}
@@ -1258,29 +1258,55 @@ function SidebarContent({
               <button
                 type="button"
                 onClick={closeModal}
-                className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-all shrink-0 cursor-pointer"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 hover:bg-white/10 active:scale-90 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-all shrink-0 cursor-pointer"
                 aria-label="Đóng bảng"
               >
-                <X className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* ==================================================== */}
-            {/* THỂ LOẠI (KHÔNG EMOJI, THIẾT KẾ ĐIỆN ẢNH SANG TRỌNG) */}
+            {/* THỂ LOẠI                                             */}
             {/* ==================================================== */}
             {activeModal === "categories" && (
               <>
-                {/* Search & Sub-filters (KHÔNG EMOJI) */}
-                <div className="relative z-10 pt-3 pb-2.5 shrink-0 space-y-2.5">
-                  <div className="relative flex items-center">
-                    <Search className="w-4.5 h-4.5 sm:w-5 sm:h-5 absolute left-3.5 sm:left-4 text-emerald-400/60 pointer-events-none" />
+                {/* Unified Toolbar: Sub-filters + Compact Search */}
+                <div className="relative z-10 pt-2.5 pb-2.5 shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+                  {/* Thematic Chips */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 sm:pb-0 scrollbar-none -mx-0.5 px-0.5">
+                    {[
+                      { id: "all", label: `Tất Cả (${categories.length})` },
+                      { id: "popular", label: "Phổ Biến" },
+                      { id: "action", label: "Hành Động" },
+                      { id: "romance", label: "Tình Cảm" },
+                      { id: "anime", label: "Hoạt Hình & Khác" },
+                    ].map((f) => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => setCategoryThematicFilter(f.id as any)}
+                        className={cn(
+                          "px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all select-none active:scale-95",
+                          categoryThematicFilter === f.id
+                            ? "bg-[#20D66B]/20 text-[#20D66B] border border-[#20D66B]/40 shadow-[0_0_10px_rgba(32,214,107,0.2)]"
+                            : "bg-white/[0.03] hover:bg-white/[0.06] text-white/60 hover:text-white border border-white/[0.06]"
+                        )}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Compact Search */}
+                  <div className="relative flex items-center sm:w-56 md:w-64 shrink-0">
+                    <Search className="w-3.5 h-3.5 absolute left-3 text-emerald-400/60 pointer-events-none" />
                     <input
                       type="text"
                       aria-label="Lọc thể loại phim"
                       value={categorySearchQuery}
                       onChange={(e) => setCategorySearchQuery(e.target.value)}
-                      placeholder="Lọc nhanh thể loại (Hành động, Cổ trang, Tình cảm...)"
-                      className="w-full h-10 sm:h-12 bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.08] border border-white/10 focus:border-[#20D66B]/50 text-white placeholder-white/35 text-xs sm:text-[15px] rounded-xl sm:rounded-2xl pl-10 sm:pl-12 pr-10 outline-none transition-all duration-200 shadow-inner"
+                      placeholder="Tìm kiếm thể loại..."
+                      className="w-full h-8 sm:h-8.5 bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.08] border border-white/10 focus:border-[#20D66B]/50 text-white placeholder-white/35 text-xs rounded-xl pl-8.5 pr-7 outline-none transition-all shadow-inner"
                       autoComplete="off"
                       spellCheck={false}
                     />
@@ -1289,48 +1315,21 @@ function SidebarContent({
                         type="button"
                         onClick={() => setCategorySearchQuery("")}
                         aria-label="Xóa tìm kiếm"
-                        className="absolute right-3 p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+                        className="absolute right-2 p-1 rounded-md text-white/40 hover:text-white"
                       >
-                        <X className="w-4 h-4" />
+                        <X className="w-3 h-3" />
                       </button>
                     )}
                   </div>
-
-                  {/* Thematic Chips (KHÔNG EMOJI) */}
-                  {!categorySearchQuery.trim() && (
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
-                      {[
-                        { id: "all", label: "Tất Cả" },
-                        { id: "popular", label: "Phổ Biến" },
-                        { id: "action", label: "Hành Động & Kịch Tính" },
-                        { id: "romance", label: "Tình Cảm & Cổ Trang" },
-                        { id: "anime", label: "Hoạt Hình & Khác" },
-                      ].map((f) => (
-                        <button
-                          key={f.id}
-                          type="button"
-                          onClick={() => setCategoryThematicFilter(f.id as any)}
-                          className={cn(
-                            "px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs sm:text-[13px] font-bold whitespace-nowrap transition-all select-none active:scale-95",
-                            categoryThematicFilter === f.id
-                              ? "bg-[#20D66B]/20 text-[#20D66B] border border-[#20D66B]/40 shadow-[0_0_12px_rgba(32,214,107,0.2)]"
-                              : "bg-white/[0.03] hover:bg-white/[0.06] text-white/60 hover:text-white border border-white/[0.06]"
-                          )}
-                        >
-                          {f.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </div>
 
-                {/* Genre Cards Grid (KHÔNG EMOJI - Minimalist Cinema Style) */}
+                {/* Genre Cards Grid (All visible, no scrolling needed) */}
                 <div
                   ref={categoriesScrollRef}
-                  className="relative z-10 flex-1 overflow-y-auto pr-2 sm:pr-3 modal-scroll custom-scrollbar overscroll-contain -webkit-overflow-scrolling-touch"
+                  className="relative z-10 flex-1 overflow-y-auto sm:overflow-visible pr-0 custom-scrollbar overscroll-contain"
                 >
                   {displayedCategories.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 sm:gap-3.5 md:gap-4 pb-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1.5 sm:gap-2 md:gap-2.5 pb-2">
                       {displayedCategories.map((cat, idx) => {
                         const active = currentCategory === cat.slug;
                         return (
@@ -1339,41 +1338,41 @@ function SidebarContent({
                             type="button"
                             onClick={(e) => handleSelectCategory(cat.slug, e)}
                             className={cn(
-                              "group relative flex items-center justify-between p-2.5 sm:p-3.5 md:p-4 rounded-xl sm:rounded-2xl border text-left transition-all duration-200 active:scale-95 min-w-0 shadow-none",
+                              "group relative h-9 sm:h-10 px-2.5 sm:px-3 rounded-xl border text-left transition-all duration-150 active:scale-[0.98] min-w-0 flex items-center justify-between shadow-none",
                               active
-                                ? "bg-[#20D66B]/15 text-[#20D66B] border-[#20D66B]/60 font-black shadow-[0_0_15px_rgba(32,214,107,0.2)]"
+                                ? "bg-[#20D66B]/15 text-[#20D66B] border-[#20D66B]/60 font-bold shadow-[0_0_12px_rgba(32,214,107,0.2)]"
                                 : "bg-white/[0.03] hover:bg-white/[0.07] border-white/[0.06] hover:border-[#20D66B]/35 text-white/85 hover:text-white"
                             )}
                           >
-                            <div className="flex items-center gap-3 min-w-0 truncate">
+                            <div className="flex items-center gap-2 min-w-0 truncate">
                               <span
                                 className={cn(
-                                  "w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full shrink-0 transition-all",
+                                  "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full shrink-0 transition-all",
                                   active
                                     ? "bg-[#20D66B] scale-125 shadow-[0_0_8px_rgba(32,214,107,0.8)]"
                                     : "bg-white/25 group-hover:bg-[#20D66B] group-hover:scale-125"
                                 )}
                               />
-                              <span className={cn("text-xs sm:text-[15px] md:text-base truncate", active ? "font-black" : "font-semibold")}>
+                              <span className={cn("text-xs sm:text-[13px] truncate", active ? "font-bold text-[#20D66B]" : "font-medium")}>
                                 {cat.name}
                               </span>
                             </div>
                             {active && (
-                              <Check className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-[#20D66B] stroke-[3] shrink-0 ml-1.5" />
+                              <Check className="w-3.5 h-3.5 text-[#20D66B] stroke-[3] shrink-0 ml-1.5" />
                             )}
                           </button>
                         );
                       })}
                     </div>
                   ) : (
-                    <div className="py-12 text-center text-white/40 text-xs sm:text-sm">
+                    <div className="py-8 text-center text-white/40 text-xs sm:text-sm">
                       Không tìm thấy thể loại nào phù hợp với &quot;{categorySearchQuery}&quot;
                     </div>
                   )}
                 </div>
 
                 {/* Footer Bar */}
-                <div className="relative z-10 pt-3 mt-1.5 border-t border-white/[0.08] flex items-center justify-between text-xs sm:text-sm text-white/50 shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+                <div className="relative z-10 pt-2.5 sm:pt-3 mt-1 border-t border-white/[0.08] flex items-center justify-between text-xs text-white/50 shrink-0 pb-[max(0.25rem,env(safe-area-inset-bottom))]">
                   <div className="flex items-center gap-2 min-w-0">
                     {currentCategory ? (
                       <button
@@ -1386,7 +1385,7 @@ function SidebarContent({
                           });
                           closeModal();
                         }}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 transition-colors font-medium text-[11px]"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 transition-colors font-medium text-[11px]"
                       >
                         <X className="w-3 h-3" />
                         <span>Bỏ chọn ({activeCategoryObj?.name || currentCategory})</span>
@@ -1415,21 +1414,46 @@ function SidebarContent({
             )}
 
             {/* ==================================================== */}
-            {/* QUỐC GIA (KHÔNG EMOJI)                               */}
+            {/* QUỐC GIA (36 Quốc Gia Trong Ma Trận 6x6 Cân Đối)     */}
             {/* ==================================================== */}
             {activeModal === "countries" && (
               <>
-                {/* Search & Sub-filters (KHÔNG EMOJI) */}
-                <div className="relative z-10 pt-3 pb-2.5 shrink-0 space-y-2.5">
-                  <div className="relative flex items-center">
-                    <Search className="w-4.5 h-4.5 sm:w-5 sm:h-5 absolute left-3.5 sm:left-4 text-emerald-400/60 pointer-events-none" />
+                {/* Unified Toolbar: Sub-filters + Compact Search */}
+                <div className="relative z-10 pt-2.5 pb-2.5 shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+                  {/* Regional Chips */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 sm:pb-0 scrollbar-none -mx-0.5 px-0.5">
+                    {[
+                      { id: "all", label: `Tất Cả (${countries.length})` },
+                      { id: "popular", label: "Nổi Bật" },
+                      { id: "asia", label: "Châu Á" },
+                      { id: "west", label: "Âu Mỹ & Toàn Cầu" },
+                    ].map((f) => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => setCountryRegionFilter(f.id as any)}
+                        className={cn(
+                          "px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all select-none active:scale-95",
+                          countryRegionFilter === f.id
+                            ? "bg-[#20D66B]/20 text-[#20D66B] border border-[#20D66B]/40 shadow-[0_0_10px_rgba(32,214,107,0.2)]"
+                            : "bg-white/[0.03] hover:bg-white/[0.06] text-white/60 hover:text-white border border-white/[0.06]"
+                        )}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Compact Search */}
+                  <div className="relative flex items-center sm:w-56 md:w-64 shrink-0">
+                    <Search className="w-3.5 h-3.5 absolute left-3 text-emerald-400/60 pointer-events-none" />
                     <input
                       type="text"
                       aria-label="Lọc quốc gia phim"
                       value={countrySearchQuery}
                       onChange={(e) => setCountrySearchQuery(e.target.value)}
-                      placeholder="Lọc nhanh quốc gia (Hàn Quốc, Trung Quốc, Âu Mỹ...)"
-                      className="w-full h-10 sm:h-12 bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.08] border border-white/10 focus:border-[#20D66B]/50 text-white placeholder-white/35 text-xs sm:text-[15px] rounded-xl sm:rounded-2xl pl-10 sm:pl-12 pr-10 outline-none transition-all duration-200 shadow-inner"
+                      placeholder="Tìm kiếm quốc gia..."
+                      className="w-full h-8 sm:h-8.5 bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.08] border border-white/10 focus:border-[#20D66B]/50 text-white placeholder-white/35 text-xs rounded-xl pl-8.5 pr-7 outline-none transition-all shadow-inner"
                       autoComplete="off"
                       spellCheck={false}
                     />
@@ -1438,47 +1462,21 @@ function SidebarContent({
                         type="button"
                         onClick={() => setCountrySearchQuery("")}
                         aria-label="Xóa tìm kiếm"
-                        className="absolute right-3 p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+                        className="absolute right-2 p-1 rounded-md text-white/40 hover:text-white"
                       >
-                        <X className="w-4 h-4" />
+                        <X className="w-3 h-3" />
                       </button>
                     )}
                   </div>
-
-                  {/* Regional Chips (KHÔNG EMOJI) */}
-                  {!countrySearchQuery.trim() && (
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
-                      {[
-                        { id: "all", label: "Tất Cả" },
-                        { id: "popular", label: "Nổi Bật" },
-                        { id: "asia", label: "Châu Á" },
-                        { id: "west", label: "Âu Mỹ & Toàn Cầu" },
-                      ].map((f) => (
-                        <button
-                          key={f.id}
-                          type="button"
-                          onClick={() => setCountryRegionFilter(f.id as any)}
-                          className={cn(
-                            "px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs sm:text-[13px] font-bold whitespace-nowrap transition-all select-none active:scale-95",
-                            countryRegionFilter === f.id
-                              ? "bg-[#20D66B]/20 text-[#20D66B] border border-[#20D66B]/40 shadow-[0_0_12px_rgba(32,214,107,0.2)]"
-                              : "bg-white/[0.03] hover:bg-white/[0.06] text-white/60 hover:text-white border border-white/[0.06]"
-                          )}
-                        >
-                          {f.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </div>
 
-                {/* Country Cards Grid */}
+                {/* Country Cards Grid (Balanced 6-Column Layout - All 36 visible with 0 scroll) */}
                 <div
                   ref={countriesScrollRef}
-                  className="relative z-10 flex-1 overflow-y-auto pr-2 sm:pr-3 modal-scroll custom-scrollbar overscroll-contain -webkit-overflow-scrolling-touch"
+                  className="relative z-10 flex-1 overflow-y-auto sm:overflow-visible pr-0 custom-scrollbar overscroll-contain"
                 >
                   {displayedCountries.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 sm:gap-3.5 md:gap-4 pb-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1.5 sm:gap-2 md:gap-2.5 pb-2">
                       {displayedCountries.map((c) => {
                         const active = currentCountry === c.slug;
                         const code = c.code || getCountryCode(c.slug) || getCountryCode(c.name);
@@ -1488,15 +1486,15 @@ function SidebarContent({
                             type="button"
                             onClick={(e) => handleSelectCountry(c.slug, e)}
                             className={cn(
-                              "group relative flex items-center gap-3 p-2.5 sm:p-3.5 md:p-4 rounded-xl sm:rounded-2xl border text-left transition-all duration-200 active:scale-95 min-w-0 shadow-none",
+                              "group relative h-9 sm:h-10 px-2 sm:px-2.5 rounded-xl border text-left transition-all duration-150 active:scale-[0.98] min-w-0 flex items-center gap-2 sm:gap-2.5 shadow-none",
                               active
-                                ? "bg-[#20D66B]/15 text-[#20D66B] border-[#20D66B]/60 font-black shadow-[0_0_15px_rgba(32,214,107,0.2)]"
+                                ? "bg-[#20D66B]/15 text-[#20D66B] border-[#20D66B]/60 font-bold shadow-[0_0_12px_rgba(32,214,107,0.2)]"
                                 : "bg-white/[0.03] hover:bg-white/[0.07] border-white/[0.06] hover:border-[#20D66B]/35 text-white/85 hover:text-white"
                             )}
                           >
-                            <div className="w-8 h-5.5 sm:w-11 sm:h-7.5 md:w-12 md:h-8 rounded sm:rounded-md overflow-hidden border border-white/15 shrink-0 bg-black/40 flex items-center justify-center shadow-sm">
+                            <div className="w-5.5 h-3.5 sm:w-6.5 sm:h-4.5 rounded-[3px] overflow-hidden border border-white/15 shrink-0 bg-black/40 flex items-center justify-center shadow-xs">
                               {(!code || code === "WW") ? (
-                                <Globe className="w-4 h-4 sm:w-5 sm:h-5 text-[#20D66B]" />
+                                <Globe className="w-3.5 h-3.5 text-[#20D66B]" />
                               ) : (
                                 <img
                                   src={`https://flagcdn.com/w80/${code.toLowerCase()}.png`}
@@ -1509,25 +1507,25 @@ function SidebarContent({
                                 />
                               )}
                             </div>
-                            <span className={cn("text-xs sm:text-[15px] md:text-base font-semibold truncate flex-1", active && "font-black text-[#20D66B]")}>
+                            <span className={cn("text-xs sm:text-[13px] truncate flex-1", active ? "font-bold text-[#20D66B]" : "font-medium")}>
                               {c.name}
                             </span>
                             {active && (
-                              <Check className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-[#20D66B] stroke-[3] shrink-0 ml-auto" />
+                              <Check className="w-3.5 h-3.5 text-[#20D66B] stroke-[3] shrink-0 ml-auto" />
                             )}
                           </button>
                         );
                       })}
                     </div>
                   ) : (
-                    <div className="py-12 text-center text-white/40 text-xs sm:text-sm">
+                    <div className="py-8 text-center text-white/40 text-xs sm:text-sm">
                       Không tìm thấy quốc gia nào phù hợp với &quot;{countrySearchQuery}&quot;
                     </div>
                   )}
                 </div>
 
                 {/* Footer Bar */}
-                <div className="relative z-10 pt-3 mt-1.5 border-t border-white/[0.08] flex items-center justify-between text-xs sm:text-sm text-white/50 shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+                <div className="relative z-10 pt-2.5 sm:pt-3 mt-1 border-t border-white/[0.08] flex items-center justify-between text-xs text-white/50 shrink-0 pb-[max(0.25rem,env(safe-area-inset-bottom))]">
                   <div className="flex items-center gap-2 min-w-0">
                     {currentCountry ? (
                       <button
@@ -1540,7 +1538,7 @@ function SidebarContent({
                           });
                           closeModal();
                         }}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 transition-colors font-medium text-[11px]"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 transition-colors font-medium text-[11px]"
                       >
                         <X className="w-3 h-3" />
                         <span>Bỏ chọn ({activeCountryObj?.name || currentCountry})</span>
@@ -1569,21 +1567,47 @@ function SidebarContent({
             )}
 
             {/* ==================================================== */}
-            {/* NĂM PHÁT HÀNH (KHÔNG EMOJI)                          */}
+            {/* NĂM PHÁT HÀNH                                        */}
             {/* ==================================================== */}
             {activeModal === "years" && (
               <>
-                {/* Search & Sub-filters (KHÔNG EMOJI) */}
-                <div className="relative z-10 pt-3 pb-2.5 shrink-0 space-y-2.5">
-                  <div className="relative flex items-center">
-                    <Search className="w-4.5 h-4.5 sm:w-5 sm:h-5 absolute left-3.5 sm:left-4 text-emerald-400/60 pointer-events-none" />
+                {/* Unified Toolbar: Sub-filters + Compact Search */}
+                <div className="relative z-10 pt-2.5 pb-2.5 shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+                  {/* Decade Chips */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 sm:pb-0 scrollbar-none -mx-0.5 px-0.5">
+                    {[
+                      { id: "all", label: "Tất Cả Năm" },
+                      { id: "2020s", label: "2020s Mới" },
+                      { id: "2010s", label: "2010s" },
+                      { id: "2000s", label: "2000s" },
+                      { id: "classic", label: "Kinh Điển" },
+                    ].map((f) => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => setYearDecade(f.id as any)}
+                        className={cn(
+                          "px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all select-none active:scale-95",
+                          yearDecade === f.id
+                            ? "bg-[#20D66B]/20 text-[#20D66B] border border-[#20D66B]/40 shadow-[0_0_10px_rgba(32,214,107,0.2)]"
+                            : "bg-white/[0.03] hover:bg-white/[0.06] text-white/60 hover:text-white border border-white/[0.06]"
+                        )}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Compact Search */}
+                  <div className="relative flex items-center sm:w-56 md:w-64 shrink-0">
+                    <Search className="w-3.5 h-3.5 absolute left-3 text-emerald-400/60 pointer-events-none" />
                     <input
                       type="text"
                       aria-label="Nhập năm phát hành"
                       value={yearSearchQuery}
                       onChange={(e) => setYearSearchQuery(e.target.value)}
-                      placeholder="Nhập năm phát hành (2026, 2025, 2024...)"
-                      className="w-full h-10 sm:h-12 bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.08] border border-white/10 focus:border-[#20D66B]/50 text-white placeholder-white/35 text-xs sm:text-[15px] rounded-xl sm:rounded-2xl pl-10 sm:pl-12 pr-10 outline-none transition-all duration-200 shadow-inner"
+                      placeholder="Tìm năm (2026, 2025...)"
+                      className="w-full h-8 sm:h-8.5 bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.08] border border-white/10 focus:border-[#20D66B]/50 text-white placeholder-white/35 text-xs rounded-xl pl-8.5 pr-7 outline-none transition-all shadow-inner"
                       autoComplete="off"
                       spellCheck={false}
                     />
@@ -1592,48 +1616,21 @@ function SidebarContent({
                         type="button"
                         onClick={() => setYearSearchQuery("")}
                         aria-label="Xóa tìm kiếm"
-                        className="absolute right-3 p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+                        className="absolute right-2 p-1 rounded-md text-white/40 hover:text-white"
                       >
-                        <X className="w-4 h-4" />
+                        <X className="w-3 h-3" />
                       </button>
                     )}
                   </div>
-
-                  {/* Decade Chips (KHÔNG EMOJI) */}
-                  {!yearSearchQuery.trim() && (
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
-                      {[
-                        { id: "all", label: "Tất Cả Năm" },
-                        { id: "2020s", label: "2020s Mới" },
-                        { id: "2010s", label: "2010s" },
-                        { id: "2000s", label: "2000s" },
-                        { id: "classic", label: "Kinh Điển" },
-                      ].map((f) => (
-                        <button
-                          key={f.id}
-                          type="button"
-                          onClick={() => setYearDecade(f.id as any)}
-                          className={cn(
-                            "px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs sm:text-[13px] font-bold whitespace-nowrap transition-all select-none active:scale-95",
-                            yearDecade === f.id
-                              ? "bg-[#20D66B]/20 text-[#20D66B] border border-[#20D66B]/40 shadow-[0_0_12px_rgba(32,214,107,0.2)]"
-                              : "bg-white/[0.03] hover:bg-white/[0.06] text-white/60 hover:text-white border border-white/[0.06]"
-                          )}
-                        >
-                          {f.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </div>
 
-                {/* Years Grid */}
+                {/* Years Grid (Dense, balanced layout) */}
                 <div
                   ref={yearsScrollRef}
-                  className="relative z-10 flex-1 overflow-y-auto pr-2 sm:pr-3 modal-scroll custom-scrollbar overscroll-contain -webkit-overflow-scrolling-touch"
+                  className="relative z-10 flex-1 overflow-y-auto sm:overflow-visible pr-0 custom-scrollbar overscroll-contain"
                 >
                   {displayedYears.length > 0 ? (
-                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2.5 sm:gap-3 md:gap-3.5 pb-4">
+                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1.5 sm:gap-2 pb-2">
                       {displayedYears.map((y) => {
                         const active = currentYear === String(y);
                         const isLatest = y >= currentYearNum - 1;
@@ -1643,42 +1640,35 @@ function SidebarContent({
                             type="button"
                             onClick={(e) => handleSelectYear(y, e)}
                             className={cn(
-                              "group relative py-2.5 sm:py-3.5 md:py-4 px-2 rounded-xl sm:rounded-2xl border text-center transition-all duration-200 active:scale-95 min-w-0 flex flex-col items-center justify-center gap-0.5",
+                              "group relative h-9 sm:h-9.5 px-1.5 rounded-xl border text-center transition-all duration-150 active:scale-95 min-w-0 flex items-center justify-center gap-1",
                               active
-                                ? "bg-gradient-to-r from-[#20D66B] to-[#10B981] text-[#050807] border-[#20D66B] font-black shadow-[0_0_15px_rgba(32,214,107,0.35)] scale-105 z-10"
+                                ? "bg-gradient-to-r from-[#20D66B] to-[#10B981] text-[#050807] border-[#20D66B] font-black shadow-[0_0_12px_rgba(32,214,107,0.35)] scale-105 z-10"
                                 : isLatest
                                 ? "bg-emerald-500/[0.08] hover:bg-emerald-500/[0.18] border-emerald-500/30 hover:border-[#20D66B] text-white font-bold"
-                                : "bg-white/[0.03] hover:bg-white/[0.08] border-white/[0.06] hover:border-[#20D66B]/40 text-white/80 hover:text-white font-semibold"
+                                : "bg-white/[0.03] hover:bg-white/[0.08] border-white/[0.06] hover:border-[#20D66B]/40 text-white/80 hover:text-white font-medium text-xs sm:text-[13px]"
                             )}
                           >
-                            {isLatest && !active && (
-                              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[#20D66B] shadow-[0_0_6px_rgba(32,214,107,0.8)] animate-pulse" />
-                            )}
-                            <span className="text-sm sm:text-base md:text-lg tracking-tight font-bold">
+                            <span className="tracking-tight">
                               {y}
                             </span>
                             {active ? (
-                              <span className="text-[10px] sm:text-xs font-black text-[#050807] flex items-center gap-0.5">
-                                <Check className="w-3 h-3 stroke-[3]" /> Chọn
-                              </span>
+                              <Check className="w-3 h-3 stroke-[3] text-[#050807] shrink-0" />
                             ) : isLatest ? (
-                              <span className="text-[10px] sm:text-xs text-[#20D66B] font-mono font-medium">
-                                Mới
-                              </span>
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#20D66B] shadow-[0_0_6px_rgba(32,214,107,0.8)] shrink-0" />
                             ) : null}
                           </button>
                         );
                       })}
                     </div>
                   ) : (
-                    <div className="py-12 text-center text-white/40 text-xs sm:text-sm">
+                    <div className="py-8 text-center text-white/40 text-xs sm:text-sm">
                       Không tìm thấy năm nào phù hợp với &quot;{yearSearchQuery}&quot;
                     </div>
                   )}
                 </div>
 
                 {/* Footer Bar */}
-                <div className="relative z-10 pt-3 mt-1.5 border-t border-white/[0.08] flex items-center justify-between text-xs sm:text-sm text-white/50 shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+                <div className="relative z-10 pt-2.5 sm:pt-3 mt-1 border-t border-white/[0.08] flex items-center justify-between text-xs text-white/50 shrink-0 pb-[max(0.25rem,env(safe-area-inset-bottom))]">
                   <div className="flex items-center gap-2 min-w-0">
                     {currentYear ? (
                       <button
@@ -1691,7 +1681,7 @@ function SidebarContent({
                           });
                           closeModal();
                         }}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 transition-colors font-medium text-[11px]"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 transition-colors font-medium text-[11px]"
                       >
                         <X className="w-3 h-3" />
                         <span>Bỏ chọn (Năm {currentYear})</span>
