@@ -1888,6 +1888,7 @@ export default function VideoPlayer({
       setIsAdDetected(false);
       consecutiveDetectionsRef.current = 0;
       consecutiveMissesRef.current = 0;
+      prevFrameLuminanceRef.current = null;
 
       let isBuffered = false;
       if (video.buffered.length > 0) {
@@ -2076,56 +2077,96 @@ export default function VideoPlayer({
         let canvas = detectorCanvasRef.current;
         if (!canvas) {
           canvas = document.createElement('canvas');
-          canvas.width = 320;
-          canvas.height = 64;
+          canvas.width = 240;
+          canvas.height = 40;
           detectorCanvasRef.current = canvas;
-        } else if (canvas.width !== 320 || canvas.height !== 64) {
-          canvas.width = 320;
-          canvas.height = 64;
+        } else if (canvas.width !== 240 || canvas.height !== 40) {
+          canvas.width = 240;
+          canvas.height = 40;
         }
 
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         if (ctx) {
-          // Lấy dải mép trên 24% nơi đóng dấu banner quảng cáo cờ bạc
-          const sampleHeight = Math.max(Math.round(vh * 0.24), 48);
-          ctx.drawImage(video, 0, 0, vw, sampleHeight, 0, 0, 320, 64);
+          // Chỉ lấy dải mép trên 12% nơi đóng dấu banner quảng cáo cờ bạc
+          const sampleHeight = Math.max(Math.round(vh * 0.12), 32);
+          ctx.drawImage(video, 0, 0, vw, sampleHeight, 0, 0, 240, 40);
 
-          const imgData = ctx.getImageData(0, 0, 320, 64);
+          const imgData = ctx.getImageData(0, 0, 240, 40);
           const data = imgData.data;
 
+          const currentLum = new Uint8Array(240 * 40);
           let centerEdgeTransitions = 0;
           let textRows = 0;
+          let starkContrastPixels = 0;
 
-          // Quét phân tích dải hàng ngang từ y = 4 đến 60
-          for (let y = 4; y < 60; y++) {
+          // Phân tích ma trận điểm ảnh hàng ngang
+          for (let y = 3; y < 37; y++) {
             let prevLum = -1;
             let rowTransitions = 0;
 
-            // Quét dải trung tâm (x từ 18% đến 82% chiều ngang khung hình, tức 58 đến 262px)
-            // Nhằm phân biệt chính xác banner cờ bạc chạy dài vs logo đài truyền hình ở góc mép
-            for (let x = 58; x < 262; x++) {
-              const idx = (y * 320 + x) * 4;
+            // Quét dải trung tâm (từ 15% đến 85% chiều ngang khung hình)
+            for (let x = 36; x < 204; x++) {
+              const idx = (y * 240 + x) * 4;
               const r = data[idx];
               const g = data[idx + 1];
               const b = data[idx + 2];
               const lum = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+              currentLum[y * 240 + x] = lum;
 
-              if (prevLum >= 0 && Math.abs(lum - prevLum) > 22) {
+              // Nhận diện pixel có màu sắc/độ sáng đặc trưng của chữ banner cờ bạc (vàng kim, trắng gắt, nền đen)
+              const isYellowGold = r > 170 && g > 130 && b < 100;
+              const isBrightWhite = lum > 185;
+              const isDarkBackdrop = lum < 45;
+              if (isYellowGold || isBrightWhite || isDarkBackdrop) {
+                starkContrastPixels++;
+              }
+
+              if (prevLum >= 0 && Math.abs(lum - prevLum) > 36) {
                 rowTransitions++;
                 centerEdgeTransitions++;
               }
               prevLum = lum;
             }
 
-            // Dòng có mật độ chuyển đổi nét chữ cao đặc trưng của text
-            if (rowTransitions >= 16) {
+            if (rowTransitions >= 20) {
               textRows++;
             }
           }
 
-          // Banner quảng cáo cờ bạc có ít nhất 2 dòng chữ nét cao và tổng số nét chuyển đổi dải giữa >= 220
-          // (Trong khi khung hình video tự nhiên không chữ có textRows = 0 và centerTransitions < 150)
-          if (textRows >= 2 && centerEdgeTransitions >= 220) {
+          // Kiểm tra tính tĩnh theo thời gian (Temporal Invariance):
+          // Watermark cờ bạc là đồ họa in kỹ thuật số bất động, tọa độ pixel giữ nguyên qua các frame.
+          // Cảnh phim tự nhiên (người chuyển động, cửa sổ, ánh sáng, góc quay) thay đổi liên tục.
+          let isTemporallyStatic = false;
+          const prevLum = prevFrameLuminanceRef.current;
+          if (prevLum && prevLum.length === currentLum.length) {
+            let diffSum = 0;
+            let comparedCount = 0;
+            for (let i = 0; i < currentLum.length; i += 4) {
+              if (currentLum[i] > 160 || currentLum[i] < 45) {
+                diffSum += Math.abs(currentLum[i] - prevLum[i]);
+                comparedCount++;
+              }
+            }
+            if (comparedCount > 60) {
+              const avgDiff = diffSum / comparedCount;
+              if (avgDiff < 7) {
+                isTemporallyStatic = true;
+              }
+            }
+          }
+          prevFrameLuminanceRef.current = currentLum;
+
+          // Điều kiện nhận diện nghiêm ngặt:
+          // 1. Phải là watermark tĩnh bất động qua thời gian
+          // 2. Có mật độ chuyển tiếp nét chữ cao ở giữa khung hình
+          // 3. Có ít nhất 2 hàng chữ dày đặc
+          // 4. Có lượng điểm ảnh tương phản chữ rõ rệt
+          if (
+            isTemporallyStatic &&
+            textRows >= 2 &&
+            centerEdgeTransitions >= 240 &&
+            starkContrastPixels >= 250
+          ) {
             detected = true;
           }
         }
@@ -2147,21 +2188,23 @@ export default function VideoPlayer({
       if (detected) {
         consecutiveDetectionsRef.current++;
         consecutiveMissesRef.current = 0;
-        // Bật khiên che ngay lập tức khi phát hiện thấy banner quảng cáo
-        if (consecutiveDetectionsRef.current >= 1) {
+        // Bắt buộc xác nhận liên tiếp ít nhất 3 lần quét (~2.4s) mới kích hoạt khiên che
+        // Đảm bảo tuyệt đối không che nhầm các cảnh phim bình thường
+        if (consecutiveDetectionsRef.current >= 3) {
           isVisualAdDetectedRef.current = true;
           setIsAdDetected(true);
         }
       } else {
         consecutiveMissesRef.current++;
         consecutiveDetectionsRef.current = 0;
-        // Tự động tắt che ngay khi hết quảng cáo (2 lần quét liên tiếp không thấy banner ~ 1.4s)
+        // Tắt che ngay lập tức khi hết quảng cáo (2 lần quét liên tiếp không thấy ~ 1.6s)
         if (consecutiveMissesRef.current >= 2) {
           isVisualAdDetectedRef.current = false;
           setIsAdDetected(false);
+          prevFrameLuminanceRef.current = null;
         }
       }
-    }, 700);
+    }, 800);
 
     return () => {
       clearInterval(checkInterval);
@@ -2406,17 +2449,17 @@ export default function VideoPlayer({
         </div>
       )}
 
-      {/* Intelligent Anti-Ad Banner Shield (Tự động che dải quảng cáo bài bạc ở mép trên, siêu thông minh, hoàn toàn tự động không hiện thông báo, hết QC tự tắt) */}
+      {/* Intelligent Anti-Ad Banner Shield (Chỉ che dải mỏng mép trên khi thực sự có watermark cờ bạc, không che phim bình thường) */}
       <div 
         className={cn(
           "absolute top-0 left-0 right-0 z-[45] transition-all duration-500 overflow-hidden pointer-events-none select-none",
           isAdDetected
-            ? "opacity-100 h-[25%] sm:h-[24%]" 
+            ? "opacity-100 h-[12%] sm:h-[11%]" 
             : "opacity-0 h-0 pointer-events-none"
         )}
       >
         {/* Cinematic gradient mask with frosted blur to obliterate gambling text */}
-        <div className="w-full h-full bg-gradient-to-b from-[#050807]/98 via-[#050807]/92 via-75% to-transparent backdrop-blur-[3px]" />
+        <div className="w-full h-full bg-gradient-to-b from-[#050807]/98 via-[#050807]/90 via-70% to-transparent backdrop-blur-[3px]" />
       </div>
 
 
