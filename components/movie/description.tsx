@@ -365,9 +365,13 @@ export default function Description({ movie, serverData }: any) {
       {favoriteButton}
       <button
         type="button"
-        onClick={() => setShowReportModal(true)}
+        onClick={() => {
+          toast.info("Tính năng đang triển khai", {
+            description: "Chức năng báo lỗi tập phim đang được hoàn thiện và sẽ sớm khả dụng.",
+          });
+        }}
         className="py-2 px-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/90 hover:text-amber-400 border border-white/[0.08] hover:border-amber-400/30 flex items-center justify-center gap-1.5 text-xs font-bold transition-all cursor-pointer active:scale-95 shadow-sm shrink-0"
-        title="Báo lỗi nếu video không xem được, mất tiếng hoặc sai tập"
+        title="Tính năng đang triển khai"
       >
         <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
         <span className="hidden sm:inline">Báo lỗi tập</span>
