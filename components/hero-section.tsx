@@ -257,8 +257,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
   return (
     <>
       <section
-        className="relative w-full overflow-hidden select-none bg-cinema-bg touch-pan-y"
-        style={{ minHeight: "clamp(560px, 68vh, 680px)" }}
+        className="relative w-full overflow-hidden select-none bg-cinema-bg touch-pan-y min-h-0 sm:min-h-[clamp(560px,68vh,680px)]"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
         onTouchStart={handleTouchStart}
@@ -303,14 +302,14 @@ export default function HeroSection({ movies }: HeroSectionProps) {
           <div className="md:hidden absolute inset-0 bg-gradient-to-t from-[#050807] via-[#050807]/85 via-60% to-transparent pointer-events-none" />
 
           {/* Smooth bottom blend into subsequent page sections */}
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#050807] via-[#050807]/60 to-transparent pointer-events-none" />
+          <div className="absolute bottom-0 left-0 right-0 h-20 sm:h-32 bg-gradient-to-t from-[#050807] via-[#050807]/60 to-transparent pointer-events-none" />
 
           {/* Subtle top shade for top nav readability */}
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#050807]/80 via-transparent to-transparent pointer-events-none" />
         </div>
 
         {/* 2. Main Content Container */}
-        <div className="relative z-20 h-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col justify-start lg:justify-center pt-24 sm:pt-24 lg:pt-24 pb-12 sm:pb-8 min-h-[inherit]">
+        <div className="relative z-20 h-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col justify-start lg:justify-center pt-20 sm:pt-24 lg:pt-24 pb-2 sm:pb-8 min-h-0 sm:min-h-[inherit]">
           <div className="w-full max-w-xl lg:max-w-2xl space-y-3.5 sm:space-y-4 relative z-30">
             
             {/* Top Trending Ribbon Badge */}
@@ -462,10 +461,10 @@ export default function HeroSection({ movies }: HeroSectionProps) {
             </div>
 
             {/* Mobile Thumbnails Row (Touch scrollable) */}
-            <div className="sm:hidden pt-2.5 w-full">
+            <div className="sm:hidden pt-2 w-full">
               <div
                 ref={thumbnailContainerRef}
-                className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1"
+                className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-0"
               >
                 {validMovies.map((movie, idx) => {
                   const thumbCands = getMovieImageCandidates(movie, "backdrop");

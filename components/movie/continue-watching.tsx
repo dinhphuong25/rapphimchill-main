@@ -57,8 +57,8 @@ export default function ContinueWatching() {
   if (!mounted || !user || items.length === 0) return null;
 
   return (
-    <div className="w-full relative z-10 mt-8 mb-4">
-      <h2 className="text-xl sm:text-2xl font-bold text-white mb-6 flex items-center gap-2">
+    <div className="w-full relative z-10 mt-1 sm:mt-8 mb-3 sm:mb-4">
+      <h2 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-6 flex items-center gap-2">
         <span className="w-1.5 h-6 rounded-full bg-brand-green inline-block"></span>
         Tiếp tục xem
       </h2>

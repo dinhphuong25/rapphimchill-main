@@ -106,7 +106,7 @@ function HomeClientComponent({
       )}
 
       {/* Main Content Area */}
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 space-y-8 sm:space-y-10 mt-1 sm:mt-2">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 space-y-5 sm:space-y-10 mt-0 sm:mt-2">
         {/* Continue Watching Section */}
         <ContinueWatching />
 
