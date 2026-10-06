@@ -2482,16 +2482,13 @@ export default function VideoPlayer({
         </div>
       )}
 
-      {/* Top Header Bar inside Video: Title + Brand watermark */}
+      {/* Top Header Bar inside Video: Brand watermark (tên phim đã bỏ theo yêu cầu) */}
       <div
         className={cn(
-          "absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-3.5 sm:px-5 pt-3 sm:pt-4 pb-8 bg-gradient-to-b from-black/80 via-black/40 to-transparent transition-opacity duration-300 pointer-events-none select-none",
+          "absolute top-0 left-0 right-0 z-40 flex items-center justify-end px-3.5 sm:px-5 pt-3 sm:pt-4 pb-8 bg-gradient-to-b from-black/60 via-transparent to-transparent transition-opacity duration-300 pointer-events-none select-none",
           showControls ? "opacity-100" : "opacity-0"
         )}
       >
-        <div className="text-white text-xs sm:text-sm font-bold tracking-wide drop-shadow-md truncate max-w-[75%]">
-          {movieName ? `${movieName}${episodeName ? ` - ${episodeName}` : ''}` : ''}
-        </div>
         <div className="text-[11px] sm:text-xs font-black tracking-widest text-white/50 uppercase font-mono">
           HIPHIM<span className="text-brand-green">.</span>
         </div>
