@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import HLS from 'hls.js';
 import {
   Play,
   Pause,
   Volume2,
+  Volume1,
   VolumeX,
   Maximize,
   Minimize,
@@ -211,6 +213,10 @@ export default function VideoPlayer({
   const [videoFit, setVideoFit] = useState<VideoFitMode>('contain');
   const [containerAspect, setContainerAspect] = useState<number>(16 / 9);
   const [visualFilter, setVisualFilter] = useState<'normal' | 'oled' | 'vivid' | 'bright'>('normal');
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Mobile Touch Gestures & Screen Brightness
   const [brightness, setBrightness] = useState<number>(100);
@@ -2709,9 +2715,9 @@ export default function VideoPlayer({
         </div>
 
         {/* Row 2: Player Action Buttons */}
-        <div className="px-3 sm:px-5 pb-3 sm:pb-4 flex items-center justify-between gap-3 pointer-events-auto">
-          {/* Left Cluster: Play/Pause, Rewind 10s, Forward 10s, Desktop Volume */}
-          <div className="flex items-center gap-3.5 sm:gap-5">
+        <div className="px-2.5 sm:px-5 pb-3 sm:pb-4 flex items-center justify-between gap-2 sm:gap-3 pointer-events-auto">
+          {/* Left Cluster: Play/Pause, Rewind 10s, Forward 10s, Volume */}
+          <div className="flex items-center gap-1 sm:gap-2">
             {/* Play / Pause Button */}
             <button
               type="button"
@@ -2720,7 +2726,7 @@ export default function VideoPlayer({
                 togglePlay();
               }}
               aria-label={isPlaying ? "Tạm dừng" : "Phát"}
-              className="text-white hover:text-brand-green active:scale-90 transition-transform cursor-pointer p-1"
+              className="text-white hover:text-brand-green hover:bg-white/10 active:scale-90 transition-all cursor-pointer p-2 sm:p-2.5 rounded-full flex items-center justify-center"
             >
               {isPlaying ? (
                 <Pause className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
@@ -2729,7 +2735,7 @@ export default function VideoPlayer({
               )}
             </button>
 
-            {/* Rewind 10s Button (RotateCcw) */}
+            {/* Rewind 10s Button (RotateCcw with 10 inside) */}
             <button
               type="button"
               onClick={(e) => {
@@ -2740,12 +2746,15 @@ export default function VideoPlayer({
               }}
               title="Lùi 10 giây"
               aria-label="Lùi video 10 giây"
-              className="text-white hover:text-brand-green active:scale-90 transition-transform cursor-pointer p-1"
+              className="relative text-white hover:text-brand-green hover:bg-white/10 active:scale-90 transition-all cursor-pointer p-2 sm:p-2.5 rounded-full flex items-center justify-center select-none"
             >
-              <RotateCcw className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+              <RotateCcw className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />
+              <span className="absolute inset-0 flex items-center justify-center text-[9px] font-black pointer-events-none pt-0.5">
+                10
+              </span>
             </button>
 
-            {/* Fast-forward 10s Button (RotateCw) */}
+            {/* Fast-forward 10s Button (RotateCw with 10 inside) */}
             <button
               type="button"
               onClick={(e) => {
@@ -2756,58 +2765,66 @@ export default function VideoPlayer({
               }}
               title="Tua 10 giây"
               aria-label="Tua video 10 giây"
-              className="text-white hover:text-brand-green active:scale-90 transition-transform cursor-pointer p-1"
+              className="relative text-white hover:text-brand-green hover:bg-white/10 active:scale-90 transition-all cursor-pointer p-2 sm:p-2.5 rounded-full flex items-center justify-center select-none"
             >
-              <RotateCw className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+              <RotateCw className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />
+              <span className="absolute inset-0 flex items-center justify-center text-[9px] font-black pointer-events-none pt-0.5">
+                10
+              </span>
             </button>
 
-            {/* Desktop Volume Slider */}
-            <div className="hidden md:flex items-center gap-2 group/volume ml-1">
+            {/* Volume Control (Button always visible on mobile & desktop) */}
+            <div className="flex items-center gap-1 group/volume ml-0.5 sm:ml-1">
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleMute();
                 }}
-                className="text-white/80 hover:text-white cursor-pointer p-1"
+                className="text-white/90 hover:text-brand-green hover:bg-white/10 active:scale-90 transition-all cursor-pointer p-2 sm:p-2.5 rounded-full flex items-center justify-center"
                 aria-label={isMuted || volume === 0 ? "Bật âm lượng" : "Tắt âm lượng"}
+                title={isMuted || volume === 0 ? "Bật âm lượng" : "Tắt âm lượng"}
               >
-                {isMuted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                {isMuted || volume === 0 ? (
+                  <VolumeX className="w-5 h-5 sm:w-6 sm:h-6 text-red-400" />
+                ) : volume < 0.5 ? (
+                  <Volume1 className="w-5 h-5 sm:w-6 sm:h-6" />
+                ) : (
+                  <Volume2 className="w-5 h-5 sm:w-6 sm:h-6" />
+                )}
               </button>
-              <Slider
-                value={[isMuted ? 0 : volume]}
-                min={0}
-                max={1}
-                step={0.01}
-                onValueChange={handleVolumeChange}
-                className="w-16 cursor-pointer"
-              />
+              <div className="hidden md:flex items-center w-16">
+                <Slider
+                  value={[isMuted ? 0 : volume]}
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  onValueChange={handleVolumeChange}
+                  className="w-16 cursor-pointer"
+                />
+              </div>
             </div>
           </div>
 
           {/* Right Cluster: Next Episode, PiP, Settings, Fullscreen */}
-          <div className="flex items-center gap-3 sm:gap-5">
+          <div className="flex items-center gap-1 sm:gap-2">
             {/* Next Episode Button */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (hasNextEpisode && onNextEpisode) {
-                  onNextEpisode();
-                }
-              }}
-              disabled={!hasNextEpisode}
-              title={hasNextEpisode ? "Tập tiếp theo" : "Không có tập tiếp theo"}
-              aria-label="Tập tiếp theo"
-              className={cn(
-                "p-1 transition-transform cursor-pointer",
-                hasNextEpisode
-                  ? "text-white hover:text-brand-green active:scale-90"
-                  : "text-white/30 cursor-not-allowed"
-              )}
-            >
-              <SkipForward className="w-5 h-5 sm:w-6 sm:h-6 fill-current stroke-[2.2]" />
-            </button>
+            {hasNextEpisode && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (hasNextEpisode && onNextEpisode) {
+                    onNextEpisode();
+                  }
+                }}
+                title="Tập tiếp theo"
+                aria-label="Tập tiếp theo"
+                className="text-white hover:text-brand-green hover:bg-white/10 active:scale-90 transition-all cursor-pointer p-2 sm:p-2.5 rounded-full flex items-center justify-center"
+              >
+                <SkipForward className="w-5 h-5 sm:w-6 sm:h-6 fill-current stroke-[2.2]" />
+              </button>
+            )}
 
             {/* Picture-in-Picture Button */}
             <button
@@ -2818,7 +2835,7 @@ export default function VideoPlayer({
               }}
               title="Hình trong hình (PiP)"
               aria-label="Hình trong hình"
-              className="text-white hover:text-brand-green active:scale-90 transition-transform cursor-pointer p-1"
+              className="text-white hover:text-brand-green hover:bg-white/10 active:scale-90 transition-all cursor-pointer p-2 sm:p-2.5 rounded-full flex items-center justify-center"
             >
               <PictureInPicture2 className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
             </button>
@@ -2833,8 +2850,10 @@ export default function VideoPlayer({
               title="Cài đặt phát & Chất lượng"
               aria-label="Cài đặt phát"
               className={cn(
-                "p-1 transition-all cursor-pointer active:scale-90",
-                showSettings ? "text-brand-green rotate-45" : "text-white hover:text-brand-green"
+                "p-2 sm:p-2.5 rounded-full transition-all cursor-pointer active:scale-90 flex items-center justify-center",
+                showSettings
+                  ? "text-brand-green bg-brand-green/20 rotate-45 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
+                  : "text-white hover:text-brand-green hover:bg-white/10"
               )}
             >
               <Settings className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
@@ -2849,7 +2868,7 @@ export default function VideoPlayer({
               }}
               title={isFullscreen ? "Thu nhỏ" : "Toàn màn hình"}
               aria-label={isFullscreen ? "Thu nhỏ" : "Toàn màn hình"}
-              className="text-white hover:text-brand-green active:scale-90 transition-transform cursor-pointer p-1"
+              className="text-white hover:text-brand-green hover:bg-white/10 active:scale-90 transition-all cursor-pointer p-2 sm:p-2.5 rounded-full flex items-center justify-center"
             >
               {isFullscreen ? (
                 <Minimize className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
@@ -2861,343 +2880,406 @@ export default function VideoPlayer({
         </div>
       </div>
 
-      {/* Floating Glassmorphism Settings Menu */}
-      {showSettings && (
-        <div
-          ref={settingsMenuRef}
-          onClick={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-          className="absolute bottom-16 sm:bottom-20 right-2 sm:right-4 z-[60] w-72 sm:w-80 max-h-[calc(100%-4.5rem)] flex flex-col bg-[#121212]/95 backdrop-blur-2xl border border-white/15 rounded-2xl p-3 text-white shadow-[0_10px_40px_rgba(0,0,0,0.85)] animate-in fade-in zoom-in-95 duration-200 pointer-events-auto select-none"
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-white/10 pb-1.5 mb-2 px-1 shrink-0">
-            <span className="text-xs font-bold text-white/90 uppercase tracking-wider flex items-center gap-1.5">
-              <Settings className="w-3.5 h-3.5 text-brand-green" />
-              Cài đặt phát & Chất lượng
-            </span>
-            <span className="text-[10px] font-bold text-brand-green bg-brand-green/10 border border-brand-green/20 px-2 py-0.5 rounded-full">
-              {quality === -1 ? (currentLevelPlaying >= 0 && qualities[currentLevelPlaying] ? `${qualities[currentLevelPlaying].height}p Auto` : "FHD Auto") : `${qualities.find(q => q.level === quality)?.height || 1080}p`}
-            </span>
-          </div>
+      {/* Redesigned Universal Settings Modal (Bottom Sheet on Mobile, Dialog on Desktop) */}
+      {showSettings && isMounted && (() => {
+        const modalContent = (
+          <div
+            className={cn(
+              "fixed inset-0 z-[999999] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md select-none animate-in fade-in duration-200 p-0 sm:p-4",
+              isFullscreen && "absolute"
+            )}
+            onClick={() => setShowSettings(false)}
+          >
+            <div
+              ref={settingsMenuRef}
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              className="w-full sm:max-w-lg max-h-[85vh] sm:max-h-[82vh] flex flex-col bg-[#111714] border-t sm:border border-white/20 rounded-t-3xl sm:rounded-3xl p-4 sm:p-6 text-white shadow-[0_20px_60px_rgba(0,0,0,0.95)] animate-in slide-in-from-bottom-5 sm:zoom-in-95 duration-200 overflow-hidden"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/10 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-brand-green/15 text-brand-green">
+                    <Settings className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-extrabold text-white uppercase tracking-wider">
+                      Cài Đặt Phát & Chất Lượng
+                    </h3>
+                    <p className="text-[11px] text-white/50">
+                      Tùy chỉnh độ nét, tốc độ, màu sắc và tỷ lệ khung hình
+                    </p>
+                  </div>
+                </div>
 
-          {/* Tab selector */}
-          <div className="grid grid-cols-5 gap-1 p-1 bg-white/5 rounded-xl mb-2 text-[11px] font-semibold shrink-0">
-            <button
-              onClick={() => setSettingsTab('quality')}
-              className={cn("py-1 rounded-lg transition-all cursor-pointer", settingsTab === 'quality' ? "bg-brand-green text-black font-bold shadow" : "text-white/70 hover:text-white")}
-            >
-              Nét
-            </button>
-            <button
-              onClick={() => setSettingsTab('speed')}
-              className={cn("py-1 rounded-lg transition-all cursor-pointer", settingsTab === 'speed' ? "bg-brand-green text-black font-bold shadow" : "text-white/70 hover:text-white")}
-            >
-              Tốc độ
-            </button>
-            <button
-              onClick={() => setSettingsTab('sub')}
-              className={cn("py-1 rounded-lg transition-all cursor-pointer", settingsTab === 'sub' ? "bg-brand-green text-black font-bold shadow" : "text-white/70 hover:text-white")}
-            >
-              Phụ đề
-            </button>
-            <button
-              onClick={() => setSettingsTab('filter')}
-              className={cn("py-1 rounded-lg transition-all cursor-pointer", settingsTab === 'filter' ? "bg-brand-green text-black font-bold shadow" : "text-white/70 hover:text-white")}
-            >
-              Màu
-            </button>
-            <button
-              onClick={() => setSettingsTab('fit')}
-              className={cn("py-1 rounded-lg transition-all cursor-pointer", settingsTab === 'fit' ? "bg-brand-green text-black font-bold shadow" : "text-white/70 hover:text-white")}
-            >
-              Tỷ lệ
-            </button>
-          </div>
-
-          {/* Tab Content: Quality */}
-          {settingsTab === 'quality' && (
-            <div className="flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto pr-1">
-              <button
-                onClick={() => handleQualityChange(-1)}
-                className={cn(
-                  "w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer",
-                  quality === -1 ? "bg-brand-green/15 text-brand-green font-bold border border-brand-green/30" : "hover:bg-white/5 text-white/80"
-                )}
-              >
-                <span>Tự động (Thích ứng theo mạng)</span>
-                {quality === -1 && <Check className="w-3.5 h-3.5 text-brand-green" />}
-              </button>
-              {qualities.length > 0 ? (
-                qualities.map((q) => (
+                <div className="flex items-center gap-2">
+                  <span className="hidden sm:inline-block text-[11px] font-bold text-brand-green bg-brand-green/10 border border-brand-green/20 px-2.5 py-1 rounded-full">
+                    {quality === -1 ? (currentLevelPlaying >= 0 && qualities[currentLevelPlaying] ? `${qualities[currentLevelPlaying].height}p Auto` : "FHD Auto") : `${qualities.find(q => q.level === quality)?.height || 1080}p`}
+                  </span>
                   <button
-                    key={q.level}
-                    onClick={() => handleQualityChange(q.level)}
+                    type="button"
+                    onClick={() => setShowSettings(false)}
+                    className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition-all cursor-pointer active:scale-90"
+                    aria-label="Đóng cài đặt"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* 5 Tab Navigation Pills (Large & Touch-friendly) */}
+              <div className="grid grid-cols-5 gap-1.5 p-1.5 bg-black/40 rounded-2xl mb-4 text-xs font-bold shrink-0 border border-white/5">
+                <button
+                  type="button"
+                  onClick={() => setSettingsTab('quality')}
+                  className={cn(
+                    "py-2 sm:py-2.5 rounded-xl transition-all cursor-pointer text-center flex flex-col sm:flex-row items-center justify-center gap-1",
+                    settingsTab === 'quality'
+                      ? "bg-brand-green text-black font-black shadow-lg shadow-brand-green/20 scale-[1.02]"
+                      : "text-white/70 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>Nét</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSettingsTab('speed')}
+                  className={cn(
+                    "py-2 sm:py-2.5 rounded-xl transition-all cursor-pointer text-center flex flex-col sm:flex-row items-center justify-center gap-1",
+                    settingsTab === 'speed'
+                      ? "bg-brand-green text-black font-black shadow-lg shadow-brand-green/20 scale-[1.02]"
+                      : "text-white/70 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  <RotateCw className="w-3.5 h-3.5" />
+                  <span>Tốc độ</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSettingsTab('sub')}
+                  className={cn(
+                    "py-2 sm:py-2.5 rounded-xl transition-all cursor-pointer text-center flex flex-col sm:flex-row items-center justify-center gap-1",
+                    settingsTab === 'sub'
+                      ? "bg-brand-green text-black font-black shadow-lg shadow-brand-green/20 scale-[1.02]"
+                      : "text-white/70 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  <Subtitles className="w-3.5 h-3.5" />
+                  <span>Phụ đề</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSettingsTab('filter')}
+                  className={cn(
+                    "py-2 sm:py-2.5 rounded-xl transition-all cursor-pointer text-center flex flex-col sm:flex-row items-center justify-center gap-1",
+                    settingsTab === 'filter'
+                      ? "bg-brand-green text-black font-black shadow-lg shadow-brand-green/20 scale-[1.02]"
+                      : "text-white/70 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  <Sun className="w-3.5 h-3.5" />
+                  <span>Màu</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSettingsTab('fit')}
+                  className={cn(
+                    "py-2 sm:py-2.5 rounded-xl transition-all cursor-pointer text-center flex flex-col sm:flex-row items-center justify-center gap-1",
+                    settingsTab === 'fit'
+                      ? "bg-brand-green text-black font-black shadow-lg shadow-brand-green/20 scale-[1.02]"
+                      : "text-white/70 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  <Tv className="w-3.5 h-3.5" />
+                  <span>Tỷ lệ</span>
+                </button>
+              </div>
+
+              {/* Tab Content: Quality */}
+              {settingsTab === 'quality' && (
+                <div className="flex flex-col gap-2 flex-1 min-h-0 overflow-y-auto pr-1">
+                  <button
+                    type="button"
+                    onClick={() => handleQualityChange(-1)}
                     className={cn(
-                      "w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer",
-                      quality === q.level ? "bg-brand-green/15 text-brand-green font-bold border border-brand-green/30" : "hover:bg-white/5 text-white/80"
+                      "w-full flex items-center justify-between p-3 rounded-2xl text-xs font-semibold transition-all cursor-pointer border",
+                      quality === -1
+                        ? "bg-brand-green/15 text-brand-green font-bold border-brand-green/40 shadow-sm"
+                        : "hover:bg-white/5 text-white/80 border-white/5"
                     )}
                   >
-                    <span className="flex items-center gap-1.5">
-                      {q.height >= 1080 ? `${q.height}p FHD (Siêu Nét)` : `${q.height}p HD`}
-                      {q.height >= 1080 && <span className="text-[9px] bg-brand-green/20 text-brand-green px-1.5 py-0.2 rounded font-black">PRO</span>}
-                    </span>
-                    {quality === q.level && <Check className="w-3.5 h-3.5 text-brand-green" />}
+                    <div className="flex flex-col items-start text-left">
+                      <span className="font-bold text-sm">Tự động (Thích ứng mạng)</span>
+                      <span className="text-[11px] text-white/40">Tự động chọn độ nét mượt nhất theo đường truyền</span>
+                    </div>
+                    {quality === -1 && <Check className="w-4 h-4 text-brand-green" />}
                   </button>
-                ))
-              ) : (
-                <div className="px-2.5 py-1.5 text-xs text-white/60 bg-white/5 rounded-xl flex items-center justify-between">
-                  <span>FHD 1080p (Chất lượng gốc cao nhất)</span>
-                  <Check className="w-3.5 h-3.5 text-brand-green" />
+
+                  {qualities.length > 0 ? (
+                    qualities.map((q) => (
+                      <button
+                        key={q.level}
+                        type="button"
+                        onClick={() => handleQualityChange(q.level)}
+                        className={cn(
+                          "w-full flex items-center justify-between p-3 rounded-2xl text-xs font-semibold transition-all cursor-pointer border",
+                          quality === q.level
+                            ? "bg-brand-green/15 text-brand-green font-bold border-brand-green/40 shadow-sm"
+                            : "hover:bg-white/5 text-white/80 border-white/5"
+                        )}
+                      >
+                        <div className="flex flex-col items-start text-left">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-sm">
+                              {q.height >= 1080 ? `${q.height}p FHD (Siêu Nét)` : `${q.height}p HD`}
+                            </span>
+                            {q.height >= 1080 && (
+                              <span className="text-[9px] bg-brand-green/20 text-brand-green px-1.5 py-0.5 rounded font-black">PRO</span>
+                            )}
+                          </div>
+                          <span className="text-[11px] text-white/40">
+                            {q.height >= 1080 ? "Chất lượng hình ảnh gốc cao cấp" : "Tiết kiệm dung lượng và tải nhanh"}
+                          </span>
+                        </div>
+                        {quality === q.level && <Check className="w-4 h-4 text-brand-green" />}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="p-3 text-xs text-white/60 bg-white/5 rounded-2xl flex items-center justify-between border border-white/5">
+                      <div className="flex flex-col items-start text-left">
+                        <span className="font-bold text-sm">FHD 1080p (Chất lượng gốc cao nhất)</span>
+                        <span className="text-[11px] text-white/40">Nguồn phát chất lượng cao từ server</span>
+                      </div>
+                      <Check className="w-4 h-4 text-brand-green" />
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
-          )}
 
-          {/* Tab Content: Speed */}
-          {settingsTab === 'speed' && (
-            <div className="grid grid-cols-3 gap-1.5 flex-1 min-h-0 overflow-y-auto pr-1 py-1">
-              {[0.5, 0.75, 1, 1.25, 1.5, 2].map((rate) => (
-                <button
-                  key={rate}
-                  onClick={() => handlePlaybackRateChange(rate)}
-                  className={cn(
-                    "py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer text-center",
-                    playbackRate === rate ? "bg-brand-green text-black font-bold shadow" : "bg-white/5 hover:bg-white/10 text-white/80"
-                  )}
-                >
-                  {rate === 1 ? "1.0x Chuẩn" : `${rate}x`}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Tab Content: Subtitles */}
-          {settingsTab === 'sub' && (
-            <div className="flex flex-col gap-2 flex-1 min-h-0 overflow-y-auto pr-1 py-1">
-              <input
-                type="file"
-                ref={subtitleFileInputRef}
-                accept=".srt,.vtt,.txt"
-                className="hidden"
-                onChange={handleSubtitleUpload}
-              />
-              
-              {/* Upload Subtitle Button */}
-              <button
-                type="button"
-                onClick={() => subtitleFileInputRef.current?.click()}
-                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-brand-green/15 hover:bg-brand-green/25 border border-brand-green/40 text-brand-green text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
-              >
-                <Upload className="w-3.5 h-3.5" />
-                <span>{customCues.length > 0 ? "Tải file phụ đề khác (.srt, .vtt)" : "Tải phụ đề từ máy (.srt, .vtt)"}</span>
-              </button>
-
-              {customCues.length > 0 && (
-                <>
-                  {/* Toggle Subtitles On/Off */}
-                  <div className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/10 text-xs">
-                    <span className="text-white/80 font-medium">Hiện phụ đề ({customCues.length} câu)</span>
+              {/* Tab Content: Speed */}
+              {settingsTab === 'speed' && (
+                <div className="grid grid-cols-3 gap-2 flex-1 min-h-0 overflow-y-auto pr-1 py-1">
+                  {[0.5, 0.75, 1, 1.25, 1.5, 2].map((rate) => (
                     <button
+                      key={rate}
                       type="button"
-                      onClick={() => setSubtitleEnabled(!subtitleEnabled)}
+                      onClick={() => handlePlaybackRateChange(rate)}
                       className={cn(
-                        "w-10 h-5 rounded-full transition-colors relative cursor-pointer",
-                        subtitleEnabled ? "bg-brand-green" : "bg-white/20"
+                        "py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer text-center flex flex-col items-center justify-center gap-0.5 border",
+                        playbackRate === rate
+                          ? "bg-brand-green text-black font-black border-brand-green shadow-lg shadow-brand-green/20"
+                          : "bg-white/5 hover:bg-white/10 text-white/80 border-white/5"
                       )}
                     >
-                      <div className={cn(
-                        "w-3.5 h-3.5 rounded-full bg-white transition-transform absolute top-0.5",
-                        subtitleEnabled ? "left-5.5" : "left-0.5"
-                      )} />
+                      <span className="text-sm">{rate === 1 ? "1.0x" : `${rate}x`}</span>
+                      <span className="text-[10px] opacity-70">{rate === 1 ? "Chuẩn" : rate > 1 ? "Nhanh" : "Chậm"}</span>
                     </button>
-                  </div>
-
-                  {/* Subtitle Font Size */}
-                  <div className="space-y-1">
-                    <span className="text-[11px] text-white/60 font-semibold uppercase tracking-wider">Cỡ chữ phụ đề:</span>
-                    <div className="grid grid-cols-3 gap-1">
-                      {[
-                        { id: 'sm', label: 'Nhỏ' },
-                        { id: 'md', label: 'Vừa' },
-                        { id: 'lg', label: 'Lớn' },
-                      ].map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => setSubtitleSize(item.id as any)}
-                          className={cn(
-                            "py-1 rounded-lg text-xs font-medium transition-all cursor-pointer",
-                            subtitleSize === item.id
-                              ? "bg-brand-green text-black font-bold shadow"
-                              : "bg-white/5 hover:bg-white/10 text-white/70"
-                          )}
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Subtitle Background */}
-                  <div className="space-y-1">
-                    <span className="text-[11px] text-white/60 font-semibold uppercase tracking-wider">Nền phụ đề:</span>
-                    <div className="grid grid-cols-3 gap-1">
-                      {[
-                        { id: 'transparent', label: 'Trong suốt' },
-                        { id: 'dim', label: 'Mờ tối' },
-                        { id: 'black', label: 'Đen đậm' },
-                      ].map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => setSubtitleBg(item.id as any)}
-                          className={cn(
-                            "py-1 rounded-lg text-xs font-medium transition-all cursor-pointer",
-                            subtitleBg === item.id
-                              ? "bg-brand-green text-black font-bold shadow"
-                              : "bg-white/5 hover:bg-white/10 text-white/70"
-                          )}
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </>
+                  ))}
+                </div>
               )}
 
-              {customCues.length === 0 && (
-                <p className="text-[11px] text-white/50 text-center px-2 py-2 leading-relaxed">
-                  Bạn có thể tải file phụ đề định dạng .srt hoặc .vtt từ máy để khớp với video đang phát.
-                </p>
-              )}
-            </div>
-          )}
+              {/* Tab Content: Subtitles */}
+              {settingsTab === 'sub' && (
+                <div className="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto pr-1 py-1">
+                  <input
+                    type="file"
+                    ref={subtitleFileInputRef}
+                    accept=".srt,.vtt,.txt"
+                    className="hidden"
+                    onChange={handleSubtitleUpload}
+                  />
+                  
+                  <button
+                    type="button"
+                    onClick={() => subtitleFileInputRef.current?.click()}
+                    className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-brand-green/15 hover:bg-brand-green/25 border border-brand-green/40 text-brand-green text-xs font-extrabold transition-all cursor-pointer shadow-sm active:scale-95"
+                  >
+                    <Upload className="w-4 h-4" />
+                    <span>{customCues.length > 0 ? "Tải file phụ đề khác (.srt, .vtt)" : "Tải phụ đề từ máy (.srt, .vtt)"}</span>
+                  </button>
 
-          {/* Tab Content: Color & Visual Filter */}
-          {settingsTab === 'filter' && (
-            <div className="flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto pr-1">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleVisualFilterChange('normal');
-                }}
-                onPointerDown={(e) => e.stopPropagation()}
-                className={cn(
-                  "w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer",
-                  visualFilter === 'normal' 
-                    ? "bg-brand-green/20 text-brand-green font-bold border border-brand-green/40 shadow-[0_0_15px_rgba(32,214,107,0.15)]" 
-                    : "hover:bg-white/5 text-white/80 border border-transparent"
-                )}
-              >
-                <div className="flex flex-col items-start text-left">
-                  <span>Chuẩn (Natural)</span>
-                  <span className="text-[10px] text-white/40">Màu sắc gốc mặc định</span>
-                </div>
-                {visualFilter === 'normal' && <Check className="w-4 h-4 text-brand-green shrink-0" />}
-              </button>
+                  {customCues.length > 0 ? (
+                    <>
+                      <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/10 text-xs">
+                        <span className="text-white/80 font-bold">Hiện phụ đề ({customCues.length} câu)</span>
+                        <button
+                          type="button"
+                          onClick={() => setSubtitleEnabled(!subtitleEnabled)}
+                          className={cn(
+                            "w-11 h-6 rounded-full transition-colors relative cursor-pointer",
+                            subtitleEnabled ? "bg-brand-green" : "bg-white/20"
+                          )}
+                        >
+                          <div className={cn(
+                            "w-4 h-4 rounded-full bg-white transition-transform absolute top-1",
+                            subtitleEnabled ? "left-6" : "left-1"
+                          )} />
+                        </button>
+                      </div>
 
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleVisualFilterChange('oled');
-                }}
-                onPointerDown={(e) => e.stopPropagation()}
-                className={cn(
-                  "w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer",
-                  visualFilter === 'oled' 
-                    ? "bg-brand-green/20 text-brand-green font-bold border border-brand-green/40" 
-                    : "hover:bg-white/5 text-white/80 border border-transparent"
-                )}
-              >
-                <div className="flex flex-col items-start text-left">
-                  <span className="flex items-center gap-1.5">
-                    OLED Cinema Pro
-                    <span className="text-[9px] bg-amber-500/25 text-amber-300 px-1.5 py-0.2 rounded font-black border border-amber-500/30">ĐỀ XUẤT</span>
-                  </span>
-                  <span className="text-[10px] text-white/40">Đen sâu, tương phản cao, rõ cảnh tối</span>
-                </div>
-                {visualFilter === 'oled' && <Check className="w-4 h-4 text-brand-green shrink-0" />}
-              </button>
+                      <div className="space-y-1.5">
+                        <span className="text-[11px] text-white/60 font-semibold uppercase tracking-wider">Cỡ chữ phụ đề:</span>
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { id: 'sm', label: 'Nhỏ (16px)' },
+                            { id: 'md', label: 'Vừa (20px)' },
+                            { id: 'lg', label: 'Lớn (24px)' },
+                          ].map((item) => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => setSubtitleSize(item.id as any)}
+                              className={cn(
+                                "py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border",
+                                subtitleSize === item.id
+                                  ? "bg-brand-green text-black border-brand-green shadow"
+                                  : "bg-white/5 hover:bg-white/10 text-white/70 border-white/5"
+                              )}
+                            >
+                              {item.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
 
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleVisualFilterChange('vivid');
-                }}
-                onPointerDown={(e) => e.stopPropagation()}
-                className={cn(
-                  "w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer",
-                  visualFilter === 'vivid' 
-                    ? "bg-brand-green/20 text-brand-green font-bold border border-brand-green/40" 
-                    : "hover:bg-white/5 text-white/80 border border-transparent"
-                )}
-              >
-                <div className="flex flex-col items-start text-left">
-                  <span>Sống động (Vivid Colors)</span>
-                  <span className="text-[10px] text-white/40">Rực rỡ, thích hợp Anime & Hoạt hình</span>
-                </div>
-                {visualFilter === 'vivid' && <Check className="w-4 h-4 text-brand-green shrink-0" />}
-              </button>
-
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleVisualFilterChange('bright');
-                }}
-                onPointerDown={(e) => e.stopPropagation()}
-                className={cn(
-                  "w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer",
-                  visualFilter === 'bright' 
-                    ? "bg-brand-green/20 text-brand-green font-bold border border-brand-green/40" 
-                    : "hover:bg-white/5 text-white/80 border border-transparent"
-                )}
-              >
-                <div className="flex flex-col items-start text-left">
-                  <span>Sáng rõ (Night Clarify)</span>
-                  <span className="text-[10px] text-white/40">Tăng sáng, làm rõ cảnh đêm & phim kinh dị</span>
-                </div>
-                {visualFilter === 'bright' && <Check className="w-4 h-4 text-brand-green shrink-0" />}
-              </button>
-            </div>
-          )}
-
-          {/* Tab Content: Aspect Ratio */}
-          {settingsTab === 'fit' && (
-            <div className="flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto pr-1">
-              {[
-                { id: 'contain', title: 'Mặc định (16:9)', desc: 'Giữ đúng tỷ lệ gốc chuẩn 16:9' },
-                { id: 'cover', title: 'Phóng to lấp đầy (Zoom Fill)', desc: 'Cắt viền đen trên dưới (Zoom 1.33x)' },
-                { id: '4:3', title: 'Tỷ lệ 4:3', desc: 'Chuẩn TV & Anime cổ điển' },
-                { id: '21:9', title: 'Điện ảnh (21:9)', desc: 'Chuẩn chiếu rạp CinemaScope' },
-                { id: 'fill', title: 'Kéo giãn (Stretch)', desc: 'Lấp đầy toàn bộ khung phát' },
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleVideoFitChange(item.id as VideoFitMode)}
-                  className={cn(
-                    "w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer",
-                    videoFit === item.id ? "bg-brand-green/15 text-brand-green font-bold border border-brand-green/30" : "hover:bg-white/5 text-white/80"
+                      <div className="space-y-1.5">
+                        <span className="text-[11px] text-white/60 font-semibold uppercase tracking-wider">Nền phụ đề:</span>
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { id: 'transparent', label: 'Trong suốt' },
+                            { id: 'dim', label: 'Mờ tối' },
+                            { id: 'black', label: 'Đen đậm' },
+                          ].map((item) => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => setSubtitleBg(item.id as any)}
+                              className={cn(
+                                "py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border",
+                                subtitleBg === item.id
+                                  ? "bg-brand-green text-black border-brand-green shadow"
+                                  : "bg-white/5 hover:bg-white/10 text-white/70 border-white/5"
+                              )}
+                            >
+                              {item.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-center space-y-1 text-xs text-white/50">
+                      <p className="font-semibold text-white/70">Chưa có file phụ đề ngoài</p>
+                      <p className="text-[11px] leading-relaxed">Bạn có thể tải file phụ đề định dạng .srt hoặc .vtt từ máy tính/điện thoại để hiển thị trực tiếp trên phim.</p>
+                    </div>
                   )}
-                >
-                  <div className="flex flex-col items-start text-left">
-                    <span>{item.title}</span>
-                    <span className="text-[10px] text-white/40">{item.desc}</span>
-                  </div>
-                  {videoFit === item.id && <Check className="w-3.5 h-3.5 text-brand-green" />}
-                </button>
-              ))}
-            </div>
-          )}
+                </div>
+              )}
 
-        </div>
-      )}
+              {/* Tab Content: Color & Visual Filter */}
+              {settingsTab === 'filter' && (
+                <div className="flex flex-col gap-2 flex-1 min-h-0 overflow-y-auto pr-1">
+                  {[
+                    { id: 'normal', title: 'Chuẩn (Natural)', desc: 'Màu sắc gốc mặc định của phim' },
+                    { id: 'oled', title: 'OLED Cinema Pro', desc: 'Đen sâu, tương phản cao, rõ cảnh tối', badge: 'ĐỀ XUẤT' },
+                    { id: 'vivid', title: 'Sống động (Vivid Colors)', desc: 'Rực rỡ, thích hợp Anime & Hoạt hình' },
+                    { id: 'bright', title: 'Sáng rõ (Night Clarify)', desc: 'Tăng sáng, làm rõ cảnh đêm & phim kinh dị' },
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleVisualFilterChange(item.id as any);
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between p-3 rounded-2xl text-xs font-semibold transition-all cursor-pointer border",
+                        visualFilter === item.id
+                          ? "bg-brand-green/15 text-brand-green font-bold border-brand-green/40 shadow-sm"
+                          : "hover:bg-white/5 text-white/80 border-white/5"
+                      )}
+                    >
+                      <div className="flex flex-col items-start text-left">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm">{item.title}</span>
+                          {item.badge && (
+                            <span className="text-[9px] bg-amber-500/25 text-amber-300 px-1.5 py-0.5 rounded font-black border border-amber-500/30">
+                              {item.badge}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[11px] text-white/40">{item.desc}</span>
+                      </div>
+                      {visualFilter === item.id && <Check className="w-4 h-4 text-brand-green shrink-0" />}
+                    </button>
+                  ))}
+
+                  {/* Brightness Adjustment Slider */}
+                  <div className="pt-2 px-1 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs text-white/70">
+                      <span className="flex items-center gap-1.5 font-bold">
+                        <Sun className="w-3.5 h-3.5 text-amber-400" />
+                        Độ sáng màn hình
+                      </span>
+                      <span className="font-mono font-bold text-brand-green">{brightness}%</span>
+                    </div>
+                    <Slider
+                      value={[brightness]}
+                      min={50}
+                      max={150}
+                      step={5}
+                      onValueChange={(val) => setBrightness(val[0])}
+                      className="w-full cursor-pointer"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Tab Content: Aspect Ratio */}
+              {settingsTab === 'fit' && (
+                <div className="flex flex-col gap-2 flex-1 min-h-0 overflow-y-auto pr-1">
+                  {[
+                    { id: 'contain', title: 'Mặc định (16:9)', desc: 'Giữ đúng tỷ lệ gốc chuẩn 16:9' },
+                    { id: 'cover', title: 'Phóng to lấp đầy (Zoom Fill)', desc: 'Cắt viền đen trên dưới (Zoom 1.33x)' },
+                    { id: '4:3', title: 'Tỷ lệ 4:3', desc: 'Chuẩn TV & Anime cổ điển' },
+                    { id: '21:9', title: 'Điện ảnh (21:9)', desc: 'Chuẩn chiếu rạp CinemaScope' },
+                    { id: 'fill', title: 'Kéo giãn (Stretch)', desc: 'Lấp đầy toàn bộ khung phát' },
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => handleVideoFitChange(item.id as VideoFitMode)}
+                      className={cn(
+                        "w-full flex items-center justify-between p-3 rounded-2xl text-xs font-semibold transition-all cursor-pointer border",
+                        videoFit === item.id
+                          ? "bg-brand-green/15 text-brand-green font-bold border-brand-green/40 shadow-sm"
+                          : "hover:bg-white/5 text-white/80 border-white/5"
+                      )}
+                    >
+                      <div className="flex flex-col items-start text-left">
+                        <span className="font-bold text-sm">{item.title}</span>
+                        <span className="text-[11px] text-white/40">{item.desc}</span>
+                      </div>
+                      {videoFit === item.id && <Check className="w-4 h-4 text-brand-green shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+        const targetNode = isFullscreen && containerRef.current ? containerRef.current : (typeof document !== 'undefined' ? document.body : null);
+        if (!targetNode) return null;
+        return createPortal(modalContent, targetNode);
+      })()}
     </div>
   );
 }
