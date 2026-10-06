@@ -327,11 +327,11 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                 isTransitioning ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
               )}
             >
-              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-[34px] font-extrabold text-white leading-[1.2] tracking-tight uppercase drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)] line-clamp-2">
+              <h1 className="text-lg sm:text-xl md:text-2xl lg:text-[27px] font-bold text-white leading-snug tracking-tight uppercase drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)] line-clamp-2">
                 {current.name}
               </h1>
               {current.origin_name && current.origin_name !== current.name && (
-                <p className="text-xs sm:text-[13px] text-white/55 font-medium tracking-wide drop-shadow-md italic line-clamp-1">
+                <p className="text-xs sm:text-[12px] text-white/50 font-medium tracking-wide drop-shadow-md italic line-clamp-1">
                   {current.origin_name}
                 </p>
               )}
@@ -615,7 +615,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
               {/* Movie Meta */}
               <div className="flex-1 space-y-3">
                 <div>
-                  <h3 className="text-xl sm:text-2xl font-black text-white uppercase leading-snug">
+                  <h3 className="text-lg sm:text-xl font-bold text-white uppercase leading-snug">
                     {current.name}
                   </h3>
                   {current.origin_name && (
