@@ -1096,6 +1096,7 @@ export default function Description({ movie, serverData }: any) {
                       poster={normalizeImageUrl(movie.thumb_url || movie.poster_url)}
                       initialTime={resumeTime}
                       movieName={movie.name}
+                      episodeName={currentServerData?.[currentEpisodeIndex?.server || 0]?.server_data?.[currentEpisodeIndex?.episode || 0]?.name}
                       movieSlug={movie.slug}
                       onProgress={handleProgress}
                       onSwitchToEmbed={handleSwitchToEmbed}

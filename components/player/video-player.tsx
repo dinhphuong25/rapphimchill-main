@@ -26,6 +26,9 @@ import {
   Subtitles,
   Upload,
   Zap,
+  RotateCcw,
+  RotateCw,
+  PictureInPicture2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -98,17 +101,21 @@ interface VideoPlayerProps {
   hasNextEpisode?: boolean;
   onNextEpisode?: () => void;
   movieName?: string;
+  episodeName?: string;
   movieSlug?: string;
   onFullscreenChange?: (isFullscreen: boolean) => void;
 }
 
-const formatTime = (seconds: number) => {
-  if (isNaN(seconds)) return "0:00";
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-  if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  return `${m}:${s.toString().padStart(2, '0')}`;
+const formatTime = (seconds: number, forceHours = false) => {
+  if (isNaN(seconds) || seconds < 0) seconds = 0;
+  const total = Math.floor(seconds);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  if (h > 0 || forceHours) {
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  }
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 };
 
 export default function VideoPlayer({
@@ -123,6 +130,7 @@ export default function VideoPlayer({
   hasNextEpisode,
   onNextEpisode,
   movieName,
+  episodeName,
   movieSlug,
   onFullscreenChange,
 }: VideoPlayerProps) {
@@ -672,6 +680,19 @@ export default function VideoPlayer({
       setIsFullscreen((prev) => !prev);
     }
   }, [isFullscreen]);
+
+  const togglePictureInPicture = useCallback(async () => {
+    try {
+      if (!videoRef.current) return;
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else if (document.pictureInPictureEnabled) {
+        await videoRef.current.requestPictureInPicture();
+      }
+    } catch (err) {
+      console.warn("PiP toggle failed:", err);
+    }
+  }, []);
 
   const handlePlaybackRateChange = useCallback((rate: number) => {
     if (videoRef.current) {
@@ -2282,16 +2303,9 @@ export default function VideoPlayer({
       <video 
         ref={(el) => {
           (videoRef as any).current = el;
-          if (el) {
-            try {
-              el.disablePictureInPicture = true;
-              el.removeAttribute("autopictureinpicture");
-            } catch {}
-          }
         }} 
         crossOrigin="anonymous"
-        disablePictureInPicture={true}
-        controlsList="nodownload noplaybackrate nopictureinpicture"
+        controlsList="nodownload noplaybackrate"
         className="w-full h-full"
           style={{
             ...getVideoTransformStyle(),
@@ -2470,28 +2484,44 @@ export default function VideoPlayer({
         </div>
       )}
 
+      {/* Top Header Bar inside Video: Title + Brand watermark */}
+      <div
+        className={cn(
+          "absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-3.5 sm:px-5 pt-3 sm:pt-4 pb-8 bg-gradient-to-b from-black/80 via-black/40 to-transparent transition-opacity duration-300 pointer-events-none select-none",
+          showControls ? "opacity-100" : "opacity-0"
+        )}
+      >
+        <div className="text-white text-xs sm:text-sm font-bold tracking-wide drop-shadow-md truncate max-w-[75%]">
+          {movieName ? `${movieName}${episodeName ? ` - ${episodeName}` : ''}` : ''}
+        </div>
+        <div className="text-[11px] sm:text-xs font-black tracking-widest text-white/50 uppercase font-mono">
+          HIPHIM<span className="text-brand-green">.</span>
+        </div>
+      </div>
+
       {/* Big Center Play/Pause Button for Mobile & Desktop */}
       <div 
         className={cn(
           "absolute inset-0 flex items-center justify-center z-40 pointer-events-none transition-opacity duration-300",
-          !isPlaying && countdown === null && !error ? "opacity-100" : "opacity-0"
+          showControls && countdown === null && !error && !isLoading ? "opacity-100" : "opacity-0"
         )}
       >
         <button
+          type="button"
           onClick={(e) => {
             e.stopPropagation();
             togglePlay();
           }}
           className={cn(
-            "w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shadow-2xl transition-transform active:scale-90 cursor-pointer",
-            !isPlaying && countdown === null && !error ? "pointer-events-auto" : "pointer-events-none"
+            "w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/55 hover:bg-black/75 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shadow-2xl active:scale-90 transition-all cursor-pointer",
+            showControls && countdown === null && !error && !isLoading ? "pointer-events-auto" : "pointer-events-none"
           )}
           aria-label={isPlaying ? "Tạm dừng" : "Phát"}
         >
           {isPlaying ? (
-            <Pause className="w-8 h-8 sm:w-10 sm:h-10 fill-current" />
+            <Pause className="w-7 h-7 sm:w-8 sm:h-8 fill-white text-white" />
           ) : (
-            <Play className="w-8 h-8 sm:w-10 sm:h-10 fill-current ml-1" />
+            <Play className="w-7 h-7 sm:w-8 sm:h-8 fill-white text-white ml-0.5" />
           )}
         </button>
       </div>
@@ -2635,120 +2665,203 @@ export default function VideoPlayer({
       {/* Bottom controls bar */}
       <div 
         onClick={(e) => e.stopPropagation()}
-        className={cn("absolute bottom-0 left-0 right-0 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/50 to-transparent transition-opacity duration-300 z-50 pointer-events-none", showControls ? "opacity-100" : "opacity-0")}
+        className={cn(
+          "absolute bottom-0 left-0 right-0 flex flex-col justify-end bg-gradient-to-t from-black/95 via-black/60 to-transparent transition-opacity duration-300 z-50 pointer-events-none select-none",
+          showControls ? "opacity-100" : "opacity-0"
+        )}
       >
-        <div className="px-4 pb-0 pointer-events-auto relative">
-          {/* Ad range markers on timeline */}
-          {duration > 0 && adRanges.length > 0 && (
-            <div className="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-1 pointer-events-none overflow-hidden z-0">
-              {adRanges.map((range, idx) => {
-                const leftPercent = Math.max(0, Math.min(100, (range.start / duration) * 100));
-                const widthPercent = Math.max(0.5, Math.min(100 - leftPercent, (range.duration / duration) * 100));
-                return (
-                  <div
-                    key={idx}
-                    className="absolute top-0 bottom-0 bg-amber-400/70 rounded-full"
-                    style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}
-                    title={`Video quảng cáo (${Math.round(range.duration)}s)`}
-                  />
-                );
-              })}
-            </div>
-          )}
-          <Slider 
-            value={[seekTime !== null ? seekTime : currentTime]} 
-            min={0} 
-            max={duration > 0 ? duration : 100} 
-            step={1}
-            onValueChange={handleSeekChange} 
-            onValueCommit={handleSeekCommit} 
-            className="py-4 cursor-pointer relative z-10" 
-          />
+        {/* Row 1: Timeline Slider & Timestamps */}
+        <div className="px-3.5 sm:px-5 pb-1 flex items-center gap-2.5 sm:gap-3 pointer-events-auto">
+          {/* Current Time */}
+          <span className="text-[11px] sm:text-xs font-mono font-medium text-white/90 tabular-nums shrink-0 select-none">
+            {formatTime(seekTime !== null ? seekTime : currentTime, duration >= 3600)}
+          </span>
+
+          {/* Timeline Slider Track */}
+          <div className="flex-1 relative flex items-center">
+            {/* Ad range markers on timeline */}
+            {duration > 0 && adRanges.length > 0 && (
+              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 pointer-events-none overflow-hidden z-0 rounded-full">
+                {adRanges.map((range, idx) => {
+                  const leftPercent = Math.max(0, Math.min(100, (range.start / duration) * 100));
+                  const widthPercent = Math.max(0.5, Math.min(100 - leftPercent, (range.duration / duration) * 100));
+                  return (
+                    <div
+                      key={idx}
+                      className="absolute top-0 bottom-0 bg-amber-400/70 rounded-full"
+                      style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}
+                      title={`Video quảng cáo (${Math.round(range.duration)}s)`}
+                    />
+                  );
+                })}
+              </div>
+            )}
+            <Slider 
+              value={[seekTime !== null ? seekTime : currentTime]} 
+              min={0} 
+              max={duration > 0 ? duration : 100} 
+              step={1}
+              onValueChange={handleSeekChange} 
+              onValueCommit={handleSeekCommit} 
+              className="py-2.5 cursor-pointer relative z-10 [&>span:first-child]:h-1 hover:[&>span:first-child]:h-1.5 [&>span:first-child]:transition-all [&>span:last-child]:h-3 sm:[&>span:last-child]:h-3.5 [&>span:last-child]:w-3 sm:[&>span:last-child]:w-3.5 [&>span:last-child]:rounded-full [&>span:last-child]:bg-white [&>span:last-child]:border-0 [&>span:last-child]:shadow-md hover:[&>span:last-child]:scale-125" 
+            />
+          </div>
+
+          {/* Total Duration */}
+          <span className="text-[11px] sm:text-xs font-mono font-medium text-white/90 tabular-nums shrink-0 select-none">
+            {formatTime(duration, duration >= 3600)}
+          </span>
         </div>
-        <div className="px-4 pb-4 flex items-center justify-between gap-4 pointer-events-auto">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="icon" 
+
+        {/* Row 2: Player Action Buttons */}
+        <div className="px-3 sm:px-5 pb-3 sm:pb-4 flex items-center justify-between gap-3 pointer-events-auto">
+          {/* Left Cluster: Play/Pause, Rewind 10s, Forward 10s, Desktop Volume */}
+          <div className="flex items-center gap-3.5 sm:gap-5">
+            {/* Play / Pause Button */}
+            <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 togglePlay();
-              }} 
-              className="text-white hover:bg-white/10 hover:text-brand-green transition-colors cursor-pointer"
+              }}
+              aria-label={isPlaying ? "Tạm dừng" : "Phát"}
+              className="text-white hover:text-brand-green active:scale-90 transition-transform cursor-pointer p-1"
             >
-              {isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current" />}
-            </Button>
-            <div className="flex items-center gap-2 group/volume">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleMute();
-                }} 
-                className="text-white hover:bg-white/10 cursor-pointer"
-              >
-                {isMuted || volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-              </Button>
-              <Slider value={[isMuted ? 0 : volume]} min={0} max={1} step={0.01} onValueChange={handleVolumeChange} className="w-20 cursor-pointer" />
-            </div>
-            <div className="text-white text-xs tabular-nums font-bold">
-              {formatTime(seekTime !== null ? seekTime : currentTime)} / {formatTime(duration)}
-            </div>
-          </div>
-          <div className="flex items-center gap-1 sm:gap-2">
-            {/* Resolution indicator pill - Tạm ẩn theo yêu cầu */}
-            {/* <span className="hidden sm:inline-flex text-[10px] font-black text-brand-green bg-brand-green/10 border border-brand-green/25 px-2 py-0.5 rounded-full uppercase tracking-wider select-none">
-              {quality === -1 ? (currentLevelPlaying >= 0 && qualities[currentLevelPlaying] ? `${qualities[currentLevelPlaying].height}p Auto` : "FHD 1080p") : `${qualities.find(q => q.level === quality)?.height || 1080}p FHD`}
-            </span> */}
+              {isPlaying ? (
+                <Pause className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
+              ) : (
+                <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
+              )}
+            </button>
 
-            {/* Nút Lùi Video (-10s) */}
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            {/* Rewind 10s Button (RotateCcw) */}
+            <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 skip(-10);
                 setSkipAnimation({ side: 'left', id: Date.now() });
                 showControlsHandler();
-              }} 
-              title="Lùi video (-10s)"
+              }}
+              title="Lùi 10 giây"
               aria-label="Lùi video 10 giây"
-              className="text-white hover:bg-white/10 hover:text-brand-green cursor-pointer w-8 h-8 sm:w-9 sm:h-9 transition-colors flex items-center justify-center relative group"
+              className="text-white hover:text-brand-green active:scale-90 transition-transform cursor-pointer p-1"
             >
-              <Rewind className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110 group-active:scale-95" />
-            </Button>
+              <RotateCcw className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+            </button>
 
-            {/* Nút Xả Video (+10s) */}
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            {/* Fast-forward 10s Button (RotateCw) */}
+            <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 skip(10);
                 setSkipAnimation({ side: 'right', id: Date.now() });
                 showControlsHandler();
-              }} 
-              title="Xả video (+10s)"
-              aria-label="Xả video 10 giây"
-              className="text-white hover:bg-white/10 hover:text-brand-green cursor-pointer w-8 h-8 sm:w-9 sm:h-9 transition-colors flex items-center justify-center relative group"
+              }}
+              title="Tua 10 giây"
+              aria-label="Tua video 10 giây"
+              className="text-white hover:text-brand-green active:scale-90 transition-transform cursor-pointer p-1"
             >
-              <FastForward className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110 group-active:scale-95" />
-            </Button>
+              <RotateCw className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+            </button>
+
+            {/* Desktop Volume Slider */}
+            <div className="hidden md:flex items-center gap-2 group/volume ml-1">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleMute();
+                }}
+                className="text-white/80 hover:text-white cursor-pointer p-1"
+                aria-label={isMuted || volume === 0 ? "Bật âm lượng" : "Tắt âm lượng"}
+              >
+                {isMuted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              </button>
+              <Slider
+                value={[isMuted ? 0 : volume]}
+                min={0}
+                max={1}
+                step={0.01}
+                onValueChange={handleVolumeChange}
+                className="w-16 cursor-pointer"
+              />
+            </div>
+          </div>
+
+          {/* Right Cluster: Next Episode, PiP, Settings, Fullscreen */}
+          <div className="flex items-center gap-3 sm:gap-5">
+            {/* Next Episode Button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (hasNextEpisode && onNextEpisode) {
+                  onNextEpisode();
+                }
+              }}
+              disabled={!hasNextEpisode}
+              title={hasNextEpisode ? "Tập tiếp theo" : "Không có tập tiếp theo"}
+              aria-label="Tập tiếp theo"
+              className={cn(
+                "p-1 transition-transform cursor-pointer",
+                hasNextEpisode
+                  ? "text-white hover:text-brand-green active:scale-90"
+                  : "text-white/30 cursor-not-allowed"
+              )}
+            >
+              <SkipForward className="w-5 h-5 sm:w-6 sm:h-6 fill-current stroke-[2.2]" />
+            </button>
+
+            {/* Picture-in-Picture Button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                togglePictureInPicture();
+              }}
+              title="Hình trong hình (PiP)"
+              aria-label="Hình trong hình"
+              className="text-white hover:text-brand-green active:scale-90 transition-transform cursor-pointer p-1"
+            >
+              <PictureInPicture2 className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+            </button>
+
+            {/* Settings (Gear) Button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowSettings((prev) => !prev);
+              }}
+              title="Cài đặt phát & Chất lượng"
+              aria-label="Cài đặt phát"
+              className={cn(
+                "p-1 transition-all cursor-pointer active:scale-90",
+                showSettings ? "text-brand-green rotate-45" : "text-white hover:text-brand-green"
+              )}
+            >
+              <Settings className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+            </button>
 
             {/* Fullscreen Button */}
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 toggleFullscreen();
-              }} 
+              }}
               title={isFullscreen ? "Thu nhỏ" : "Toàn màn hình"}
-              className="text-white hover:bg-white/10 cursor-pointer w-8 h-8 sm:w-9 sm:h-9"
+              aria-label={isFullscreen ? "Thu nhỏ" : "Toàn màn hình"}
+              className="text-white hover:text-brand-green active:scale-90 transition-transform cursor-pointer p-1"
             >
-              {isFullscreen ? <Minimize className="w-4 h-4 sm:w-5 sm:h-5" /> : <Maximize className="w-4 h-4 sm:w-5 sm:h-5" />}
-            </Button>
+              {isFullscreen ? (
+                <Minimize className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+              ) : (
+                <Maximize className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+              )}
+            </button>
           </div>
         </div>
       </div>
@@ -2761,7 +2874,7 @@ export default function VideoPlayer({
           onPointerDown={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
-          className="absolute bottom-12 sm:bottom-14 right-2 sm:right-4 z-[60] w-72 sm:w-80 max-h-[calc(100%-3.25rem)] flex flex-col bg-[#121212]/95 backdrop-blur-2xl border border-white/15 rounded-2xl p-3 text-white shadow-[0_10px_40px_rgba(0,0,0,0.85)] animate-in fade-in zoom-in-95 duration-200 pointer-events-auto select-none"
+          className="absolute bottom-16 sm:bottom-20 right-2 sm:right-4 z-[60] w-72 sm:w-80 max-h-[calc(100%-4.5rem)] flex flex-col bg-[#121212]/95 backdrop-blur-2xl border border-white/15 rounded-2xl p-3 text-white shadow-[0_10px_40px_rgba(0,0,0,0.85)] animate-in fade-in zoom-in-95 duration-200 pointer-events-auto select-none"
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/10 pb-1.5 mb-2 px-1 shrink-0">
