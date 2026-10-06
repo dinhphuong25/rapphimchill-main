@@ -68,6 +68,14 @@ export const getCachedFeaturedMovies = unstable_cache(
       }
 
       const combinedSlugs = Array.from(new Set([...slugs, ...extraSlugs]));
+      // Luôn bảo đảm "nguoi-nhen-khoi-dau-moi" đứng vị trí #01
+      const spiderPos = combinedSlugs.indexOf("nguoi-nhen-khoi-dau-moi");
+      if (spiderPos > 0) {
+        combinedSlugs.splice(spiderPos, 1);
+        combinedSlugs.unshift("nguoi-nhen-khoi-dau-moi");
+      } else if (spiderPos === -1) {
+        combinedSlugs.unshift("nguoi-nhen-khoi-dau-moi");
+      }
 
       const results = await Promise.allSettled(
         combinedSlugs.map((slug) => api.get(slug))
@@ -75,12 +83,20 @@ export const getCachedFeaturedMovies = unstable_cache(
       const movies = results
         .filter((r): r is PromiseFulfilledResult<{ movie: any; server: any[] }> => r.status === "fulfilled" && Boolean(r.value?.movie))
         .map((r) => r.value.movie);
+
+      // Bảo đảm Người Nhện Khởi Đầu Mới luôn ở vị trí đầu tiên
+      const spiderIdx = movies.findIndex((m: any) => m?.slug === "nguoi-nhen-khoi-dau-moi");
+      if (spiderIdx > 0) {
+        const [spider] = movies.splice(spiderIdx, 1);
+        movies.unshift(spider);
+      }
+
       return movies.length > 0 ? movies : [];
     } catch {
       return [];
     }
   },
-  ["featured-movies-v5"],
+  ["featured-movies-v8"],
   { revalidate: 1800, tags: ["featured-movies"] }
 );
 

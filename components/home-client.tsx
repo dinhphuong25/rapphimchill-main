@@ -68,11 +68,23 @@ function HomeClientComponent({
       ...(displayMovies || []),
     ].filter(Boolean);
     const seen = new Set<string>();
-    return list.filter((m: any) => {
+    const unique = list.filter((m: any) => {
       if (!m?.slug || seen.has(m.slug)) return false;
       seen.add(m.slug);
       return true;
     });
+
+    // Luôn ưu tiên đưa Người Nhện: Khởi Đầu Mới lên vị trí số 1 (#01)
+    const spiderIdx = unique.findIndex(
+      (m: any) =>
+        m?.slug === "nguoi-nhen-khoi-dau-moi" ||
+        m?.name?.toLowerCase().includes("người nhện: khởi đầu mới")
+    );
+    if (spiderIdx > 0) {
+      const [spider] = unique.splice(spiderIdx, 1);
+      unique.unshift(spider);
+    }
+    return unique;
   }, [featuredMovies, featuredMovie, heroMovie, displayMovies]);
 
   const displayTopicsMap = useMemo(() => {

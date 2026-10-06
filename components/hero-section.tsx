@@ -314,25 +314,25 @@ export default function HeroSection({ movies }: HeroSectionProps) {
           <div className="w-full max-w-xl lg:max-w-2xl space-y-3.5 sm:space-y-4 relative z-30">
             
             {/* Top Trending Ribbon Badge */}
-            <div className="flex items-center gap-2.5">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/35 text-amber-300 text-xs font-black uppercase tracking-wider shadow-[0_0_15px_rgba(251,191,36,0.2)]">
-                <Flame className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+            <div className="flex items-center gap-2">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-brand-green/12 border border-brand-green/30 text-brand-green text-[11px] font-bold uppercase tracking-wider shadow-[0_0_12px_rgba(32,214,107,0.2)]">
+                <Flame className="w-3 h-3 fill-brand-green text-brand-green" />
                 <span>TOP #{String(currentIndex + 1).padStart(2, "0")} THỊNH HÀNH</span>
               </div>
             </div>
 
-            {/* Movie Title & Origin Name (Stylized Typography like Cobephim) */}
+            {/* Movie Title & Origin Name */}
             <div
               className={cn(
-                "transition-all duration-400 space-y-1 sm:space-y-1.5",
-                isTransitioning ? "opacity-0 translate-y-3" : "opacity-100 translate-y-0"
+                "transition-all duration-400 space-y-1",
+                isTransitioning ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
               )}
             >
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[40px] xl:text-[46px] font-black text-white leading-[1.15] tracking-tight uppercase drop-shadow-[0_4px_24px_rgba(0,0,0,0.95)] line-clamp-2">
+              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-[34px] font-extrabold text-white leading-[1.2] tracking-tight uppercase drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)] line-clamp-2">
                 {current.name}
               </h1>
               {current.origin_name && current.origin_name !== current.name && (
-                <p className="text-xs sm:text-sm md:text-base text-amber-400/90 font-semibold tracking-wide drop-shadow-md italic line-clamp-1">
+                <p className="text-xs sm:text-[13px] text-white/55 font-medium tracking-wide drop-shadow-md italic line-clamp-1">
                   {current.origin_name}
                 </p>
               )}
@@ -341,41 +341,41 @@ export default function HeroSection({ movies }: HeroSectionProps) {
             {/* Comprehensive Metadata Badges Strip (IMDb, 4K, T15, Year, Episode...) */}
             <div
               className={cn(
-                "flex flex-wrap items-center gap-2 sm:gap-2.5 text-xs text-white/90 transition-all duration-400 font-semibold",
-                isTransitioning ? "opacity-0 translate-y-3" : "opacity-100 translate-y-0"
+                "flex flex-wrap items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-white/85 transition-all duration-400 font-medium",
+                isTransitioning ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
               )}
             >
               {/* IMDb Rating Badge */}
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-400/20 border border-amber-400/40 text-amber-300 font-extrabold shadow-sm">
-                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-400/15 border border-amber-400/30 text-amber-300 font-bold shadow-xs">
+                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                 <span>IMDb {displayRating}</span>
               </div>
 
               {/* Quality Badge */}
-              <span className="px-2.5 py-1 rounded-md bg-white/10 border border-white/20 text-white font-extrabold tracking-wide">
+              <span className="px-2 py-0.5 rounded-md bg-white/[0.08] border border-white/15 text-white font-bold tracking-wide">
                 {current.quality || "4K"}
               </span>
 
               {/* Age Classification Badge */}
-              <span className="px-2.5 py-1 rounded-md bg-white/10 border border-white/20 text-white font-bold">
+              <span className="px-2 py-0.5 rounded-md bg-white/[0.08] border border-white/15 text-white/90 font-semibold">
                 {ageRating}
               </span>
 
               {/* Year Badge */}
               {current.year && (
-                <span className="px-2.5 py-1 rounded-md bg-white/10 border border-white/20 text-white/90">
+                <span className="px-2 py-0.5 rounded-md bg-white/[0.08] border border-white/15 text-white/80">
                   {current.year}
                 </span>
               )}
 
               {/* Episode Status Badge */}
-              <span className="px-2.5 py-1 rounded-md bg-white/10 border border-white/20 text-white/90">
+              <span className="px-2 py-0.5 rounded-md bg-white/[0.08] border border-white/15 text-white/80">
                 {episodeStatus}
               </span>
 
               {/* Lang/Audio Badge */}
               {current.lang && (
-                <span className="hidden sm:inline-block px-2.5 py-1 rounded-md bg-white/10 border border-white/20 text-white/90">
+                <span className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-white/[0.08] border border-white/15 text-white/80">
                   {current.lang}
                 </span>
               )}
@@ -385,15 +385,15 @@ export default function HeroSection({ movies }: HeroSectionProps) {
             {categories.length > 0 && (
               <div
                 className={cn(
-                  "flex flex-wrap items-center gap-2 pt-0.5 transition-all duration-400",
-                  isTransitioning ? "opacity-0 translate-y-3" : "opacity-100 translate-y-0"
+                  "flex flex-wrap items-center gap-1.5 pt-0.5 transition-all duration-400",
+                  isTransitioning ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
                 )}
               >
                 {categories.slice(0, 4).map((cat, idx) => (
                   <Link
                     key={`${cat.slug}-${idx}`}
                     href={`/?category=${cat.slug}`}
-                    className="px-3 py-1 rounded-lg bg-white/10 hover:bg-amber-400/20 hover:text-amber-300 hover:border-amber-400/40 border border-white/15 text-white/80 text-xs font-medium transition-all"
+                    className="px-2.5 py-0.5 rounded-lg bg-white/[0.06] hover:bg-brand-green/20 hover:text-brand-green hover:border-brand-green/40 border border-white/10 text-white/70 text-[11.5px] font-medium transition-all"
                   >
                     {cat.name}
                   </Link>
@@ -405,29 +405,29 @@ export default function HeroSection({ movies }: HeroSectionProps) {
             {cleanContent && (
               <p
                 className={cn(
-                  "text-xs sm:text-sm text-white/75 leading-relaxed line-clamp-3 max-w-xl transition-all duration-400 font-normal drop-shadow-md pt-0.5",
-                  isTransitioning ? "opacity-0 translate-y-3" : "opacity-100 translate-y-0"
+                  "text-xs sm:text-[13px] text-white/70 leading-relaxed line-clamp-2 sm:line-clamp-3 max-w-lg transition-all duration-400 font-normal drop-shadow-md pt-0.5",
+                  isTransitioning ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
                 )}
               >
                 {cleanContent}
               </p>
             )}
 
-            {/* Action Buttons Strip (Iconic 3 Round Buttons like Cobephim) */}
+            {/* Action Buttons Strip */}
             <div
               className={cn(
-                "flex items-center gap-3.5 pt-2 sm:pt-3 transition-all duration-400",
-                isTransitioning ? "opacity-0 translate-y-3" : "opacity-100 translate-y-0"
+                "flex items-center gap-3 pt-1.5 sm:pt-2 transition-all duration-400",
+                isTransitioning ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
               )}
             >
-              {/* Button 1: Big Circular Play Button */}
+              {/* Button 1: Circular Play Button (Hi Phim Emerald) */}
               <Link
                 href={`/watch?slug=${current.slug}`}
-                className="group w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-black flex items-center justify-center shadow-[0_0_30px_rgba(251,191,36,0.5)] hover:scale-108 active:scale-95 transition-all shrink-0 cursor-pointer"
+                className="group w-12 h-12 sm:w-13 sm:h-13 rounded-full bg-gradient-to-tr from-[#20D66B] via-[#2AE376] to-[#10B981] hover:brightness-110 text-black flex items-center justify-center shadow-[0_0_24px_rgba(32,214,107,0.5)] hover:scale-106 active:scale-95 transition-all shrink-0 cursor-pointer"
                 title="Xem phim ngay"
                 aria-label="Xem phim ngay"
               >
-                <Play className="w-6 h-6 fill-black text-black ml-0.5 group-hover:scale-110 transition-transform" />
+                <Play className="w-5 h-5 fill-black text-black ml-0.5 group-hover:scale-110 transition-transform" />
               </Link>
 
               {/* Button 2: Round Heart Favorite Button */}
@@ -436,16 +436,16 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                 aria-label="Lưu phim yêu thích"
                 title="Lưu phim yêu thích"
                 className={cn(
-                  "w-11 h-11 sm:w-12 sm:h-12 rounded-full border flex items-center justify-center transition-all active:scale-95 shrink-0 cursor-pointer",
+                  "w-10 h-10 sm:w-11 sm:h-11 rounded-full border flex items-center justify-center transition-all active:scale-95 shrink-0 cursor-pointer",
                   isFavorite(current.slug)
-                    ? "bg-amber-400/20 border-amber-400/60 text-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.3)]"
-                    : "bg-black/50 hover:bg-white/20 border-white/20 text-white"
+                    ? "bg-brand-green/20 border-brand-green/60 text-brand-green shadow-[0_0_12px_rgba(32,214,107,0.3)]"
+                    : "bg-black/50 hover:bg-white/15 border-white/15 text-white/80"
                 )}
               >
                 <Heart
                   className={cn(
-                    "w-5 h-5",
-                    isFavorite(current.slug) ? "fill-amber-400 text-amber-400" : "text-white"
+                    "w-4.5 h-4.5",
+                    isFavorite(current.slug) ? "fill-brand-green text-brand-green" : "text-white/80"
                   )}
                 />
               </button>
@@ -455,14 +455,14 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                 onClick={() => setShowInfoModal(true)}
                 aria-label="Xem thông tin chi tiết phim"
                 title="Xem thông tin chi tiết phim"
-                className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-black/50 hover:bg-white/20 border border-white/20 text-white flex items-center justify-center transition-all active:scale-95 shrink-0 cursor-pointer"
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-black/50 hover:bg-white/15 border border-white/15 text-white/80 flex items-center justify-center transition-all active:scale-95 shrink-0 cursor-pointer"
               >
-                <Info className="w-5 h-5 text-white" />
+                <Info className="w-4.5 h-4.5 text-white/80" />
               </button>
             </div>
 
             {/* Mobile Thumbnails Row (Touch scrollable) */}
-            <div className="sm:hidden pt-3 w-full">
+            <div className="sm:hidden pt-2.5 w-full">
               <div
                 ref={thumbnailContainerRef}
                 className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1"
@@ -479,7 +479,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                       className={cn(
                         "relative w-20 h-12 rounded-lg overflow-hidden shrink-0 border transition-all duration-300 text-left",
                         isActive
-                          ? "ring-2 ring-amber-400 border-amber-400 opacity-100 scale-102 shadow-[0_0_12px_rgba(251,191,36,0.4)]"
+                          ? "ring-2 ring-brand-green border-brand-green opacity-100 scale-102 shadow-[0_0_12px_rgba(32,214,107,0.4)]"
                           : "border-white/20 opacity-55 hover:opacity-100"
                       )}
                     >
@@ -497,7 +497,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                       {isActive && (
                         <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/60">
                           <div
-                            className="h-full bg-amber-400 transition-all duration-100 ease-linear"
+                            className="h-full bg-brand-green transition-all duration-100 ease-linear"
                             style={{ width: `${progress}%` }}
                           />
                         </div>
@@ -512,12 +512,12 @@ export default function HeroSection({ movies }: HeroSectionProps) {
 
           {/* 3. Bottom-Right Mini Preview Carousel Strip (Desktop exact Cobephim design) */}
           {validMovies.length > 1 && (
-            <div className="hidden sm:flex absolute bottom-8 right-6 lg:right-12 z-30 items-center gap-2 max-w-[55%] xl:max-w-[48%] bg-black/30 backdrop-blur-md p-2 rounded-2xl border border-white/10 shadow-2xl">
+            <div className="hidden sm:flex absolute bottom-8 right-6 lg:right-12 z-30 items-center gap-2 max-w-[55%] xl:max-w-[48%] bg-black/40 backdrop-blur-xl p-2 rounded-2xl border border-white/10 shadow-2xl">
               <button
                 type="button"
                 onClick={prev}
                 aria-label="Phim trước"
-                className="w-7 h-7 rounded-full bg-white/10 hover:bg-amber-400 hover:text-black border border-white/15 flex items-center justify-center text-white/80 transition-all active:scale-90 cursor-pointer shrink-0"
+                className="w-7 h-7 rounded-full bg-white/[0.08] hover:bg-brand-green hover:text-black hover:border-brand-green border border-white/15 flex items-center justify-center text-white/80 transition-all active:scale-90 cursor-pointer shrink-0"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -536,10 +536,10 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                       type="button"
                       onClick={() => goTo(idx)}
                       className={cn(
-                        "group relative w-20 lg:w-24 xl:w-28 h-12 lg:h-14 xl:h-16 rounded-xl overflow-hidden shrink-0 border transition-all duration-300 cursor-pointer",
+                        "group relative w-20 lg:w-22 xl:w-26 h-12 lg:h-13 xl:h-15 rounded-xl overflow-hidden shrink-0 border transition-all duration-300 cursor-pointer",
                         isActive
-                          ? "ring-2 ring-amber-400 border-amber-400 opacity-100 scale-105 shadow-[0_0_15px_rgba(251,191,36,0.5)] z-10"
-                          : "border-white/20 opacity-55 hover:opacity-100 hover:scale-102"
+                          ? "ring-2 ring-brand-green border-brand-green opacity-100 scale-105 shadow-[0_0_16px_rgba(32,214,107,0.45)] z-10"
+                          : "border-white/15 opacity-55 hover:opacity-100 hover:scale-102"
                       )}
                       title={movie.name}
                     >
@@ -549,7 +549,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                           alt={movie.name}
                           fill
                           className="object-cover transition-transform duration-500 group-hover:scale-110"
-                          sizes="(max-width: 1024px) 80px, 112px"
+                          sizes="(max-width: 1024px) 80px, 104px"
                         />
                       ) : (
                         <div className="w-full h-full bg-[#111]" />
@@ -559,7 +559,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                       {isActive && (
                         <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/60">
                           <div
-                            className="h-full bg-amber-400 transition-all duration-100 ease-linear"
+                            className="h-full bg-brand-green transition-all duration-100 ease-linear"
                             style={{ width: `${progress}%` }}
                           />
                         </div>
@@ -573,7 +573,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                 type="button"
                 onClick={next}
                 aria-label="Phim tiếp theo"
-                className="w-7 h-7 rounded-full bg-white/10 hover:bg-amber-400 hover:text-black border border-white/15 flex items-center justify-center text-white/80 transition-all active:scale-90 cursor-pointer shrink-0"
+                className="w-7 h-7 rounded-full bg-white/[0.08] hover:bg-brand-green hover:text-black hover:border-brand-green border border-white/15 flex items-center justify-center text-white/80 transition-all active:scale-90 cursor-pointer shrink-0"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -620,7 +620,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                     {current.name}
                   </h3>
                   {current.origin_name && (
-                    <p className="text-xs sm:text-sm text-amber-400 font-medium italic mt-0.5">
+                    <p className="text-xs sm:text-sm text-brand-green font-medium italic mt-0.5">
                       {current.origin_name}
                     </p>
                   )}
@@ -669,7 +669,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                 <div className="pt-2 flex items-center gap-3">
                   <Link
                     href={`/watch?slug=${current.slug}`}
-                    className="flex-1 py-3 px-6 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-black font-extrabold text-sm flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(251,191,36,0.4)] transition-all active:scale-95"
+                    className="flex-1 py-3 px-6 rounded-2xl bg-brand-green hover:bg-brand-green-hover text-black font-extrabold text-sm flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(32,214,107,0.4)] transition-all active:scale-95"
                   >
                     <Play className="w-4 h-4 fill-black" />
                     <span>Xem Phim Ngay</span>
@@ -683,7 +683,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
                     <Heart
                       className={cn(
                         "w-5 h-5",
-                        isFavorite(current.slug) && "fill-amber-400 text-amber-400"
+                        isFavorite(current.slug) && "fill-brand-green text-brand-green"
                       )}
                     />
                   </button>
