@@ -2923,7 +2923,7 @@ export default function VideoPlayer({
               </button>
             )}
 
-            {/* Picture-in-Picture Button (Kế bên nút cài đặt) */}
+            {/* Picture-in-Picture Button */}
             <button
               type="button"
               onClick={(e) => {
@@ -2940,25 +2940,6 @@ export default function VideoPlayer({
               )}
             >
               <PictureInPicture2 className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
-            </button>
-
-            {/* Settings (Gear) Button */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowSettings((prev) => !prev);
-              }}
-              title="Cài đặt phát & Chất lượng"
-              aria-label="Cài đặt phát"
-              className={cn(
-                "p-2 sm:p-2.5 rounded-full transition-all cursor-pointer active:scale-90 flex items-center justify-center",
-                showSettings
-                  ? "text-brand-green bg-brand-green/20 rotate-45 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
-                  : "text-white hover:text-brand-green hover:bg-white/10"
-              )}
-            >
-              <Settings className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
             </button>
 
             {/* Fullscreen Button */}
