@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { AdRange, fetchAndParseAllAdRanges, extractAllAdRangesFromFragments } from "@/lib/ad-parser";
+import { pipStore } from "@/lib/pip-store";
 export type VideoFitMode = 'contain' | 'cover' | 'fill' | '4:3' | '21:9';
 
 export interface SubtitleCue {
@@ -213,6 +214,7 @@ export default function VideoPlayer({
   const [videoFit, setVideoFit] = useState<VideoFitMode>('contain');
   const [containerAspect, setContainerAspect] = useState<number>(16 / 9);
   const [visualFilter, setVisualFilter] = useState<'normal' | 'oled' | 'vivid' | 'bright'>('normal');
+  const [isPiPActive, setIsPiPActive] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
     setIsMounted(true);
@@ -689,16 +691,83 @@ export default function VideoPlayer({
 
   const togglePictureInPicture = useCallback(async () => {
     try {
-      if (!videoRef.current) return;
+      const video = videoRef.current;
+      if (!video) return;
+
+      // 1. Thoát fullscreen nếu đang bật để tránh xung đột trình duyệt
+      if (document.fullscreenElement) {
+        try {
+          await document.exitFullscreen();
+        } catch {}
+      }
+
+      // 2. Nếu đang trong chế độ Picture-in-Picture -> Đóng PiP
       if (document.pictureInPictureElement) {
         await document.exitPictureInPicture();
-      } else if (document.pictureInPictureEnabled) {
-        await videoRef.current.requestPictureInPicture();
+        setIsPiPActive(false);
+        toast.info("Đã tắt chế độ hình trong hình");
+        return;
       }
-    } catch (err) {
-      console.warn("PiP toggle failed:", err);
+
+      // 3. Chuẩn HTML5 Picture-in-Picture API (Chrome, Edge, Firefox, Brave...)
+      if (document.pictureInPictureEnabled && typeof video.requestPictureInPicture === "function") {
+        video.disablePictureInPicture = false;
+        await video.requestPictureInPicture();
+        setIsPiPActive(true);
+        toast.success("Đã bật chế độ hình trong hình (PiP)");
+        return;
+      }
+
+      // 4. Hỗ trợ Safari / WebKit Presentation Mode (macOS / iOS)
+      const webkitVideo = video as any;
+      if (webkitVideo.webkitSupportsPresentationMode && typeof webkitVideo.webkitSetPresentationMode === "function") {
+        if (webkitVideo.webkitPresentationMode === "picture-in-picture") {
+          webkitVideo.webkitSetPresentationMode("inline");
+          setIsPiPActive(false);
+          toast.info("Đã tắt chế độ hình trong hình");
+        } else {
+          webkitVideo.webkitSetPresentationMode("picture-in-picture");
+          setIsPiPActive(true);
+          toast.success("Đã bật chế độ hình trong hình (PiP)");
+        }
+        return;
+      }
+
+      // 5. Dự phòng: Trình phát thu nhỏ nổi trong trang (Mini Player)
+      if (videoUrl) {
+        video.pause();
+        pipStore.set({
+          videoUrl,
+          movieName: movieName || "Phim",
+          movieSlug: movieSlug || "",
+          poster,
+          currentTime: video.currentTime || 0,
+        });
+        toast.info("Đã mở trình phát thu nhỏ (Mini Player)");
+        return;
+      }
+
+      toast.info("Trình duyệt không hỗ trợ chế độ hình trong hình (PiP)");
+    } catch (err: any) {
+      console.warn("PiP toggle error:", err);
+      // Fallback mini player nếu trình duyệt chặn native PiP
+      if (videoUrl && videoRef.current) {
+        try {
+          videoRef.current.pause();
+          pipStore.set({
+            videoUrl,
+            movieName: movieName || "Phim",
+            movieSlug: movieSlug || "",
+            poster,
+            currentTime: videoRef.current.currentTime || 0,
+          });
+          toast.info("Đã mở trình phát thu nhỏ (Mini Player)");
+          return;
+        } catch {}
+      }
+      toast.error("Không thể mở chế độ hình trong hình");
     }
-  }, []);
+  }, [videoUrl, movieName, movieSlug, poster]);
 
   const handlePlaybackRateChange = useCallback((rate: number) => {
     if (videoRef.current) {
@@ -1784,9 +1853,8 @@ export default function VideoPlayer({
         setVolume(video.volume > 0 ? video.volume : 1);
       }
 
-      // Đảm bảo không bật Picture-in-Picture và cập nhật MediaSession state
+      // Cập nhật MediaSession state và đảm bảo không tự ý bật PiP mà không có tương tác người dùng
       try {
-        video.disablePictureInPicture = true;
         video.removeAttribute('autopictureinpicture');
         if ('mediaSession' in navigator) {
           navigator.mediaSession.playbackState = 'playing';
@@ -1877,8 +1945,11 @@ export default function VideoPlayer({
     const onWebkitPresMode = () => {
       if ((video as any).webkitPresentationMode) {
         setIsFullscreen((video as any).webkitPresentationMode === 'fullscreen');
+        setIsPiPActive((video as any).webkitPresentationMode === 'picture-in-picture');
       }
     };
+    const onEnterPiP = () => setIsPiPActive(true);
+    const onLeavePiP = () => setIsPiPActive(false);
 
     video.addEventListener('canplay', hideLoading);
     video.addEventListener('canplaythrough', hideLoading);
@@ -1898,6 +1969,8 @@ export default function VideoPlayer({
     video.addEventListener('webkitbeginfullscreen', onWebkitBeginFs);
     video.addEventListener('webkitendfullscreen', onWebkitEndFs);
     video.addEventListener('webkitpresentationmodechanged', onWebkitPresMode);
+    video.addEventListener('enterpictureinpicture', onEnterPiP);
+    video.addEventListener('leavepictureinpicture', onLeavePiP);
     
     return () => {
       if (waitingTimerRef.current) {
@@ -1921,6 +1994,8 @@ export default function VideoPlayer({
       video.removeEventListener('webkitbeginfullscreen', onWebkitBeginFs);
       video.removeEventListener('webkitendfullscreen', onWebkitEndFs);
       video.removeEventListener('webkitpresentationmodechanged', onWebkitPresMode);
+      video.removeEventListener('enterpictureinpicture', onEnterPiP);
+      video.removeEventListener('leavepictureinpicture', onLeavePiP);
       if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
     };
   }, [hasNextEpisode]);
@@ -2281,6 +2356,11 @@ export default function VideoPlayer({
       <video 
         ref={(el) => {
           (videoRef as any).current = el;
+          if (el) {
+            try {
+              el.disablePictureInPicture = false;
+            } catch {}
+          }
         }} 
         crossOrigin="anonymous"
         controlsList="nodownload noplaybackrate"
@@ -2800,16 +2880,21 @@ export default function VideoPlayer({
               </button>
             )}
 
-            {/* Picture-in-Picture Button */}
+            {/* Picture-in-Picture Button (Kế bên nút cài đặt) */}
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 togglePictureInPicture();
               }}
-              title="Hình trong hình (PiP)"
+              title={isPiPActive ? "Đóng hình trong hình (PiP)" : "Hình trong hình (PiP)"}
               aria-label="Hình trong hình"
-              className="text-white hover:text-brand-green hover:bg-white/10 active:scale-90 transition-all cursor-pointer p-2 sm:p-2.5 rounded-full flex items-center justify-center"
+              className={cn(
+                "p-2 sm:p-2.5 rounded-full transition-all cursor-pointer active:scale-90 flex items-center justify-center",
+                isPiPActive
+                  ? "text-brand-green bg-brand-green/20 shadow-[0_0_15px_rgba(32,214,107,0.4)] ring-1 ring-brand-green/30"
+                  : "text-white hover:text-brand-green hover:bg-white/10"
+              )}
             >
               <PictureInPicture2 className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
             </button>

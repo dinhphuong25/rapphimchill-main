@@ -18,6 +18,7 @@ import AppShell from "@/components/layout/app-shell";
 import { UserAuthProvider } from "@/context/user-auth-context";
 import { NavigationTabProvider } from "@/context/navigation-tab-context";
 import AuthModal from "@/components/auth/auth-modal";
+import PipWrapper from "@/components/player/pip-wrapper";
 
 // Be Vietnam Pro — font hỗ trợ tiếng Việt tốt nhất, sans-serif hiện đại
 const beVietnam = Be_Vietnam_Pro({
@@ -235,6 +236,7 @@ export default function RootLayout({
             </NavigationTabProvider>
           </LoadingProvider>
           <AuthModal />
+          <PipWrapper />
         </UserAuthProvider>
 
         {/* Lazy-init sau khi page load */}
