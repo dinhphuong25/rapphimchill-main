@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import SearchOverlay from "@/components/search/search-overlay";
 import UserMenu from "@/components/auth/user-menu";
 import BrandLogo from "@/components/ui/brand-logo";
+import { pipStore } from "@/lib/pip-store";
 import { preconnect } from "react-dom";
 
 interface HeaderProps {
@@ -29,6 +30,28 @@ function HeaderComponent({}: HeaderProps) {
   const [showSearchOverlay, setShowSearchOverlay] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isPlayerFullscreen, setIsPlayerFullscreen] = useState(false);
+  const [activeMovieName, setActiveMovieName] = useState<string | null>(null);
+
+  // Synchronize active movie from pipStore or custom event
+  useEffect(() => {
+    const unsub = pipStore.subscribe((d) => {
+      if (d?.movieName) {
+        setActiveMovieName(d.movieName);
+      }
+    });
+
+    const handleMovieChange = (e: any) => {
+      if (e.detail?.movieName) {
+        setActiveMovieName(e.detail.movieName);
+      }
+    };
+    window.addEventListener("active-movie-change", handleMovieChange);
+
+    return () => {
+      unsub();
+      window.removeEventListener("active-movie-change", handleMovieChange);
+    };
+  }, []);
 
   // Synchronize fullscreen state with VideoPlayer
   useEffect(() => {
@@ -147,8 +170,27 @@ function HeaderComponent({}: HeaderProps) {
             </div>
           </div>
 
+          {/* Center Group on Mobile: Brand Logo & Movie Name */}
+          <div className="lg:hidden flex items-center justify-center min-w-0 flex-1 px-1.5 overflow-hidden text-center">
+            <Link
+              href="/"
+              className="flex items-center gap-1.5 select-none hover:opacity-85 active:scale-95 transition-all max-w-full truncate"
+              aria-label="Về trang chủ Hi Phim"
+            >
+              <BrandLogo size="sm" showSlogan={false} />
+              {activeMovieName && (
+                <>
+                  <span className="text-white/20 select-none font-light shrink-0">|</span>
+                  <span className="text-white/90 font-bold truncate text-[11.5px] max-w-[105px] xs:max-w-[150px]">
+                    {activeMovieName}
+                  </span>
+                </>
+              )}
+            </Link>
+          </div>
+
           {/* Right Action Cluster: Search bar + Desktop User Profile / Login */}
-          <div className="flex items-center gap-2 sm:gap-2.5 pointer-events-auto">
+          <div className="flex items-center gap-2 sm:gap-2.5 pointer-events-auto shrink-0">
             {/* Search Trigger Button - Full Pill matching mobile app */}
             <button
               onClick={() => setShowSearchOverlay(true)}

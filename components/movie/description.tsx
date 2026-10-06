@@ -610,6 +610,17 @@ export default function Description({ movie, serverData }: any) {
     } catch {}
   }, [movie?.slug, serverData, playerMode]);
 
+  // Dispatch active movie info for global header & floating bars
+  useEffect(() => {
+    if (typeof window !== "undefined" && movie?.name) {
+      window.dispatchEvent(
+        new CustomEvent("active-movie-change", {
+          detail: { movieName: movie.name, movieSlug: movie.slug },
+        })
+      );
+    }
+  }, [movie?.name, movie?.slug]);
+
   // Cloud Resume Playback: Synchronize watch progress from Neon DB / User Account across devices
   useEffect(() => {
     if (typeof window === "undefined" || !user || !movie?.slug || !serverData || cloudSyncedRef.current) return;
