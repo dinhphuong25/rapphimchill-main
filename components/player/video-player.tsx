@@ -1815,6 +1815,12 @@ export default function VideoPlayer({
     };
 
     const onSeekingEvent = () => {
+      // Khi tua video sang vị trí khác, tạm tắt khiên che và reset bộ đếm để quét lại tức thì vị trí mới
+      isVisualAdDetectedRef.current = false;
+      setIsAdDetected(false);
+      consecutiveDetectionsRef.current = 0;
+      consecutiveMissesRef.current = 0;
+
       let isBuffered = false;
       if (video.buffered.length > 0) {
         const cur = video.currentTime;
@@ -1978,9 +1984,9 @@ export default function VideoPlayer({
 
     // Chế độ 'auto': bắt đầu ở trạng thái không che, chỉ che khi thực tế quét thấy banner
     setIsAdDetected(false);
+    isVisualAdDetectedRef.current = false;
     consecutiveDetectionsRef.current = 0;
     consecutiveMissesRef.current = 0;
-    prevFrameLuminanceRef.current = null;
 
     const checkInterval = setInterval(() => {
       const video = videoRef.current;
@@ -1995,87 +2001,56 @@ export default function VideoPlayer({
         let canvas = detectorCanvasRef.current;
         if (!canvas) {
           canvas = document.createElement('canvas');
-          canvas.width = 160;
-          canvas.height = 36;
+          canvas.width = 320;
+          canvas.height = 64;
           detectorCanvasRef.current = canvas;
+        } else if (canvas.width !== 320 || canvas.height !== 64) {
+          canvas.width = 320;
+          canvas.height = 64;
         }
+
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         if (ctx) {
-          // Lấy dải mép trên 22% nơi đóng dấu quảng cáo bài bạc (kể cả phim tỉ lệ 2.35:1 có letterbox)
-          const sampleHeight = Math.max(Math.round(vh * 0.22), 36);
-          ctx.drawImage(video, 0, 0, vw, sampleHeight, 0, 0, 160, 36);
+          // Lấy dải mép trên 24% nơi đóng dấu banner quảng cáo cờ bạc
+          const sampleHeight = Math.max(Math.round(vh * 0.24), 48);
+          ctx.drawImage(video, 0, 0, vw, sampleHeight, 0, 0, 320, 64);
 
-          const imgData = ctx.getImageData(0, 0, 160, 36);
+          const imgData = ctx.getImageData(0, 0, 320, 64);
           const data = imgData.data;
 
-          const currentLum = new Uint8Array(160 * 36);
-          let edgeTransitions = 0;
           let centerEdgeTransitions = 0;
-          let leftEdgeTransitions = 0;
-          let rightEdgeTransitions = 0;
-          let brightPixels = 0;
-          let darkPixels = 0;
+          let textRows = 0;
 
-          // Quét ma trận điểm ảnh ngang từ hàng 2 đến 34
-          for (let y = 2; y < 35; y++) {
+          // Quét phân tích dải hàng ngang từ y = 4 đến 60
+          for (let y = 4; y < 60; y++) {
             let prevLum = -1;
-            for (let x = 4; x < 156; x++) {
-              const idx = (y * 160 + x) * 4;
+            let rowTransitions = 0;
+
+            // Quét dải trung tâm (x từ 18% đến 82% chiều ngang khung hình, tức 58 đến 262px)
+            // Nhằm phân biệt chính xác banner cờ bạc chạy dài vs logo đài truyền hình ở góc mép
+            for (let x = 58; x < 262; x++) {
+              const idx = (y * 320 + x) * 4;
               const r = data[idx];
               const g = data[idx + 1];
               const b = data[idx + 2];
               const lum = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
-              currentLum[y * 160 + x] = lum;
 
-              if (lum > 140) brightPixels++;
-              if (lum < 50) darkPixels++;
-
-              if (prevLum >= 0) {
-                const diff = Math.abs(lum - prevLum);
-                if (diff > 45) {
-                  edgeTransitions++;
-                  if (x < 50) leftEdgeTransitions++;
-                  else if (x <= 110) centerEdgeTransitions++;
-                  else rightEdgeTransitions++;
-                }
+              if (prevLum >= 0 && Math.abs(lum - prevLum) > 22) {
+                rowTransitions++;
+                centerEdgeTransitions++;
               }
               prevLum = lum;
             }
-          }
 
-          // Kiểm tra tính tĩnh (watermark cố định trên khung hình qua các frame)
-          let isTemporallyStatic = false;
-          const prevLum = prevFrameLuminanceRef.current;
-          if (prevLum && prevLum.length === currentLum.length) {
-            let diffSum = 0;
-            let comparedPixels = 0;
-            for (let i = 0; i < currentLum.length; i += 4) {
-              if (currentLum[i] > 130 || currentLum[i] < 50) {
-                diffSum += Math.abs(currentLum[i] - prevLum[i]);
-                comparedPixels++;
-              }
-            }
-            if (comparedPixels > 30) {
-              const avgDiff = diffSum / comparedPixels;
-              if (avgDiff < 16) {
-                isTemporallyStatic = true;
-              }
+            // Dòng có mật độ chuyển đổi nét chữ cao đặc trưng của text
+            if (rowTransitions >= 16) {
+              textRows++;
             }
           }
-          prevFrameLuminanceRef.current = currentLum;
 
-          // Phân biệt banner quảng cáo cờ bạc vs logo đài truyền hình:
-          // Banner cờ bạc: chữ dày trải dài vùng trung tâm hoặc trải rộng hai bên
-          // Logo đài truyền hình (VTV, HBO...): chỉ có nét cục bộ ở góc mép, vùng trung tâm không có chữ
-          const hasWideTextDistribution = centerEdgeTransitions >= 45 || (leftEdgeTransitions >= 35 && rightEdgeTransitions >= 35);
-
-          if (
-            edgeTransitions >= 140 && 
-            brightPixels >= 80 && 
-            darkPixels >= 80 && 
-            hasWideTextDistribution && 
-            isTemporallyStatic
-          ) {
+          // Banner quảng cáo cờ bạc có ít nhất 2 dòng chữ nét cao và tổng số nét chuyển đổi dải giữa >= 220
+          // (Trong khi khung hình video tự nhiên không chữ có textRows = 0 và centerTransitions < 150)
+          if (textRows >= 2 && centerEdgeTransitions >= 220) {
             detected = true;
           }
         }
@@ -2094,25 +2069,24 @@ export default function VideoPlayer({
         }
       }
 
-      isVisualAdDetectedRef.current = detected;
-
       if (detected) {
         consecutiveDetectionsRef.current++;
         consecutiveMissesRef.current = 0;
-        // Chỉ kích hoạt khi quét chắc chắn có banner ít nhất 2 lần quét liên tiếp
-        if (consecutiveDetectionsRef.current >= 2) {
+        // Bật khiên che ngay lập tức khi phát hiện thấy banner quảng cáo
+        if (consecutiveDetectionsRef.current >= 1) {
+          isVisualAdDetectedRef.current = true;
           setIsAdDetected(true);
         }
       } else {
         consecutiveMissesRef.current++;
-        // Tắt che ngay lập tức khi không còn quảng cáo
-        if (consecutiveMissesRef.current >= 1) {
-          consecutiveDetectionsRef.current = 0;
-          prevFrameLuminanceRef.current = null;
+        consecutiveDetectionsRef.current = 0;
+        // Tự động tắt che ngay khi hết quảng cáo (2 lần quét liên tiếp không thấy banner ~ 1.4s)
+        if (consecutiveMissesRef.current >= 2) {
+          isVisualAdDetectedRef.current = false;
           setIsAdDetected(false);
         }
       }
-    }, 800);
+    }, 700);
 
     return () => {
       clearInterval(checkInterval);
