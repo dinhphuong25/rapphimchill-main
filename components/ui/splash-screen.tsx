@@ -15,32 +15,32 @@ export function SplashScreen() {
     setIsFading(true);
     setTimeout(() => {
       setShow(false);
-    }, 350);
+    }, 400);
   }, []);
 
   useEffect(() => {
-    // Phase 1: Trigger the merge animation of logo and name
+    // Phase 1: Hiệu ứng trượt ghép logo và tên từ tốn, mượt mà
     const tMerge = setTimeout(() => {
       setIsMerged(true);
-    }, 80);
-
-    // Phase 2: Reveal the cinema slogan right after logo & name lock together
-    const tSlogan = setTimeout(() => {
-      setShowSlogan(true);
-    }, 420);
-
-    // Phase 3: Smooth progress fill
-    const tProgress = setTimeout(() => {
-      setProgress(100);
     }, 120);
 
-    // Phase 4: Smooth cinema fade out to enter the app
+    // Phase 2: Slogan xuất hiện nhẹ nhàng sau khi ghép
+    const tSlogan = setTimeout(() => {
+      setShowSlogan(true);
+    }, 650);
+
+    // Phase 3: Thanh loading lướt từ từ, thư thái (~2 giây)
+    const tProgress = setTimeout(() => {
+      setProgress(100);
+    }, 200);
+
+    // Phase 4: Giữ lại để người dùng ngắm trọn vẹn, rồi mờ dần mượt mà
     const tFade = setTimeout(() => {
       setIsFading(true);
       setTimeout(() => {
         setShow(false);
-      }, 350);
-    }, 1200);
+      }, 400);
+    }, 2400);
 
     return () => {
       clearTimeout(tMerge);
@@ -59,60 +59,60 @@ export function SplashScreen() {
       role="status"
       aria-label="Đang tải Hi Phim"
       className={cn(
-        "fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-black select-none cursor-pointer transition-opacity duration-350 ease-out overflow-hidden",
+        "fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-black select-none cursor-pointer transition-opacity duration-400 ease-out overflow-hidden",
         isFading ? "opacity-0 pointer-events-none" : "opacity-100"
       )}
     >
       <div className="flex flex-col items-center text-center px-6">
         {/* ======================================================== */}
-        {/* HIỆU ỨNG GHÉP BIỂU TƯỢNG LOGO VÀ PHẦN TÊN (BRAND LOCKUP)  */}
+        {/* HIỆU ỨNG GHÉP LOGO VÀ TÊN (CÂN ĐỐI, CHỮ NHỎ TINH TẾ)    */}
         {/* ======================================================== */}
-        <div className="relative flex items-center justify-center gap-3 sm:gap-4 md:gap-4.5">
-          {/* Biểu tượng Logo — Trượt từ bên trái vào tâm ghép với tên */}
+        <div className="relative flex items-center justify-center gap-2.5 sm:gap-3 md:gap-3.5">
+          {/* Biểu tượng Logo — Kích thước nhỏ gọn, trượt vào tâm */}
           <div
             className={cn(
-              "w-11 h-11 sm:w-14 sm:h-14 md:w-16 md:h-16 shrink-0 relative transition-all duration-600 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu",
+              "w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 shrink-0 relative transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu",
               isMerged
                 ? "opacity-100 translate-x-0 scale-100"
-                : "opacity-0 -translate-x-8 sm:-translate-x-10 scale-90"
+                : "opacity-0 -translate-x-6 sm:-translate-x-8 scale-90"
             )}
           >
             <Image
               src="/favicon.png"
               alt="Hi Phim"
-              width={64}
-              height={64}
-              className="w-full h-full object-contain drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)]"
+              width={48}
+              height={48}
+              className="w-full h-full object-contain drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)]"
               priority
               unoptimized
             />
           </div>
 
-          {/* Phần Tên: HI PHIM. — Trượt từ bên phải vào khít liền kề với logo */}
+          {/* Phần Tên: HI PHIM. — Cỡ chữ nhỏ gọn thanh lịch */}
           <div
             className={cn(
-              "flex items-baseline tracking-tight font-[family-name:var(--font-oswald)] text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold uppercase select-none leading-none transition-all duration-600 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu",
+              "flex items-baseline tracking-tight font-[family-name:var(--font-oswald)] text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-bold uppercase select-none leading-none transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu",
               isMerged
                 ? "opacity-100 translate-x-0 scale-100"
-                : "opacity-0 translate-x-8 sm:translate-x-10 scale-95"
+                : "opacity-0 translate-x-6 sm:translate-x-8 scale-95"
             )}
           >
-            <span className="text-white drop-shadow-[0_2px_12px_rgba(255,255,255,0.2)]">
+            <span className="text-white drop-shadow-[0_2px_10px_rgba(255,255,255,0.15)]">
               HI
             </span>
-            <span className="ml-2 sm:ml-2.5 text-transparent bg-clip-text bg-gradient-to-r from-brand-green via-[#2cf580] to-emerald-400">
+            <span className="ml-1.5 sm:ml-2 text-transparent bg-clip-text bg-gradient-to-r from-brand-green via-[#2cf580] to-emerald-400">
               PHIM
             </span>
-            <span className="text-brand-green font-black ml-0.5 sm:ml-1 inline-block">
+            <span className="text-brand-green font-black ml-0.5 inline-block">
               .
             </span>
           </div>
         </div>
 
-        {/* Slogan: Xuất hiện mượt mà ngay khi logo và tên đã ghép nối */}
+        {/* Slogan: Chữ nhỏ thanh mảnh, khoảng cách giãn chữ điện ảnh */}
         <p
           className={cn(
-            "mt-3 sm:mt-3.5 text-xs sm:text-[13px] font-medium text-white/50 tracking-[0.3em] sm:tracking-[0.35em] uppercase transition-all duration-500 ease-out transform-gpu select-none",
+            "mt-2.5 sm:mt-3 text-[10px] sm:text-[11px] font-medium text-white/45 tracking-[0.28em] sm:tracking-[0.35em] uppercase transition-all duration-600 ease-out transform-gpu select-none",
             showSlogan
               ? "opacity-100 translate-y-0"
               : "opacity-0 translate-y-2"
@@ -121,10 +121,10 @@ export function SplashScreen() {
           ĐIỆN ẢNH KHÔNG GIỚI HẠN
         </p>
 
-        {/* Minimalist Hairline Progress Bar */}
-        <div className="mt-6 sm:mt-7 w-36 sm:w-44 h-[2px] rounded-full bg-white/10 overflow-hidden relative">
+        {/* Thanh Loading: Mỏng nhẹ, chạy từ từ đều đặn (~2s) */}
+        <div className="mt-5 sm:mt-6 w-32 sm:w-40 h-[2px] rounded-full bg-white/10 overflow-hidden relative">
           <div
-            className="h-full bg-brand-green rounded-full transition-all duration-900 ease-out shadow-[0_0_8px_rgba(32,214,107,0.7)]"
+            className="h-full bg-brand-green rounded-full transition-all duration-[2000ms] ease-out shadow-[0_0_8px_rgba(32,214,107,0.7)]"
             style={{ width: `${progress}%` }}
           />
         </div>
