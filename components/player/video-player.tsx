@@ -1558,7 +1558,7 @@ export default function VideoPlayer({
       if (adShieldMode === 'auto') {
         let isAdNow = false;
 
-        // Ưu tiên 1: Dải banner từ playlist m3u8
+        // Ưu tiên 1: Dải banner từ playlist m3u8 nếu segment chứa từ khóa banner
         if (bannerRangesRef.current.length > 0) {
           for (const range of bannerRangesRef.current) {
             if (cur >= range.start - 0.5 && cur <= range.end + 0.5) {
@@ -1568,13 +1568,7 @@ export default function VideoPlayer({
           }
         }
 
-        // Ưu tiên 2: Đoạn giới thiệu nhà tài trợ nổ hũ / cờ bạc đầu phim (0s - 480s / 8 phút)
-        const isLongVideo = video.duration ? video.duration > 180 : true;
-        if (!isAdNow && cur >= 0 && cur <= 480 && isLongVideo) {
-          isAdNow = true;
-        }
-
-        // Ưu tiên 3: Quét hình ảnh thời gian thực phát hiện text quảng cáo mép trên
+        // Ưu tiên 2: Quét hình ảnh thời gian thực phát hiện text quảng cáo mép trên
         if (!isAdNow && isVisualAdDetectedRef.current) {
           isAdNow = true;
         }
@@ -2010,6 +2004,9 @@ export default function VideoPlayer({
 
           const currentLum = new Uint8Array(160 * 36);
           let edgeTransitions = 0;
+          let centerEdgeTransitions = 0;
+          let leftEdgeTransitions = 0;
+          let rightEdgeTransitions = 0;
           let brightPixels = 0;
           let darkPixels = 0;
 
@@ -2024,18 +2021,23 @@ export default function VideoPlayer({
               const lum = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
               currentLum[y * 160 + x] = lum;
 
-              if (lum > 135) brightPixels++;
-              if (lum < 55) darkPixels++;
+              if (lum > 140) brightPixels++;
+              if (lum < 50) darkPixels++;
 
               if (prevLum >= 0) {
                 const diff = Math.abs(lum - prevLum);
-                if (diff > 45) edgeTransitions++;
+                if (diff > 45) {
+                  edgeTransitions++;
+                  if (x < 50) leftEdgeTransitions++;
+                  else if (x <= 110) centerEdgeTransitions++;
+                  else rightEdgeTransitions++;
+                }
               }
               prevLum = lum;
             }
           }
 
-          // Kiểm tra tính tĩnh (watermark cố định trên khung hình)
+          // Kiểm tra tính tĩnh (watermark cố định trên khung hình qua các frame)
           let isTemporallyStatic = false;
           const prevLum = prevFrameLuminanceRef.current;
           if (prevLum && prevLum.length === currentLum.length) {
@@ -2047,22 +2049,27 @@ export default function VideoPlayer({
                 comparedPixels++;
               }
             }
-            if (comparedPixels > 25) {
+            if (comparedPixels > 30) {
               const avgDiff = diffSum / comparedPixels;
-              if (avgDiff < 18) {
+              if (avgDiff < 16) {
                 isTemporallyStatic = true;
               }
-            }
-          } else {
-            // Lần quét đầu tiên chưa có prevLum: nếu mật độ nét chữ cao vượt trội thì tính là tĩnh
-            if (edgeTransitions >= 150 && brightPixels >= 60) {
-              isTemporallyStatic = true;
             }
           }
           prevFrameLuminanceRef.current = currentLum;
 
-          // Quảng cáo cờ bạc: chữ có độ tương phản cao, mật độ cạnh chữ dày và cố định qua thời gian
-          if (edgeTransitions >= 70 && brightPixels >= 35 && darkPixels >= 40 && isTemporallyStatic) {
+          // Phân biệt banner quảng cáo cờ bạc vs logo đài truyền hình:
+          // Banner cờ bạc: chữ dày trải dài vùng trung tâm hoặc trải rộng hai bên
+          // Logo đài truyền hình (VTV, HBO...): chỉ có nét cục bộ ở góc mép, vùng trung tâm không có chữ
+          const hasWideTextDistribution = centerEdgeTransitions >= 45 || (leftEdgeTransitions >= 35 && rightEdgeTransitions >= 35);
+
+          if (
+            edgeTransitions >= 140 && 
+            brightPixels >= 80 && 
+            darkPixels >= 80 && 
+            hasWideTextDistribution && 
+            isTemporallyStatic
+          ) {
             detected = true;
           }
         }
@@ -2070,7 +2077,7 @@ export default function VideoPlayer({
         detected = false;
       }
 
-      // Check thêm phân đoạn banner đã xác định từ m3u8 playlist (đảm bảo độ tin cậy 100%)
+      // Check thêm phân đoạn banner đã xác định từ m3u8 playlist (nếu có segment banner)
       if (!detected && bannerRangesRef.current.length > 0) {
         const cur = video.currentTime;
         for (const range of bannerRangesRef.current) {
@@ -2081,24 +2088,19 @@ export default function VideoPlayer({
         }
       }
 
-      // Check thêm đoạn intro sponsor cờ bạc đầu phim (0s - 220s / 3m40s)
-      if (!detected && video.currentTime >= 0 && video.currentTime <= 220 && (video.duration ? video.duration > 300 : true)) {
-        detected = true;
-      }
-
       isVisualAdDetectedRef.current = detected;
 
       if (detected) {
         consecutiveDetectionsRef.current++;
         consecutiveMissesRef.current = 0;
-        // Kích hoạt mượt mà ngay lập tức khi phát hiện quảng cáo
-        if (consecutiveDetectionsRef.current >= 1) {
+        // Chỉ kích hoạt khi quét chắc chắn có banner ít nhất 2 lần quét liên tiếp
+        if (consecutiveDetectionsRef.current >= 2) {
           setIsAdDetected(true);
         }
       } else {
         consecutiveMissesRef.current++;
-        // Tắt che khi không còn quảng cáo (ít nhất 2 lần quét sạch)
-        if (consecutiveMissesRef.current >= 2) {
+        // Tắt che ngay lập tức khi không còn quảng cáo
+        if (consecutiveMissesRef.current >= 1) {
           consecutiveDetectionsRef.current = 0;
           prevFrameLuminanceRef.current = null;
           setIsAdDetected(false);
@@ -2111,17 +2113,13 @@ export default function VideoPlayer({
     };
   }, [adShieldMode, videoUrl]);
 
-  // Vô hiệu hóa triệt để Picture-in-Picture (tránh tự bật khi đổi tab hoặc cuộn)
+  // Đảm bảo không tự bật PiP khi đổi tab
   useEffect(() => {
     const video = videoRef.current;
     if (video) {
       try {
-        video.disablePictureInPicture = true;
         video.removeAttribute("autopictureinpicture");
       } catch {}
-    }
-    if (typeof document !== "undefined" && document.pictureInPictureElement) {
-      document.exitPictureInPicture().catch(() => {});
     }
   }, []);
 
