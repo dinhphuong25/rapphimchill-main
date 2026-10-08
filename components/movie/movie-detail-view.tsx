@@ -177,11 +177,11 @@ export default function MovieDetailView({ movie, episodes = [] }: MovieDetailVie
   };
 
   return (
-    <div className="min-h-screen bg-[#050807] text-white pb-24 sm:pb-16 selection:bg-brand-green selection:text-black">
+    <div className="min-h-screen bg-[#050807] text-white pb-6 sm:pb-12 selection:bg-brand-green selection:text-black">
       {/* ======================================================== */}
       {/* 1. HERO BACKDROP BANNER WITH TOP & BOTTOM GRADIENT       */}
       {/* ======================================================== */}
-      <div className="relative w-full aspect-[4/5] sm:aspect-[21/9] md:aspect-[24/9] max-h-[340px] sm:max-h-[370px] md:max-h-[390px] lg:max-h-[410px] overflow-hidden bg-[#0A0F0D]">
+      <div className="relative w-full h-[210px] xs:h-[230px] sm:h-[260px] md:h-[290px] lg:h-[310px] overflow-hidden bg-[#0A0F0D]">
         {/* Backdrop Image */}
         <Image
           src={heroImage}
@@ -191,14 +191,14 @@ export default function MovieDetailView({ movie, episodes = [] }: MovieDetailVie
           placeholder="blur"
           blurDataURL={STATIC_BLUR_DATA_URL}
           sizes="(max-width: 768px) 100vw, 1600px"
-          className="object-cover object-center transform scale-102"
+          className="object-cover object-[center_20%] sm:object-center transform scale-102"
         />
 
         {/* Top Gradient for Status Bar & Header Visibility */}
-        <div className="absolute inset-x-0 top-0 h-20 sm:h-24 bg-gradient-to-b from-black/80 via-black/35 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 top-0 h-16 sm:h-20 bg-gradient-to-b from-black/80 via-black/30 to-transparent pointer-events-none" />
 
         {/* Bottom Cinema Fade into Page Background */}
-        <div className="absolute inset-x-0 bottom-0 h-32 sm:h-40 bg-gradient-to-t from-[#050807] via-[#050807]/80 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-28 sm:h-36 bg-gradient-to-t from-[#050807] via-[#050807]/80 to-transparent pointer-events-none" />
 
         {/* Ambient Radial Vignette */}
         <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/20 to-black/60 pointer-events-none" />
@@ -206,24 +206,24 @@ export default function MovieDetailView({ movie, episodes = [] }: MovieDetailVie
         {/* ====================================================== */}
         {/* FLOATING TOP ACTION BAR (NATIVE APP STYLE)             */}
         {/* ====================================================== */}
-        <div className="absolute top-2.5 sm:top-4 inset-x-0 px-3.5 sm:px-6 md:px-8 max-w-5xl mx-auto flex items-center justify-between z-30 pointer-events-auto">
+        <div className="absolute top-2.5 sm:top-3.5 inset-x-0 px-3.5 sm:px-6 md:px-8 max-w-5xl mx-auto flex items-center justify-between z-30 pointer-events-auto">
           {/* Back Button */}
           <button
             type="button"
             onClick={handleBack}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/50 hover:bg-black/75 active:scale-90 backdrop-blur-md border border-white/15 flex items-center justify-center text-white transition-all cursor-pointer shadow-lg"
+            className="w-8.5 h-8.5 sm:w-10 sm:h-10 rounded-full bg-black/50 hover:bg-black/75 active:scale-90 backdrop-blur-md border border-white/15 flex items-center justify-center text-white transition-all cursor-pointer shadow-lg"
             aria-label="Quay lại"
           >
             <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
           </button>
 
           {/* Right Cluster: Share & Favorite */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-2.5">
             {/* Share Button */}
             <button
               type="button"
               onClick={handleShare}
-              className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/50 hover:bg-black/75 active:scale-90 backdrop-blur-md border border-white/15 flex items-center justify-center text-white transition-all cursor-pointer shadow-lg"
+              className="relative w-8.5 h-8.5 sm:w-10 sm:h-10 rounded-full bg-black/50 hover:bg-black/75 active:scale-90 backdrop-blur-md border border-white/15 flex items-center justify-center text-white transition-all cursor-pointer shadow-lg"
               aria-label="Chia sẻ phim"
               title="Chia sẻ phim"
             >
@@ -244,7 +244,7 @@ export default function MovieDetailView({ movie, episodes = [] }: MovieDetailVie
               type="button"
               onClick={handleToggleFav}
               className={cn(
-                "w-9 h-9 sm:w-10 sm:h-10 rounded-full backdrop-blur-md border flex items-center justify-center transition-all cursor-pointer shadow-lg active:scale-90",
+                "w-8.5 h-8.5 sm:w-10 sm:h-10 rounded-full backdrop-blur-md border flex items-center justify-center transition-all cursor-pointer shadow-lg active:scale-90",
                 isFav
                   ? "bg-rose-500/20 border-rose-500/50 text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]"
                   : "bg-black/50 hover:bg-black/75 border-white/15 text-white"
@@ -254,7 +254,7 @@ export default function MovieDetailView({ movie, episodes = [] }: MovieDetailVie
             >
               <Heart
                 className={cn(
-                  "w-4.5 h-4.5 sm:w-5 sm:h-5 stroke-[2.2]",
+                  "w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]",
                   isFav && "fill-rose-500 text-rose-500"
                 )}
               />
@@ -265,39 +265,39 @@ export default function MovieDetailView({ movie, episodes = [] }: MovieDetailVie
         {/* ====================================================== */}
         {/* BANNER META INFO (OVERLAID AT BOTTOM OF HERO BANNER)   */}
         {/* ====================================================== */}
-        <div className="absolute inset-x-0 bottom-2.5 sm:bottom-4 px-4 sm:px-6 md:px-8 max-w-5xl mx-auto z-20 space-y-1.5 sm:space-y-2 pointer-events-auto">
+        <div className="absolute inset-x-0 bottom-2 sm:bottom-3 px-3.5 sm:px-6 md:px-8 max-w-5xl mx-auto z-20 space-y-1 sm:space-y-1.5 pointer-events-auto">
           {/* Badges Row: Quality, Lang, Year, Time */}
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+          <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
             {movie.quality && (
-              <span className="px-2 py-0.5 rounded text-[11px] sm:text-xs font-mono font-bold uppercase bg-brand-green/20 text-brand-green border border-brand-green/40 shadow-[0_0_10px_rgba(32,214,107,0.2)]">
+              <span className="px-1.5 py-0.5 rounded text-[9.5px] xs:text-[10px] sm:text-xs font-mono font-bold uppercase bg-brand-green/20 text-brand-green border border-brand-green/40 shadow-[0_0_10px_rgba(32,214,107,0.2)]">
                 {movie.quality}
               </span>
             )}
             {movie.lang && (
-              <span className="px-2 py-0.5 rounded text-[11px] sm:text-xs font-mono font-bold uppercase bg-emerald-950/80 text-brand-green border border-brand-green/30">
+              <span className="px-1.5 py-0.5 rounded text-[9.5px] xs:text-[10px] sm:text-xs font-mono font-bold uppercase bg-emerald-950/80 text-brand-green border border-brand-green/30">
                 {movie.lang}
               </span>
             )}
             {movie.year && (
-              <span className="px-2 py-0.5 rounded text-[11px] sm:text-xs font-semibold bg-white/10 text-white/90 border border-white/10">
+              <span className="px-1.5 py-0.5 rounded text-[9.5px] xs:text-[10px] sm:text-xs font-semibold bg-white/10 text-white/90 border border-white/10">
                 {movie.year}
               </span>
             )}
             {movie.time && (
-              <span className="px-2 py-0.5 rounded text-[11px] sm:text-xs font-semibold bg-white/10 text-white/90 border border-white/10">
+              <span className="px-1.5 py-0.5 rounded text-[9.5px] xs:text-[10px] sm:text-xs font-semibold bg-white/10 text-white/90 border border-white/10">
                 {movie.time}
               </span>
             )}
           </div>
 
           {/* Movie Name */}
-          <h1 className="text-lg sm:text-2xl md:text-3xl lg:text-[30px] font-extrabold text-white tracking-tight uppercase leading-tight drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)] line-clamp-2">
+          <h1 className="text-base xs:text-lg sm:text-2xl md:text-3xl font-extrabold text-white tracking-tight uppercase leading-snug drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)] line-clamp-1 xs:line-clamp-2">
             {movie.name}
           </h1>
 
           {/* Movie Origin Name */}
           {movie.origin_name && (
-            <p className="text-xs sm:text-sm text-white/60 italic font-medium drop-shadow-md line-clamp-1">
+            <p className="text-[11px] sm:text-xs text-white/60 italic font-medium drop-shadow-md line-clamp-1">
               {movie.origin_name}
             </p>
           )}
@@ -307,16 +307,16 @@ export default function MovieDetailView({ movie, episodes = [] }: MovieDetailVie
       {/* ======================================================== */}
       {/* 2. BODY CONTENT CONTAINER                                */}
       {/* ======================================================== */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 space-y-3.5 sm:space-y-4 pt-1 sm:pt-1.5">
+      <div className="max-w-5xl mx-auto px-3.5 sm:px-6 md:px-8 space-y-3 sm:space-y-4 pt-2 sm:pt-2.5">
         {/* ====================================================== */}
         {/* PRIMARY CTA: XEM PHIM NGAY                             */}
         {/* ====================================================== */}
         <div>
           <Link
             href={`/watch?slug=${movie.slug}&ep=${firstEpisodeSlug}&server=${selectedServerIdx}`}
-            className="w-full py-3 sm:py-3.5 px-6 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#20D66B] to-[#10B981] hover:brightness-110 active:scale-[0.98] text-[#050807] font-black text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-[0_0_24px_rgba(32,214,107,0.4)] transition-all cursor-pointer uppercase tracking-wide"
+            className="w-full py-2.5 sm:py-3.5 px-4 sm:px-6 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#20D66B] to-[#10B981] hover:brightness-110 active:scale-[0.98] text-[#050807] font-black text-xs sm:text-base flex items-center justify-center gap-2 shadow-[0_0_24px_rgba(32,214,107,0.4)] transition-all cursor-pointer uppercase tracking-wide"
           >
-            <Play className="w-4.5 h-4.5 sm:w-5 sm:h-5 fill-current text-[#050807]" />
+            <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current text-[#050807]" />
             <span>
               XEM PHIM {movie.episode_current ? `(${movie.episode_current})` : ""}
             </span>
