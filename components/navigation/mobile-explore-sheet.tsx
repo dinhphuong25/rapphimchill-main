@@ -267,61 +267,8 @@ export default function MobileExploreSheet({
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
             {CARDS.map((card) => {
               const Icon = card.icon;
-              const isFullWidth = card.id === "years";
 
-              const cardContent = isFullWidth ? (
-                /* Compact Horizontal Bar for Năm Phát Hành (height ~44px) */
-                <div
-                  className={cn(
-                    "relative overflow-hidden rounded-xl sm:rounded-2xl border px-3 sm:px-3.5 h-[44px] sm:h-[48px] flex items-center justify-between group active:scale-[0.98] transition-all duration-200 cursor-pointer shadow-[0_2px_12px_rgba(0,0,0,0.4)]",
-                    card.border
-                  )}
-                >
-                  {/* Background Gradient */}
-                  <div className={cn("absolute inset-0 bg-gradient-to-r", card.gradient)} />
-
-                  {/* Top Ambient Subtle Highlight */}
-                  <div className="absolute inset-x-0 top-0 h-[1px] bg-white/15 pointer-events-none" />
-
-                  {/* Right subtle artwork fade */}
-                  <div className="absolute right-0 top-0 bottom-0 w-[40%] pointer-events-none overflow-hidden select-none">
-                    <Image
-                      src={card.image}
-                      alt=""
-                      fill
-                      unoptimized
-                      className="object-cover object-center opacity-65 group-hover:opacity-85 group-hover:scale-105 transition-all duration-300"
-                      sizes="200px"
-                    />
-                    <div className={cn("absolute inset-0 bg-gradient-to-r", card.fadeOverlay)} />
-                  </div>
-
-                  {/* Left Content: Icon Badge + Bold Title */}
-                  <div className="relative z-10 flex items-center gap-2.5 min-w-0 pr-2">
-                    <div
-                      className={cn(
-                        "w-6 h-6 rounded-lg flex items-center justify-center shrink-0 border border-white/10 shadow-sm",
-                        card.iconBg,
-                        card.iconColor
-                      )}
-                    >
-                      <Icon className="w-3.5 h-3.5" />
-                    </div>
-                    <span className="font-black text-[13px] sm:text-[14px] text-white tracking-tight truncate drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
-                      {card.label}
-                    </span>
-                  </div>
-
-                  {/* Right Action: Clean 'Chọn năm ›' hint */}
-                  <div className="relative z-10 flex items-center gap-1 text-orange-400/90 group-hover:text-orange-300 transition-colors">
-                    <span className="text-[11px] font-semibold text-white/55 hidden xs:inline">
-                      Chọn năm
-                    </span>
-                    <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                  </div>
-                </div>
-              ) : (
-                /* Regular 2-Column Card (height 66px - 70px) */
+              const cardContent = (
                 <div
                   className={cn(
                     "relative overflow-hidden rounded-2xl border p-3 h-[66px] sm:h-[70px] flex items-center justify-between group active:scale-[0.96] transition-all duration-200 cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.5)]",
@@ -376,7 +323,7 @@ export default function MobileExploreSheet({
                       if (card.action === "countries") onOpenCountries();
                       if (card.action === "years") onOpenYears();
                     }}
-                    className={cn("w-full text-left", isFullWidth && "col-span-2")}
+                    className="w-full text-left"
                   >
                     {cardContent}
                   </button>
@@ -395,7 +342,7 @@ export default function MobileExploreSheet({
                   onMouseEnter={() => {
                     if (card.typeList) instantMovieStore.prefetch(card.typeList);
                   }}
-                  className={cn("w-full", isFullWidth && "col-span-2")}
+                  className="w-full"
                 >
                   {cardContent}
                 </Link>

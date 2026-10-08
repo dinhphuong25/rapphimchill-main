@@ -307,7 +307,7 @@ const MovieListClient = ({
                 router.push("/");
               }
             }}
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs font-bold text-white/80 hover:text-white transition-all active:scale-95 cursor-pointer"
+            className="hidden sm:inline-flex lg:hidden items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs font-bold text-white/80 hover:text-white transition-all active:scale-95 cursor-pointer"
             aria-label="Về trang chủ"
           >
             <ChevronLeft className="w-3.5 h-3.5 text-brand-green stroke-[2.5]" />

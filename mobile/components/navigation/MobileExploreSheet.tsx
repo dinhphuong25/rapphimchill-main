@@ -474,14 +474,12 @@ export function MobileExploreSheet() {
               <View style={styles.cardsGrid}>
                 {CARDS.map((card) => {
                   const Icon = card.icon;
-                  const isFullWidth = card.id === "years";
                   return (
                     <Pressable
                       key={card.id}
                       onPress={() => handleCardPress(card)}
                       style={({ pressed }) => [
                         styles.cardContainer,
-                        isFullWidth && styles.cardContainerFullWidth,
                         {
                           borderColor: card.borderColor,
                         },
@@ -1035,11 +1033,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     position: "relative",
     justifyContent: "center",
-  },
-  cardContainerFullWidth: {
-    width: "100%",
-    height: 44,
-    borderRadius: 12,
   },
   cardTopHighlight: {
     position: "absolute",
