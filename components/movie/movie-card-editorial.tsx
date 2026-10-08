@@ -195,6 +195,7 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              if (!checkAuthOrPrompt("lưu phim yêu thích")) return;
               const willBeFav = !isFav;
               const updated = toggleFavorite({
                 slug: movie.slug,

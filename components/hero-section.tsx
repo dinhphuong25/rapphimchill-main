@@ -243,6 +243,7 @@ export default function HeroSection({ movies }: HeroSectionProps) {
 
   const handleFavorite = () => {
     if (!current) return;
+    if (!checkAuthOrPrompt("lưu phim yêu thích")) return;
     const isFav = isFavorite(current.slug);
     const willBeFav = !isFav;
     const updated = toggleFavorite({

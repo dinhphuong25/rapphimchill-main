@@ -310,6 +310,7 @@ export default function Description({ movie, serverData }: any) {
   const isFav = isFavorite(movie.slug);
 
   const handleToggleFavorite = useCallback(() => {
+    if (!checkAuthOrPrompt("lưu phim yêu thích")) return;
     const updated = toggleFavorite({
       slug: movie.slug,
       name: movie.name,
@@ -332,7 +333,7 @@ export default function Description({ movie, serverData }: any) {
     } else {
       toast.info(`Đã xóa "${movie.name}" khỏi danh sách yêu thích`);
     }
-  }, [isFav, movie, toggleFavorite, updateServerData, user]);
+  }, [checkAuthOrPrompt, isFav, movie, toggleFavorite, updateServerData, user]);
 
   const [showReportModal, setShowReportModal] = useState(false);
 

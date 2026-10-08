@@ -114,10 +114,12 @@ export default function MovieDetailView({ movie, episodes = [] }: MovieDetailVie
   const categories = movie.category || [];
   const countries = movie.country || [];
 
-  // Toggle favorite (guest localStorage + user server sync)
+  // Toggle favorite (requires authentication)
   const handleToggleFav = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!checkAuthOrPrompt("lưu phim yêu thích")) return;
 
     const willBeFav = !isFav;
     const updated = toggleFavorite({
