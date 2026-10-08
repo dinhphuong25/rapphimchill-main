@@ -181,7 +181,7 @@ export default function MovieDetailView({ movie, episodes = [] }: MovieDetailVie
       {/* ======================================================== */}
       {/* 1. HERO BACKDROP BANNER WITH TOP & BOTTOM GRADIENT       */}
       {/* ======================================================== */}
-      <div className="relative w-full aspect-[4/5] sm:aspect-[16/9] md:aspect-[21/9] max-h-[560px] overflow-hidden bg-[#0A0F0D]">
+      <div className="relative w-full aspect-[4/5] sm:aspect-[21/9] md:aspect-[24/9] max-h-[340px] sm:max-h-[370px] md:max-h-[390px] lg:max-h-[410px] overflow-hidden bg-[#0A0F0D]">
         {/* Backdrop Image */}
         <Image
           src={heroImage}
@@ -195,24 +195,18 @@ export default function MovieDetailView({ movie, episodes = [] }: MovieDetailVie
         />
 
         {/* Top Gradient for Status Bar & Header Visibility */}
-        <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/85 via-black/40 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 top-0 h-20 sm:h-24 bg-gradient-to-b from-black/80 via-black/35 to-transparent pointer-events-none" />
 
         {/* Bottom Cinema Fade into Page Background */}
-        <div className="absolute inset-x-0 bottom-0 h-44 sm:h-56 bg-gradient-to-t from-[#050807] via-[#050807]/80 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-32 sm:h-40 bg-gradient-to-t from-[#050807] via-[#050807]/80 to-transparent pointer-events-none" />
 
         {/* Ambient Radial Vignette */}
         <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/20 to-black/60 pointer-events-none" />
 
-        {/* Subtle Watermark on Top-Right */}
-        <div className="hidden sm:block absolute top-6 right-20 text-white/[0.08] font-[family-name:var(--font-oswald)] font-black text-2xl md:text-3xl uppercase tracking-widest pointer-events-none select-none text-right">
-          {movie.name}
-          {movie.origin_name && <div className="text-sm tracking-widest opacity-60">{movie.origin_name}</div>}
-        </div>
-
         {/* ====================================================== */}
         {/* FLOATING TOP ACTION BAR (NATIVE APP STYLE)             */}
         {/* ====================================================== */}
-        <div className="absolute top-3 sm:top-5 inset-x-0 px-3.5 sm:px-6 md:px-8 max-w-5xl mx-auto flex items-center justify-between z-30 pointer-events-auto">
+        <div className="absolute top-2.5 sm:top-4 inset-x-0 px-3.5 sm:px-6 md:px-8 max-w-5xl mx-auto flex items-center justify-between z-30 pointer-events-auto">
           {/* Back Button */}
           <button
             type="button"
@@ -271,7 +265,7 @@ export default function MovieDetailView({ movie, episodes = [] }: MovieDetailVie
         {/* ====================================================== */}
         {/* BANNER META INFO (OVERLAID AT BOTTOM OF HERO BANNER)   */}
         {/* ====================================================== */}
-        <div className="absolute inset-x-0 bottom-3 sm:bottom-6 px-4 sm:px-6 md:px-8 max-w-5xl mx-auto z-20 space-y-2 pointer-events-auto">
+        <div className="absolute inset-x-0 bottom-2.5 sm:bottom-4 px-4 sm:px-6 md:px-8 max-w-5xl mx-auto z-20 space-y-1.5 sm:space-y-2 pointer-events-auto">
           {/* Badges Row: Quality, Lang, Year, Time */}
           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             {movie.quality && (
@@ -297,7 +291,7 @@ export default function MovieDetailView({ movie, episodes = [] }: MovieDetailVie
           </div>
 
           {/* Movie Name */}
-          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-white tracking-tight uppercase leading-tight drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)] line-clamp-2">
+          <h1 className="text-lg sm:text-2xl md:text-3xl lg:text-[30px] font-extrabold text-white tracking-tight uppercase leading-tight drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)] line-clamp-2">
             {movie.name}
           </h1>
 
@@ -313,16 +307,16 @@ export default function MovieDetailView({ movie, episodes = [] }: MovieDetailVie
       {/* ======================================================== */}
       {/* 2. BODY CONTENT CONTAINER                                */}
       {/* ======================================================== */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 space-y-6 pt-2">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 space-y-3.5 sm:space-y-4 pt-1 sm:pt-1.5">
         {/* ====================================================== */}
         {/* PRIMARY CTA: XEM PHIM NGAY                             */}
         {/* ====================================================== */}
         <div>
           <Link
             href={`/watch?slug=${movie.slug}&ep=${firstEpisodeSlug}&server=${selectedServerIdx}`}
-            className="w-full py-3.5 sm:py-4 px-6 rounded-2xl bg-gradient-to-r from-[#20D66B] to-[#10B981] hover:brightness-110 active:scale-[0.98] text-[#050807] font-black text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-[0_0_28px_rgba(32,214,107,0.45)] transition-all cursor-pointer uppercase tracking-wide"
+            className="w-full py-3 sm:py-3.5 px-6 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#20D66B] to-[#10B981] hover:brightness-110 active:scale-[0.98] text-[#050807] font-black text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-[0_0_24px_rgba(32,214,107,0.4)] transition-all cursor-pointer uppercase tracking-wide"
           >
-            <Play className="w-5 h-5 fill-current text-[#050807]" />
+            <Play className="w-4.5 h-4.5 sm:w-5 sm:h-5 fill-current text-[#050807]" />
             <span>
               XEM PHIM {movie.episode_current ? `(${movie.episode_current})` : ""}
             </span>
@@ -333,7 +327,7 @@ export default function MovieDetailView({ movie, episodes = [] }: MovieDetailVie
         {/* 3. NỘI DUNG PHIM (SYNOPSIS)                            */}
         {/* ====================================================== */}
         {cleanContent && (
-          <section className="space-y-2 pt-1 border-t border-white/[0.08]">
+          <section className="space-y-1.5 sm:space-y-2 pt-1 border-t border-white/[0.08]">
             <h2 className="text-sm sm:text-base font-bold text-white tracking-wide">
               Nội Dung Phim
             </h2>
