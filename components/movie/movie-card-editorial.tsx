@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Play, Star, Heart, Film } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { useFavorites } from "@/hooks/useLocalStorage";
 import { useUserAuth } from "@/context/user-auth-context";
 import { useInView } from "react-intersection-observer";
@@ -194,7 +195,7 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              if (!checkAuthOrPrompt("lưu phim yêu thích")) return;
+              const willBeFav = !isFav;
               const updated = toggleFavorite({
                 slug: movie.slug,
                 name: movie.name,
@@ -209,6 +210,11 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
               });
               if (user && updated) {
                 updateServerData({ favorites: updated });
+              }
+              if (willBeFav) {
+                toast.success(`Đã thêm "${movie.name}" vào yêu thích!`);
+              } else {
+                toast.info(`Đã xóa khỏi yêu thích`);
               }
             }}
             aria-label="Yêu thích"

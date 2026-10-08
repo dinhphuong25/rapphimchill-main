@@ -22,6 +22,7 @@ import {
   Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { useFavorites } from "@/hooks/useLocalStorage";
 import { useUserAuth } from "@/context/user-auth-context";
 import { getMovieImageCandidates, STATIC_BLUR_DATA_URL } from "@/lib/image-helper";
@@ -113,12 +114,12 @@ export default function MovieDetailView({ movie, episodes = [] }: MovieDetailVie
   const categories = movie.category || [];
   const countries = movie.country || [];
 
-  // Toggle favorite
+  // Toggle favorite (guest localStorage + user server sync)
   const handleToggleFav = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!checkAuthOrPrompt("lưu phim yêu thích")) return;
 
+    const willBeFav = !isFav;
     const updated = toggleFavorite({
       slug: movie.slug,
       name: movie.name,
@@ -135,12 +136,21 @@ export default function MovieDetailView({ movie, episodes = [] }: MovieDetailVie
     if (user && updated) {
       updateServerData({ favorites: updated });
     }
+
+    if (willBeFav) {
+      toast.success(`Đã thêm "${movie.name}" vào danh sách yêu thích!`);
+    } else {
+      toast.info(`Đã xóa khỏi danh sách yêu thích`);
+    }
   };
 
-  // Share action
-  const handleShare = async () => {
+  // Share action (Web Share API on mobile + Clipboard copy fallback with toast)
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     const url = typeof window !== "undefined" ? window.location.href : `https://hiphim.one/phim/${movie.slug}`;
-    if (typeof navigator !== "undefined" && navigator.share) {
+
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
       try {
         await navigator.share({
           title: movie.name,
@@ -148,23 +158,54 @@ export default function MovieDetailView({ movie, episodes = [] }: MovieDetailVie
           url,
         });
         return;
-      } catch {
-        // Fallback to clipboard
+      } catch (err: any) {
+        if (err?.name === "AbortError") {
+          return; // Người dùng chủ động huỷ chia sẻ, không cần copy
+        }
       }
     }
 
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      await navigator.clipboard.writeText(url);
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else if (typeof document !== "undefined") {
+        const textArea = document.createElement("textarea");
+        textArea.value = url;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        textArea.style.top = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
       setShareCopied(true);
-      setTimeout(() => setShareCopied(false), 2000);
+      toast.success("Đã sao chép liên kết phim vào bộ nhớ tạm!");
+      setTimeout(() => setShareCopied(false), 2500);
+    } catch {
+      toast.error("Không thể sao chép liên kết.");
     }
   };
 
-  const handleBack = () => {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      router.back();
-    } else {
-      router.push("/");
+  // Back action: check internal history stack, else safely navigate to home
+  const handleBack = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (typeof window !== "undefined") {
+      const historyIdx = window.history.state?.idx;
+      const hasInternalHistory = typeof historyIdx === "number" && historyIdx > 0;
+      const hasInternalReferrer = Boolean(
+        document.referrer && document.referrer.includes(window.location.host)
+      );
+
+      if (hasInternalHistory || hasInternalReferrer) {
+        router.back();
+      } else {
+        router.push("/");
+      }
     }
   };
 
@@ -206,15 +247,16 @@ export default function MovieDetailView({ movie, episodes = [] }: MovieDetailVie
         {/* ====================================================== */}
         {/* FLOATING TOP ACTION BAR (NATIVE APP STYLE)             */}
         {/* ====================================================== */}
-        <div className="absolute top-2.5 sm:top-3.5 inset-x-0 px-3.5 sm:px-6 md:px-8 max-w-5xl mx-auto flex items-center justify-between z-30 pointer-events-auto">
+        <div className="absolute top-[max(0.65rem,env(safe-area-inset-top))] sm:top-4 inset-x-0 px-3.5 sm:px-6 md:px-8 max-w-5xl mx-auto flex items-center justify-between z-30 pointer-events-auto">
           {/* Back Button */}
           <button
             type="button"
             onClick={handleBack}
-            className="w-8.5 h-8.5 sm:w-10 sm:h-10 rounded-full bg-black/50 hover:bg-black/75 active:scale-90 backdrop-blur-md border border-white/15 flex items-center justify-center text-white transition-all cursor-pointer shadow-lg"
+            className="w-10 h-10 rounded-full bg-black/60 hover:bg-black/85 active:scale-90 backdrop-blur-md border border-white/20 flex items-center justify-center text-white transition-all cursor-pointer shadow-lg hover:border-brand-green/40 hover:text-brand-green select-none touch-manipulation"
             aria-label="Quay lại"
+            title="Quay lại"
           >
-            <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
+            <ChevronLeft className="w-5 h-5 stroke-[2.6]" />
           </button>
 
           {/* Right Cluster: Share & Favorite */}
@@ -223,19 +265,19 @@ export default function MovieDetailView({ movie, episodes = [] }: MovieDetailVie
             <button
               type="button"
               onClick={handleShare}
-              className="relative w-8.5 h-8.5 sm:w-10 sm:h-10 rounded-full bg-black/50 hover:bg-black/75 active:scale-90 backdrop-blur-md border border-white/15 flex items-center justify-center text-white transition-all cursor-pointer shadow-lg"
+              className={cn(
+                "w-10 h-10 rounded-full backdrop-blur-md border flex items-center justify-center transition-all cursor-pointer shadow-lg active:scale-90 select-none touch-manipulation",
+                shareCopied
+                  ? "bg-brand-green/20 border-brand-green/50 text-brand-green shadow-[0_0_15px_rgba(32,214,107,0.3)]"
+                  : "bg-black/60 hover:bg-black/85 border-white/20 text-white hover:border-brand-green/40 hover:text-brand-green"
+              )}
               aria-label="Chia sẻ phim"
               title="Chia sẻ phim"
             >
               {shareCopied ? (
-                <Check className="w-4 h-4 text-brand-green stroke-[3]" />
+                <Check className="w-4.5 h-4.5 text-brand-green stroke-[3]" />
               ) : (
-                <Share2 className="w-4 h-4 sm:w-4.5 sm:h-4.5 stroke-[2.2]" />
-              )}
-              {shareCopied && (
-                <span className="absolute -bottom-8 right-0 text-[10px] bg-black/90 text-brand-green border border-brand-green/30 px-2 py-0.5 rounded-full whitespace-nowrap shadow-md">
-                  Đã copy link!
-                </span>
+                <Share2 className="w-4.5 h-4.5 stroke-[2.2]" />
               )}
             </button>
 
@@ -244,18 +286,18 @@ export default function MovieDetailView({ movie, episodes = [] }: MovieDetailVie
               type="button"
               onClick={handleToggleFav}
               className={cn(
-                "w-8.5 h-8.5 sm:w-10 sm:h-10 rounded-full backdrop-blur-md border flex items-center justify-center transition-all cursor-pointer shadow-lg active:scale-90",
+                "w-10 h-10 rounded-full backdrop-blur-md border flex items-center justify-center transition-all cursor-pointer shadow-lg active:scale-90 select-none touch-manipulation",
                 isFav
-                  ? "bg-rose-500/20 border-rose-500/50 text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]"
-                  : "bg-black/50 hover:bg-black/75 border-white/15 text-white"
+                  ? "bg-rose-500/20 border-rose-500/50 text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.35)]"
+                  : "bg-black/60 hover:bg-black/85 border-white/20 text-white hover:border-rose-400/50 hover:text-rose-400"
               )}
               aria-label={isFav ? "Bỏ yêu thích" : "Yêu thích"}
               title={isFav ? "Bỏ yêu thích" : "Lưu vào yêu thích"}
             >
               <Heart
                 className={cn(
-                  "w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]",
-                  isFav && "fill-rose-500 text-rose-500"
+                  "w-5 h-5 stroke-[2.2] transition-colors",
+                  isFav ? "fill-rose-500 text-rose-500" : "text-white"
                 )}
               />
             </button>

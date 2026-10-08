@@ -20,6 +20,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { useFavorites } from "@/hooks/useLocalStorage";
 import { useUserAuth } from "@/context/user-auth-context";
 import { getMovieImageCandidates } from "@/lib/image-helper";
@@ -241,7 +242,9 @@ export default function HeroSection({ movies }: HeroSectionProps) {
     : "";
 
   const handleFavorite = () => {
-    if (!checkAuthOrPrompt("lưu phim yêu thích")) return;
+    if (!current) return;
+    const isFav = isFavorite(current.slug);
+    const willBeFav = !isFav;
     const updated = toggleFavorite({
       slug: current.slug,
       name: current.name,
@@ -251,6 +254,11 @@ export default function HeroSection({ movies }: HeroSectionProps) {
     });
     if (user && updated) {
       updateServerData({ favorites: updated });
+    }
+    if (willBeFav) {
+      toast.success(`Đã thêm "${current.name}" vào danh sách yêu thích!`);
+    } else {
+      toast.info(`Đã xóa khỏi danh sách yêu thích`);
     }
   };
 
