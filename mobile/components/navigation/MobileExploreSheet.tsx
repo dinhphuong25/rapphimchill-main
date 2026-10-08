@@ -1038,6 +1038,8 @@ const styles = StyleSheet.create({
   },
   cardContainerFullWidth: {
     width: "100%",
+    height: 44,
+    borderRadius: 12,
   },
   cardTopHighlight: {
     position: "absolute",
