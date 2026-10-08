@@ -107,7 +107,7 @@ const SearchGridCard = memo(function SearchGridCard({
 
   return (
     <Link
-      href={`/watch?slug=${movie.slug}`}
+      href={`/phim/${movie.slug}`}
       onClick={onClose}
       className={cn(
         "group relative flex flex-col rounded-2xl overflow-hidden bg-[#0c1310] border transition-[transform,border-color] duration-150",
@@ -210,7 +210,7 @@ const SearchListCard = memo(function SearchListCard({
 
   return (
     <Link
-      href={`/watch?slug=${movie.slug}`}
+      href={`/phim/${movie.slug}`}
       onClick={onClose}
       className={cn(
         "flex items-center gap-3.5 sm:gap-4 p-3 sm:p-3.5 rounded-2xl border transition-[transform,border-color] duration-150 group relative bg-[#0c1310]",

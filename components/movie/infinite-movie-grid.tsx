@@ -11,6 +11,7 @@ interface InfiniteMovieGridProps {
   topic?: string;
   category?: string;
   initialMovies?: any[];
+  onPageChange?: (page: number, totalPages: number) => void;
 }
 
 const PAGE_SIZE = 20;
@@ -19,6 +20,7 @@ export default function InfiniteMovieGrid({
   topic,
   category,
   initialMovies = [],
+  onPageChange,
 }: InfiniteMovieGridProps) {
   const searchParams = useSearchParams();
   const [movies, setMovies] = useState<any[]>(filterHiddenMovies(initialMovies));
@@ -95,6 +97,7 @@ export default function InfiniteMovieGrid({
           const slugs = new Set(prev.map((m) => m.slug));
           return [...prev, ...filtered.filter((m) => !slugs.has(m.slug))];
         });
+        onPageChange?.(page, totalPages);
         setPage((p) => p + 1);
       }
     } catch {
@@ -102,7 +105,7 @@ export default function InfiniteMovieGrid({
     } finally {
       setLoading(false);
     }
-  }, [loading, hasMore, page, buildUrl]);
+  }, [loading, hasMore, page, buildUrl, onPageChange]);
 
   // Intersection Observer — auto-load when reaching bottom
   useEffect(() => {

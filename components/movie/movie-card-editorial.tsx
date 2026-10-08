@@ -72,6 +72,9 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
   const isValidRating = !isNaN(rating) && rating > 0;
   const isFav = isFavorite(movie.slug);
 
+  const hasProgress = Boolean(movie.duration && movie.currentTime && movie.currentTime > 5 && movie.duration > 0);
+  const progressPercent = hasProgress ? Math.min(100, Math.max(2, (movie.currentTime! / movie.duration!) * 100)) : 0;
+
   const epParam = typeof movie.episodeIndex === "number" && movie.episodeIndex >= 0
     ? `&ep=${movie.episodeIndex + 1}`
     : "";
@@ -79,6 +82,7 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
     ? `&t=${Math.floor(movie.currentTime)}`
     : "";
   const watchHref = `/watch?slug=${movie.slug}${epParam}${timeParam}`;
+  const movieHref = hasProgress ? watchHref : `/phim/${movie.slug}`;
 
   const badgeText = movie.episodeName
     ? (movie.currentTime && movie.currentTime > 5 ? `Đang xem: ${movie.episodeName}` : movie.episodeName)
@@ -87,9 +91,6 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
     : movie.episode_current && movie.episode_current !== "Full"
     ? movie.episode_current
     : null;
-
-  const hasProgress = Boolean(movie.duration && movie.currentTime && movie.currentTime > 5 && movie.duration > 0);
-  const progressPercent = hasProgress ? Math.min(100, Math.max(2, (movie.currentTime! / movie.duration!) * 100)) : 0;
 
   return (
     <div
@@ -100,7 +101,7 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
       <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-cinema-surface border border-white/10 group-hover:border-brand-green/60 transition-[border-color,box-shadow] duration-300 shadow-xl group-hover:shadow-[0_12px_32px_rgba(32,214,107,0.25)]">
         
         <Link
-          href={watchHref}
+          href={movieHref}
           aria-label={`Xem phim ${movie.name}`}
           className="absolute inset-0 z-0 block"
         >
@@ -212,10 +213,10 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
             }}
             aria-label="Yêu thích"
             className={cn(
-              "absolute bottom-2.5 right-2.5 z-20 p-2 rounded-full border transition-colors active:scale-90 opacity-0 group-hover:opacity-100",
+              "absolute bottom-2.5 right-2.5 z-20 p-2 rounded-full border transition-colors active:scale-90",
               isFav
                 ? "bg-brand-green/20 border-brand-green text-brand-green opacity-100"
-                : "bg-black/60 border-white/15 text-white/70 hover:text-white"
+                : "bg-black/60 border-white/15 text-white/70 hover:text-white opacity-85 sm:opacity-0 sm:group-hover:opacity-100"
             )}
           >
             <Heart className={cn("w-3.5 h-3.5", isFav && "fill-brand-green")} />
@@ -227,7 +228,7 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
       <div className="mt-2.5 flex flex-col">
         <h3 className="text-xs font-bold text-cinema-text hover:text-brand-green transition-colors line-clamp-1 flex items-center justify-between group/title">
           <Link
-            href={watchHref}
+            href={movieHref}
             className="truncate"
           >
             {movie.name}

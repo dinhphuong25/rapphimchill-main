@@ -423,7 +423,7 @@ function MobilePodiumColumn({ movie, rank, theme, isChampion }: MobilePodiumColu
 
   return (
     <Link
-      href={`/watch?slug=${movie.slug}`}
+      href={`/phim/${movie.slug}`}
       className={cn(
         "group relative flex flex-col items-center text-center select-none active:scale-95 transition-transform w-full min-w-0 max-w-full",
         isChampion ? "-translate-y-2 z-10" : "z-0"
@@ -564,7 +564,7 @@ function DesktopPodiumCard({ movie, rank, theme, isChampion }: DesktopPodiumCard
       </div>
 
       {/* Poster / Backdrop Image */}
-      <Link href={`/watch?slug=${movie.slug}`} className="relative aspect-[16/10] w-full overflow-hidden bg-[#0A0E0C] block">
+      <Link href={`/phim/${movie.slug}`} className="relative aspect-[16/10] w-full overflow-hidden bg-[#0A0E0C] block">
         <RankingImage
           movie={movie}
           type="backdrop"
@@ -598,7 +598,7 @@ function DesktopPodiumCard({ movie, rank, theme, isChampion }: DesktopPodiumCard
       {/* Details */}
       <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between gap-3">
         <div>
-          <Link href={`/watch?slug=${movie.slug}`}>
+          <Link href={`/phim/${movie.slug}`}>
             <h3 className="text-base sm:text-lg font-black text-white group-hover:text-[#20D66B] transition-colors line-clamp-1">
               {movie.name}
             </h3>
@@ -632,7 +632,7 @@ function DesktopPodiumCard({ movie, rank, theme, isChampion }: DesktopPodiumCard
           </span>
 
           <Link
-            href={`/watch?slug=${movie.slug}`}
+            href={`/phim/${movie.slug}`}
             className={cn(
               "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95",
               isChampion
@@ -664,7 +664,7 @@ function LeaderboardRow({ movie, rank }: LeaderboardRowProps) {
 
   return (
     <Link
-      href={`/watch?slug=${movie.slug}`}
+      href={`/phim/${movie.slug}`}
       className="group relative flex items-center gap-2 sm:gap-4 p-1.5 sm:p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.06] hover:border-[#20D66B]/40 transition-all duration-200 active:scale-[0.99] w-full min-w-0"
     >
       {/* Big Typographic Rank Number */}

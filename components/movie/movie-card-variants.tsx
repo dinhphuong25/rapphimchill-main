@@ -74,7 +74,7 @@ export const MovieCardDefault = memo(function MovieCardDefault({ movie }: { movi
 
   return (
     <Link 
-      href={`/watch?slug=${movie.slug}`} 
+      href={`/phim/${movie.slug}`} 
       onClick={() => showLoading()}
       className="block h-full w-full text-left group"
       prefetch={false}
