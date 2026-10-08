@@ -15,32 +15,32 @@ export function SplashScreen() {
     setIsFading(true);
     setTimeout(() => {
       setShow(false);
-    }, 400);
+    }, 300);
   }, []);
 
   useEffect(() => {
-    // Phase 1: Hiệu ứng trượt ghép logo và tên từ tốn, mượt mà
+    // Phase 1: Hiệu ứng trượt ghép logo và tên xuất hiện nhanh gọn
     const tMerge = setTimeout(() => {
       setIsMerged(true);
-    }, 120);
+    }, 80);
 
-    // Phase 2: Slogan xuất hiện nhẹ nhàng sau khi ghép
+    // Phase 2: Slogan xuất hiện ngay khi ghép xong
     const tSlogan = setTimeout(() => {
       setShowSlogan(true);
-    }, 650);
+    }, 300);
 
-    // Phase 3: Thanh loading lướt từ từ, thư thái (~2 giây)
+    // Phase 3: Thanh loading chạy nhanh (~1 giây)
     const tProgress = setTimeout(() => {
       setProgress(100);
-    }, 200);
+    }, 100);
 
-    // Phase 4: Giữ lại để người dùng ngắm trọn vẹn, rồi mờ dần mượt mà
+    // Phase 4: Mờ dần và hoàn tất loading nhanh chóng (~1.1 giây)
     const tFade = setTimeout(() => {
       setIsFading(true);
       setTimeout(() => {
         setShow(false);
-      }, 400);
-    }, 2400);
+      }, 300);
+    }, 1100);
 
     return () => {
       clearTimeout(tMerge);
@@ -59,7 +59,7 @@ export function SplashScreen() {
       role="status"
       aria-label="Đang tải Hi Phim"
       className={cn(
-        "fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-black select-none cursor-pointer transition-opacity duration-400 ease-out overflow-hidden",
+        "fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-black select-none cursor-pointer transition-opacity duration-300 ease-out overflow-hidden",
         isFading ? "opacity-0 pointer-events-none" : "opacity-100"
       )}
     >
@@ -71,7 +71,7 @@ export function SplashScreen() {
           {/* Biểu tượng Logo — Kích thước nhỏ gọn, trượt vào tâm */}
           <div
             className={cn(
-              "w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 shrink-0 relative transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu",
+              "w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 shrink-0 relative transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu",
               isMerged
                 ? "opacity-100 translate-x-0 scale-100"
                 : "opacity-0 -translate-x-6 sm:-translate-x-8 scale-90"
@@ -91,7 +91,7 @@ export function SplashScreen() {
           {/* Phần Tên: HI PHIM. — Cỡ chữ nhỏ gọn thanh lịch */}
           <div
             className={cn(
-              "flex items-baseline tracking-tight font-[family-name:var(--font-oswald)] text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-bold uppercase select-none leading-none transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu",
+              "flex items-baseline tracking-tight font-[family-name:var(--font-oswald)] text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-bold uppercase select-none leading-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu",
               isMerged
                 ? "opacity-100 translate-x-0 scale-100"
                 : "opacity-0 translate-x-6 sm:translate-x-8 scale-95"
@@ -112,7 +112,7 @@ export function SplashScreen() {
         {/* Slogan: Chữ nhỏ thanh mảnh, khoảng cách giãn chữ điện ảnh */}
         <p
           className={cn(
-            "mt-2.5 sm:mt-3 text-[10px] sm:text-[11px] font-medium text-white/45 tracking-[0.28em] sm:tracking-[0.35em] uppercase transition-all duration-600 ease-out transform-gpu select-none",
+            "mt-2.5 sm:mt-3 text-[10px] sm:text-[11px] font-medium text-white/45 tracking-[0.28em] sm:tracking-[0.35em] uppercase transition-all duration-400 ease-out transform-gpu select-none",
             showSlogan
               ? "opacity-100 translate-y-0"
               : "opacity-0 translate-y-2"
@@ -121,10 +121,10 @@ export function SplashScreen() {
           ĐIỆN ẢNH KHÔNG GIỚI HẠN
         </p>
 
-        {/* Thanh Loading: Mỏng nhẹ, chạy từ từ đều đặn (~2s) */}
+        {/* Thanh Loading: Mỏng nhẹ, chạy nhanh gọn (~1s) */}
         <div className="mt-5 sm:mt-6 w-32 sm:w-40 h-[2px] rounded-full bg-white/10 overflow-hidden relative">
           <div
-            className="h-full bg-brand-green rounded-full transition-all duration-[2000ms] ease-out shadow-[0_0_8px_rgba(32,214,107,0.7)]"
+            className="h-full bg-brand-green rounded-full transition-all duration-[1000ms] ease-out shadow-[0_0_8px_rgba(32,214,107,0.7)]"
             style={{ width: `${progress}%` }}
           />
         </div>
