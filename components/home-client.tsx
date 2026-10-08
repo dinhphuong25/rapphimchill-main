@@ -4,7 +4,6 @@ import { memo, useMemo, useEffect } from "react";
 import { useNewUpdates, useTopicsWithMovies } from "@/hooks/useApiHooks";
 import HeroSection from "@/components/hero-section";
 import MovieSection from "@/components/movie-section";
-import LiveStatus from "@/components/live-status";
 import { filterHiddenMovies } from "@/lib/hidden-movies";
 import { instantMovieStore } from "@/lib/instant-movie-store";
 import dynamic from "next/dynamic";
@@ -48,9 +47,6 @@ function HomeClientComponent({
   const {
     movies: clientMovies,
     heroMovie,
-    lastUpdated,
-    isRefreshing,
-    refresh: refreshMovies,
   } = useNewUpdates(initialMovies, featuredMovie || (featuredMovies && featuredMovies[0]));
 
   const { topicsData } = useTopicsWithMovies(topics, initialTopicsWithMovies);
@@ -111,18 +107,13 @@ function HomeClientComponent({
         <ContinueWatching />
 
         {/* Section 01: Phim Mới Cập Nhật */}
-        <div>
-          <div className="flex items-center justify-between px-1 mb-1">
-            <LiveStatus lastUpdated={lastUpdated} isRefreshing={isRefreshing} onRefresh={refreshMovies} />
-          </div>
-          <MovieSection
-            indexNumber="01"
-            title="Phim Mới Cập Nhật"
-            movies={displayMovies}
-            viewAllLink="/new-updates"
-            variant="carousel"
-          />
-        </div>
+        <MovieSection
+          indexNumber="01"
+          title="Phim Mới Cập Nhật"
+          movies={displayMovies}
+          viewAllLink="/new-updates"
+          variant="carousel"
+        />
 
         {/* Section 02: Top 10 Thịnh Hành */}
         <MovieSection
