@@ -4,6 +4,7 @@ import { memo } from "react";
 import { usePathname } from "next/navigation";
 import Sidebar from "@/components/sidebar";
 import Header from "@/components/header";
+import Footer from "@/components/footer";
 
 import { useNavigationTab } from "@/context/navigation-tab-context";
 import RecentlyWatchedClient from "@/app/recently/recently-client";
@@ -46,6 +47,9 @@ function AppShellComponent({ children }: AppShellProps) {
         </div>
         {showInstantRecently && <RecentlyWatchedClient />}
         {showInstantFavorites && <FavoritesClient />}
+
+        {/* Global Footer Card matching Hi Download */}
+        <Footer />
       </div>
     </div>
   );

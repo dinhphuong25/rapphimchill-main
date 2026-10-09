@@ -3,9 +3,6 @@ export const revalidate = 300;
 
 import MovieListClient from "@/components/movie/movie-list-client";
 import HomeClient from "@/components/home-client";
-import dynamic from "next/dynamic";
-
-const Footer = dynamic(() => import("@/components/footer"), { ssr: true });
 
 import {
   getCachedCategories,
@@ -192,8 +189,6 @@ export default async function Home({ searchParams }: HomeProps) {
           categories={categories as any[]}
         />
       )}
-
-      {!hasFilters && <Footer customFooterText={siteConfig.customFooterText} />}
     </>
   );
 }
