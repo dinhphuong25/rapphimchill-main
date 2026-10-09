@@ -592,8 +592,8 @@ export default function NotificationBell({ className }: { className?: string }) 
           {/* Tab 1: System Broadcast Notifications (From Admin - Accessible without login) */}
           {mainTab === "system" && (
             <div className="max-h-[380px] overflow-y-auto custom-scrollbar p-2.5 space-y-2.5 bg-[#0d1410]">
-              {/* Personalized Welcome Card (For new members, returning members or guests) */}
-              {user ? (
+              {/* Personalized Welcome Card (For logged in members only) */}
+              {user && (
                 <div className="p-3 rounded-xl bg-gradient-to-r from-emerald-950/40 via-[#101913] to-[#0c140f] border border-emerald-500/25 space-y-1.5">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[10px] font-mono text-brand-green font-bold uppercase tracking-wider">Hi Phim</span>
@@ -610,20 +610,56 @@ export default function NotificationBell({ className }: { className?: string }) 
                       : "Hôm nay có nhiều phim bom tấn và tập mới được cập nhật, chúc bạn có những phút giây thư giãn tuyệt vời!"}
                   </p>
                 </div>
-              ) : (
-                <div className="p-3 rounded-xl bg-gradient-to-r from-emerald-950/40 via-[#101913] to-[#0c140f] border border-emerald-500/20 space-y-1.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-mono text-brand-green font-bold uppercase tracking-wider">Hi Phim</span>
-                    <span className="text-[10px] font-mono text-white/40">Khách</span>
-                  </div>
-                  <h4 className="text-xs sm:text-[13px] font-bold text-white leading-snug">
-                    Chào mừng bạn đến với Hi Phim! 🍿
-                  </h4>
-                  <p className="text-[11px] text-white/70 leading-relaxed">
-                    Kho 50.000+ phim HD Vietsub miễn phí. Đăng nhập để lưu phim yêu thích và đồng bộ lịch sử xem trên mọi thiết bị.
-                  </p>
-                </div>
               )}
+
+              {/* Always Pinned Welcome Notice from Ban Quản Trị */}
+              {systemNotifs.find(
+                (n) => n.id === "sys_welcome_2026" || n.title.toLowerCase().includes("chào mừng bạn đến với hi phim")
+              ) && (() => {
+                const welcomeItem = systemNotifs.find(
+                  (n) => n.id === "sys_welcome_2026" || n.title.toLowerCase().includes("chào mừng bạn đến với hi phim")
+                )!;
+                return (
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-950/50 via-[#121c16] to-[#0e1611] border border-brand-green/35 shadow-[0_0_15px_rgba(32,214,107,0.08)] space-y-1.5 group">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider bg-emerald-500/15 text-brand-green border border-emerald-500/25 flex items-center gap-1 shrink-0">
+                          <Shield className="w-2.5 h-2.5" />
+                          {welcomeItem.author || "Ban Quản Trị"}
+                        </span>
+                        <span className="text-[9.5px] px-1.5 py-0.2 rounded font-mono font-bold bg-brand-green/20 text-brand-green border border-brand-green/30 flex items-center gap-1 shrink-0">
+                          <Pin className="w-2.5 h-2.5 rotate-45 text-brand-green" />
+                          ĐÃ GHIM
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-mono text-white/40 shrink-0">
+                        {formatRelativeTime(welcomeItem.createdAt)}
+                      </span>
+                    </div>
+
+                    <h4 className="text-xs sm:text-[13px] font-bold text-white group-hover:text-brand-green transition-colors leading-snug">
+                      {welcomeItem.title}
+                    </h4>
+
+                    <p className="text-[11px] text-white/70 leading-relaxed">
+                      {welcomeItem.content}
+                    </p>
+
+                    {welcomeItem.link && (
+                      <div className="pt-1 border-t border-white/5">
+                        <Link
+                          href={welcomeItem.link}
+                          onClick={() => setIsOpen(false)}
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-green hover:underline"
+                        >
+                          <span>Xem chi tiết</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Active Pinned Announcement Banner if set by Admin */}
               {announcementBanner?.enabled && announcementBanner.text && (
@@ -653,8 +689,12 @@ export default function NotificationBell({ className }: { className?: string }) 
                 </div>
               )}
 
-              {/* Broadcast System Notifications List */}
-              {systemNotifs.length === 0 && (!announcementBanner?.enabled || !announcementBanner?.text) ? (
+              {/* Broadcast System Notifications List (Excluding Pinned Welcome Notice) */}
+              {systemNotifs.filter(
+                (n) => n.id !== "sys_welcome_2026" && !n.title.toLowerCase().includes("chào mừng bạn đến với hi phim")
+              ).length === 0 &&
+              !systemNotifs.find((n) => n.id === "sys_welcome_2026" || n.title.toLowerCase().includes("chào mừng bạn đến với hi phim")) &&
+              (!announcementBanner?.enabled || !announcementBanner?.text) ? (
                 <div className="p-8 text-center text-white/50 flex flex-col items-center justify-center gap-2">
                   <Megaphone className="w-8 h-8 text-white/30 mb-1" />
                   <p className="text-xs font-semibold text-white/80">Chưa có thông báo mới từ Admin</p>
@@ -663,7 +703,11 @@ export default function NotificationBell({ className }: { className?: string }) 
                   </p>
                 </div>
               ) : (
-                systemNotifs.map((item) => (
+                systemNotifs
+                  .filter(
+                    (n) => n.id !== "sys_welcome_2026" && !n.title.toLowerCase().includes("chào mừng bạn đến với hi phim")
+                  )
+                  .map((item) => (
                   <div
                     key={item.id}
                     className="p-3 rounded-xl bg-[#121915] hover:bg-[#16211c] border border-white/8 hover:border-brand-green/30 transition-all space-y-1.5 group"
