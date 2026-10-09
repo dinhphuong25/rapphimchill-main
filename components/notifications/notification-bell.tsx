@@ -64,12 +64,31 @@ function formatRelativeTime(timestamp: number) {
   return new Date(timestamp).toLocaleDateString("vi-VN");
 }
 
+const DEFAULT_FALLBACK_NOTIFICATIONS: SystemNotificationItem[] = [
+  {
+    id: "sys_welcome_2026",
+    title: "Chào mừng bạn đến với Hi Phim!",
+    content: "Chúc bạn có những giây phút xem phim thư giãn tuyệt vời với hơn 50.000+ tựa phim bom tấn và tập mới cập nhật liên tục.",
+    type: "success",
+    createdAt: Date.now() - 3600000 * 24 * 2,
+    author: "Ban Quản Trị",
+  },
+  {
+    id: "sys_feature_report_2026",
+    title: "Tính năng Báo lỗi tập phim",
+    content: "Nếu bạn gặp sự cố khi xem phim (video đứng hình, mất tiếng, lệch sub), hãy bấm nút 'Báo lỗi tập' để đội ngũ kỹ thuật khắc phục ngay nhé.",
+    type: "info",
+    createdAt: Date.now() - 3600000 * 5,
+    author: "Ban Quản Trị",
+  },
+];
+
 export default function NotificationBell({ className }: { className?: string }) {
   const { user, openAuthModal } = useUserAuth();
   const [isOpen, setIsOpen] = useState(false);
 
   // System broadcast notifications (from Admin, available to all without login)
-  const [systemNotifs, setSystemNotifs] = useState<SystemNotificationItem[]>([]);
+  const [systemNotifs, setSystemNotifs] = useState<SystemNotificationItem[]>(DEFAULT_FALLBACK_NOTIFICATIONS);
   const [announcementBanner, setAnnouncementBanner] = useState<{
     enabled: boolean;
     text: string;
@@ -107,10 +126,17 @@ export default function NotificationBell({ className }: { className?: string }) 
     }
   }, [isSuperAdmin]);
 
-  // Load read notification IDs from localStorage
+  // Load cached notifications & read notification IDs from localStorage
   useEffect(() => {
     try {
-      const stored = localStorage.getItem("hiphim_read_notif_ids");
+      const cached = localStorage.getItem("hiphim_cached_system_notifs");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSystemNotifs(parsed);
+        }
+      }
+      const stored = localStorage.getItem("hiphim_read_notif_ids_v2");
       if (stored) {
         setReadSystemIds(JSON.parse(stored));
       }
@@ -128,12 +154,13 @@ export default function NotificationBell({ className }: { className?: string }) 
     setReadSystemIds((prev) => {
       const next = Array.from(new Set([...prev, ...allIds]));
       try {
-        localStorage.setItem("hiphim_read_notif_ids", JSON.stringify(next));
+        localStorage.setItem("hiphim_read_notif_ids_v2", JSON.stringify(next));
       } catch {
         // Ignore
       }
       return next;
     });
+    toast.success("Đã đánh dấu tất cả thông báo là đã đọc.");
   }, [systemNotifs, announcementBanner]);
 
   // Close dropdown on outside click
@@ -156,6 +183,11 @@ export default function NotificationBell({ className }: { className?: string }) 
       if (data.success) {
         if (Array.isArray(data.notifications)) {
           setSystemNotifs(data.notifications);
+          try {
+            localStorage.setItem("hiphim_cached_system_notifs", JSON.stringify(data.notifications));
+          } catch {
+            // Ignore
+          }
         }
         if (data.announcement) {
           setAnnouncementBanner(data.announcement);
@@ -320,9 +352,37 @@ export default function NotificationBell({ className }: { className?: string }) 
     !readSystemIds.includes(`banner_${announcementBanner.text.slice(0, 15)}`);
 
   const totalSystemUnread = unreadSystemCount + (isBannerUnread ? 1 : 0);
+  const totalSystemCount = systemNotifs.length + (announcementBanner?.enabled && announcementBanner.text ? 1 : 0);
+  const userResolvedCount = user ? reports.filter((r) => r.status === "resolved").length : 0;
 
-  // Badge count shown on bell icon
-  const badgeCount = isSuperAdmin ? pendingReportsCount : totalSystemUnread + (user ? reports.filter((r) => r.status === "resolved").length : 0);
+  // Unread status check
+  const hasUnread = isSuperAdmin
+    ? pendingReportsCount > 0
+    : totalSystemUnread > 0 || userResolvedCount > 0;
+
+  // Badge count shown on bell icon:
+  // For SuperAdmin: show pendingReportsCount if > 0, else total system count
+  // For Users & Guests: show unread count if unread > 0, else show total active notices count!
+  const badgeCount = isSuperAdmin
+    ? (pendingReportsCount > 0 ? pendingReportsCount : totalSystemCount)
+    : (totalSystemUnread > 0
+        ? totalSystemUnread + userResolvedCount
+        : totalSystemCount > 0
+          ? totalSystemCount + userResolvedCount
+          : 0);
+
+  // Bump spring animation on count change
+  const [isBumping, setIsBumping] = useState(false);
+  const prevBadgeCountRef = useRef(badgeCount);
+
+  useEffect(() => {
+    if (prevBadgeCountRef.current !== badgeCount) {
+      prevBadgeCountRef.current = badgeCount;
+      setIsBumping(true);
+      const timer = setTimeout(() => setIsBumping(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [badgeCount]);
 
   const displayedReports = isSuperAdmin
     ? adminReportSubTab === "pending"
@@ -335,13 +395,7 @@ export default function NotificationBell({ className }: { className?: string }) 
       {/* Bell Trigger Button - Open without needing to login */}
       <button
         type="button"
-        onClick={() => {
-          const nextState = !isOpen;
-          setIsOpen(nextState);
-          if (nextState) {
-            markAllSystemAsRead();
-          }
-        }}
+        onClick={() => setIsOpen((prev) => !prev)}
         className={cn(
           "relative flex items-center justify-center w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-[#111714] border border-white/10 hover:border-brand-green/60 text-white/80 hover:text-white transition-all duration-300 group cursor-pointer active:scale-95 shadow-sm",
           isOpen && "border-brand-green bg-[#141e18] text-brand-green shadow-[0_0_15px_rgba(32,214,107,0.25)]"
@@ -352,32 +406,37 @@ export default function NotificationBell({ className }: { className?: string }) 
         <Bell
           className={cn(
             "w-4 h-4 transition-transform group-hover:scale-110",
-            isOpen ? "text-brand-green" : "text-white/80 group-hover:text-brand-green"
+            isOpen ? "text-brand-green" : "text-white/80 group-hover:text-brand-green",
+            badgeCount > 0 && hasUnread && "animate-bell-wiggle text-white"
           )}
         />
 
-        {/* Counter Badge */}
+        {/* Outer Radar Ping Effect Wave for unread notifications */}
+        {badgeCount > 0 && hasUnread && (
+          <span
+            className={cn(
+              "absolute -top-1 -right-1 w-5 h-5 rounded-full pointer-events-none animate-notif-radar",
+              isSuperAdmin ? "bg-amber-500" : "bg-rose-500"
+            )}
+          />
+        )}
+
+        {/* Counter Badge with Live Number Effect */}
         {badgeCount > 0 && (
           <span
             className={cn(
-              "absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-black flex items-center justify-center text-white shadow-md animate-in zoom-in-50 duration-200",
-              isSuperAdmin
-                ? "bg-rose-500 border border-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.6)]"
-                : "bg-brand-green border border-brand-green text-black shadow-[0_0_8px_rgba(32,214,107,0.5)]"
+              "absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center font-mono font-black text-[10.5px] leading-none select-none z-10 transition-all duration-300 pointer-events-none",
+              "ring-2 ring-[#070b09] shadow-lg",
+              hasUnread
+                ? isSuperAdmin
+                  ? "bg-gradient-to-tr from-amber-500 via-rose-500 to-red-500 text-white shadow-[0_0_12px_rgba(244,63,94,0.85)] border border-white/50 animate-notif-bounce"
+                  : "bg-gradient-to-tr from-rose-600 via-red-500 to-amber-400 text-white shadow-[0_0_12px_rgba(244,63,94,0.85)] border border-white/50 animate-notif-bounce"
+                : "bg-gradient-to-r from-emerald-500 to-green-600 text-black shadow-[0_0_8px_rgba(32,214,107,0.5)] border border-emerald-300/40",
+              isBumping && "scale-125"
             )}
           >
             {badgeCount > 99 ? "99+" : badgeCount}
           </span>
-        )}
-
-        {/* Attention pulse */}
-        {badgeCount > 0 && (
-          <span
-            className={cn(
-              "absolute -top-1 -right-1 w-[18px] h-[18px] rounded-full animate-ping opacity-35 pointer-events-none",
-              isSuperAdmin ? "bg-rose-500" : "bg-brand-green"
-            )}
-          />
         )}
       </button>
 
@@ -414,6 +473,17 @@ export default function NotificationBell({ className }: { className?: string }) 
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
+              {hasUnread && !isSuperAdmin && (
+                <button
+                  type="button"
+                  onClick={markAllSystemAsRead}
+                  className="px-2 py-1 rounded-lg text-[10.5px] font-semibold text-brand-green hover:bg-brand-green/10 border border-brand-green/25 transition-colors cursor-pointer flex items-center gap-1"
+                  title="Đánh dấu tất cả đã đọc"
+                >
+                  <Check className="w-3 h-3" />
+                  <span className="hidden sm:inline">Đã đọc</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => refreshAll(false)}
@@ -439,10 +509,7 @@ export default function NotificationBell({ className }: { className?: string }) 
             <div className="flex items-center gap-1 bg-[#050806] p-1 rounded-xl border border-white/5">
               <button
                 type="button"
-                onClick={() => {
-                  setMainTab("system");
-                  markAllSystemAsRead();
-                }}
+                onClick={() => setMainTab("system")}
                 className={cn(
                   "flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer",
                   mainTab === "system"
