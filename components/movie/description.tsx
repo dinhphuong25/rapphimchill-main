@@ -83,17 +83,27 @@ function resolveInitialWatchState(
           try {
             const parsed = JSON.parse(lastWatchedRaw);
             if (parsed && typeof parsed.episodeIndex === "number" && parsed.episodeIndex >= 0) {
-              const sv = typeof parsed.serverIndex === "number" ? parsed.serverIndex : resolvedServer;
-              if (sv >= 0 && sv < serverData.length) {
-                resolvedServer = sv;
-              }
-              const svEpisodes = serverData[resolvedServer]?.server_data || [];
-              if (parsed.episodeIndex < svEpisodes.length) {
+              const sv0Episodes = serverData[0]?.server_data || [];
+              if (parsed.episodeIndex < sv0Episodes.length) {
+                resolvedServer = 0;
                 resolvedEpisode = parsed.episodeIndex;
                 if (parsed.currentTime && parsed.currentTime > 0) {
                   resolvedTime = parsed.currentTime;
                 }
                 foundInStorage = true;
+              } else {
+                const sv = typeof parsed.serverIndex === "number" ? parsed.serverIndex : resolvedServer;
+                if (sv >= 0 && sv < serverData.length) {
+                  resolvedServer = sv;
+                }
+                const svEpisodes = serverData[resolvedServer]?.server_data || [];
+                if (parsed.episodeIndex < svEpisodes.length) {
+                  resolvedEpisode = parsed.episodeIndex;
+                  if (parsed.currentTime && parsed.currentTime > 0) {
+                    resolvedTime = parsed.currentTime;
+                  }
+                  foundInStorage = true;
+                }
               }
             }
           } catch {}
@@ -108,17 +118,27 @@ function resolveInitialWatchState(
               if (Array.isArray(histArr)) {
                 const found = histArr.find((h: any) => h.slug === slug);
                 if (found && typeof found.episodeIndex === "number" && found.episodeIndex >= 0) {
-                  const sv = typeof found.serverIndex === "number" ? found.serverIndex : resolvedServer;
-                  if (sv >= 0 && sv < serverData.length) {
-                    resolvedServer = sv;
-                  }
-                  const svEpisodes = serverData[resolvedServer]?.server_data || [];
-                  if (found.episodeIndex < svEpisodes.length) {
+                  const sv0Episodes = serverData[0]?.server_data || [];
+                  if (found.episodeIndex < sv0Episodes.length) {
+                    resolvedServer = 0;
                     resolvedEpisode = found.episodeIndex;
                     if (found.currentTime && found.currentTime > 0) {
                       resolvedTime = found.currentTime;
                     }
                     foundInStorage = true;
+                  } else {
+                    const sv = typeof found.serverIndex === "number" ? found.serverIndex : resolvedServer;
+                    if (sv >= 0 && sv < serverData.length) {
+                      resolvedServer = sv;
+                    }
+                    const svEpisodes = serverData[resolvedServer]?.server_data || [];
+                    if (found.episodeIndex < svEpisodes.length) {
+                      resolvedEpisode = found.episodeIndex;
+                      if (found.currentTime && found.currentTime > 0) {
+                        resolvedTime = found.currentTime;
+                      }
+                      foundInStorage = true;
+                    }
                   }
                 }
               }
@@ -135,15 +155,24 @@ function resolveInitialWatchState(
               if (Array.isArray(cwArr)) {
                 const found = cwArr.find((h: any) => h.slug === slug);
                 if (found && typeof found.episodeIndex === "number" && found.episodeIndex >= 0) {
-                  const sv = typeof found.serverIndex === "number" ? found.serverIndex : resolvedServer;
-                  if (sv >= 0 && sv < serverData.length) {
-                    resolvedServer = sv;
-                  }
-                  const svEpisodes = serverData[resolvedServer]?.server_data || [];
-                  if (found.episodeIndex < svEpisodes.length) {
+                  const sv0Episodes = serverData[0]?.server_data || [];
+                  if (found.episodeIndex < sv0Episodes.length) {
+                    resolvedServer = 0;
                     resolvedEpisode = found.episodeIndex;
                     if (found.currentTime && found.currentTime > 0) {
                       resolvedTime = found.currentTime;
+                    }
+                  } else {
+                    const sv = typeof found.serverIndex === "number" ? found.serverIndex : resolvedServer;
+                    if (sv >= 0 && sv < serverData.length) {
+                      resolvedServer = sv;
+                    }
+                    const svEpisodes = serverData[resolvedServer]?.server_data || [];
+                    if (found.episodeIndex < svEpisodes.length) {
+                      resolvedEpisode = found.episodeIndex;
+                      if (found.currentTime && found.currentTime > 0) {
+                        resolvedTime = found.currentTime;
+                      }
                     }
                   }
                 }
@@ -178,10 +207,10 @@ function resolveInitialWatchState(
   const hasM3u8 = Boolean(targetEpisode?.link_m3u8 && targetEpisode.link_m3u8.trim() !== "");
   const hasEmbed = Boolean(targetEpisode?.link_embed && targetEpisode.link_embed.trim() !== "");
 
-  let resolvedMode: "m3u8" | "embed" = defaultMode;
+  let resolvedMode: "m3u8" | "embed" = "m3u8";
   if (!hasM3u8 && hasEmbed) {
     resolvedMode = "embed";
-  } else if (!hasEmbed && hasM3u8) {
+  } else {
     resolvedMode = "m3u8";
   }
 
@@ -245,38 +274,6 @@ export default function Description({ movie, serverData }: any) {
       }
     }
   }, [serverData, currentEpisodeIndex?.server, currentEpisodeIndex?.episode]);
-
-  const [isStreamSyncing, setIsStreamSyncing] = useState(false);
-
-  // Proactively check stream reachability for active episode (detects 404 / upstream transcode pending)
-  useEffect(() => {
-    setIsStreamSyncing(false);
-    if (!currentEpisodeUrl) return;
-
-    let targetToCheck = currentEpisodeUrl;
-    if (targetToCheck.includes("?url=")) {
-      try {
-        targetToCheck = decodeURIComponent(targetToCheck.split("?url=")[1]);
-      } catch {}
-    }
-
-    if (!targetToCheck || !targetToCheck.startsWith("http")) return;
-
-    let isCancelled = false;
-    fetch(`/api/check-stream?url=${encodeURIComponent(targetToCheck)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (isCancelled) return;
-        if (data.syncing || data.status === 404) {
-          setIsStreamSyncing(true);
-        }
-      })
-      .catch(() => {});
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [currentEpisodeUrl]);
 
   // Sync document.title with the active movie name and episode on client-side
   useEffect(() => {
@@ -673,13 +670,16 @@ export default function Description({ movie, serverData }: any) {
     const cloudItem = cloudHistory.find((item: any) => item.slug === movie.slug);
     if (!cloudItem) return;
 
-    const sv = typeof cloudItem.serverIndex === "number" && cloudItem.serverIndex >= 0 && cloudItem.serverIndex < serverData.length
-      ? cloudItem.serverIndex
-      : 0;
+    const epCandidate = typeof cloudItem.episodeIndex === "number" && cloudItem.episodeIndex >= 0 ? cloudItem.episodeIndex : 0;
+    const sv0Episodes = serverData[0]?.server_data || [];
+    let sv = 0;
+    if (epCandidate < sv0Episodes.length) {
+      sv = 0;
+    } else if (typeof cloudItem.serverIndex === "number" && cloudItem.serverIndex >= 0 && cloudItem.serverIndex < serverData.length) {
+      sv = cloudItem.serverIndex;
+    }
     const episodes = serverData[sv]?.server_data || [];
-    const epIdx = typeof cloudItem.episodeIndex === "number" && cloudItem.episodeIndex >= 0 && cloudItem.episodeIndex < episodes.length
-      ? cloudItem.episodeIndex
-      : 0;
+    const epIdx = epCandidate < episodes.length ? epCandidate : 0;
     const cloudTime = typeof cloudItem.currentTime === "number" && cloudItem.currentTime > 0
       ? cloudItem.currentTime
       : 0;
@@ -1074,26 +1074,6 @@ export default function Description({ movie, serverData }: any) {
         {/* Left Primary Stage: Video Player — sticky on desktop */}
         <div className="flex-1 w-full min-w-0 flex flex-col gap-4 sm:gap-6 lg:sticky lg:top-[60px]">
           
-          {/* Syncing / 404 Notice Banner */}
-          {isStreamSyncing && (
-            <div className="p-3 sm:p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-200 text-xs sm:text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg animate-in fade-in">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <Clock className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
-                <span className="leading-snug">
-                  <strong className="text-amber-300 font-bold">Máy chủ nguồn đang đồng bộ:</strong> Tập phim vừa được cập nhật và đường truyền video đang hoàn tất chuyển mã (Mã 404).
-                </span>
-              </div>
-              {currentServerData.length > 1 && (
-                <button
-                  onClick={() => handleServerChange(currentEpisodeIndex?.server === 0 ? 1 : 0)}
-                  className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-extrabold text-xs transition-all cursor-pointer shrink-0 self-end sm:self-auto shadow-md active:scale-95"
-                >
-                  Đổi Máy chủ Khác
-                </button>
-              )}
-            </div>
-          )}
-
           {/* Video Player Container */}
           <div className={cn("relative group/player w-full", isPlayerFullscreen && "static z-[99999]")}>
             <Card className={cn(
@@ -1170,7 +1150,6 @@ export default function Description({ movie, serverData }: any) {
                       onNextEpisode={handleNextEpisode}
                       onEnded={handleEnded}
                       onFullscreenChange={setIsPlayerFullscreen}
-                      isStreamSyncing={isStreamSyncing}
                       hasAlternativeServer={currentServerData.length > 1}
                       onSwitchServer={() => handleServerChange(currentEpisodeIndex?.server === 0 ? 1 : 0)}
                       onReportError={() => setShowReportModal(true)}
@@ -1188,7 +1167,6 @@ export default function Description({ movie, serverData }: any) {
                     onReportError={() => setShowReportModal(true)}
                     movieName={movie.name}
                     episodeName={currentServerData?.[currentEpisodeIndex?.server || 0]?.server_data?.[currentEpisodeIndex?.episode || 0]?.name}
-                    isStreamSyncing={isStreamSyncing}
                     hasAlternativeServer={currentServerData.length > 1}
                     onSwitchServer={() => handleServerChange(currentEpisodeIndex?.server === 0 ? 1 : 0)}
                   />

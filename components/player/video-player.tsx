@@ -109,7 +109,6 @@ interface VideoPlayerProps {
   episodeName?: string;
   movieSlug?: string;
   onFullscreenChange?: (isFullscreen: boolean) => void;
-  isStreamSyncing?: boolean;
   hasAlternativeServer?: boolean;
   onSwitchServer?: () => void;
   onReportError?: () => void;
@@ -142,7 +141,6 @@ export default function VideoPlayer({
   episodeName,
   movieSlug,
   onFullscreenChange,
-  isStreamSyncing = false,
   hasAlternativeServer = false,
   onSwitchServer,
   onReportError,
@@ -1322,14 +1320,7 @@ export default function VideoPlayer({
           console.warn("Native HLS error on video element:", video.error);
           setIsLoading(false);
           if (video.error && (video.error.code === 2 || video.error.code === 4)) {
-            if (isStreamSyncing) {
-              setError("Tập phim vừa được đưa lên hệ thống và máy chủ đang đồng bộ dữ liệu (Mã 404).");
-            } else if (onSwitchToEmbedRef.current) {
-              console.warn("Auto-switching to embed server after native HLS fatal error");
-              onSwitchToEmbedRef.current();
-            } else {
-              setError("Không thể phát video từ nguồn mặc định. Bạn có thể bấm Thử lại hoặc chuyển sang Máy chủ Dự phòng.");
-            }
+            setError("Không thể phát video từ máy chủ này. Bạn có thể bấm Thử lại hoặc đổi sang máy chủ khác.");
           }
         };
 
@@ -1515,15 +1506,7 @@ export default function VideoPlayer({
                     if (hlsRef.current) hlsRef.current.startLoad();
                   }, 600 * retryCountRef.current);
                 } else {
-                  const is404 = isStreamSyncing || data?.response?.code === 404;
-                  if (is404) {
-                    setError("Tập phim vừa được đưa lên hệ thống và máy chủ đang đồng bộ dữ liệu (Mã 404).");
-                  } else if (onSwitchToEmbedRef.current) {
-                    console.warn("Auto-switching to embed server after HLS network errors");
-                    onSwitchToEmbedRef.current();
-                  } else {
-                    setError("Không thể kết nối máy chủ mặc định do giờ cao điểm. Bạn có thể bấm Thử lại hoặc chuyển sang Máy chủ Dự phòng.");
-                  }
+                  setError("Không thể kết nối máy chủ mặc định. Bạn có thể bấm Thử lại hoặc chuyển sang Máy chủ Dự phòng.");
                 }
                 break;
               case HLS.ErrorTypes.MEDIA_ERROR:
@@ -1532,13 +1515,7 @@ export default function VideoPlayer({
                 break;
               default:
                 hls.destroy();
-                if (isStreamSyncing) {
-                  setError("Tập phim vừa được đưa lên hệ thống và máy chủ đang đồng bộ dữ liệu (Mã 404).");
-                } else if (onSwitchToEmbedRef.current) {
-                  onSwitchToEmbedRef.current();
-                } else {
-                  setError("Không thể phát video từ máy chủ này.");
-                }
+                setError("Không thể phát video từ máy chủ này.");
                 break;
             }
           }
@@ -1560,14 +1537,7 @@ export default function VideoPlayer({
           if (!video.src && !video.currentSrc) return;
           console.warn("Native HLS error on video element:", video.error);
           setIsLoading(false);
-          if (isStreamSyncing) {
-            setError("Tập phim vừa được đưa lên hệ thống và máy chủ đang đồng bộ dữ liệu (Mã 404).");
-          } else if (onSwitchToEmbedRef.current) {
-            console.warn("Auto-switching to embed server after native HLS error");
-            onSwitchToEmbedRef.current();
-          } else {
-            setError("Không thể phát video từ nguồn mặc định. Bạn có thể bấm Thử lại hoặc chuyển sang Máy chủ Dự phòng.");
-          }
+          setError("Không thể phát video từ nguồn mặc định. Bạn có thể bấm Thử lại hoặc chuyển sang Máy chủ Dự phòng.");
         };
 
         video.addEventListener('loadedmetadata', handleMetadata);
@@ -1803,9 +1773,8 @@ export default function VideoPlayer({
             hlsRef.current.recoverMediaError();
           } catch {}
         }
-        if (stallCountRef.current >= 2 && onSwitchToEmbedRef.current) {
-          toast.info("Đường truyền chính gặp sự cố, tự động chuyển sang Máy chủ Dự phòng...");
-          onSwitchToEmbedRef.current();
+        if (stallCountRef.current >= 2) {
+          setIsSlowNetwork(true);
         }
       }, 6500);
 
@@ -2742,33 +2711,14 @@ export default function VideoPlayer({
         </div>
       )}
 
-      {(error || isStreamSyncing) && (
+      {error && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#070908]/95 px-6 text-center backdrop-blur-md animate-in fade-in">
-          {isStreamSyncing || error?.includes("404") || error?.includes("đồng bộ") ? (
-            <>
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-3.5 text-amber-400 shadow-[0_0_24px_rgba(245,158,11,0.15)]">
-                <Clock className="w-7 h-7 sm:w-8 sm:h-8 animate-pulse text-amber-400" />
-              </div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-amber-300 mb-2.5">
-                <span>MÁY CHỦ NGUỒN ĐANG ĐỒNG BỘ • MÃ 404</span>
-              </div>
-              <h3 className="text-base sm:text-lg font-bold text-white mb-2">
-                Tập phim đang được xử lý
-              </h3>
-              <p className="text-white/80 text-xs sm:text-sm font-normal mb-6 max-w-md leading-relaxed">
-                {episodeName ? `${episodeName} vừa` : "Tập này vừa"} được cập nhật lên hệ thống. Máy chủ nguồn video đang trong quá trình đồng bộ và chuyển mã dữ liệu (HTTP 404). Vui lòng thử lại sau ít phút hoặc chọn máy chủ khác bên dưới.
-              </p>
-            </>
-          ) : (
-            <>
-              <div className="bg-white/10 p-4 rounded-full mb-4">
-                <svg className="w-10 h-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <p className="text-white/90 text-sm md:text-base font-semibold mb-6 max-w-md">{error}</p>
-            </>
-          )}
+          <div className="bg-white/10 p-4 rounded-full mb-4 text-red-500">
+            <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <p className="text-white/90 text-sm md:text-base font-semibold mb-6 max-w-md">{error}</p>
 
           <div className="flex flex-wrap items-center justify-center gap-2.5">
             <Button
@@ -2801,7 +2751,7 @@ export default function VideoPlayer({
               </Button>
             )}
 
-            {onSwitchToEmbed && !isStreamSyncing && (
+            {onSwitchToEmbed && (
               <Button
                 onClick={() => onSwitchToEmbedRef.current?.()}
                 size="sm"
