@@ -15,6 +15,11 @@ import {
   X,
   User,
   Shield,
+  Megaphone,
+  Sparkles,
+  Info,
+  Pin,
+  LogIn,
 } from "lucide-react";
 import { useUserAuth } from "@/context/user-auth-context";
 import { cn } from "@/lib/utils";
@@ -36,6 +41,16 @@ export interface MovieReportItem {
   resolvedAt?: number;
 }
 
+export interface SystemNotificationItem {
+  id: string;
+  title: string;
+  content: string;
+  type: "info" | "warning" | "success" | "update";
+  link?: string;
+  createdAt: number;
+  author?: string;
+}
+
 function formatRelativeTime(timestamp: number) {
   if (!timestamp) return "";
   const diffSec = Math.floor((Date.now() - timestamp) / 1000);
@@ -52,11 +67,27 @@ function formatRelativeTime(timestamp: number) {
 export default function NotificationBell({ className }: { className?: string }) {
   const { user, openAuthModal } = useUserAuth();
   const [isOpen, setIsOpen] = useState(false);
+
+  // System broadcast notifications (from Admin, available to all without login)
+  const [systemNotifs, setSystemNotifs] = useState<SystemNotificationItem[]>([]);
+  const [announcementBanner, setAnnouncementBanner] = useState<{
+    enabled: boolean;
+    text: string;
+    link?: string;
+    type?: string;
+  } | null>(null);
+
+  // Episode reports (user or admin)
   const [reports, setReports] = useState<MovieReportItem[]>([]);
-  const [pendingCount, setPendingCount] = useState(0);
+  const [pendingReportsCount, setPendingReportsCount] = useState(0);
+
+  // Tab states
+  const [mainTab, setMainTab] = useState<"system" | "reports">("system");
+  const [adminReportSubTab, setAdminReportSubTab] = useState<"pending" | "all">("pending");
+
   const [isLoading, setIsLoading] = useState(false);
-  const [adminTab, setAdminTab] = useState<"pending" | "all">("pending");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [readSystemIds, setReadSystemIds] = useState<string[]>([]);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -66,6 +97,44 @@ export default function NotificationBell({ className }: { className?: string }) 
         user.role === "superadmin" ||
         user.email?.toLowerCase() === "kimdinhphuong205@gmail.com")
   );
+
+  // Set default main tab: Admin defaults to reports; regular users and guests default to system notices
+  useEffect(() => {
+    if (isSuperAdmin) {
+      setMainTab("reports");
+    } else {
+      setMainTab("system");
+    }
+  }, [isSuperAdmin]);
+
+  // Load read notification IDs from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("hiphim_read_notif_ids");
+      if (stored) {
+        setReadSystemIds(JSON.parse(stored));
+      }
+    } catch {
+      // Ignore
+    }
+  }, []);
+
+  const markAllSystemAsRead = useCallback(() => {
+    const allIds = [
+      ...systemNotifs.map((n) => n.id),
+      announcementBanner?.text ? `banner_${announcementBanner.text.slice(0, 15)}` : "",
+    ].filter(Boolean);
+
+    setReadSystemIds((prev) => {
+      const next = Array.from(new Set([...prev, ...allIds]));
+      try {
+        localStorage.setItem("hiphim_read_notif_ids", JSON.stringify(next));
+      } catch {
+        // Ignore
+      }
+      return next;
+    });
+  }, [systemNotifs, announcementBanner]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -78,11 +147,30 @@ export default function NotificationBell({ className }: { className?: string }) 
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fetch reports based on role (Admin gets all reports; regular user gets their own)
+  // Fetch system broadcast notifications (Public, No Auth Required)
+  const fetchSystemNotifications = useCallback(async () => {
+    try {
+      const res = await fetch("/api/announcement", { method: "GET" });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.success) {
+        if (Array.isArray(data.notifications)) {
+          setSystemNotifs(data.notifications);
+        }
+        if (data.announcement) {
+          setAnnouncementBanner(data.announcement);
+        }
+      }
+    } catch {
+      // Ignore background fetch error
+    }
+  }, []);
+
+  // Fetch episode reports (Only if user logged in)
   const fetchReports = useCallback(async (isSilent = false) => {
     if (!user) {
       setReports([]);
-      setPendingCount(0);
+      setPendingReportsCount(0);
       return;
     }
 
@@ -98,15 +186,14 @@ export default function NotificationBell({ className }: { className?: string }) 
       if (data.success && Array.isArray(data.reports)) {
         setReports(data.reports);
         if (data.isAdmin) {
-          setPendingCount(
+          setPendingReportsCount(
             typeof data.pendingCount === "number"
               ? data.pendingCount
               : data.reports.filter((r: MovieReportItem) => r.status === "pending").length
           );
         } else {
-          // For regular user: count reports that are resolved recently or pending
           const resolvedCount = data.reports.filter((r: MovieReportItem) => r.status === "resolved").length;
-          setPendingCount(resolvedCount);
+          setPendingReportsCount(resolvedCount);
         }
       }
     } catch {
@@ -116,18 +203,25 @@ export default function NotificationBell({ className }: { className?: string }) 
     }
   }, [user]);
 
+  const refreshAll = useCallback(
+    async (isSilent = false) => {
+      if (!isSilent) setIsLoading(true);
+      await Promise.all([fetchSystemNotifications(), fetchReports(true)]);
+      if (!isSilent) setIsLoading(false);
+    },
+    [fetchSystemNotifications, fetchReports]
+  );
+
   // Initial fetch and 35s polling
   useEffect(() => {
-    fetchReports(false);
-
+    refreshAll(false);
     const interval = setInterval(() => {
-      fetchReports(true);
+      refreshAll(true);
     }, 35000);
-
     return () => clearInterval(interval);
-  }, [fetchReports]);
+  }, [refreshAll]);
 
-  // Listen for local events across components
+  // Real-time custom events
   useEffect(() => {
     const handleReportCreated = (e: any) => {
       const newReport: MovieReportItem = e.detail;
@@ -136,7 +230,7 @@ export default function NotificationBell({ className }: { className?: string }) 
       setReports((prev) => [newReport, ...prev.filter((r) => r.id !== newReport.id)]);
 
       if (isSuperAdmin) {
-        setPendingCount((c) => c + 1);
+        setPendingReportsCount((c) => c + 1);
         toast.info("🔔 Báo lỗi tập mới vừa được gửi", {
           description: `${newReport.movieName} ${newReport.episodeName ? `(${newReport.episodeName})` : ""}`,
         });
@@ -152,20 +246,29 @@ export default function NotificationBell({ className }: { className?: string }) 
       );
 
       if (isSuperAdmin) {
-        setPendingCount((prev) => Math.max(0, status === "resolved" ? prev - 1 : prev + 1));
+        setPendingReportsCount((prev) => Math.max(0, status === "resolved" ? prev - 1 : prev + 1));
       }
+    };
+
+    const handleSystemNotifCreated = (e: any) => {
+      const newNotif: SystemNotificationItem = e.detail;
+      if (!newNotif) return;
+      setSystemNotifs((prev) => [newNotif, ...prev.filter((n) => n.id !== newNotif.id)]);
+      toast.info(`📢 Thông báo mới: ${newNotif.title}`);
     };
 
     window.addEventListener("report-created", handleReportCreated);
     window.addEventListener("report-status-changed", handleReportStatusChanged);
+    window.addEventListener("system-notification-created", handleSystemNotifCreated);
 
     return () => {
       window.removeEventListener("report-created", handleReportCreated);
       window.removeEventListener("report-status-changed", handleReportStatusChanged);
+      window.removeEventListener("system-notification-created", handleSystemNotifCreated);
     };
   }, [isSuperAdmin]);
 
-  // Admin: 1-click Mark as Resolved directly from popover
+  // Admin: 1-click status toggle
   const handleMarkResolved = async (reportId: string, currentStatus: "pending" | "resolved") => {
     const newStatus = currentStatus === "pending" ? "resolved" : "pending";
     try {
@@ -187,10 +290,10 @@ export default function NotificationBell({ className }: { className?: string }) 
         );
 
         if (newStatus === "resolved") {
-          setPendingCount((prev) => Math.max(0, prev - 1));
+          setPendingReportsCount((prev) => Math.max(0, prev - 1));
           toast.success("Đã đánh dấu tập phim này đã sửa xong!");
         } else {
-          setPendingCount((prev) => prev + 1);
+          setPendingReportsCount((prev) => prev + 1);
           toast.info("Đã chuyển lại sang chờ xử lý.");
         }
 
@@ -209,32 +312,42 @@ export default function NotificationBell({ className }: { className?: string }) 
     }
   };
 
+  // Compute unread system notifications count
+  const unreadSystemCount = systemNotifs.filter((n) => !readSystemIds.includes(n.id)).length;
+  const isBannerUnread =
+    announcementBanner?.enabled &&
+    Boolean(announcementBanner.text) &&
+    !readSystemIds.includes(`banner_${announcementBanner.text.slice(0, 15)}`);
+
+  const totalSystemUnread = unreadSystemCount + (isBannerUnread ? 1 : 0);
+
+  // Badge count shown on bell icon
+  const badgeCount = isSuperAdmin ? pendingReportsCount : totalSystemUnread + (user ? reports.filter((r) => r.status === "resolved").length : 0);
+
   const displayedReports = isSuperAdmin
-    ? adminTab === "pending"
+    ? adminReportSubTab === "pending"
       ? reports.filter((r) => r.status === "pending")
       : reports
     : reports;
 
-  const badgeCount = isSuperAdmin ? pendingCount : reports.filter((r) => r.status === "resolved").length;
-
   return (
     <div className={cn("relative shrink-0 pointer-events-auto", className)} ref={containerRef}>
-      {/* Bell Trigger Button */}
+      {/* Bell Trigger Button - Open without needing to login */}
       <button
         type="button"
         onClick={() => {
-          if (!user) {
-            openAuthModal("login");
-            return;
+          const nextState = !isOpen;
+          setIsOpen(nextState);
+          if (nextState) {
+            markAllSystemAsRead();
           }
-          setIsOpen(!isOpen);
         }}
         className={cn(
           "relative flex items-center justify-center w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-[#111714] border border-white/10 hover:border-brand-green/60 text-white/80 hover:text-white transition-all duration-300 group cursor-pointer active:scale-95 shadow-sm",
           isOpen && "border-brand-green bg-[#141e18] text-brand-green shadow-[0_0_15px_rgba(32,214,107,0.25)]"
         )}
-        aria-label="Thông báo báo lỗi tập phim"
-        title={isSuperAdmin ? "Thông báo báo lỗi tập (Admin)" : "Thông báo tập phim"}
+        aria-label="Thông báo hệ thống và báo lỗi tập"
+        title="Thông báo"
       >
         <Bell
           className={cn(
@@ -257,7 +370,7 @@ export default function NotificationBell({ className }: { className?: string }) 
           </span>
         )}
 
-        {/* Pulse attention dot */}
+        {/* Attention pulse */}
         {badgeCount > 0 && (
           <span
             className={cn(
@@ -268,12 +381,11 @@ export default function NotificationBell({ className }: { className?: string }) 
         )}
       </button>
 
-      {/* Popover Dropdown - Pure Solid Cinema Dark, No blurry brown bleed-through */}
+      {/* Popover Dropdown - Solid Dark Cinema Slate */}
       {isOpen && (
         <div
           className={cn(
-            "absolute top-full mt-2 w-[340px] sm:w-[375px] max-w-[calc(100vw-20px)]",
-            // Position: on mobile aligned to right edge; on desktop offset right to stay neatly under bell & user menu
+            "absolute top-full mt-2 w-[340px] sm:w-[380px] max-w-[calc(100vw-20px)]",
             "right-0 lg:-right-36",
             "bg-[#0d1410] border border-emerald-500/25 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.95),0_0_35px_rgba(32,214,107,0.08)] z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200 text-white flex flex-col select-none"
           )}
@@ -286,9 +398,7 @@ export default function NotificationBell({ className }: { className?: string }) 
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <h3 className="font-bold text-xs sm:text-sm text-white truncate">
-                    {isSuperAdmin ? "Báo Lỗi Tập Phim" : "Thông Báo Của Bạn"}
-                  </h3>
+                  <h3 className="font-bold text-xs sm:text-sm text-white truncate">Trung Tâm Thông Báo</h3>
                   {isSuperAdmin && (
                     <span className="text-[9.5px] px-1.5 py-0.2 rounded-full font-mono font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
                       ADMIN
@@ -297,8 +407,8 @@ export default function NotificationBell({ className }: { className?: string }) 
                 </div>
                 <p className="text-[11px] text-white/50 truncate">
                   {isSuperAdmin
-                    ? `${pendingCount} tập đang chờ ban quản trị xử lý`
-                    : "Tiến độ khắc phục các tập phim bạn đã báo"}
+                    ? `${pendingReportsCount} tập cần sửa • ${systemNotifs.length} thông báo toàn trang`
+                    : "Thông báo từ Ban Quản Trị & tiến độ phim"}
                 </p>
               </div>
             </div>
@@ -306,10 +416,10 @@ export default function NotificationBell({ className }: { className?: string }) 
             <div className="flex items-center gap-1 shrink-0">
               <button
                 type="button"
-                onClick={() => fetchReports(false)}
+                onClick={() => refreshAll(false)}
                 disabled={isLoading}
                 className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-                title="Làm mới danh sách"
+                title="Làm mới"
               >
                 <RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin text-brand-green")} />
               </button>
@@ -324,224 +434,367 @@ export default function NotificationBell({ className }: { className?: string }) 
             </div>
           </div>
 
-          {/* Admin Segmented Tabs (Clean Emerald vs Inactive Gray) */}
-          {isSuperAdmin && (
-            <div className="p-2 bg-[#090f0c] border-b border-white/5 shrink-0">
-              <div className="flex items-center gap-1 bg-[#050806] p-1 rounded-xl border border-white/5">
-                <button
-                  type="button"
-                  onClick={() => setAdminTab("pending")}
-                  className={cn(
-                    "flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer",
-                    adminTab === "pending"
-                      ? "bg-brand-green text-black shadow-[0_0_12px_rgba(32,214,107,0.3)]"
-                      : "text-white/60 hover:text-white hover:bg-white/5"
-                  )}
-                >
-                  <span>Chờ xử lý</span>
+          {/* Main Category Tabs: [📢 Từ Admin] vs [⚠ Báo Lỗi Tập] */}
+          <div className="p-2 bg-[#090f0c] border-b border-white/5 shrink-0">
+            <div className="flex items-center gap-1 bg-[#050806] p-1 rounded-xl border border-white/5">
+              <button
+                type="button"
+                onClick={() => {
+                  setMainTab("system");
+                  markAllSystemAsRead();
+                }}
+                className={cn(
+                  "flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer",
+                  mainTab === "system"
+                    ? "bg-brand-green text-black shadow-[0_0_12px_rgba(32,214,107,0.3)]"
+                    : "text-white/60 hover:text-white hover:bg-white/5"
+                )}
+              >
+                <Megaphone className="w-3.5 h-3.5" />
+                <span>Từ Admin</span>
+                {systemNotifs.length > 0 && (
                   <span
                     className={cn(
                       "text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold",
-                      adminTab === "pending" ? "bg-black/25 text-black" : "bg-white/10 text-white/70"
+                      mainTab === "system" ? "bg-black/25 text-black" : "bg-white/10 text-white/70"
                     )}
                   >
-                    {pendingCount}
+                    {systemNotifs.length + (announcementBanner?.enabled ? 1 : 0)}
                   </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAdminTab("all")}
-                  className={cn(
-                    "flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer",
-                    adminTab === "all"
-                      ? "bg-brand-green text-black shadow-[0_0_12px_rgba(32,214,107,0.3)]"
-                      : "text-white/60 hover:text-white hover:bg-white/5"
-                  )}
-                >
-                  <span>Tất cả</span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMainTab("reports")}
+                className={cn(
+                  "flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer",
+                  mainTab === "reports"
+                    ? "bg-brand-green text-black shadow-[0_0_12px_rgba(32,214,107,0.3)]"
+                    : "text-white/60 hover:text-white hover:bg-white/5"
+                )}
+              >
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>Báo Lỗi Tập</span>
+                {isSuperAdmin && pendingReportsCount > 0 && (
                   <span
                     className={cn(
                       "text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold",
-                      adminTab === "all" ? "bg-black/25 text-black" : "bg-white/10 text-white/70"
+                      mainTab === "reports" ? "bg-black/25 text-black" : "bg-rose-500/80 text-white"
                     )}
                   >
-                    {reports.length}
+                    {pendingReportsCount}
                   </span>
-                </button>
-              </div>
+                )}
+              </button>
             </div>
-          )}
 
-          {/* Report List Body */}
-          <div className="max-h-[380px] overflow-y-auto custom-scrollbar p-2 sm:p-2.5 space-y-2 bg-[#0d1410]">
-            {isLoading && reports.length === 0 ? (
-              <div className="p-8 text-center text-white/40 flex flex-col items-center gap-2">
-                <Loader2 className="w-5 h-5 animate-spin text-brand-green" />
-                <span className="text-xs">Đang tải thông báo...</span>
+            {/* Admin Subtabs when on 'reports' tab */}
+            {isSuperAdmin && mainTab === "reports" && (
+              <div className="flex items-center gap-1.5 pt-2 px-1">
+                <button
+                  type="button"
+                  onClick={() => setAdminReportSubTab("pending")}
+                  className={cn(
+                    "px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition-colors",
+                    adminReportSubTab === "pending"
+                      ? "bg-amber-400/20 text-amber-300 border border-amber-400/30"
+                      : "text-white/50 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  Chờ xử lý ({pendingReportsCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminReportSubTab("all")}
+                  className={cn(
+                    "px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition-colors",
+                    adminReportSubTab === "all"
+                      ? "bg-white/15 text-white border border-white/20"
+                      : "text-white/50 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  Tất cả ({reports.length})
+                </button>
               </div>
-            ) : displayedReports.length === 0 ? (
-              <div className="p-8 text-center text-white/50 flex flex-col items-center justify-center gap-2">
-                <CheckCircle2 className="w-8 h-8 text-brand-green/70 mb-1" />
-                <p className="text-xs font-semibold text-white/90">
-                  {isSuperAdmin
-                    ? adminTab === "pending"
-                      ? "Tuyệt vời! Không còn tập nào chờ sửa."
-                      : "Chưa có báo cáo lỗi nào trong hệ thống."
-                    : "Bạn chưa gửi báo lỗi tập phim nào."}
-                </p>
-                <p className="text-[11px] text-white/40 max-w-[260px] leading-relaxed">
-                  {isSuperAdmin
-                    ? "Hệ thống sẽ cập nhật tự động khi có thành viên gửi báo cáo lỗi tập mới."
-                    : "Khi xem phim nếu phát hiện lỗi, hãy bấm nút 'Báo lỗi tập' để admin xử lý nhé."}
-                </p>
-              </div>
-            ) : (
-              displayedReports.map((report) => {
-                const isPending = report.status === "pending";
-                return (
+            )}
+          </div>
+
+          {/* Tab 1: System Broadcast Notifications (From Admin - Accessible without login) */}
+          {mainTab === "system" && (
+            <div className="max-h-[380px] overflow-y-auto custom-scrollbar p-2.5 space-y-2.5 bg-[#0d1410]">
+              {/* Active Pinned Announcement Banner if set by Admin */}
+              {announcementBanner?.enabled && announcementBanner.text && (
+                <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-950/60 via-[#101b14] to-[#0c140f] border border-brand-green/40 shadow-[0_0_15px_rgba(32,214,107,0.12)] space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-brand-green flex items-center gap-1">
+                      <Pin className="w-3 h-3 rotate-45" />
+                      Thông báo ghim toàn trang
+                    </span>
+                    <span className="text-[9.5px] px-1.5 py-0.2 rounded font-mono font-bold bg-brand-green/20 text-brand-green border border-brand-green/30">
+                      QUAN TRỌNG
+                    </span>
+                  </div>
+                  <p className="text-xs text-white leading-relaxed font-medium">
+                    {announcementBanner.text}
+                  </p>
+                  {announcementBanner.link && (
+                    <Link
+                      href={announcementBanner.link}
+                      onClick={() => setIsOpen(false)}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-green hover:underline pt-0.5"
+                    >
+                      <span>Xem chi tiết</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  )}
+                </div>
+              )}
+
+              {/* Broadcast System Notifications List */}
+              {systemNotifs.length === 0 && (!announcementBanner?.enabled || !announcementBanner?.text) ? (
+                <div className="p-8 text-center text-white/50 flex flex-col items-center justify-center gap-2">
+                  <Megaphone className="w-8 h-8 text-white/30 mb-1" />
+                  <p className="text-xs font-semibold text-white/80">Chưa có thông báo mới từ Admin</p>
+                  <p className="text-[11px] text-white/40 max-w-[250px] leading-relaxed">
+                    Khi ban quản trị phát thông báo tin tức hoặc sự kiện, nội dung sẽ xuất hiện ngay tại đây.
+                  </p>
+                </div>
+              ) : (
+                systemNotifs.map((item) => (
                   <div
-                    key={report.id}
-                    className={cn(
-                      "p-3 rounded-xl border transition-all duration-200 group relative space-y-2",
-                      "bg-[#121915] hover:bg-[#16211c]",
-                      isPending
-                        ? "border-white/10 hover:border-brand-green/35"
-                        : "border-white/5 opacity-80 hover:opacity-100"
-                    )}
+                    key={item.id}
+                    className="p-3 rounded-xl bg-[#121915] hover:bg-[#16211c] border border-white/8 hover:border-brand-green/30 transition-all space-y-1.5 group"
                   >
-                    {/* Top Row: Status badge & timestamp */}
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span
-                          className={cn(
-                            "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1",
-                            isPending
-                              ? "bg-amber-400/15 text-amber-300 border border-amber-400/25"
-                              : "bg-brand-green/15 text-brand-green border border-brand-green/25"
-                          )}
-                        >
-                          {isPending ? (
-                            <>
-                              <Clock className="w-2.5 h-2.5" />
-                              Chờ xử lý
-                            </>
-                          ) : (
-                            <>
-                              <Check className="w-2.5 h-2.5" />
-                              Đã sửa xong
-                            </>
-                          )}
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider bg-emerald-500/15 text-brand-green border border-emerald-500/25 flex items-center gap-1 shrink-0">
+                          <Shield className="w-2.5 h-2.5" />
+                          {item.author || "Ban Quản Trị"}
                         </span>
-
-                        {report.serverName && (
-                          <span className="text-[10px] text-white/50 bg-white/5 px-1.5 py-0.5 rounded border border-white/5 font-mono">
-                            {report.serverName}
-                          </span>
-                        )}
                       </div>
-
-                      <span className="text-[10.5px] font-mono text-white/40">
-                        {formatRelativeTime(report.createdAt)}
+                      <span className="text-[10px] font-mono text-white/40 shrink-0">
+                        {formatRelativeTime(item.createdAt)}
                       </span>
                     </div>
 
-                    {/* Movie title & Episode */}
-                    <div className="flex items-baseline gap-1.5">
-                      <h4 className="text-xs sm:text-[13px] font-bold text-white group-hover:text-brand-green transition-colors line-clamp-1">
-                        {report.movieName}
-                      </h4>
-                      {report.episodeName && (
-                        <span className="text-[11px] font-extrabold text-brand-green shrink-0 bg-brand-green/10 border border-brand-green/25 px-1.5 py-0.2 rounded">
-                          {report.episodeName}
-                        </span>
-                      )}
-                    </div>
+                    <h4 className="text-xs sm:text-[13px] font-bold text-white group-hover:text-brand-green transition-colors leading-snug">
+                      {item.title}
+                    </h4>
 
-                    {/* Reporter info */}
-                    {(report.userName || report.userEmail) && (
-                      <div className="flex items-center gap-1.5 text-[11px] text-white/60">
-                        <User className="w-3 h-3 text-brand-green shrink-0" />
-                        <span className="font-medium text-white/80 truncate">
-                          {report.userName || report.userEmail?.split("@")[0]}
+                    <p className="text-[11px] text-white/70 leading-relaxed">
+                      {item.content}
+                    </p>
+
+                    {item.link && (
+                      <div className="pt-1 border-t border-white/5">
+                        <Link
+                          href={item.link}
+                          onClick={() => setIsOpen(false)}
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-green hover:underline"
+                        >
+                          <span>Xem chi tiết</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* Tab 2: Episode Error Reports */}
+          {mainTab === "reports" && (
+            <div className="max-h-[380px] overflow-y-auto custom-scrollbar p-2.5 space-y-2 bg-[#0d1410]">
+              {/* Not Logged In Prompt */}
+              {!user ? (
+                <div className="p-6 text-center text-white/70 flex flex-col items-center justify-center gap-3 bg-[#121915] border border-white/8 rounded-xl my-2">
+                  <div className="w-10 h-10 rounded-full bg-brand-green/10 border border-brand-green/30 flex items-center justify-center text-brand-green">
+                    <User className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-white mb-1">Theo dõi báo lỗi theo tài khoản</p>
+                    <p className="text-[11px] text-white/50 leading-relaxed max-w-[260px]">
+                      Đăng nhập để xem tiến độ và nhận thông báo khi Ban Quản Trị đã khắc phục xong tập phim bạn báo lỗi.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsOpen(false);
+                      openAuthModal("login");
+                    }}
+                    className="px-4 py-2 rounded-xl bg-brand-green hover:bg-brand-green-hover text-black font-extrabold text-xs flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(32,214,107,0.3)] active:scale-95 transition-all"
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>Đăng Nhập Ngay</span>
+                  </button>
+                </div>
+              ) : displayedReports.length === 0 ? (
+                <div className="p-8 text-center text-white/50 flex flex-col items-center justify-center gap-2">
+                  <CheckCircle2 className="w-8 h-8 text-brand-green/70 mb-1" />
+                  <p className="text-xs font-semibold text-white/90">
+                    {isSuperAdmin
+                      ? adminReportSubTab === "pending"
+                        ? "Tuyệt vời! Không còn tập nào chờ sửa."
+                        : "Chưa có báo cáo lỗi nào trong hệ thống."
+                      : "Bạn chưa gửi báo lỗi tập phim nào."}
+                  </p>
+                  <p className="text-[11px] text-white/40 max-w-[260px] leading-relaxed">
+                    {isSuperAdmin
+                      ? "Hệ thống sẽ cập nhật tự động khi có thành viên gửi báo cáo lỗi tập mới."
+                      : "Khi xem phim nếu phát hiện lỗi, hãy bấm nút 'Báo lỗi tập' để admin xử lý nhé."}
+                  </p>
+                </div>
+              ) : (
+                displayedReports.map((report) => {
+                  const isPending = report.status === "pending";
+                  return (
+                    <div
+                      key={report.id}
+                      className={cn(
+                        "p-3 rounded-xl border transition-all duration-200 group relative space-y-2",
+                        "bg-[#121915] hover:bg-[#16211c]",
+                        isPending
+                          ? "border-white/10 hover:border-brand-green/35"
+                          : "border-white/5 opacity-80 hover:opacity-100"
+                      )}
+                    >
+                      {/* Top Row: Status badge & timestamp */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span
+                            className={cn(
+                              "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1",
+                              isPending
+                                ? "bg-amber-400/15 text-amber-300 border border-amber-400/25"
+                                : "bg-brand-green/15 text-brand-green border border-brand-green/25"
+                            )}
+                          >
+                            {isPending ? (
+                              <>
+                                <Clock className="w-2.5 h-2.5" />
+                                Chờ xử lý
+                              </>
+                            ) : (
+                              <>
+                                <Check className="w-2.5 h-2.5" />
+                                Đã sửa xong
+                              </>
+                            )}
+                          </span>
+
+                          {report.serverName && (
+                            <span className="text-[10px] text-white/50 bg-white/5 px-1.5 py-0.5 rounded border border-white/5 font-mono">
+                              {report.serverName}
+                            </span>
+                          )}
+                        </div>
+
+                        <span className="text-[10.5px] font-mono text-white/40">
+                          {formatRelativeTime(report.createdAt)}
                         </span>
-                        {report.userEmail && (
-                          <span className="text-white/40 font-mono truncate text-[10px]">
-                            ({report.userEmail})
+                      </div>
+
+                      {/* Movie title & Episode */}
+                      <div className="flex items-baseline gap-1.5">
+                        <h4 className="text-xs sm:text-[13px] font-bold text-white group-hover:text-brand-green transition-colors line-clamp-1">
+                          {report.movieName}
+                        </h4>
+                        {report.episodeName && (
+                          <span className="text-[11px] font-extrabold text-brand-green shrink-0 bg-brand-green/10 border border-brand-green/25 px-1.5 py-0.2 rounded">
+                            {report.episodeName}
                           </span>
                         )}
                       </div>
-                    )}
 
-                    {/* Issue type & note box */}
-                    <div className="p-2 rounded-lg bg-[#080d0a] border border-white/6 text-xs">
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-400">
-                        <AlertTriangle className="w-3 h-3 shrink-0" />
-                        <span className="truncate">{report.issueType}</span>
+                      {/* Reporter info */}
+                      {(report.userName || report.userEmail) && (
+                        <div className="flex items-center gap-1.5 text-[11px] text-white/60">
+                          <User className="w-3 h-3 text-brand-green shrink-0" />
+                          <span className="font-medium text-white/80 truncate">
+                            {report.userName || report.userEmail?.split("@")[0]}
+                          </span>
+                          {report.userEmail && (
+                            <span className="text-white/40 font-mono truncate text-[10px]">
+                              ({report.userEmail})
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Issue note box */}
+                      <div className="p-2 rounded-lg bg-[#080d0a] border border-white/6 text-xs">
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-400">
+                          <AlertTriangle className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{report.issueType}</span>
+                        </div>
+                        {report.description && (
+                          <p className="text-[11px] text-white/70 mt-1 line-clamp-2 italic leading-relaxed">
+                            &ldquo;{report.description}&rdquo;
+                          </p>
+                        )}
                       </div>
-                      {report.description && (
-                        <p className="text-[11px] text-white/70 mt-1 line-clamp-2 italic leading-relaxed">
-                          &ldquo;{report.description}&rdquo;
-                        </p>
-                      )}
-                    </div>
 
-                    {/* Action buttons */}
-                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/5">
-                      <Link
-                        href={`/watch?slug=${encodeURIComponent(report.movieSlug)}`}
-                        onClick={() => setIsOpen(false)}
-                        className="py-1 px-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/10 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-                        title="Mở xem tập phim"
-                      >
-                        <ExternalLink className="w-3 h-3 text-brand-green" />
-                        <span>Xem tập</span>
-                      </Link>
-
-                      {/* Admin 1-Click Status Toggle */}
-                      {isSuperAdmin && (
-                        <button
-                          type="button"
-                          onClick={() => handleMarkResolved(report.id, report.status)}
-                          disabled={updatingId === report.id}
-                          className={cn(
-                            "py-1 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95",
-                            isPending
-                              ? "bg-brand-green hover:bg-brand-green-hover text-black shadow-[0_0_12px_rgba(32,214,107,0.3)]"
-                              : "bg-white/10 hover:bg-white/15 text-white/80 hover:text-white"
-                          )}
+                      {/* Action buttons */}
+                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/5">
+                        <Link
+                          href={`/watch?slug=${encodeURIComponent(report.movieSlug)}`}
+                          onClick={() => setIsOpen(false)}
+                          className="py-1 px-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/10 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                          title="Mở xem tập phim"
                         >
-                          {updatingId === report.id ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <Check className="w-3 h-3" />
-                          )}
-                          <span>{isPending ? "Đã sửa" : "Mở lại"}</span>
-                        </button>
-                      )}
+                          <ExternalLink className="w-3 h-3 text-brand-green" />
+                          <span>Xem tập</span>
+                        </Link>
 
-                      {!isSuperAdmin && !isPending && (
-                        <span className="text-[11px] font-semibold text-brand-green flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" />
-                          Đã khắc phục
-                        </span>
-                      )}
+                        {/* Admin 1-Click Status Toggle */}
+                        {isSuperAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => handleMarkResolved(report.id, report.status)}
+                            disabled={updatingId === report.id}
+                            className={cn(
+                              "py-1 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95",
+                              isPending
+                                ? "bg-brand-green hover:bg-brand-green-hover text-black shadow-[0_0_12px_rgba(32,214,107,0.3)]"
+                                : "bg-white/10 hover:bg-white/15 text-white/80 hover:text-white"
+                            )}
+                          >
+                            {updatingId === report.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Check className="w-3 h-3" />
+                            )}
+                            <span>{isPending ? "Đã sửa" : "Mở lại"}</span>
+                          </button>
+                        )}
+
+                        {!isSuperAdmin && !isPending && (
+                          <span className="text-[11px] font-semibold text-brand-green flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" />
+                            Đã khắc phục
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+                  );
+                })
+              )}
+            </div>
+          )}
 
           {/* Footer Navigation */}
           {isSuperAdmin && (
             <div className="p-2.5 bg-[#090e0b] border-t border-white/8 shrink-0 flex items-center justify-between text-xs">
-              <span className="text-[11px] text-white/40">Quản trị báo cáo tập</span>
+              <span className="text-[11px] text-white/40">Quản trị toàn hệ thống</span>
               <Link
-                href="/admin?tab=reports"
+                href="/admin?tab=announcement"
                 onClick={() => setIsOpen(false)}
                 className="flex items-center gap-1 text-xs font-bold text-brand-green hover:text-emerald-300 transition-colors group"
               >
-                <span>Mở trang quản trị đầy đủ</span>
+                <span>Tạo & quản lý thông báo</span>
                 <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
               </Link>
             </div>

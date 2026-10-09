@@ -56,6 +56,8 @@ import {
   Download,
   Menu,
   ChevronRight,
+  Bell,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -72,6 +74,15 @@ export default function AdminDashboardPage() {
   const [reportsList, setReportsList] = useState<any[]>([]);
   const [isLoadingReports, setIsLoadingReports] = useState(false);
   const [reportFilter, setReportFilter] = useState<"all" | "pending" | "resolved">("all");
+
+  // System Broadcast Notifications state
+  const [systemNotifsList, setSystemNotifsList] = useState<any[]>([]);
+  const [isLoadingNotifs, setIsLoadingNotifs] = useState(false);
+  const [newNotifTitle, setNewNotifTitle] = useState("");
+  const [newNotifContent, setNewNotifContent] = useState("");
+  const [newNotifType, setNewNotifType] = useState<"info" | "warning" | "success" | "update">("info");
+  const [newNotifLink, setNewNotifLink] = useState("");
+  const [isSendingNotif, setIsSendingNotif] = useState(false);
 
   const [config, setConfig] = useState<SiteConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -385,6 +396,77 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const fetchSystemNotifs = async () => {
+    setIsLoadingNotifs(true);
+    try {
+      const res = await fetch("/api/announcement");
+      const data = await res.json();
+      if (data.success && Array.isArray(data.notifications)) {
+        setSystemNotifsList(data.notifications);
+      }
+    } catch {
+      // Ignore
+    } finally {
+      setIsLoadingNotifs(false);
+    }
+  };
+
+  const handleSendNotif = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newNotifTitle.trim() || !newNotifContent.trim()) {
+      toast.error("Vui lòng nhập tiêu đề và nội dung thông báo!");
+      return;
+    }
+    try {
+      setIsSendingNotif(true);
+      const res = await fetch("/api/announcement", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: newNotifTitle,
+          content: newNotifContent,
+          type: newNotifType,
+          link: newNotifLink,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Đã phát thông báo toàn trang thành công!");
+        setNewNotifTitle("");
+        setNewNotifContent("");
+        setNewNotifLink("");
+        fetchSystemNotifs();
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("system-notification-created", { detail: data.notification })
+          );
+        }
+      } else {
+        toast.error(data.error || "Gửi thất bại.");
+      }
+    } catch {
+      toast.error("Lỗi kết nối khi gửi thông báo.");
+    } finally {
+      setIsSendingNotif(false);
+    }
+  };
+
+  const handleDeleteNotif = async (id: string) => {
+    if (!confirm("Bạn có chắc chắn muốn xóa thông báo này không?")) return;
+    try {
+      const res = await fetch(`/api/announcement?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Đã xóa thông báo.");
+        setSystemNotifsList((prev) => prev.filter((n) => n.id !== id));
+      } else {
+        toast.error("Không thể xóa thông báo.");
+      }
+    } catch {
+      toast.error("Lỗi kết nối khi xóa.");
+    }
+  };
+
   const switchTab = (tab: "overview" | "featured" | "announcement" | "maintenance" | "cache" | "settings" | "security" | "users" | "reports") => {
     setActiveTab(tab);
     setIsMobileDrawerOpen(false);
@@ -399,6 +481,9 @@ export default function AdminDashboardPage() {
     if (tab === "reports") {
       fetchReports();
     }
+    if (tab === "announcement") {
+      fetchSystemNotifs();
+    }
   };
 
   // Load config on mount
@@ -407,6 +492,7 @@ export default function AdminDashboardPage() {
     checkApiHealth();
     fetchUsers();
     fetchReports();
+    fetchSystemNotifs();
 
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -2043,6 +2129,154 @@ export default function AdminDashboardPage() {
                   </div>
                   {config.announcement.link && (
                     <span className="text-[10px] underline ml-2 shrink-0">Xem chi tiết →</span>
+                  )}
+                </div>
+              </div>
+
+              {/* ======================================================== */}
+              {/* BROADCAST SYSTEM NOTIFICATIONS TO BELL (PUBLIC TO ALL) */}
+              {/* ======================================================== */}
+              <div className="pt-8 border-t border-white/10 space-y-6">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-5 h-5 text-brand-green" />
+                    <h3 className="text-lg font-extrabold text-white">Phát Thông Báo Vào Chuông Toàn Trang</h3>
+                  </div>
+                  <p className="text-xs text-white/50 mt-1">
+                    Gửi thông báo tin tức, cập nhật phim mới, sự kiện... đến toàn bộ khán giả. Mọi người đều bấm chuông xem được ngay mà không cần phải đăng nhập tài khoản.
+                  </p>
+                </div>
+
+                {/* Send Notification Form */}
+                <form onSubmit={handleSendNotif} className="p-5 rounded-2xl bg-[#0d1410] border border-emerald-500/25 space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-white/80 block">Tiêu đề thông báo *</label>
+                    <input
+                      type="text"
+                      value={newNotifTitle}
+                      onChange={(e) => setNewNotifTitle(e.target.value)}
+                      placeholder="Ví dụ: Đã cập nhật tập mới phim Spider-Man / Bảo trì máy chủ..."
+                      className="w-full bg-black/60 border border-white/15 rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-brand-green transition-colors"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-white/80 block">Nội dung chi tiết *</label>
+                    <textarea
+                      rows={3}
+                      value={newNotifContent}
+                      onChange={(e) => setNewNotifContent(e.target.value)}
+                      placeholder="Nhập nội dung thông báo gửi đến toàn thể khán giả..."
+                      className="w-full bg-black/60 border border-white/15 rounded-xl p-3.5 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-brand-green transition-colors resize-none"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-white/80 block">Loại thông báo</label>
+                      <select
+                        value={newNotifType}
+                        onChange={(e) => setNewNotifType(e.target.value as any)}
+                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-brand-green"
+                      >
+                        <option value="info">Thông tin chung (Xanh dương)</option>
+                        <option value="success">Nổi bật / Phim mới (Xanh lá điện ảnh)</option>
+                        <option value="warning">Lưu ý / Bảo trì (Vàng hổ phách)</option>
+                        <option value="update">Bản cập nhật tính năng</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-white/80 block">Đường dẫn đính kèm (Tùy chọn)</label>
+                      <input
+                        type="text"
+                        value={newNotifLink}
+                        onChange={(e) => setNewNotifLink(e.target.value)}
+                        placeholder="Ví dụ: /phim/deadpool hoặc /watch?slug=..."
+                        className="w-full bg-black/60 border border-white/15 rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-brand-green"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="submit"
+                      disabled={isSendingNotif}
+                      className="px-5 py-2.5 rounded-xl bg-brand-green hover:bg-brand-green-hover text-black font-extrabold text-xs flex items-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(32,214,107,0.3)] active:scale-95 transition-all disabled:opacity-50"
+                    >
+                      {isSendingNotif ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Đang gửi thông báo...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Megaphone className="w-4 h-4" />
+                          <span>Phát Thông Báo Ngay</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+
+                {/* Sent Notifications List */}
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-white/70 uppercase tracking-wider">
+                      Danh sách thông báo đã phát ({systemNotifsList.length})
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={fetchSystemNotifs}
+                      disabled={isLoadingNotifs}
+                      className="text-xs text-brand-green hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${isLoadingNotifs ? "animate-spin" : ""}`} />
+                      <span>Làm mới</span>
+                    </button>
+                  </div>
+
+                  {systemNotifsList.length === 0 ? (
+                    <div className="p-8 text-center rounded-2xl bg-white/[0.02] border border-white/10 text-white/40 text-xs">
+                      Chưa có thông báo nào được phát. Hãy gửi thông báo đầu tiên ở form trên!
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {systemNotifsList.map((notif) => (
+                        <div
+                          key={notif.id}
+                          className="p-3.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] border border-white/10 flex items-start justify-between gap-3 transition-colors"
+                        >
+                          <div className="space-y-1 min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase bg-brand-green/20 text-brand-green border border-brand-green/30">
+                                {notif.type}
+                              </span>
+                              <span className="text-xs font-mono text-white/40">
+                                {formatRelativeTime(notif.createdAt)}
+                              </span>
+                            </div>
+                            <h5 className="text-xs sm:text-sm font-bold text-white">{notif.title}</h5>
+                            <p className="text-xs text-white/70 leading-relaxed">{notif.content}</p>
+                            {notif.link && (
+                              <p className="text-[11px] text-brand-green truncate font-mono">
+                                Link: {notif.link}
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteNotif(notif.id)}
+                            className="p-2 rounded-lg bg-white/5 hover:bg-red-500/20 text-white/40 hover:text-red-400 border border-white/10 hover:border-red-500/30 transition-colors shrink-0 cursor-pointer"
+                            title="Xóa thông báo này"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>
