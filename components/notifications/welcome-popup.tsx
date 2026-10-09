@@ -1,41 +1,56 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { Sparkles, X, Crown, CheckCircle2, Film, PartyPopper, Heart } from "lucide-react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Sparkles, X, Crown, CheckCircle2, Film, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useUserAuth, UserProfile } from "@/context/user-auth-context";
 
 export interface WelcomeEventDetail {
   type: "new_register" | "welcome_back";
-  user: {
-    name?: string;
-    email?: string;
-    role?: string;
-  };
+  user?: Partial<UserProfile> | null;
 }
 
 export default function WelcomePopup() {
+  const { user, loading, openAuthModal } = useUserAuth();
   const [data, setData] = useState<WelcomeEventDetail | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const closePopup = () => {
+  const closePopup = useCallback(() => {
     setIsVisible(false);
     setTimeout(() => setData(null), 300);
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-  };
+  }, []);
 
+  const triggerWelcome = useCallback(
+    (targetUser: Partial<UserProfile> | null = user, type: "new_register" | "welcome_back" = "welcome_back") => {
+      setData({
+        type,
+        user: targetUser || null,
+      });
+      setIsVisible(true);
+
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        closePopup();
+      }, 7000);
+    },
+    [user, closePopup]
+  );
+
+  // 1. Listen for explicit welcome events (e.g. after login, OTP register)
   useEffect(() => {
     const handleWelcomeEvent = (e: any) => {
       const detail: WelcomeEventDetail = e.detail;
-      if (!detail || !detail.user) return;
+      if (!detail) return;
 
+      sessionStorage.setItem("hiphim_welcomed_this_session", "true");
       setData(detail);
       setIsVisible(true);
 
-      // Auto close after 7 seconds
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
         closePopup();
@@ -47,14 +62,63 @@ export default function WelcomePopup() {
       window.removeEventListener("show-auth-welcome", handleWelcomeEvent);
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, []);
+  }, [closePopup]);
+
+  // 2. Auto-detect whenever user visits/returns to the web in a new session or tab reopen
+  useEffect(() => {
+    if (loading) return; // Wait until initial auth resolves
+
+    const welcomedThisSession = sessionStorage.getItem("hiphim_welcomed_this_session");
+    if (!welcomedThisSession) {
+      sessionStorage.setItem("hiphim_welcomed_this_session", "true");
+      // Smooth 1.2s delay for seamless entrance after hero renders
+      const timer = setTimeout(() => {
+        triggerWelcome(user, "welcome_back");
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, user, triggerWelcome]);
+
+  // 3. Auto-detect when user returns to the web tab after being away (> 15 minutes)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        const lastActive = Number(localStorage.getItem("hiphim_last_active_time")) || 0;
+        const now = Date.now();
+        // If user was away for more than 15 minutes and returns to the tab
+        if (lastActive > 0 && now - lastActive > 15 * 60 * 1000) {
+          triggerWelcome(user, "welcome_back");
+        }
+        localStorage.setItem("hiphim_last_active_time", now.toString());
+      } else {
+        localStorage.setItem("hiphim_last_active_time", Date.now().toString());
+      }
+    };
+
+    // Heartbeat to keep last_active updated
+    const heartbeat = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        localStorage.setItem("hiphim_last_active_time", Date.now().toString());
+      }
+    }, 60000);
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      clearInterval(heartbeat);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [user, triggerWelcome]);
 
   if (!data || !isVisible) return null;
 
   const isNewRegister = data.type === "new_register";
-  const userName = data.user.name || data.user.email?.split("@")[0] || "Bạn";
-  const isSuperAdmin = data.user.role === "admin" || data.user.role === "superadmin" || data.user.email?.toLowerCase() === "kimdinhphuong205@gmail.com";
-  const initial = userName.charAt(0).toUpperCase();
+  const currentUser = data.user;
+  const userName = currentUser?.name || currentUser?.email?.split("@")[0] || "";
+  const isSuperAdmin =
+    currentUser?.role === "admin" ||
+    currentUser?.role === "superadmin" ||
+    currentUser?.email?.toLowerCase() === "kimdinhphuong205@gmail.com";
+  const initial = userName ? userName.charAt(0).toUpperCase() : "";
 
   return (
     <aside
@@ -83,7 +147,12 @@ export default function WelcomePopup() {
                   : "bg-gradient-to-tr from-brand-green to-emerald-300 text-black ring-2 ring-brand-green/30"
               )}
             >
-              {initial}
+              {currentUser && initial ? (
+                initial
+              ) : (
+                <Film className="w-5 h-5 text-black" />
+              )}
+
               {isSuperAdmin ? (
                 <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-400 flex items-center justify-center text-[9px] text-black ring-1.5 ring-[#0d1410]">
                   <Crown className="w-2.5 h-2.5 fill-current" />
@@ -98,7 +167,11 @@ export default function WelcomePopup() {
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-[10px] font-bold px-2 py-0.2 rounded-full uppercase tracking-wider bg-brand-green/15 text-brand-green border border-brand-green/30">
-                  {isNewRegister ? "Thành viên mới" : "Chào mừng trở lại"}
+                  {currentUser
+                    ? isNewRegister
+                      ? "Thành viên mới"
+                      : "Chào mừng trở lại"
+                    : "Lời chào từ Hi Phim"}
                 </span>
                 {isSuperAdmin && (
                   <span className="text-[9.5px] px-1.5 py-0.2 rounded-full font-mono font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
@@ -107,7 +180,11 @@ export default function WelcomePopup() {
                 )}
               </div>
               <h4 className="text-sm font-bold text-white truncate mt-0.5">
-                {isNewRegister ? "Chào mừng bạn gia nhập! 🎉" : `Chào mừng trở lại, ${userName}! 👋`}
+                {currentUser
+                  ? isNewRegister
+                    ? "Chào mừng bạn gia nhập! 🎉"
+                    : `Chào mừng trở lại, ${userName}! 👋`
+                  : "Chào mừng bạn quay trở lại! 🍿"}
               </h4>
             </div>
           </div>
@@ -125,28 +202,48 @@ export default function WelcomePopup() {
 
         {/* Message Description */}
         <p className="text-xs text-white/70 leading-relaxed mt-2.5 relative z-10">
-          {isNewRegister ? (
-            <>
-              Tài khoản của bạn đã được kích hoạt thành công. Thưởng thức hơn 50.000+ tựa phim bom tấn miễn phí ngay nào!
-            </>
+          {currentUser ? (
+            isNewRegister ? (
+              <>
+                Tài khoản của bạn đã được kích hoạt thành công. Thưởng thức hơn 50.000+ tựa phim bom tấn miễn phí ngay nào!
+              </>
+            ) : (
+              <>
+                Rất vui được gặp lại bạn. Chúc bạn có những phút giây thư giãn tuyệt vời cùng các tập phim yêu thích!
+              </>
+            )
           ) : (
             <>
-              Rất vui được gặp lại bạn. Chúc bạn có những phút giây thư giãn tuyệt vời cùng các tập phim yêu thích!
+              Khám phá kho 50.000+ tựa phim bom tấn chất lượng cao và các tập mới được cập nhật liên tục hoàn toàn miễn phí tại Hi Phim.
             </>
           )}
         </p>
 
         {/* Action button */}
         <div className="flex items-center justify-between gap-2 pt-3 mt-2 border-t border-white/5 relative z-10">
-          <span className="text-[10.5px] text-brand-green font-semibold flex items-center gap-1">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            Đã đồng bộ tài khoản
-          </span>
+          {currentUser ? (
+            <span className="text-[10.5px] text-brand-green font-semibold flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Đã đồng bộ tài khoản
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                closePopup();
+                openAuthModal("login");
+              }}
+              className="text-[11px] text-brand-green font-bold hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <LogIn className="w-3 h-3" />
+              <span>Đăng nhập ngay</span>
+            </button>
+          )}
 
           <button
             type="button"
             onClick={closePopup}
-            className="px-3 py-1.5 rounded-xl bg-brand-green hover:bg-brand-green-hover text-black font-extrabold text-xs flex items-center gap-1 cursor-pointer shadow-[0_0_12px_rgba(32,214,107,0.3)] active:scale-95 transition-all"
+            className="px-3 py-1.5 rounded-xl bg-brand-green hover:bg-brand-green-hover text-black font-extrabold text-xs flex items-center gap-1 cursor-pointer shadow-[0_0_12px_rgba(32,214,107,0.3)] active:scale-95 transition-all ml-auto"
           >
             <Film className="w-3 h-3" />
             <span>Xem phim ngay</span>
