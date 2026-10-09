@@ -1320,7 +1320,7 @@ export default function VideoPlayer({
           console.warn("Native HLS error on video element:", video.error);
           setIsLoading(false);
           if (video.error && (video.error.code === 2 || video.error.code === 4)) {
-            setError("Không thể phát video từ máy chủ này. Bạn có thể bấm Thử lại hoặc đổi sang máy chủ khác.");
+            setError("Tập phim tạm thời chưa thể phát hoặc máy chủ đang gián đoạn.");
           }
         };
 
@@ -1506,7 +1506,7 @@ export default function VideoPlayer({
                     if (hlsRef.current) hlsRef.current.startLoad();
                   }, 600 * retryCountRef.current);
                 } else {
-                  setError("Không thể kết nối máy chủ mặc định. Bạn có thể bấm Thử lại hoặc chuyển sang Máy chủ Dự phòng.");
+                  setError("Máy chủ đang phản hồi chậm hoặc tạm thời bận. Vui lòng thử lại kết nối.");
                 }
                 break;
               case HLS.ErrorTypes.MEDIA_ERROR:
@@ -1515,7 +1515,7 @@ export default function VideoPlayer({
                 break;
               default:
                 hls.destroy();
-                setError("Không thể phát video từ máy chủ này.");
+                setError("Đã có sự cố kết nối tới máy chủ phát video. Vui lòng thử lại.");
                 break;
             }
           }
@@ -1537,7 +1537,7 @@ export default function VideoPlayer({
           if (!video.src && !video.currentSrc) return;
           console.warn("Native HLS error on video element:", video.error);
           setIsLoading(false);
-          setError("Không thể phát video từ nguồn mặc định. Bạn có thể bấm Thử lại hoặc chuyển sang Máy chủ Dự phòng.");
+          setError("Không thể tải video từ máy chủ này. Vui lòng thử lại kết nối.");
         };
 
         video.addEventListener('loadedmetadata', handleMetadata);
@@ -1804,9 +1804,9 @@ export default function VideoPlayer({
       if (!err) return;
       console.error("Native video error:", err);
       if (err.code === 4) {
-        setError("Trình phát mặc định gặp sự cố hoặc định dạng không được hỗ trợ.");
+        setError("Tập phim tạm thời chưa thể phát hoặc máy chủ đang gián đoạn.");
       } else {
-        setError("Đã có lỗi xảy ra khi phát video.");
+        setError("Đã có sự cố kết nối tới máy chủ phát video.");
       }
       onErrorRef.current?.(err);
     };
@@ -2627,19 +2627,6 @@ export default function VideoPlayer({
           <p className="text-white/90 text-sm font-bold tracking-wide">
             {isSlowNetwork ? "Đang tăng tốc bộ đệm giờ cao điểm..." : "Đang tải video..."}
           </p>
-          {isSlowNetwork && onSwitchToEmbed && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onSwitchToEmbed();
-              }}
-              className="mt-3.5 px-4 py-2 sm:px-5 sm:py-2.5 bg-gradient-to-r from-brand-green/25 to-emerald-500/20 hover:from-brand-green/35 hover:to-emerald-500/30 border border-brand-green/60 hover:border-brand-green text-brand-green font-bold text-xs sm:text-sm rounded-xl transition-all active:scale-95 flex items-center gap-2 cursor-pointer backdrop-blur-md"
-            >
-              <Zap className="w-4 h-4 fill-brand-green shrink-0 animate-pulse" />
-              <span>Nguồn tải chậm? Xem ngay bằng Máy chủ VIP</span>
-            </button>
-          )}
         </div>
       )}
 
@@ -2712,15 +2699,18 @@ export default function VideoPlayer({
       )}
 
       {error && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#070908]/95 px-6 text-center backdrop-blur-md animate-in fade-in">
-          <div className="bg-white/10 p-4 rounded-full mb-4 text-red-500">
-            <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
+        <div className="absolute inset-0 z-[65] flex flex-col items-center justify-center bg-[#070908]/95 px-6 text-center backdrop-blur-md animate-in fade-in select-none">
+          <div className="w-12 h-12 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center mb-3 text-red-400">
+            <AlertTriangle className="w-6 h-6" />
           </div>
-          <p className="text-white/90 text-sm md:text-base font-semibold mb-6 max-w-md">{error}</p>
+          <h3 className="text-white font-bold text-sm sm:text-base mb-1.5">
+            Không thể phát video
+          </h3>
+          <p className="text-white/70 text-xs sm:text-sm mb-5 max-w-sm leading-relaxed">
+            {error}
+          </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-2.5">
+          <div className="flex items-center justify-center gap-3">
             <Button
               onClick={() => {
                 setError(null);
@@ -2741,33 +2731,12 @@ export default function VideoPlayer({
               Thử lại kết nối
             </Button>
 
-            {hasAlternativeServer && onSwitchServer && (
-              <Button
-                onClick={onSwitchServer}
-                size="sm"
-                className="bg-brand-green hover:bg-brand-green/90 text-black font-extrabold rounded-xl shadow-lg cursor-pointer h-9 px-4"
-              >
-                Đổi máy chủ khác
-              </Button>
-            )}
-
-            {onSwitchToEmbed && (
-              <Button
-                onClick={() => onSwitchToEmbedRef.current?.()}
-                size="sm"
-                variant="outline"
-                className="rounded-xl border-brand-green/30 bg-brand-green/10 hover:bg-brand-green/20 text-brand-green font-bold cursor-pointer h-9 px-4"
-              >
-                Phát bằng Máy chủ Dự phòng
-              </Button>
-            )}
-
             {onReportError && (
               <Button
                 onClick={onReportError}
                 size="sm"
                 variant="ghost"
-                className="text-amber-400 hover:text-amber-300 hover:bg-amber-400/10 font-bold rounded-xl cursor-pointer h-9 px-3"
+                className="text-amber-400 hover:text-amber-300 hover:bg-amber-400/10 font-bold rounded-xl cursor-pointer h-9 px-3 border border-amber-400/20"
               >
                 <AlertTriangle className="w-3.5 h-3.5 mr-1.5" />
                 Báo lỗi
@@ -2777,14 +2746,12 @@ export default function VideoPlayer({
         </div>
       )}
 
-
-
       {/* Bottom controls bar */}
       <div 
         onClick={(e) => e.stopPropagation()}
         className={cn(
           "absolute bottom-0 left-0 right-0 flex flex-col justify-end bg-gradient-to-t from-black/95 via-black/60 to-transparent transition-opacity duration-300 z-50 pointer-events-none select-none",
-          showControls ? "opacity-100" : "opacity-0"
+          showControls && countdown === null && !error ? "opacity-100" : "opacity-0"
         )}
       >
         {/* Row 1: Timeline Slider & Timestamps */}

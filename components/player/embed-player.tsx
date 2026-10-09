@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, RotateCcw, AlertTriangle, Tv } from "lucide-react";
+import { ArrowLeft, RotateCcw, AlertTriangle } from "lucide-react";
 
 interface EmbedPlayerProps {
   videoUrl: string;
@@ -67,18 +67,8 @@ const EmbedPlayer = ({
           <ArrowLeft className="w-4 h-4" strokeWidth={2.5} />
         </button>
 
-        {/* Quick Actions (Switch to Default HLS, Reload, Report) */}
+        {/* Quick Actions (Reload, Report) */}
         <div className="flex items-center gap-2">
-          {onSwitchToM3u8 && (
-            <button
-              onClick={onSwitchToM3u8}
-              className="px-2.5 py-1.5 rounded-lg bg-black/60 hover:bg-black/90 backdrop-blur-md text-[11px] font-bold text-white/90 hover:text-white border border-white/10 transition-all flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-95"
-              title="Chuyển sang Máy chủ Mặc định (HLS)"
-            >
-              <Tv className="w-3.5 h-3.5 text-brand-green" />
-              <span className="hidden sm:inline">Máy chủ Mặc định</span>
-            </button>
-          )}
 
           <button
             onClick={handleReload}

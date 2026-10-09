@@ -49,12 +49,12 @@ export class PlayerErrorBoundary extends Component<Props, State> {
             <AlertCircle className="w-7 h-7" />
           </div>
           <h3 className="text-base sm:text-lg font-bold text-white mb-2">
-            Trình phát Mặc định gặp sự cố
+            Không thể tải trình phát video
           </h3>
           <p className="text-xs sm:text-sm text-white/60 mb-5 max-w-md">
-            Trình phát có thể bị ảnh hưởng bởi tiện ích mở rộng trình duyệt hoặc kết nối mạng. Bạn có thể thử tải lại hoặc đổi sang máy chủ dự phòng.
+            Đã có sự cố trong quá trình khởi tạo trình phát. Vui lòng bấm thử lại để tiếp tục xem phim.
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-3">
+          <div className="flex items-center justify-center gap-3">
             <Button
               onClick={this.handleRetry}
               variant="outline"
@@ -62,20 +62,8 @@ export class PlayerErrorBoundary extends Component<Props, State> {
               className="rounded-xl border-white/15 bg-white/5 hover:bg-white/10 text-white font-bold cursor-pointer"
             >
               <RotateCcw className="w-4 h-4 mr-1.5" />
-              Thử lại Máy chủ Mặc định
+              Thử lại kết nối
             </Button>
-            {this.props.onSwitchToEmbed && (
-              <Button
-                onClick={() => {
-                  this.setState({ hasError: false, error: null });
-                  this.props.onSwitchToEmbed?.();
-                }}
-                size="sm"
-                className="bg-brand-green hover:bg-brand-green-hover text-black font-extrabold rounded-xl shadow-lg cursor-pointer"
-              >
-                Phát bằng Máy chủ Dự phòng
-              </Button>
-            )}
           </div>
         </div>
       );

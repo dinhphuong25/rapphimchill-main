@@ -228,7 +228,20 @@ function resolveInitialWatchState(
   };
 }
 
-export default function Description({ movie, serverData }: any) {
+export default function Description({ movie, serverData: rawServerData }: any) {
+  // Sanitize serverData: If primary server (index 0) exists and has episodes, remove any extraneous NguonC backup servers
+  const serverData = useMemo(() => {
+    if (!Array.isArray(rawServerData) || rawServerData.length <= 1) return rawServerData || [];
+    const hasPrimaryEpisodes = Array.isArray(rawServerData[0]?.server_data) && rawServerData[0].server_data.length > 0;
+    if (hasPrimaryEpisodes) {
+      return rawServerData.filter((s: any) => {
+        const name = s?.server_name || "";
+        return !name.includes("Dự Phòng VIP") && !name.includes("Dự Phòng (NguonC)");
+      });
+    }
+    return rawServerData;
+  }, [rawServerData]);
+
   const defaultMode: 'm3u8' | 'embed' = useMemo(() => {
     const firstEp = serverData?.[0]?.server_data?.[0];
     if (firstEp && !firstEp.link_m3u8 && firstEp.link_embed) {
@@ -1132,9 +1145,6 @@ export default function Description({ movie, serverData }: any) {
                       const ep = currentServerData?.[currentEpisodeIndex?.server || 0]?.server_data?.[currentEpisodeIndex?.episode || 0];
                       if (ep?.link_m3u8) setCurrentEpisodeUrl(ep.link_m3u8);
                     }}
-                    onSwitchToEmbed={() => {
-                      handleSwitchToEmbed();
-                    }}
                   >
                     <VideoPlayer
                       videoUrl={currentEpisodeUrl}
@@ -1145,13 +1155,11 @@ export default function Description({ movie, serverData }: any) {
                       episodeName={currentServerData?.[currentEpisodeIndex?.server || 0]?.server_data?.[currentEpisodeIndex?.episode || 0]?.name}
                       movieSlug={movie.slug}
                       onProgress={handleProgress}
-                      onSwitchToEmbed={handleSwitchToEmbed}
                       hasNextEpisode={hasNextEpisode()}
                       onNextEpisode={handleNextEpisode}
                       onEnded={handleEnded}
                       onFullscreenChange={setIsPlayerFullscreen}
-                      hasAlternativeServer={currentServerData.length > 1}
-                      onSwitchServer={() => handleServerChange(currentEpisodeIndex?.server === 0 ? 1 : 0)}
+                      hasAlternativeServer={false}
                       onReportError={() => setShowReportModal(true)}
                     />
                   </SafePlayerErrorBoundary>
@@ -1163,12 +1171,10 @@ export default function Description({ movie, serverData }: any) {
                         ? `https://player.phimapi.com/player/?url=${encodeURIComponent(currentEpisodeUrl)}`
                         : currentEpisodeUrl)
                     }
-                    onSwitchToM3u8={handleSwitchToM3u8}
                     onReportError={() => setShowReportModal(true)}
                     movieName={movie.name}
                     episodeName={currentServerData?.[currentEpisodeIndex?.server || 0]?.server_data?.[currentEpisodeIndex?.episode || 0]?.name}
-                    hasAlternativeServer={currentServerData.length > 1}
-                    onSwitchServer={() => handleServerChange(currentEpisodeIndex?.server === 0 ? 1 : 0)}
+                    hasAlternativeServer={false}
                   />
                 )}
               </CardContent>

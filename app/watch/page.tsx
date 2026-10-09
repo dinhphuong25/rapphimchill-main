@@ -16,7 +16,7 @@ const getMovieData = (slug: string) =>
       const api = new PhimApi();
       return api.get(slug);
     },
-    [`movie-data-${slug}`],
+    [`movie-data-clean-${slug}`],
     { revalidate: 1800, tags: ["movies", `movie-${slug}`] }
   )();
 
