@@ -114,14 +114,15 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
       {/* Terms of Service Modal */}
       {activeModal === "terms" && (
         <div
-          className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200"
           onClick={() => setActiveModal(null)}
         >
           <div
-            className="w-full max-w-lg bg-[#0F1712] border border-white/15 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto custom-scrollbar animate-in zoom-in-95 duration-200 text-left select-text"
+            className="w-full max-w-lg bg-[#0F1712] border border-white/15 rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[min(86vh,540px)] overflow-hidden animate-in zoom-in-95 duration-200 text-left select-text"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-white/10 shrink-0 bg-[#0F1712]">
               <div className="flex items-center gap-2">
                 <Scale className="w-5 h-5 text-brand-green" />
                 <h3 className="text-base sm:text-lg font-bold text-white">Điều Khoản Sử Dụng</h3>
@@ -136,7 +137,8 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
               </button>
             </div>
 
-            <div className="text-xs sm:text-[13px] text-white/70 space-y-3 leading-relaxed">
+            {/* Modal Body - Scrollable */}
+            <div className="px-5 sm:px-6 py-4 overflow-y-auto custom-scrollbar flex-1 text-xs sm:text-[13px] text-white/70 space-y-3 leading-relaxed">
               <p>
                 Chào mừng bạn đến với <strong>Hi Phim</strong>. Khi truy cập và sử dụng dịch vụ của chúng tôi, bạn đồng ý tuân thủ các điều khoản sau:
               </p>
@@ -160,11 +162,12 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
               </div>
             </div>
 
-            <div className="pt-3 border-t border-white/10 flex justify-end">
+            {/* Modal Footer - Fixed & Always Fully Visible */}
+            <div className="px-5 sm:px-6 py-3.5 border-t border-white/10 bg-[#0F1712] flex items-center justify-end shrink-0">
               <button
                 type="button"
                 onClick={() => setActiveModal(null)}
-                className="px-4 py-2 rounded-xl bg-brand-green text-[#051309] font-bold text-xs sm:text-sm hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-brand-green text-[#051309] font-bold text-xs sm:text-sm hover:opacity-90 active:scale-95 transition-all cursor-pointer shadow-md"
               >
                 Đã hiểu
               </button>
@@ -176,14 +179,15 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
       {/* Privacy Policy Modal */}
       {activeModal === "privacy" && (
         <div
-          className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200"
           onClick={() => setActiveModal(null)}
         >
           <div
-            className="w-full max-w-lg bg-[#0F1712] border border-white/15 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto custom-scrollbar animate-in zoom-in-95 duration-200 text-left select-text"
+            className="w-full max-w-lg bg-[#0F1712] border border-white/15 rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[min(86vh,540px)] overflow-hidden animate-in zoom-in-95 duration-200 text-left select-text"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-white/10 shrink-0 bg-[#0F1712]">
               <div className="flex items-center gap-2">
                 <Shield className="w-5 h-5 text-brand-green" />
                 <h3 className="text-base sm:text-lg font-bold text-white">Chính Sách Bảo Mật</h3>
@@ -198,7 +202,8 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
               </button>
             </div>
 
-            <div className="text-xs sm:text-[13px] text-white/70 space-y-3 leading-relaxed">
+            {/* Modal Body - Scrollable */}
+            <div className="px-5 sm:px-6 py-4 overflow-y-auto custom-scrollbar flex-1 text-xs sm:text-[13px] text-white/70 space-y-3 leading-relaxed">
               <p>
                 Hi Phim coi trọng quyền riêng tư của người dùng và cam kết bảo mật thông tin tối đa:
               </p>
@@ -222,11 +227,12 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
               </div>
             </div>
 
-            <div className="pt-3 border-t border-white/10 flex justify-end">
+            {/* Modal Footer - Fixed & Always Fully Visible */}
+            <div className="px-5 sm:px-6 py-3.5 border-t border-white/10 bg-[#0F1712] flex items-center justify-end shrink-0">
               <button
                 type="button"
                 onClick={() => setActiveModal(null)}
-                className="px-4 py-2 rounded-xl bg-brand-green text-[#051309] font-bold text-xs sm:text-sm hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-brand-green text-[#051309] font-bold text-xs sm:text-sm hover:opacity-90 active:scale-95 transition-all cursor-pointer shadow-md"
               >
                 Đã hiểu
               </button>
