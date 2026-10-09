@@ -523,6 +523,45 @@ export default function NotificationBell({ className }: { className?: string }) 
           {/* Tab 1: System Broadcast Notifications (From Admin - Accessible without login) */}
           {mainTab === "system" && (
             <div className="max-h-[380px] overflow-y-auto custom-scrollbar p-2.5 space-y-2.5 bg-[#0d1410]">
+              {/* Personalized Welcome Card (For new members, returning members or guests) */}
+              {user ? (
+                <div className="p-3 rounded-xl bg-gradient-to-r from-emerald-950/40 via-[#101913] to-[#0c140f] border border-emerald-500/25 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-bold px-2 py-0.2 rounded-full uppercase tracking-wider bg-brand-green/20 text-brand-green border border-brand-green/30 flex items-center gap-1">
+                      <Sparkles className="w-2.5 h-2.5" />
+                      Chào mừng bạn
+                    </span>
+                    <span className="text-[10px] font-mono text-white/40">Hi Phim</span>
+                  </div>
+                  <h4 className="text-xs sm:text-[13px] font-bold text-white leading-snug">
+                    {user.createdAt && Date.now() - new Date(user.createdAt).getTime() < 86400000 * 3
+                      ? `🎉 Chào mừng thành viên mới, ${user.name || "bạn"}!`
+                      : `👋 Chào mừng quay trở lại, ${user.name || "bạn"}!`}
+                  </h4>
+                  <p className="text-[11px] text-white/70 leading-relaxed">
+                    {user.createdAt && Date.now() - new Date(user.createdAt).getTime() < 86400000 * 3
+                      ? "Tài khoản của bạn đã được kích hoạt thành công. Bạn có thể lưu phim yêu thích, xem lịch sử và báo lỗi tập phim bất cứ lúc nào."
+                      : "Hôm nay có nhiều phim bom tấn và tập mới được cập nhật, chúc bạn có những phút giây thư giãn tuyệt vời!"}
+                  </p>
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-gradient-to-r from-emerald-950/40 via-[#101913] to-[#0c140f] border border-emerald-500/20 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-bold px-2 py-0.2 rounded-full uppercase tracking-wider bg-white/10 text-white/80 border border-white/10 flex items-center gap-1">
+                      <Sparkles className="w-2.5 h-2.5 text-brand-green" />
+                      Lời chào từ Hi Phim
+                    </span>
+                    <span className="text-[10px] font-mono text-white/40">Khách</span>
+                  </div>
+                  <h4 className="text-xs sm:text-[13px] font-bold text-white leading-snug">
+                    Chào mừng bạn đến với Hi Phim! 🍿
+                  </h4>
+                  <p className="text-[11px] text-white/70 leading-relaxed">
+                    Kho 50.000+ phim HD Vietsub miễn phí. Đăng nhập để lưu phim yêu thích và đồng bộ lịch sử xem trên mọi thiết bị.
+                  </p>
+                </div>
+              )}
+
               {/* Active Pinned Announcement Banner if set by Admin */}
               {announcementBanner?.enabled && announcementBanner.text && (
                 <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-950/60 via-[#101b14] to-[#0c140f] border border-brand-green/40 shadow-[0_0_15px_rgba(32,214,107,0.12)] space-y-1.5">

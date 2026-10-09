@@ -329,6 +329,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
       keysToRemove.forEach((k) => localStorage.removeItem(k));
+      sessionStorage.removeItem("hiphim_welcomed_session");
     } catch {}
     window.dispatchEvent(new Event("storage"));
   }, []);
@@ -547,6 +548,18 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
         data.user?.role === "superadmin" ||
         data.user?.email?.toLowerCase() === "kimdinhphuong205@gmail.com";
 
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("hiphim_welcomed_session", "true");
+        window.dispatchEvent(
+          new CustomEvent("show-auth-welcome", {
+            detail: {
+              type: "welcome_back",
+              user: data.user,
+            },
+          })
+        );
+      }
+
       if (isUserAdmin) {
         toast.success(`Chào mừng Quản trị viên, ${data.user.name || "bạn"}! Đang vào bảng quản trị...`);
         setTimeout(() => {
@@ -600,6 +613,19 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
 
       setUser(data.user);
       setIsAuthModalOpen(false);
+
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("hiphim_welcomed_session", "true");
+        window.dispatchEvent(
+          new CustomEvent("show-auth-welcome", {
+            detail: {
+              type: "new_register",
+              user: data.user,
+            },
+          })
+        );
+      }
+
       toast.success("Kích hoạt tài khoản thành công!");
       if (Array.isArray(data.user?.favorites)) {
         localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify(data.user.favorites));
