@@ -436,7 +436,7 @@ function SidebarContent({
           WebkitTransform: "translate3d(-50%, 0, 0)",
         }}
       >
-        <div className="w-[calc(100vw-28px)] max-w-[390px] h-[64px] rounded-full bg-[#0c1510]/92 backdrop-blur-2xl border border-white/12 shadow-[0_12px_40px_rgba(0,0,0,0.85),0_2px_12px_rgba(32,214,107,0.06)] px-2.5 flex items-center justify-between relative">
+        <div className="w-[calc(100vw-24px)] max-w-[420px] h-[60px] rounded-full bg-[#131d17]/95 backdrop-blur-2xl border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.7)] px-1.5 flex items-center justify-between relative">
           {/* Tab 1: Trang Chủ */}
           {(() => {
             const active = currentActiveTab === "/";
@@ -450,12 +450,18 @@ function SidebarContent({
                 title="Trang Chủ"
               >
                 {active ? (
-                  <div className="w-[54px] h-[46px] rounded-full bg-white flex items-center justify-center shadow-[0_4px_16px_rgba(255,255,255,0.25)] transition-all">
-                    <Home className="w-5 h-5 text-[#051309] stroke-[2.4]" />
+                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 select-none transition-all">
+                    <Home className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
+                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
+                      Trang chủ
+                    </span>
                   </div>
                 ) : (
-                  <div className="w-[46px] h-[46px] flex items-center justify-center text-white/55 hover:text-white transition-colors">
-                    <Home className="w-5 h-5 stroke-[2]" />
+                  <div className="flex flex-col items-center justify-center gap-1 py-1 select-none">
+                    <Home className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
+                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
+                      Trang chủ
+                    </span>
                   </div>
                 )}
               </Link>
@@ -475,19 +481,25 @@ function SidebarContent({
                 title="Lịch Sử Xem"
               >
                 {active ? (
-                  <div className="w-[54px] h-[46px] rounded-full bg-white flex items-center justify-center shadow-[0_4px_16px_rgba(255,255,255,0.25)] transition-all">
-                    <Clock className="w-5 h-5 text-[#051309] stroke-[2.4]" />
+                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 select-none transition-all">
+                    <Clock className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
+                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
+                      Lịch sử
+                    </span>
                   </div>
                 ) : (
-                  <div className="w-[46px] h-[46px] flex items-center justify-center text-white/55 hover:text-white transition-colors">
-                    <Clock className="w-5 h-5 stroke-[2]" />
+                  <div className="flex flex-col items-center justify-center gap-1 py-1 select-none">
+                    <Clock className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
+                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
+                      Lịch sử
+                    </span>
                   </div>
                 )}
               </Link>
             );
           })()}
 
-          {/* Tab 3: Yêu Thích (Center Action Button) */}
+          {/* Tab 3: Yêu Thích */}
           {(() => {
             const active = currentActiveTab === "/favorites";
             return (
@@ -495,27 +507,25 @@ function SidebarContent({
                 href="/favorites"
                 prefetch={true}
                 onClick={(e) => handleBottomNavNavigate("/favorites", e)}
-                className="flex-1 h-full flex items-center justify-center select-none touch-manipulation active:scale-90 transition-transform"
+                className="flex-1 h-full flex items-center justify-center select-none touch-manipulation active:scale-95 transition-transform"
                 aria-label="Yêu Thích"
                 title="Yêu Thích"
               >
-                <div
-                  className={cn(
-                    "w-[48px] h-[48px] rounded-full bg-[#20D66B] text-[#051309] flex items-center justify-center transition-all duration-200 cursor-pointer",
-                    active
-                      ? "shadow-[0_0_24px_rgba(32,214,107,0.85)] ring-4 ring-brand-green/35 scale-105"
-                      : "shadow-[0_4px_18px_rgba(32,214,107,0.45)] hover:shadow-[0_6px_22px_rgba(32,214,107,0.65)] hover:scale-105"
-                  )}
-                >
-                  <Heart
-                    className={cn(
-                      "w-[22px] h-[22px] text-[#051309] transition-transform",
-                      active
-                        ? "fill-[#051309] stroke-[#051309] stroke-[2.4]"
-                        : "fill-[#051309]/15 stroke-[#051309] stroke-[2.4]"
-                    )}
-                  />
-                </div>
+                {active ? (
+                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 select-none transition-all">
+                    <Heart className="w-[18px] h-[18px] text-[#051309] fill-[#051309] stroke-[2.6]" />
+                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
+                      Yêu thích
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-1 py-1 select-none">
+                    <Heart className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
+                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
+                      Yêu thích
+                    </span>
+                  </div>
+                )}
               </Link>
             );
           })()}
@@ -541,24 +551,30 @@ function SidebarContent({
                 title="Tài Khoản"
               >
                 {active ? (
-                  <div className="w-[54px] h-[46px] rounded-full bg-white flex items-center justify-center shadow-[0_4px_16px_rgba(255,255,255,0.25)] transition-all">
+                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 select-none transition-all">
                     {user?.avatar ? (
-                      <div className="w-[22px] h-[22px] rounded-full overflow-hidden shrink-0 border border-[#051309] relative">
-                        <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="22px" />
+                      <div className="w-[19px] h-[19px] rounded-full overflow-hidden shrink-0 border border-[#051309] relative">
+                        <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="19px" />
                       </div>
                     ) : (
-                      <User className="w-5 h-5 text-[#051309] stroke-[2.4]" />
+                      <User className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
                     )}
+                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
+                      Tài khoản
+                    </span>
                   </div>
                 ) : (
-                  <div className="w-[46px] h-[46px] flex items-center justify-center text-white/55 hover:text-white transition-colors">
+                  <div className="flex flex-col items-center justify-center gap-1 py-1 select-none">
                     {user?.avatar ? (
-                      <div className="w-[22px] h-[22px] rounded-full overflow-hidden shrink-0 border border-white/20 relative">
-                        <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="22px" />
+                      <div className="w-[20px] h-[20px] rounded-full overflow-hidden shrink-0 border border-white/20 relative">
+                        <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="20px" />
                       </div>
                     ) : (
-                      <User className="w-5 h-5 stroke-[2]" />
+                      <User className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
                     )}
+                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
+                      Tài khoản
+                    </span>
                   </div>
                 )}
               </button>
@@ -578,12 +594,18 @@ function SidebarContent({
                 title="Tải App"
               >
                 {active ? (
-                  <div className="w-[54px] h-[46px] rounded-full bg-white flex items-center justify-center shadow-[0_4px_16px_rgba(255,255,255,0.25)] transition-all">
-                    <Smartphone className="w-5 h-5 text-[#051309] stroke-[2.4]" />
+                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 select-none transition-all">
+                    <Smartphone className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
+                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
+                      Tải app
+                    </span>
                   </div>
                 ) : (
-                  <div className="w-[46px] h-[46px] flex items-center justify-center text-white/55 hover:text-white transition-colors">
-                    <Smartphone className="w-5 h-5 stroke-[2]" />
+                  <div className="flex flex-col items-center justify-center gap-1 py-1 select-none">
+                    <Smartphone className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
+                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
+                      Tải app
+                    </span>
                   </div>
                 )}
               </Link>
