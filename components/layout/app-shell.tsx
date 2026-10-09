@@ -32,9 +32,15 @@ function AppShellComponent({ children }: AppShellProps) {
   const showInstantRecently = activeTab === "/recently" && pathname !== "/recently";
   const showInstantFavorites = activeTab === "/favorites" && pathname !== "/favorites";
 
-  // Hide footer on movie detail page (/phim/...)
+  // Pages where footer must NOT be displayed:
+  // 1. Movie detail pages (/phim/...)
+  // 2. Watch history (/recently) - URL route or instant tab view
+  // 3. Favorites (/favorites) - URL route or instant tab view
   const isMovieDetailPage = pathname.startsWith("/phim");
-  const showFooter = !isMovieDetailPage || showInstantRecently || showInstantFavorites;
+  const isRecentlyPage = pathname.startsWith("/recently") || activeTab === "/recently";
+  const isFavoritesPage = pathname.startsWith("/favorites") || activeTab === "/favorites";
+
+  const showFooter = !isMovieDetailPage && !isRecentlyPage && !isFavoritesPage;
 
   return (
     <div className="min-h-screen bg-cinema-bg text-cinema-text">
