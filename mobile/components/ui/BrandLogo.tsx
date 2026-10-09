@@ -9,7 +9,7 @@ interface BrandLogoProps {
   centered?: boolean;
 }
 
-export function BrandLogo({ size = "md", showSlogan = true, centered = false }: BrandLogoProps) {
+export function BrandLogo({ size = "md", showSlogan = false, centered = false }: BrandLogoProps) {
   const isSm = size === "sm";
   const isLg = size === "lg";
   const isXl = size === "xl";

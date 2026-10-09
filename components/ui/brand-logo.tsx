@@ -16,7 +16,7 @@ function BrandLogoComponent({
   className,
   size = "md",
   slogan = "Điện ảnh không giới hạn",
-  showSlogan = true,
+  showSlogan = false,
   showIcon = true,
 }: BrandLogoProps) {
   const titleSizeClasses = {

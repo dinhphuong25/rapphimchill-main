@@ -200,7 +200,7 @@ export default function HomeScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <BrandLogo size="lg" showSlogan centered />
+        <BrandLogo size="lg" centered />
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 18 }}>
           <ActivityIndicator size="small" color={Colors.primary} />
           <Text style={styles.loadingText}>Đang tải phim điện ảnh mới nhất...</Text>
