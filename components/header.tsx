@@ -8,6 +8,7 @@ import { Search, LayoutGrid, Smartphone, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SearchOverlay from "@/components/search/search-overlay";
 import UserMenu from "@/components/auth/user-menu";
+import NotificationBell from "@/components/notifications/notification-bell";
 import BrandLogo from "@/components/ui/brand-logo";
 import { pipStore } from "@/lib/pip-store";
 import { preconnect } from "react-dom";
@@ -254,6 +255,9 @@ function HeaderComponent({}: HeaderProps) {
                 <span className="text-[9.5px]">Ctrl</span>K
               </kbd>
             </button>
+
+            {/* Notification Bell (Episode reports & Admin alerts) */}
+            <NotificationBell />
 
             {/* User Profile / Admin Control — Hidden on mobile since it's in the bottom nav dock */}
             <div className="hidden lg:flex items-center shrink-0">

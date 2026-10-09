@@ -13,6 +13,10 @@ export interface MovieReport {
   status: "pending" | "resolved";
   createdAt: number;
   ip?: string;
+  userId?: string;
+  userEmail?: string;
+  userName?: string;
+  resolvedAt?: number;
 }
 
 const REPORTS_FILE_PATH = path.join(process.cwd(), "data", "reports.json");
@@ -61,9 +65,24 @@ async function ensureReportsTable() {
         description TEXT,
         status TEXT DEFAULT 'pending',
         created_at BIGINT NOT NULL,
+        user_id TEXT,
+        user_email TEXT,
+        user_name TEXT,
+        resolved_at BIGINT,
         data JSONB
       )
     `;
+
+    // Ensure columns exist on older tables
+    try {
+      await vercelSql`ALTER TABLE hiphim_reports ADD COLUMN IF NOT EXISTS user_id TEXT`;
+      await vercelSql`ALTER TABLE hiphim_reports ADD COLUMN IF NOT EXISTS user_email TEXT`;
+      await vercelSql`ALTER TABLE hiphim_reports ADD COLUMN IF NOT EXISTS user_name TEXT`;
+      await vercelSql`ALTER TABLE hiphim_reports ADD COLUMN IF NOT EXISTS resolved_at BIGINT`;
+    } catch {
+      // Ignore if columns already exist or alter is not permitted
+    }
+
     return true;
   } catch (err) {
     console.error("Error ensuring reports table:", err);
@@ -86,7 +105,7 @@ export async function createReport(
     try {
       await vercelSql`
         INSERT INTO hiphim_reports (
-          id, movie_slug, movie_name, episode_name, server_name, issue_type, description, status, created_at, data
+          id, movie_slug, movie_name, episode_name, server_name, issue_type, description, status, created_at, user_id, user_email, user_name, data
         ) VALUES (
           ${newReport.id},
           ${newReport.movieSlug},
@@ -97,6 +116,9 @@ export async function createReport(
           ${newReport.description || ""},
           ${newReport.status},
           ${newReport.createdAt},
+          ${newReport.userId || null},
+          ${newReport.userEmail || null},
+          ${newReport.userName || null},
           ${JSON.stringify(newReport)}::jsonb
         )
       `;
@@ -132,16 +154,63 @@ export async function getReports(limit = 100): Promise<MovieReport[]> {
   return readReportsFromFile().slice(0, limit);
 }
 
-export async function updateReportStatus(id: string, status: "pending" | "resolved"): Promise<boolean> {
+export async function getUserReports(userEmail: string, userId?: string, limit = 50): Promise<MovieReport[]> {
+  const normalizedEmail = (userEmail || "").trim().toLowerCase();
+  const allReports = await getReports(500);
+  
+  return allReports
+    .filter((r) => {
+      const emailMatch = r.userEmail && r.userEmail.trim().toLowerCase() === normalizedEmail;
+      const idMatch = userId && r.userId === userId;
+      return emailMatch || idMatch;
+    })
+    .slice(0, limit);
+}
+
+export async function getPendingReportsCount(): Promise<number> {
   const hasDb = await ensureReportsTable();
   if (hasDb && vercelSql) {
     try {
-      await vercelSql`
-        UPDATE hiphim_reports 
-        SET status = ${status}, 
-            data = jsonb_set(data, '{status}', to_jsonb(${status}::text))
-        WHERE id = ${id}
+      const rows = await vercelSql`
+        SELECT COUNT(*)::int as count FROM hiphim_reports WHERE status = 'pending'
       `;
+      if (rows && rows.length > 0) {
+        return Number(rows[0].count) || 0;
+      }
+    } catch (err) {
+      console.error("Failed to count pending reports from DB, falling back to file:", err);
+    }
+  }
+
+  return readReportsFromFile().filter((r) => r.status === "pending").length;
+}
+
+export async function updateReportStatus(id: string, status: "pending" | "resolved"): Promise<boolean> {
+  const resolvedAt = status === "resolved" ? Date.now() : null;
+
+  const hasDb = await ensureReportsTable();
+  if (hasDb && vercelSql) {
+    try {
+      if (resolvedAt) {
+        await vercelSql`
+          UPDATE hiphim_reports 
+          SET status = ${status},
+              resolved_at = ${resolvedAt},
+              data = jsonb_set(
+                jsonb_set(data, '{status}', to_jsonb(${status}::text)),
+                '{resolvedAt}', to_jsonb(${resolvedAt}::bigint)
+              )
+          WHERE id = ${id}
+        `;
+      } else {
+        await vercelSql`
+          UPDATE hiphim_reports 
+          SET status = ${status}, 
+              resolved_at = NULL,
+              data = jsonb_set(data, '{status}', to_jsonb(${status}::text)) - 'resolvedAt'
+          WHERE id = ${id}
+        `;
+      }
     } catch (err) {
       console.error("Failed to update report status in DB:", err);
     }
@@ -151,6 +220,11 @@ export async function updateReportStatus(id: string, status: "pending" | "resolv
   const target = reports.find((r) => r.id === id);
   if (target) {
     target.status = status;
+    if (resolvedAt) {
+      target.resolvedAt = resolvedAt;
+    } else {
+      delete target.resolvedAt;
+    }
     writeReportsToFile(reports);
     return true;
   }

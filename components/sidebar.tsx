@@ -38,6 +38,8 @@ import {
   ArrowRight,
   Smartphone,
   Download,
+  AlertTriangle,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sortCountriesByPopularity, getCountryCode, POPULAR_COUNTRIES } from "@/lib/countries";
@@ -694,8 +696,8 @@ function SidebarContent({
                     <ArrowRight className="w-3.5 h-3.5 text-emerald-400 group-hover:translate-x-1 transition-transform shrink-0 ml-1" />
                   </Link>
 
-                  {/* 3 Quick Navigation Shortcuts */}
-                  <div className="grid grid-cols-3 gap-1 pt-0.5">
+                  {/* 4 Quick Navigation Shortcuts */}
+                  <div className="grid grid-cols-4 gap-1 pt-0.5">
                     <Link
                       href="/admin?tab=users"
                       onClick={() => setIsAccountOpen(false)}
@@ -712,6 +714,15 @@ function SidebarContent({
                     >
                       <Film className="w-3 h-3 text-amber-400 group-hover:scale-110 transition-transform" />
                       <span className="text-[9.5px] font-semibold">Ghim Phim</span>
+                    </Link>
+
+                    <Link
+                      href="/admin?tab=reports"
+                      onClick={() => setIsAccountOpen(false)}
+                      className="flex flex-col items-center gap-1 py-1.5 px-1 rounded-xl bg-white/[0.04] hover:bg-rose-500/10 border border-white/5 hover:border-rose-500/30 text-white/80 hover:text-white transition-all text-center group cursor-pointer"
+                    >
+                      <AlertTriangle className="w-3 h-3 text-rose-400 group-hover:scale-110 transition-transform" />
+                      <span className="text-[9.5px] font-semibold">Báo Lỗi</span>
                     </Link>
 
                     <Link

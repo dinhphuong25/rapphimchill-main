@@ -3484,6 +3484,16 @@ export default function AdminDashboardPage() {
                                 )}
                               </div>
 
+                              {(report.userName || report.userEmail) && (
+                                <div className="flex items-center gap-1.5 text-xs text-white/70">
+                                  <span className="font-semibold text-emerald-400">Tài khoản báo:</span>
+                                  <span className="font-medium text-white">{report.userName || "Người dùng"}</span>
+                                  {report.userEmail && (
+                                    <span className="text-white/40 font-mono text-[11px]">({report.userEmail})</span>
+                                  )}
+                                </div>
+                              )}
+
                               <div className="flex items-start gap-2 pt-1 text-xs">
                                 <span className="font-semibold text-amber-400 shrink-0">Sự cố:</span>
                                 <span className="text-white/90 font-medium">{report.issueType}</span>

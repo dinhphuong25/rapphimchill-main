@@ -19,6 +19,7 @@ import {
   Settings,
   ArrowRight,
   CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import { useUserAuth } from "@/context/user-auth-context";
 import { cn } from "@/lib/utils";
@@ -186,8 +187,8 @@ export default function UserMenu() {
                 <ArrowRight className="w-4 h-4 text-emerald-400 group-hover:translate-x-1 transition-transform shrink-0 ml-2" />
               </Link>
 
-              {/* 3 Quick Navigation Shortcuts */}
-              <div className="grid grid-cols-3 gap-1.5 pt-1">
+              {/* 4 Quick Navigation Shortcuts */}
+              <div className="grid grid-cols-4 gap-1.5 pt-1">
                 <Link
                   href="/admin?tab=users"
                   onClick={() => setIsOpen(false)}
@@ -206,6 +207,16 @@ export default function UserMenu() {
                 >
                   <Film className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
                   <span className="text-[10px] font-semibold">Ghim Phim</span>
+                </Link>
+
+                <Link
+                  href="/admin?tab=reports"
+                  onClick={() => setIsOpen(false)}
+                  className="flex flex-col items-center gap-1 py-2 px-1 rounded-xl bg-white/[0.03] hover:bg-rose-500/10 hover:border-rose-500/30 border border-white/5 text-white/70 hover:text-white transition-all text-center group cursor-pointer"
+                  title="Báo cáo lỗi tập phim từ người dùng"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-400 group-hover:scale-110 transition-transform" />
+                  <span className="text-[10px] font-semibold">Báo Lỗi</span>
                 </Link>
 
                 <Link

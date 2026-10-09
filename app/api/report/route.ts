@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthorizedAdminRequest } from "@/lib/admin-auth";
-import { createReport, getReports, updateReportStatus, deleteReport } from "@/lib/report-store";
+import {
+  createReport,
+  getReports,
+  getUserReports,
+  getPendingReportsCount,
+  updateReportStatus,
+  deleteReport,
+} from "@/lib/report-store";
+import { verifyUserSessionToken, USER_COOKIE_NAME } from "@/lib/user-token";
 
-// In-memory rate limiting map for user reports (prevents spam: max 3 reports per minute per IP)
+// In-memory rate limiting map for user reports (prevents spam: max 4 reports per minute per IP/account)
 const reportRateLimit = new Map<string, { count: number; resetTime: number }>();
 
 export async function POST(req: NextRequest) {
@@ -12,26 +20,50 @@ export async function POST(req: NextRequest) {
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       "unknown";
 
+    const body = await req.json();
+    const { movieSlug, movieName, episodeName, serverName, issueType, description } = body;
+
+    // Verify user authentication
+    let userId = body.userId ? String(body.userId).trim() : undefined;
+    let userEmail = body.userEmail ? String(body.userEmail).trim() : undefined;
+    let userName = body.userName ? String(body.userName).trim() : undefined;
+
+    const userToken = req.cookies.get(USER_COOKIE_NAME)?.value;
+    if (userToken) {
+      const userPayload = await verifyUserSessionToken(userToken);
+      if (userPayload) {
+        userId = userPayload.userId;
+        userEmail = userPayload.email;
+        userName = userPayload.name || userName || userPayload.email.split("@")[0];
+      }
+    }
+
+    // Require account login
+    if (!userEmail && !userId) {
+      return NextResponse.json(
+        { success: false, error: "Vui lòng đăng nhập tài khoản để gửi báo lỗi tập phim." },
+        { status: 401 }
+      );
+    }
+
+    const rateKey = userEmail ? `user_${userEmail.toLowerCase()}` : `ip_${ip}`;
     const now = Date.now();
-    const rate = reportRateLimit.get(ip);
+    const rate = reportRateLimit.get(rateKey);
     if (rate && rate.resetTime > now) {
-      if (rate.count >= 3) {
+      if (rate.count >= 4) {
         return NextResponse.json(
-          { success: false, error: "Bạn đã gửi quá nhiều báo cáo. Vui lòng thử lại sau 1 phút." },
+          { success: false, error: "Bạn đã gửi báo lỗi quá thường xuyên. Vui lòng chờ 1 phút rồi thử lại." },
           { status: 429 }
         );
       }
       rate.count += 1;
     } else {
-      reportRateLimit.set(ip, { count: 1, resetTime: now + 60000 });
+      reportRateLimit.set(rateKey, { count: 1, resetTime: now + 60000 });
     }
-
-    const body = await req.json();
-    const { movieSlug, movieName, episodeName, serverName, issueType, description } = body;
 
     if (!movieSlug || !movieName || !issueType) {
       return NextResponse.json(
-        { success: false, error: "Thiếu thông tin bắt buộc." },
+        { success: false, error: "Thiếu thông tin báo lỗi bắt buộc." },
         { status: 400 }
       );
     }
@@ -43,6 +75,9 @@ export async function POST(req: NextRequest) {
       serverName: serverName ? String(serverName).trim() : undefined,
       issueType: String(issueType).trim(),
       description: description ? String(description).slice(0, 500).trim() : undefined,
+      userId,
+      userEmail,
+      userName,
       ip,
     });
 
@@ -57,14 +92,35 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const isAuthorized = await isAuthorizedAdminRequest(req);
-  if (!isAuthorized) {
-    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
-    const reports = await getReports(200);
-    return NextResponse.json({ success: true, reports });
+    const isAdmin = await isAuthorizedAdminRequest(req);
+
+    if (isAdmin) {
+      const reports = await getReports(200);
+      const pendingCount = await getPendingReportsCount();
+      return NextResponse.json({
+        success: true,
+        isAdmin: true,
+        reports,
+        pendingCount,
+      });
+    }
+
+    // Non-admin: Check if authenticated regular user
+    const userToken = req.cookies.get(USER_COOKIE_NAME)?.value;
+    if (userToken) {
+      const userPayload = await verifyUserSessionToken(userToken);
+      if (userPayload?.email) {
+        const userReports = await getUserReports(userPayload.email, userPayload.userId, 50);
+        return NextResponse.json({
+          success: true,
+          isAdmin: false,
+          reports: userReports,
+        });
+      }
+    }
+
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
   } catch (error) {
     console.error("Error fetching reports:", error);
     return NextResponse.json(

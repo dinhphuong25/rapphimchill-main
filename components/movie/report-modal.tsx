@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, X, Check, Loader2, VolumeX, VideoOff, FileQuestion, HelpCircle, Film } from "lucide-react";
+import { AlertTriangle, X, Check, Loader2, VolumeX, VideoOff, FileQuestion, HelpCircle, Film, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useUserAuth } from "@/context/user-auth-context";
 
 interface ReportModalProps {
   isOpen: boolean;
@@ -55,6 +56,7 @@ export default function ReportModal({
   episodeName,
   serverName,
 }: ReportModalProps) {
+  const { user } = useUserAuth();
   const [selectedIssue, setSelectedIssue] = useState<string>("video_error");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -81,12 +83,27 @@ export default function ReportModal({
           serverName,
           issueType: chosenOption?.label || selectedIssue,
           description,
+          userId: user?.id,
+          userEmail: user?.email,
+          userName: user?.name,
         }),
       });
 
       const data = await res.json();
       if (data.success) {
-        toast.success("Cảm ơn bạn! Đội ngũ kỹ thuật đã tiếp nhận báo cáo và sẽ kiểm tra sớm nhất.");
+        toast.success("Cảm ơn bạn! Báo cáo lỗi tập đã được gửi đến quản trị viên.", {
+          description: "Admin sẽ kiểm tra và khắc phục sự cố sớm nhất.",
+        });
+        
+        // Dispatch real-time update event so notification bell & admin page update immediately
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("report-created", {
+              detail: data.report,
+            })
+          );
+        }
+
         onClose();
         setDescription("");
       } else {
@@ -127,6 +144,25 @@ export default function ReportModal({
             <X className="w-4 h-4" />
           </button>
         </div>
+
+        {/* User Account Verification Badge */}
+        {user && (
+          <div className="mb-3 p-2.5 rounded-xl bg-white/[0.03] border border-emerald-500/20 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-bold shrink-0">
+                {(user.name || user.email || "U").charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-white truncate">{user.name || "Thành viên"}</p>
+                <p className="text-[10px] text-white/50 font-mono truncate">{user.email}</p>
+              </div>
+            </div>
+            <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
+              <UserCheck className="w-3 h-3" />
+              Tài khoản gửi
+            </span>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-3">
