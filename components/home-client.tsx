@@ -95,7 +95,7 @@ function HomeClientComponent({
   }, [initialTopicsWithMovies, topicsData]);
 
   return (
-    <main className="pb-16">
+    <main className="pb-6 sm:pb-8">
       {/* Hero Section (Asymmetric Editorial Layout) */}
       {heroMoviesList.length > 0 && (
         <HeroSection movies={heroMoviesList} />

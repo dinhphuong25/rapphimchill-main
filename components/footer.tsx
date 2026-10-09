@@ -26,11 +26,11 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
   }, [activeModal]);
 
   return (
-    <footer className="w-full mt-auto mb-0 select-none text-cinema-text px-3.5 sm:px-6 pb-28 lg:pb-10 pt-6">
+    <footer className="w-full mt-auto mb-0 select-none text-cinema-text px-3 sm:px-6 pb-20 sm:pb-24 lg:pb-6 pt-2 sm:pt-4">
       {/* Footer Card Container matching Hi Download */}
-      <div className="w-full max-w-[1200px] mx-auto rounded-2xl sm:rounded-3xl border border-white/10 bg-[#0C130F]/90 backdrop-blur-xl shadow-[0_10px_35px_rgba(0,0,0,0.6)] p-6 sm:p-8">
+      <div className="w-full max-w-[1200px] mx-auto rounded-2xl border border-white/10 bg-[#0C130F]/90 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.5)] p-4 sm:p-5">
         {/* Top Row: Brand Info (Left) + Quick Navigation Links (Right) */}
-        <div className="flex flex-col md:flex-row items-center md:justify-between gap-5 text-center md:text-left">
+        <div className="flex flex-col md:flex-row items-center md:justify-between gap-3 sm:gap-4 text-center md:text-left">
           {/* Left: Brand Identity & Tagline */}
           <div className="flex flex-col items-center md:items-start max-w-[500px]">
             <Link
@@ -40,13 +40,13 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
             >
               <BrandLogo size="md" showSlogan={false} />
             </Link>
-            <p className="text-[13px] sm:text-[13.5px] text-white/60 font-medium leading-relaxed mt-2 text-center md:text-left">
+            <p className="text-[12px] sm:text-[12.5px] text-white/60 font-medium leading-relaxed mt-1 text-center md:text-left">
               {customFooterText || "Nền tảng xem phim trực tuyến miễn phí phi lợi nhuận."}
             </p>
           </div>
 
           {/* Right: Quick Links (Liên Hệ | Điều Khoản | Bảo Mật) */}
-          <div className="flex items-center justify-center flex-wrap gap-3.5 sm:gap-4.5 text-[13px] sm:text-[13.5px] font-bold text-white/85">
+          <div className="flex items-center justify-center flex-wrap gap-3 sm:gap-4 text-[12.5px] sm:text-[13px] font-semibold text-white/85">
             {/* 1. Liên Hệ */}
             <a
               href="https://www.facebook.com/dinhphuong205/"
@@ -55,12 +55,12 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
               className="flex items-center gap-1.5 hover:text-brand-green transition-colors cursor-pointer group"
               title="Liên hệ Facebook Kim Đình Phương"
             >
-              <Mail className="w-4 h-4 text-brand-green shrink-0 group-hover:scale-110 transition-transform" />
+              <Mail className="w-3.5 h-3.5 text-brand-green shrink-0 group-hover:scale-110 transition-transform" />
               <span>Liên Hệ</span>
             </a>
 
             {/* Divider */}
-            <div className="w-[1.5px] h-3.5 bg-white/20 hidden xs:block" />
+            <div className="w-[1.5px] h-3 bg-white/20 hidden xs:block" />
 
             {/* 2. Điều Khoản */}
             <button
@@ -69,12 +69,12 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
               className="flex items-center gap-1.5 hover:text-brand-green transition-colors cursor-pointer group"
               title="Xem Điều khoản sử dụng"
             >
-              <Scale className="w-4 h-4 text-brand-green shrink-0 group-hover:scale-110 transition-transform" />
+              <Scale className="w-3.5 h-3.5 text-brand-green shrink-0 group-hover:scale-110 transition-transform" />
               <span>Điều Khoản</span>
             </button>
 
             {/* Divider */}
-            <div className="w-[1.5px] h-3.5 bg-white/20 hidden xs:block" />
+            <div className="w-[1.5px] h-3 bg-white/20 hidden xs:block" />
 
             {/* 3. Bảo Mật */}
             <button
@@ -83,27 +83,27 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
               className="flex items-center gap-1.5 hover:text-brand-green transition-colors cursor-pointer group"
               title="Xem Chính sách bảo mật"
             >
-              <Shield className="w-4 h-4 text-brand-green shrink-0 group-hover:scale-110 transition-transform" />
+              <Shield className="w-3.5 h-3.5 text-brand-green shrink-0 group-hover:scale-110 transition-transform" />
               <span>Bảo Mật</span>
             </button>
           </div>
         </div>
 
         {/* Divider */}
-        <div className="h-px bg-white/10 my-5 sm:my-6" />
+        <div className="h-px bg-white/10 my-3 sm:my-3.5" />
 
         {/* Bottom Row: Copyright & Developer Info */}
-        <div className="text-center space-y-1 sm:space-y-1.5">
-          <p className="text-[13px] text-white/85 font-semibold">
+        <div className="text-center space-y-0.5 sm:space-y-1">
+          <p className="text-[12px] sm:text-[12.5px] text-white/85 font-medium">
             © 2026 Hi Phim. Toàn quyền được bảo lưu.
           </p>
-          <p className="text-[12.5px] text-white/50 font-medium">
+          <p className="text-[11.5px] sm:text-[12px] text-white/50 font-normal">
             Được thành lập và phát triển bởi{" "}
             <a
               href="https://www.facebook.com/dinhphuong205/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-brand-green font-bold hover:underline transition-colors"
+              className="text-brand-green font-semibold hover:underline transition-colors"
             >
               Kim Đình Phương
             </a>

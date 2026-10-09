@@ -189,12 +189,17 @@ export default function HeroSection({ movies }: HeroSectionProps) {
 
   const thumbnailContainerRef = useRef<HTMLDivElement>(null);
 
-  // Auto scroll active thumbnail into view
+  // Auto scroll active thumbnail into view (scrolls ONLY the thumbnail strip, never window/viewport)
   useEffect(() => {
-    if (!thumbnailContainerRef.current) return;
-    const activeEl = thumbnailContainerRef.current.children[currentIndex] as HTMLElement;
+    const container = thumbnailContainerRef.current;
+    if (!container) return;
+    const activeEl = container.children[currentIndex] as HTMLElement;
     if (activeEl) {
-      activeEl.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      const scrollLeft =
+        activeEl.offsetLeft -
+        container.offsetWidth / 2 +
+        activeEl.offsetWidth / 2;
+      container.scrollTo({ left: Math.max(0, scrollLeft), behavior: "smooth" });
     }
   }, [currentIndex]);
 
