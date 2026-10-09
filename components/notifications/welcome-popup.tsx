@@ -107,7 +107,7 @@ export default function WelcomePopup() {
                 )}
               </div>
               <h4 className="text-sm font-bold text-white truncate mt-0.5">
-                {isNewRegister ? "Chào mừng bạn gia nhập!" : `Chào mừng trở lại, ${userName}!`}
+                {isNewRegister ? "Chào mừng bạn gia nhập! 🎉" : `Chào mừng trở lại, ${userName}! 👋`}
               </h4>
             </div>
           </div>
