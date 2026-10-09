@@ -246,6 +246,38 @@ export default function Description({ movie, serverData }: any) {
     }
   }, [serverData, currentEpisodeIndex?.server, currentEpisodeIndex?.episode]);
 
+  const [isStreamSyncing, setIsStreamSyncing] = useState(false);
+
+  // Proactively check stream reachability for active episode (detects 404 / upstream transcode pending)
+  useEffect(() => {
+    setIsStreamSyncing(false);
+    if (!currentEpisodeUrl) return;
+
+    let targetToCheck = currentEpisodeUrl;
+    if (targetToCheck.includes("?url=")) {
+      try {
+        targetToCheck = decodeURIComponent(targetToCheck.split("?url=")[1]);
+      } catch {}
+    }
+
+    if (!targetToCheck || !targetToCheck.startsWith("http")) return;
+
+    let isCancelled = false;
+    fetch(`/api/check-stream?url=${encodeURIComponent(targetToCheck)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (isCancelled) return;
+        if (data.syncing || data.status === 404) {
+          setIsStreamSyncing(true);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [currentEpisodeUrl]);
+
   // Sync document.title with the active movie name and episode on client-side
   useEffect(() => {
     if (typeof window === "undefined" || !movie?.name) return;
@@ -1042,6 +1074,26 @@ export default function Description({ movie, serverData }: any) {
         {/* Left Primary Stage: Video Player — sticky on desktop */}
         <div className="flex-1 w-full min-w-0 flex flex-col gap-4 sm:gap-6 lg:sticky lg:top-[60px]">
           
+          {/* Syncing / 404 Notice Banner */}
+          {isStreamSyncing && (
+            <div className="p-3 sm:p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-200 text-xs sm:text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg animate-in fade-in">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Clock className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
+                <span className="leading-snug">
+                  <strong className="text-amber-300 font-bold">Máy chủ nguồn đang đồng bộ:</strong> Tập phim vừa được cập nhật và đường truyền video đang hoàn tất chuyển mã (Mã 404).
+                </span>
+              </div>
+              {currentServerData.length > 1 && (
+                <button
+                  onClick={() => handleServerChange(currentEpisodeIndex?.server === 0 ? 1 : 0)}
+                  className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-extrabold text-xs transition-all cursor-pointer shrink-0 self-end sm:self-auto shadow-md active:scale-95"
+                >
+                  Đổi Máy chủ Khác
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Video Player Container */}
           <div className={cn("relative group/player w-full", isPlayerFullscreen && "static z-[99999]")}>
             <Card className={cn(
@@ -1118,6 +1170,10 @@ export default function Description({ movie, serverData }: any) {
                       onNextEpisode={handleNextEpisode}
                       onEnded={handleEnded}
                       onFullscreenChange={setIsPlayerFullscreen}
+                      isStreamSyncing={isStreamSyncing}
+                      hasAlternativeServer={currentServerData.length > 1}
+                      onSwitchServer={() => handleServerChange(currentEpisodeIndex?.server === 0 ? 1 : 0)}
+                      onReportError={() => setShowReportModal(true)}
                     />
                   </SafePlayerErrorBoundary>
                 ) : (
@@ -1129,6 +1185,12 @@ export default function Description({ movie, serverData }: any) {
                         : currentEpisodeUrl)
                     }
                     onSwitchToM3u8={handleSwitchToM3u8}
+                    onReportError={() => setShowReportModal(true)}
+                    movieName={movie.name}
+                    episodeName={currentServerData?.[currentEpisodeIndex?.server || 0]?.server_data?.[currentEpisodeIndex?.episode || 0]?.name}
+                    isStreamSyncing={isStreamSyncing}
+                    hasAlternativeServer={currentServerData.length > 1}
+                    onSwitchServer={() => handleServerChange(currentEpisodeIndex?.server === 0 ? 1 : 0)}
                   />
                 )}
               </CardContent>

@@ -31,6 +31,8 @@ import {
   RotateCcw,
   RotateCw,
   PictureInPicture2,
+  Clock,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -107,6 +109,10 @@ interface VideoPlayerProps {
   episodeName?: string;
   movieSlug?: string;
   onFullscreenChange?: (isFullscreen: boolean) => void;
+  isStreamSyncing?: boolean;
+  hasAlternativeServer?: boolean;
+  onSwitchServer?: () => void;
+  onReportError?: () => void;
 }
 
 const formatTime = (seconds: number, forceHours = false) => {
@@ -136,6 +142,10 @@ export default function VideoPlayer({
   episodeName,
   movieSlug,
   onFullscreenChange,
+  isStreamSyncing = false,
+  hasAlternativeServer = false,
+  onSwitchServer,
+  onReportError,
 }: VideoPlayerProps) {
   // 1. REFS (Defined at the very top)
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -1312,7 +1322,9 @@ export default function VideoPlayer({
           console.warn("Native HLS error on video element:", video.error);
           setIsLoading(false);
           if (video.error && (video.error.code === 2 || video.error.code === 4)) {
-            if (onSwitchToEmbedRef.current) {
+            if (isStreamSyncing) {
+              setError("Tập phim vừa được đưa lên hệ thống và máy chủ đang đồng bộ dữ liệu (Mã 404).");
+            } else if (onSwitchToEmbedRef.current) {
               console.warn("Auto-switching to embed server after native HLS fatal error");
               onSwitchToEmbedRef.current();
             } else {
@@ -1503,7 +1515,10 @@ export default function VideoPlayer({
                     if (hlsRef.current) hlsRef.current.startLoad();
                   }, 600 * retryCountRef.current);
                 } else {
-                  if (onSwitchToEmbedRef.current) {
+                  const is404 = isStreamSyncing || data?.response?.code === 404;
+                  if (is404) {
+                    setError("Tập phim vừa được đưa lên hệ thống và máy chủ đang đồng bộ dữ liệu (Mã 404).");
+                  } else if (onSwitchToEmbedRef.current) {
                     console.warn("Auto-switching to embed server after HLS network errors");
                     onSwitchToEmbedRef.current();
                   } else {
@@ -1517,7 +1532,9 @@ export default function VideoPlayer({
                 break;
               default:
                 hls.destroy();
-                if (onSwitchToEmbedRef.current) {
+                if (isStreamSyncing) {
+                  setError("Tập phim vừa được đưa lên hệ thống và máy chủ đang đồng bộ dữ liệu (Mã 404).");
+                } else if (onSwitchToEmbedRef.current) {
                   onSwitchToEmbedRef.current();
                 } else {
                   setError("Không thể phát video từ máy chủ này.");
@@ -1543,7 +1560,9 @@ export default function VideoPlayer({
           if (!video.src && !video.currentSrc) return;
           console.warn("Native HLS error on video element:", video.error);
           setIsLoading(false);
-          if (onSwitchToEmbedRef.current) {
+          if (isStreamSyncing) {
+            setError("Tập phim vừa được đưa lên hệ thống và máy chủ đang đồng bộ dữ liệu (Mã 404).");
+          } else if (onSwitchToEmbedRef.current) {
             console.warn("Auto-switching to embed server after native HLS error");
             onSwitchToEmbedRef.current();
           } else {
@@ -2723,15 +2742,35 @@ export default function VideoPlayer({
         </div>
       )}
 
-      {error && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/95 px-6 text-center backdrop-blur-md">
-          <div className="bg-white/10 p-4 rounded-full mb-4">
-            <svg className="w-10 h-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </div>
-          <p className="text-white/90 text-sm md:text-base font-semibold mb-6 max-w-md">{error}</p>
-          <div className="flex items-center gap-3">
+      {(error || isStreamSyncing) && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#070908]/95 px-6 text-center backdrop-blur-md animate-in fade-in">
+          {isStreamSyncing || error?.includes("404") || error?.includes("đồng bộ") ? (
+            <>
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-3.5 text-amber-400 shadow-[0_0_24px_rgba(245,158,11,0.15)]">
+                <Clock className="w-7 h-7 sm:w-8 sm:h-8 animate-pulse text-amber-400" />
+              </div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-amber-300 mb-2.5">
+                <span>MÁY CHỦ NGUỒN ĐANG ĐỒNG BỘ • MÃ 404</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-white mb-2">
+                Tập phim đang được xử lý
+              </h3>
+              <p className="text-white/80 text-xs sm:text-sm font-normal mb-6 max-w-md leading-relaxed">
+                {episodeName ? `${episodeName} vừa` : "Tập này vừa"} được cập nhật lên hệ thống. Máy chủ nguồn video đang trong quá trình đồng bộ và chuyển mã dữ liệu (HTTP 404). Vui lòng thử lại sau ít phút hoặc chọn máy chủ khác bên dưới.
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="bg-white/10 p-4 rounded-full mb-4">
+                <svg className="w-10 h-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <p className="text-white/90 text-sm md:text-base font-semibold mb-6 max-w-md">{error}</p>
+            </>
+          )}
+
+          <div className="flex flex-wrap items-center justify-center gap-2.5">
             <Button
               onClick={() => {
                 setError(null);
@@ -2745,13 +2784,43 @@ export default function VideoPlayer({
                 }
               }}
               variant="outline"
-              className="text-white border-white/20 hover:bg-white/10 font-bold"
+              size="sm"
+              className="text-white border-white/20 bg-white/5 hover:bg-white/10 font-bold rounded-xl h-9 px-4 cursor-pointer"
             >
-              Thử lại
+              <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+              Thử lại kết nối
             </Button>
-            {onSwitchToEmbed && (
-              <Button onClick={() => onSwitchToEmbedRef.current?.()} className="bg-primary text-black font-bold">
+
+            {hasAlternativeServer && onSwitchServer && (
+              <Button
+                onClick={onSwitchServer}
+                size="sm"
+                className="bg-brand-green hover:bg-brand-green/90 text-black font-extrabold rounded-xl shadow-lg cursor-pointer h-9 px-4"
+              >
+                Đổi máy chủ khác
+              </Button>
+            )}
+
+            {onSwitchToEmbed && !isStreamSyncing && (
+              <Button
+                onClick={() => onSwitchToEmbedRef.current?.()}
+                size="sm"
+                variant="outline"
+                className="rounded-xl border-brand-green/30 bg-brand-green/10 hover:bg-brand-green/20 text-brand-green font-bold cursor-pointer h-9 px-4"
+              >
                 Phát bằng Máy chủ Dự phòng
+              </Button>
+            )}
+
+            {onReportError && (
+              <Button
+                onClick={onReportError}
+                size="sm"
+                variant="ghost"
+                className="text-amber-400 hover:text-amber-300 hover:bg-amber-400/10 font-bold rounded-xl cursor-pointer h-9 px-3"
+              >
+                <AlertTriangle className="w-3.5 h-3.5 mr-1.5" />
+                Báo lỗi
               </Button>
             )}
           </div>

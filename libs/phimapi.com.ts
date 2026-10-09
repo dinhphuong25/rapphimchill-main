@@ -82,9 +82,52 @@ export default class PhimApi {
         poster_url: normalizeCdnUrl(data.movie?.poster_url, cdnDomain),
       };
 
+      let allServers: MovieEpisode[] = data.episodes || [];
+      try {
+        const searchTerm = movie.origin_name || movie.name;
+        if (searchTerm) {
+          const nguoncSearchUrl = `https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(searchTerm)}`;
+          const nSearchRes = await fetch(nguoncSearchUrl, {
+            headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
+            signal: AbortSignal.timeout(2000),
+            next: { revalidate: 1800 },
+          });
+          if (nSearchRes.ok) {
+            const nSearchData = await nSearchRes.json();
+            const matchedItem = nSearchData.items?.[0];
+            if (matchedItem && matchedItem.slug) {
+              const nFilmRes = await fetch(`https://phim.nguonc.com/api/film/${matchedItem.slug}`, {
+                headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
+                signal: AbortSignal.timeout(2000),
+                next: { revalidate: 1800 },
+              });
+              if (nFilmRes.ok) {
+                const nFilmData = await nFilmRes.json();
+                const nEpisodes = nFilmData.movie?.episodes || [];
+                if (nEpisodes.length > 0) {
+                  const nguoncServers: MovieEpisode[] = nEpisodes.map((s: any, idx: number) => ({
+                    server_name: s.server_name ? `Dự Phòng VIP (${s.server_name})` : `Dự Phòng VIP ${idx > 0 ? idx + 1 : ""}`.trim(),
+                    server_data: (s.items || []).map((it: any) => ({
+                      name: it.name?.startsWith("Tập") ? it.name : `Tập ${it.name}`,
+                      slug: it.slug,
+                      filename: it.name,
+                      link_embed: it.embed,
+                      link_m3u8: "",
+                    })),
+                  }));
+                  allServers = [...allServers, ...nguoncServers];
+                }
+              }
+            }
+          }
+        }
+      } catch (backupErr) {
+        // Non-blocking fallback for maximum speed and resilience
+      }
+
       return {
         movie,
-        server: data.episodes || [],
+        server: allServers,
       };
     } catch (primaryErr) {
       // Automatic Multi-Source Fallback to NguonC if primary source fails or times out
