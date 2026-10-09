@@ -413,27 +413,25 @@ export default function NotificationBell({ className }: { className?: string }) 
           )}
         />
 
-        {/* Outer Radar Ping Effect Wave for unread notifications */}
-        {badgeCount > 0 && hasUnread && (
+        {/* Outer Radar Ping Effect Wave for unread notifications in Green */}
+        {badgeCount > 0 && (
           <span
             className={cn(
               "absolute -top-1 -right-1 w-5 h-5 rounded-full pointer-events-none animate-notif-radar",
-              isSuperAdmin ? "bg-amber-500" : "bg-rose-500"
+              isSuperAdmin && pendingReportsCount > 0 ? "bg-amber-400" : "bg-brand-green"
             )}
           />
         )}
 
-        {/* Counter Badge with Live Number Effect */}
+        {/* Counter Badge with Live Number Effect in Brand Green */}
         {badgeCount > 0 && (
           <span
             className={cn(
               "absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center font-mono font-black text-[10.5px] leading-none select-none z-10 transition-all duration-300 pointer-events-none",
-              "ring-2 ring-[#070b09] shadow-lg",
-              hasUnread
-                ? isSuperAdmin
-                  ? "bg-gradient-to-tr from-amber-500 via-rose-500 to-red-500 text-white shadow-[0_0_12px_rgba(244,63,94,0.85)] border border-white/50 animate-notif-bounce"
-                  : "bg-gradient-to-tr from-rose-600 via-red-500 to-amber-400 text-white shadow-[0_0_12px_rgba(244,63,94,0.85)] border border-white/50 animate-notif-bounce"
-                : "bg-gradient-to-r from-emerald-500 to-green-600 text-black shadow-[0_0_8px_rgba(32,214,107,0.5)] border border-emerald-300/40",
+              "ring-2 ring-[#070b09] shadow-lg animate-notif-bounce",
+              isSuperAdmin && pendingReportsCount > 0
+                ? "bg-gradient-to-tr from-amber-500 via-rose-500 to-red-500 text-white shadow-[0_0_12px_rgba(244,63,94,0.85)] border border-white/50"
+                : "bg-gradient-to-tr from-emerald-600 via-brand-green to-emerald-300 text-black shadow-[0_0_14px_rgba(32,214,107,0.9)] border border-emerald-200/60",
               isBumping && "scale-125"
             )}
           >
