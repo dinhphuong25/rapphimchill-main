@@ -596,14 +596,13 @@ export default function NotificationBell({ className }: { className?: string }) 
               {user && (
                 <div className="p-3 rounded-xl bg-gradient-to-r from-emerald-950/40 via-[#101913] to-[#0c140f] border border-emerald-500/25 space-y-1.5">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-mono text-brand-green font-bold uppercase tracking-wider">Hi Phim</span>
-                    <span className="text-[10px] font-mono text-white/40">Vừa xong</span>
+                    <h4 className="text-xs sm:text-[13px] font-bold text-white leading-snug">
+                      {user.createdAt && Date.now() - new Date(user.createdAt).getTime() < 86400000 * 3
+                        ? `🎉 Chào mừng thành viên mới, ${user.name || "bạn"}!`
+                        : `👋 Chào mừng quay trở lại, ${user.name || "bạn"}!`}
+                    </h4>
+                    <span className="text-[10px] font-mono text-white/40 shrink-0">Vừa xong</span>
                   </div>
-                  <h4 className="text-xs sm:text-[13px] font-bold text-white leading-snug">
-                    {user.createdAt && Date.now() - new Date(user.createdAt).getTime() < 86400000 * 3
-                      ? `🎉 Chào mừng thành viên mới, ${user.name || "bạn"}!`
-                      : `👋 Chào mừng quay trở lại, ${user.name || "bạn"}!`}
-                  </h4>
                   <p className="text-[11px] text-white/70 leading-relaxed">
                     {user.createdAt && Date.now() - new Date(user.createdAt).getTime() < 86400000 * 3
                       ? "Tài khoản của bạn đã được kích hoạt thành công. Bạn có thể lưu phim yêu thích, xem lịch sử và báo lỗi tập phim bất cứ lúc nào."
