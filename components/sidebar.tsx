@@ -422,22 +422,21 @@ function SidebarContent({
   return (
     <>
       {/* ======================================================== */}
-      {/* MOBILE BOTTOM NAVIGATION BAR (MATCHING NATIVE APP TAB BAR) */}
+      {/* MOBILE BOTTOM NAVIGATION BAR (FLOATING PILL ISLAND)      */}
       {/* ======================================================== */}
       <nav
         aria-label="Điều hướng chính"
         className={cn(
-          "lg:hidden fixed inset-x-0 bottom-0 left-0 right-0 z-[140] w-full pointer-events-auto select-none touch-manipulation",
-          "bg-[#131d17]/95 backdrop-blur-2xl border-t border-white/10 shadow-[0_-4px_24px_rgba(0,0,0,0.7)]",
+          "lg:hidden fixed left-1/2 -translate-x-1/2 z-[140] pointer-events-auto select-none touch-manipulation transition-all duration-300",
           isPlayerFullscreen && "hidden pointer-events-none"
         )}
         style={{
-          paddingBottom: "env(safe-area-inset-bottom, 0px)",
-          transform: "translate3d(0, 0, 0)",
-          WebkitTransform: "translate3d(0, 0, 0)",
+          bottom: "max(12px, calc(env(safe-area-inset-bottom, 0px) + 6px))",
+          transform: "translate3d(-50%, 0, 0)",
+          WebkitTransform: "translate3d(-50%, 0, 0)",
         }}
       >
-        <div className="w-full max-w-lg mx-auto h-[58px] flex items-center justify-between px-1.5">
+        <div className="w-[calc(100vw-28px)] max-w-[390px] h-[64px] rounded-full bg-[#0c1510]/92 backdrop-blur-2xl border border-white/12 shadow-[0_12px_40px_rgba(0,0,0,0.85),0_2px_12px_rgba(32,214,107,0.06)] px-2.5 flex items-center justify-between relative">
           {/* Tab 1: Trang Chủ */}
           {(() => {
             const active = currentActiveTab === "/";
@@ -448,20 +447,15 @@ function SidebarContent({
                 onClick={(e) => handleBottomNavNavigate("/", e)}
                 className="flex-1 h-full flex items-center justify-center select-none touch-manipulation active:scale-95 transition-transform"
                 aria-label="Trang Chủ"
+                title="Trang Chủ"
               >
                 {active ? (
-                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(32,214,107,0.45)]">
-                    <Home className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
-                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
-                      Trang chủ
-                    </span>
+                  <div className="w-[54px] h-[46px] rounded-full bg-white flex items-center justify-center shadow-[0_4px_16px_rgba(255,255,255,0.25)] transition-all">
+                    <Home className="w-5 h-5 text-[#051309] stroke-[2.4]" />
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-1 py-1">
-                    <Home className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
-                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
-                      Trang chủ
-                    </span>
+                  <div className="w-[46px] h-[46px] flex items-center justify-center text-white/55 hover:text-white transition-colors">
+                    <Home className="w-5 h-5 stroke-[2]" />
                   </div>
                 )}
               </Link>
@@ -478,27 +472,22 @@ function SidebarContent({
                 onClick={(e) => handleBottomNavNavigate("/recently", e)}
                 className="flex-1 h-full flex items-center justify-center select-none touch-manipulation active:scale-95 transition-transform"
                 aria-label="Lịch Sử Xem"
+                title="Lịch Sử Xem"
               >
                 {active ? (
-                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(32,214,107,0.45)]">
-                    <Clock className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
-                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
-                      Lịch sử
-                    </span>
+                  <div className="w-[54px] h-[46px] rounded-full bg-white flex items-center justify-center shadow-[0_4px_16px_rgba(255,255,255,0.25)] transition-all">
+                    <Clock className="w-5 h-5 text-[#051309] stroke-[2.4]" />
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-1 py-1">
-                    <Clock className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
-                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
-                      Lịch sử
-                    </span>
+                  <div className="w-[46px] h-[46px] flex items-center justify-center text-white/55 hover:text-white transition-colors">
+                    <Clock className="w-5 h-5 stroke-[2]" />
                   </div>
                 )}
               </Link>
             );
           })()}
 
-          {/* Tab 3: Yêu Thích */}
+          {/* Tab 3: Yêu Thích (Center Action Button) */}
           {(() => {
             const active = currentActiveTab === "/favorites";
             return (
@@ -506,24 +495,27 @@ function SidebarContent({
                 href="/favorites"
                 prefetch={true}
                 onClick={(e) => handleBottomNavNavigate("/favorites", e)}
-                className="flex-1 h-full flex items-center justify-center select-none touch-manipulation active:scale-95 transition-transform"
+                className="flex-1 h-full flex items-center justify-center select-none touch-manipulation active:scale-90 transition-transform"
                 aria-label="Yêu Thích"
+                title="Yêu Thích"
               >
-                {active ? (
-                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(32,214,107,0.45)]">
-                    <Heart className="w-[18px] h-[18px] text-[#051309] fill-[#051309] stroke-[2.6]" />
-                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
-                      Yêu thích
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center gap-1 py-1">
-                    <Heart className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
-                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
-                      Yêu thích
-                    </span>
-                  </div>
-                )}
+                <div
+                  className={cn(
+                    "w-[48px] h-[48px] rounded-full bg-[#20D66B] text-[#051309] flex items-center justify-center transition-all duration-200 cursor-pointer",
+                    active
+                      ? "shadow-[0_0_24px_rgba(32,214,107,0.85)] ring-4 ring-brand-green/35 scale-105"
+                      : "shadow-[0_4px_18px_rgba(32,214,107,0.45)] hover:shadow-[0_6px_22px_rgba(32,214,107,0.65)] hover:scale-105"
+                  )}
+                >
+                  <Heart
+                    className={cn(
+                      "w-[22px] h-[22px] text-[#051309] transition-transform",
+                      active
+                        ? "fill-[#051309] stroke-[#051309] stroke-[2.4]"
+                        : "fill-[#051309]/15 stroke-[#051309] stroke-[2.4]"
+                    )}
+                  />
+                </div>
               </Link>
             );
           })()}
@@ -546,32 +538,27 @@ function SidebarContent({
                 }}
                 className="flex-1 h-full flex items-center justify-center select-none touch-manipulation active:scale-95 transition-transform"
                 aria-label="Tài Khoản"
+                title="Tài Khoản"
               >
                 {active ? (
-                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(32,214,107,0.45)]">
+                  <div className="w-[54px] h-[46px] rounded-full bg-white flex items-center justify-center shadow-[0_4px_16px_rgba(255,255,255,0.25)] transition-all">
                     {user?.avatar ? (
-                      <div className="w-[19px] h-[19px] rounded-full overflow-hidden shrink-0 border border-[#051309] relative">
-                        <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="19px" />
+                      <div className="w-[22px] h-[22px] rounded-full overflow-hidden shrink-0 border border-[#051309] relative">
+                        <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="22px" />
                       </div>
                     ) : (
-                      <User className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
+                      <User className="w-5 h-5 text-[#051309] stroke-[2.4]" />
                     )}
-                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
-                      Tài khoản
-                    </span>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-1 py-1">
+                  <div className="w-[46px] h-[46px] flex items-center justify-center text-white/55 hover:text-white transition-colors">
                     {user?.avatar ? (
-                      <div className="w-[20px] h-[20px] rounded-full overflow-hidden shrink-0 border border-white/20 relative">
-                        <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="20px" />
+                      <div className="w-[22px] h-[22px] rounded-full overflow-hidden shrink-0 border border-white/20 relative">
+                        <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="22px" />
                       </div>
                     ) : (
-                      <User className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
+                      <User className="w-5 h-5 stroke-[2]" />
                     )}
-                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
-                      Tài khoản
-                    </span>
                   </div>
                 )}
               </button>
@@ -588,20 +575,15 @@ function SidebarContent({
                 onClick={(e) => handleBottomNavNavigate("/tai-app", e)}
                 className="flex-1 h-full flex items-center justify-center select-none touch-manipulation active:scale-95 transition-transform"
                 aria-label="Tải App"
+                title="Tải App"
               >
                 {active ? (
-                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(32,214,107,0.45)]">
-                    <Smartphone className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
-                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
-                      Tải app
-                    </span>
+                  <div className="w-[54px] h-[46px] rounded-full bg-white flex items-center justify-center shadow-[0_4px_16px_rgba(255,255,255,0.25)] transition-all">
+                    <Smartphone className="w-5 h-5 text-[#051309] stroke-[2.4]" />
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-1 py-1">
-                    <Smartphone className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
-                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
-                      Tải app
-                    </span>
+                  <div className="w-[46px] h-[46px] flex items-center justify-center text-white/55 hover:text-white transition-colors">
+                    <Smartphone className="w-5 h-5 stroke-[2]" />
                   </div>
                 )}
               </Link>
@@ -622,7 +604,7 @@ function SidebarContent({
       {isAccountOpen && (
         <div
           className="lg:hidden fixed left-1/2 -translate-x-1/2 z-[130] w-[calc(100%-24px)] max-w-[390px] max-h-[calc(100dvh-5.5rem)] overflow-y-auto overscroll-contain bg-[#0B100E]/95 backdrop-blur-2xl border border-white/[0.08] rounded-3xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.85)] animate-in fade-in slide-in-from-bottom-5 duration-200 pointer-events-auto select-none"
-          style={{ bottom: "max(4.5rem, calc(env(safe-area-inset-bottom, 0px) + 4.25rem))" }}
+          style={{ bottom: "max(5.5rem, calc(env(safe-area-inset-bottom, 0px) + 5rem))" }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Top Pill Handle */}

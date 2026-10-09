@@ -126,7 +126,7 @@ export default function WelcomePopup() {
       className={cn(
         "fixed z-[9999] transition-all duration-300 pointer-events-auto select-none",
         // Mobile: stays above bottom navigation dock; Desktop: bottom-right corner
-        "bottom-20 right-4 sm:bottom-6 sm:right-6",
+        "bottom-24 right-4 sm:bottom-6 sm:right-6",
         "w-[calc(100vw-32px)] sm:w-[380px] max-w-[400px]",
         "animate-in slide-in-from-bottom-5 fade-in duration-300"
       )}
