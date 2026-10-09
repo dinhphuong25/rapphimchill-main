@@ -424,195 +424,270 @@ function SidebarContent({
       {/* ======================================================== */}
       {/* MOBILE BOTTOM NAVIGATION BAR (FLOATING PILL ISLAND)      */}
       {/* ======================================================== */}
-      <nav
-        aria-label="Điều hướng chính"
-        className={cn(
-          "lg:hidden fixed left-1/2 -translate-x-1/2 z-[140] pointer-events-auto select-none touch-manipulation transition-all duration-300",
-          isPlayerFullscreen && "hidden pointer-events-none"
-        )}
-        style={{
-          bottom: "max(12px, calc(env(safe-area-inset-bottom, 0px) + 6px))",
-          transform: "translate3d(-50%, 0, 0)",
-          WebkitTransform: "translate3d(-50%, 0, 0)",
-        }}
-      >
-        <div className="w-[calc(100vw-24px)] max-w-[420px] h-[60px] rounded-full bg-[#131d17]/95 backdrop-blur-2xl border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.7)] px-1.5 flex items-center justify-between relative">
-          {/* Tab 1: Trang Chủ */}
-          {(() => {
-            const active = currentActiveTab === "/";
-            return (
-              <Link
-                href="/"
-                prefetch={true}
-                onClick={(e) => handleBottomNavNavigate("/", e)}
-                className="flex-1 h-full flex items-center justify-center select-none touch-manipulation active:scale-95 transition-transform"
-                aria-label="Trang Chủ"
-                title="Trang Chủ"
-              >
-                {active ? (
-                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 select-none transition-all">
-                    <Home className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
-                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
+      {/* ======================================================== */}
+      {/* MOBILE BOTTOM NAVIGATION BAR (LIQUID NAVIGATION BAR)     */}
+      {/* ======================================================== */}
+      {(() => {
+        // Active index for Liquid Navigation (0: Home, 1: History, 2: Favorites, 3: Account, 4: App)
+        let activeBottomIndex = -1;
+        if (isAccountOpen || currentActiveTab === "account") activeBottomIndex = 3;
+        else if (currentActiveTab === "/") activeBottomIndex = 0;
+        else if (currentActiveTab === "/recently") activeBottomIndex = 1;
+        else if (currentActiveTab === "/favorites") activeBottomIndex = 2;
+        else if (currentActiveTab === "/tai-app") activeBottomIndex = 4;
+        else if (pathname === "/") activeBottomIndex = 0;
+        else if (pathname === "/recently") activeBottomIndex = 1;
+        else if (pathname === "/favorites") activeBottomIndex = 2;
+        else if (pathname === "/tai-app") activeBottomIndex = 4;
+
+        return (
+          <nav
+            aria-label="Điều hướng chính"
+            className={cn(
+              "lg:hidden fixed left-1/2 -translate-x-1/2 z-[140] pointer-events-auto select-none touch-manipulation transition-all duration-300",
+              isPlayerFullscreen && "hidden pointer-events-none"
+            )}
+            style={{
+              bottom: "max(14px, calc(env(safe-area-inset-bottom, 0px) + 8px))",
+              transform: "translate3d(-50%, 0, 0)",
+              WebkitTransform: "translate3d(-50%, 0, 0)",
+            }}
+          >
+            <div className="w-[calc(100vw-24px)] max-w-[390px] h-[66px] rounded-[24px] bg-[#0E1511]/95 backdrop-blur-2xl border border-white/10 shadow-[0_12px_36px_rgba(0,0,0,0.7)] flex items-center relative overflow-visible">
+              {/* Liquid Sliding Indicator (Active Bubble with Liquid Notch Ears) */}
+              {activeBottomIndex >= 0 && (
+                <div
+                  className="absolute top-0 left-0 w-[20%] h-full pointer-events-none transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] z-10"
+                  style={{
+                    transform: `translate3d(${activeBottomIndex * 100}%, 0, 0)`,
+                    WebkitTransform: `translate3d(${activeBottomIndex * 100}%, 0, 0)`,
+                  }}
+                >
+                  {/* Floating Elevated Circle */}
+                  <div className="absolute left-1/2 -translate-x-1/2 -top-[23px] w-[52px] h-[52px] rounded-full bg-white border-[5px] border-[#050807] shadow-[0_6px_18px_rgba(0,0,0,0.55)]" />
+
+                  {/* Left Liquid Ear (Concave Notch Fillet) */}
+                  <span
+                    className="absolute top-0 w-3.5 h-3.5 rounded-tr-[14px] pointer-events-none"
+                    style={{
+                      left: "calc(50% - 26px - 14px)",
+                      boxShadow: "2px -6px 0 0 #0E1511",
+                    }}
+                  />
+
+                  {/* Right Liquid Ear (Concave Notch Fillet) */}
+                  <span
+                    className="absolute top-0 w-3.5 h-3.5 rounded-tl-[14px] pointer-events-none"
+                    style={{
+                      right: "calc(50% - 26px - 14px)",
+                      boxShadow: "-2px -6px 0 0 #0E1511",
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Tab 1: Trang Chủ */}
+              {(() => {
+                const active = activeBottomIndex === 0;
+                return (
+                  <Link
+                    href="/"
+                    prefetch={true}
+                    onClick={(e) => handleBottomNavNavigate("/", e)}
+                    className="w-[20%] h-full flex flex-col items-center justify-center relative z-20 cursor-pointer select-none touch-manipulation"
+                    aria-label="Trang Chủ"
+                    title="Trang Chủ"
+                  >
+                    <div
+                      className={cn(
+                        "flex items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)]",
+                        active
+                          ? "-translate-y-[30px] text-[#050807] scale-105"
+                          : "translate-y-0 text-white/65 hover:text-white scale-100"
+                      )}
+                    >
+                      <Home className="w-5 h-5 stroke-[2.4]" />
+                    </div>
+                    <span
+                      className={cn(
+                        "absolute bottom-2 text-[10px] font-black tracking-tight text-white transition-all duration-300 select-none",
+                        active
+                          ? "opacity-100 translate-y-0 scale-100"
+                          : "opacity-0 translate-y-2 scale-90 pointer-events-none"
+                      )}
+                    >
                       Trang chủ
                     </span>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center gap-1 py-1 select-none">
-                    <Home className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
-                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
-                      Trang chủ
-                    </span>
-                  </div>
-                )}
-              </Link>
-            );
-          })()}
+                  </Link>
+                );
+              })()}
 
-          {/* Tab 2: Lịch Sử */}
-          {(() => {
-            const active = currentActiveTab === "/recently";
-            return (
-              <Link
-                href="/recently"
-                prefetch={true}
-                onClick={(e) => handleBottomNavNavigate("/recently", e)}
-                className="flex-1 h-full flex items-center justify-center select-none touch-manipulation active:scale-95 transition-transform"
-                aria-label="Lịch Sử Xem"
-                title="Lịch Sử Xem"
-              >
-                {active ? (
-                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 select-none transition-all">
-                    <Clock className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
-                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
+              {/* Tab 2: Lịch Sử */}
+              {(() => {
+                const active = activeBottomIndex === 1;
+                return (
+                  <Link
+                    href="/recently"
+                    prefetch={true}
+                    onClick={(e) => handleBottomNavNavigate("/recently", e)}
+                    className="w-[20%] h-full flex flex-col items-center justify-center relative z-20 cursor-pointer select-none touch-manipulation"
+                    aria-label="Lịch Sử Xem"
+                    title="Lịch Sử Xem"
+                  >
+                    <div
+                      className={cn(
+                        "flex items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)]",
+                        active
+                          ? "-translate-y-[30px] text-[#050807] scale-105"
+                          : "translate-y-0 text-white/65 hover:text-white scale-100"
+                      )}
+                    >
+                      <Clock className="w-5 h-5 stroke-[2.4]" />
+                    </div>
+                    <span
+                      className={cn(
+                        "absolute bottom-2 text-[10px] font-black tracking-tight text-white transition-all duration-300 select-none",
+                        active
+                          ? "opacity-100 translate-y-0 scale-100"
+                          : "opacity-0 translate-y-2 scale-90 pointer-events-none"
+                      )}
+                    >
                       Lịch sử
                     </span>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center gap-1 py-1 select-none">
-                    <Clock className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
-                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
-                      Lịch sử
-                    </span>
-                  </div>
-                )}
-              </Link>
-            );
-          })()}
+                  </Link>
+                );
+              })()}
 
-          {/* Tab 3: Yêu Thích */}
-          {(() => {
-            const active = currentActiveTab === "/favorites";
-            return (
-              <Link
-                href="/favorites"
-                prefetch={true}
-                onClick={(e) => handleBottomNavNavigate("/favorites", e)}
-                className="flex-1 h-full flex items-center justify-center select-none touch-manipulation active:scale-95 transition-transform"
-                aria-label="Yêu Thích"
-                title="Yêu Thích"
-              >
-                {active ? (
-                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 select-none transition-all">
-                    <Heart className="w-[18px] h-[18px] text-[#051309] fill-[#051309] stroke-[2.6]" />
-                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
+              {/* Tab 3: Yêu Thích */}
+              {(() => {
+                const active = activeBottomIndex === 2;
+                return (
+                  <Link
+                    href="/favorites"
+                    prefetch={true}
+                    onClick={(e) => handleBottomNavNavigate("/favorites", e)}
+                    className="w-[20%] h-full flex flex-col items-center justify-center relative z-20 cursor-pointer select-none touch-manipulation"
+                    aria-label="Yêu Thích"
+                    title="Yêu Thích"
+                  >
+                    <div
+                      className={cn(
+                        "flex items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)]",
+                        active
+                          ? "-translate-y-[30px] text-[#050807] scale-105"
+                          : "translate-y-0 text-white/65 hover:text-white scale-100"
+                      )}
+                    >
+                      <Heart className="w-5 h-5 stroke-[2.4]" />
+                    </div>
+                    <span
+                      className={cn(
+                        "absolute bottom-2 text-[10px] font-black tracking-tight text-white transition-all duration-300 select-none",
+                        active
+                          ? "opacity-100 translate-y-0 scale-100"
+                          : "opacity-0 translate-y-2 scale-90 pointer-events-none"
+                      )}
+                    >
                       Yêu thích
                     </span>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center gap-1 py-1 select-none">
-                    <Heart className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
-                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
-                      Yêu thích
-                    </span>
-                  </div>
-                )}
-              </Link>
-            );
-          })()}
+                  </Link>
+                );
+              })()}
 
-          {/* Tab 4: Tài Khoản */}
-          {(() => {
-            const active = currentActiveTab === "account";
-            return (
-              <button
-                type="button"
-                onClick={() => {
-                  setIsExploreOpen(false);
-                  setIsMobileOpen(false);
-                  setActiveModal(null);
-                  if (user) {
-                    setIsAccountOpen((prev) => !prev);
-                  } else {
-                    openAuthModal("login");
-                  }
-                }}
-                className="flex-1 h-full flex items-center justify-center select-none touch-manipulation active:scale-95 transition-transform"
-                aria-label="Tài Khoản"
-                title="Tài Khoản"
-              >
-                {active ? (
-                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 select-none transition-all">
-                    {user?.avatar ? (
-                      <div className="w-[19px] h-[19px] rounded-full overflow-hidden shrink-0 border border-[#051309] relative">
-                        <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="19px" />
-                      </div>
-                    ) : (
-                      <User className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
-                    )}
-                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
+              {/* Tab 4: Tài Khoản */}
+              {(() => {
+                const active = activeBottomIndex === 3;
+                return (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsExploreOpen(false);
+                      setIsMobileOpen(false);
+                      setActiveModal(null);
+                      if (user) {
+                        setIsAccountOpen((prev) => !prev);
+                      } else {
+                        openAuthModal("login");
+                      }
+                    }}
+                    className="w-[20%] h-full flex flex-col items-center justify-center relative z-20 cursor-pointer select-none touch-manipulation"
+                    aria-label="Tài Khoản"
+                    title="Tài Khoản"
+                  >
+                    <div
+                      className={cn(
+                        "flex items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)]",
+                        active
+                          ? "-translate-y-[30px] text-[#050807] scale-105"
+                          : "translate-y-0 text-white/65 hover:text-white scale-100"
+                      )}
+                    >
+                      {user?.avatar ? (
+                        <div
+                          className={cn(
+                            "rounded-full overflow-hidden shrink-0 relative transition-all duration-300",
+                            active ? "w-[26px] h-[26px] border-2 border-[#050807]" : "w-5 h-5 border border-white/20"
+                          )}
+                        >
+                          <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="26px" />
+                        </div>
+                      ) : (
+                        <User className="w-5 h-5 stroke-[2.4]" />
+                      )}
+                    </div>
+                    <span
+                      className={cn(
+                        "absolute bottom-2 text-[10px] font-black tracking-tight text-white transition-all duration-300 select-none",
+                        active
+                          ? "opacity-100 translate-y-0 scale-100"
+                          : "opacity-0 translate-y-2 scale-90 pointer-events-none"
+                      )}
+                    >
                       Tài khoản
                     </span>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center gap-1 py-1 select-none">
-                    {user?.avatar ? (
-                      <div className="w-[20px] h-[20px] rounded-full overflow-hidden shrink-0 border border-white/20 relative">
-                        <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="20px" />
-                      </div>
-                    ) : (
-                      <User className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
-                    )}
-                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
-                      Tài khoản
-                    </span>
-                  </div>
-                )}
-              </button>
-            );
-          })()}
+                  </button>
+                );
+              })()}
 
-          {/* Tab 5: Tải App */}
-          {(() => {
-            const active = currentActiveTab === "/tai-app";
-            return (
-              <Link
-                href="/tai-app"
-                prefetch={true}
-                onClick={(e) => handleBottomNavNavigate("/tai-app", e)}
-                className="flex-1 h-full flex items-center justify-center select-none touch-manipulation active:scale-95 transition-transform"
-                aria-label="Tải App"
-                title="Tải App"
-              >
-                {active ? (
-                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 select-none transition-all">
-                    <Smartphone className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
-                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
+              {/* Tab 5: Tải App */}
+              {(() => {
+                const active = activeBottomIndex === 4;
+                return (
+                  <Link
+                    href="/tai-app"
+                    prefetch={true}
+                    onClick={(e) => handleBottomNavNavigate("/tai-app", e)}
+                    className="w-[20%] h-full flex flex-col items-center justify-center relative z-20 cursor-pointer select-none touch-manipulation"
+                    aria-label="Tải App"
+                    title="Tải App"
+                  >
+                    <div
+                      className={cn(
+                        "flex items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)]",
+                        active
+                          ? "-translate-y-[30px] text-[#050807] scale-105"
+                          : "translate-y-0 text-white/65 hover:text-white scale-100"
+                      )}
+                    >
+                      <Smartphone className="w-5 h-5 stroke-[2.4]" />
+                    </div>
+                    <span
+                      className={cn(
+                        "absolute bottom-2 text-[10px] font-black tracking-tight text-white transition-all duration-300 select-none",
+                        active
+                          ? "opacity-100 translate-y-0 scale-100"
+                          : "opacity-0 translate-y-2 scale-90 pointer-events-none"
+                      )}
+                    >
                       Tải app
                     </span>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center gap-1 py-1 select-none">
-                    <Smartphone className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
-                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
-                      Tải app
-                    </span>
-                  </div>
-                )}
-              </Link>
-            );
-          })()}
-        </div>
-      </nav>
+                  </Link>
+                );
+              })()}
+            </div>
+          </nav>
+        );
+      })()}
 
       {/* Mobile Account Backdrop */}
       {isAccountOpen && (
