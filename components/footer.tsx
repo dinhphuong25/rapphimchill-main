@@ -26,27 +26,27 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
   }, [activeModal]);
 
   return (
-    <footer className="w-full mt-auto mb-0 select-none text-cinema-text px-3 sm:px-6 pb-20 sm:pb-24 lg:pb-6 pt-2 sm:pt-4">
-      {/* Footer Card Container matching Hi Download */}
-      <div className="w-full max-w-[1200px] mx-auto rounded-2xl border border-white/10 bg-[#0C130F]/90 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.5)] p-4 sm:p-5">
+    <footer className="w-full mt-auto mb-0 select-none text-cinema-text px-4 sm:px-8 lg:px-12 pb-20 sm:pb-24 lg:pb-6 pt-1 sm:pt-2">
+      {/* Footer Card Container matching Hi Download - Compact & Centered */}
+      <div className="w-full max-w-[760px] mx-auto rounded-2xl border border-white/10 bg-[#0C130F]/90 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.5)] py-3.5 px-4 sm:py-4 sm:px-5">
         {/* Top Row: Brand Info (Left) + Quick Navigation Links (Right) */}
-        <div className="flex flex-col md:flex-row items-center md:justify-between gap-3 sm:gap-4 text-center md:text-left">
+        <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-2.5 sm:gap-3 text-center sm:text-left">
           {/* Left: Brand Identity & Tagline */}
-          <div className="flex flex-col items-center md:items-start max-w-[500px]">
+          <div className="flex flex-col items-center sm:items-start max-w-[420px]">
             <Link
               href="/"
               className="flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity"
               aria-label="Về trang chủ Hi Phim"
             >
-              <BrandLogo size="md" showSlogan={false} />
+              <BrandLogo size="sm" showSlogan={false} />
             </Link>
-            <p className="text-[12px] sm:text-[12.5px] text-white/60 font-medium leading-relaxed mt-1 text-center md:text-left">
+            <p className="text-[11.5px] sm:text-[12px] text-white/55 font-normal leading-normal mt-0.5 sm:mt-1 text-center sm:text-left">
               {customFooterText || "Nền tảng xem phim trực tuyến miễn phí phi lợi nhuận."}
             </p>
           </div>
 
           {/* Right: Quick Links (Liên Hệ | Điều Khoản | Bảo Mật) */}
-          <div className="flex items-center justify-center flex-wrap gap-3 sm:gap-4 text-[12.5px] sm:text-[13px] font-semibold text-white/85">
+          <div className="flex items-center justify-center flex-wrap gap-2.5 sm:gap-3 text-[12px] sm:text-[12.5px] font-medium text-white/85">
             {/* 1. Liên Hệ */}
             <a
               href="https://www.facebook.com/dinhphuong205/"
@@ -90,20 +90,20 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
         </div>
 
         {/* Divider */}
-        <div className="h-px bg-white/10 my-3 sm:my-3.5" />
+        <div className="h-px bg-white/10 my-2.5 sm:my-3" />
 
         {/* Bottom Row: Copyright & Developer Info */}
-        <div className="text-center space-y-0.5 sm:space-y-1">
-          <p className="text-[12px] sm:text-[12.5px] text-white/85 font-medium">
+        <div className="text-center space-y-0.5">
+          <p className="text-[11.5px] sm:text-[12px] text-white/85 font-medium">
             © 2026 Hi Phim. Toàn quyền được bảo lưu.
           </p>
-          <p className="text-[11.5px] sm:text-[12px] text-white/50 font-normal">
+          <p className="text-[11px] sm:text-[11.5px] text-white/50 font-normal">
             Được thành lập và phát triển bởi{" "}
             <a
               href="https://www.facebook.com/dinhphuong205/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-brand-green font-semibold hover:underline transition-colors"
+              className="text-brand-green font-medium hover:underline transition-colors"
             >
               Kim Đình Phương
             </a>
