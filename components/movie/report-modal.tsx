@@ -120,17 +120,17 @@ export default function ReportModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div 
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-[460px] max-h-[92vh] overflow-y-auto custom-scrollbar bg-[#0d120f] border border-brand-green/30 rounded-2xl p-4 sm:p-5 shadow-[0_10px_50px_rgba(0,0,0,0.8)] text-white"
+        className="relative w-full max-w-[460px] max-h-[90vh] bg-[#0d120f] border border-brand-green/30 rounded-2xl shadow-[0_10px_50px_rgba(0,0,0,0.9)] text-white flex flex-col overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between gap-3 mb-3 pb-2.5 border-b border-white/10">
+        <div className="flex items-center justify-between gap-3 p-3.5 sm:p-4 border-b border-white/10 shrink-0 bg-[#090e0b]">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
               <AlertTriangle className="w-4 h-4" />
             </div>
             <div className="min-w-0">
               <h3 className="text-sm sm:text-base font-bold text-white leading-tight">Báo lỗi tập phim</h3>
-              <p className="text-[11px] text-white/60 truncate">
+              <p className="text-[11px] text-white/60 truncate mt-0.5">
                 {movieName} {episodeName ? `• ${episodeName}` : ""}
               </p>
             </div>
@@ -145,32 +145,33 @@ export default function ReportModal({
           </button>
         </div>
 
-        {/* User Account Verification Badge */}
-        {user && (
-          <div className="mb-3 p-2.5 rounded-xl bg-white/[0.03] border border-emerald-500/20 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-bold shrink-0">
-                {(user.name || user.email || "U").charAt(0).toUpperCase()}
+        {/* Form Body - Scrollable with modal-scroll if screen is small */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto modal-scroll p-3.5 sm:p-4 space-y-2.5 flex flex-col">
+          {/* User Account Verification Badge */}
+          {user && (
+            <div className="p-2 rounded-xl bg-white/[0.03] border border-emerald-500/20 flex items-center justify-between gap-2 shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-bold shrink-0">
+                  {(user.name || user.email || "U").charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11.5px] font-semibold text-white truncate leading-tight">{user.name || "Thành viên"}</p>
+                  <p className="text-[9.5px] text-white/50 font-mono truncate">{user.email}</p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-white truncate">{user.name || "Thành viên"}</p>
-                <p className="text-[10px] text-white/50 font-mono truncate">{user.email}</p>
-              </div>
+              <span className="text-[9.5px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
+                <UserCheck className="w-2.5 h-2.5" />
+                Tài khoản gửi
+              </span>
             </div>
-            <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
-              <UserCheck className="w-3 h-3" />
-              Tài khoản gửi
-            </span>
-          </div>
-        )}
+          )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold text-white/70 uppercase tracking-wider">
+          {/* Issue options */}
+          <div className="space-y-1">
+            <label className="text-[10.5px] font-bold text-white/70 uppercase tracking-wider block">
               Chọn sự cố bạn đang gặp:
             </label>
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               {ISSUE_OPTIONS.map((option) => {
                 const Icon = option.icon;
                 const isSelected = selectedIssue === option.id;
@@ -179,16 +180,16 @@ export default function ReportModal({
                     key={option.id}
                     type="button"
                     onClick={() => setSelectedIssue(option.id)}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border text-left transition-all cursor-pointer ${
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-left transition-all cursor-pointer ${
                       isSelected
-                        ? "bg-brand-green/10 border-brand-green/60 text-white shadow-[0_0_12px_rgba(32,214,107,0.12)]"
-                        : "bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/15 text-white/75"
+                        ? "bg-brand-green/15 border-brand-green/60 text-white shadow-[0_0_10px_rgba(32,214,107,0.15)]"
+                        : "bg-white/[0.03] border-white/5 hover:bg-white/[0.06] hover:border-white/10 text-white/75"
                     }`}
                   >
-                    <Icon className={`w-4 h-4 shrink-0 ${isSelected ? "text-brand-green" : "text-white/50"}`} />
+                    <Icon className={`w-3.5 h-3.5 shrink-0 ${isSelected ? "text-brand-green" : "text-white/50"}`} />
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs sm:text-[13px] font-medium leading-tight">{option.label}</p>
-                      <p className="text-[10.5px] text-white/45 truncate mt-0.5">{option.desc}</p>
+                      <p className="text-xs font-semibold leading-tight">{option.label}</p>
+                      <p className="text-[10px] text-white/45 truncate mt-0.5">{option.desc}</p>
                     </div>
                     {isSelected && <Check className="w-3.5 h-3.5 text-brand-green shrink-0" />}
                   </button>
@@ -198,8 +199,8 @@ export default function ReportModal({
           </div>
 
           {/* Description */}
-          <div className="space-y-1.5 pt-2.5">
-            <label className="text-[11px] font-medium text-white/70 block">
+          <div className="space-y-1 pt-1">
+            <label className="text-[10.5px] font-medium text-white/70 block">
               Ghi chú thêm (tùy chọn):
             </label>
             <textarea
@@ -208,12 +209,12 @@ export default function ReportModal({
               placeholder="Ví dụ: Bị đứng từ phút 15:20, đã tải lại nhưng không xem được..."
               rows={2}
               maxLength={500}
-              className="w-full text-xs bg-black/50 border border-white/15 rounded-xl px-3 py-2 text-white placeholder:text-white/30 focus:outline-none focus:border-brand-green transition-colors resize-none h-16"
+              className="w-full text-xs bg-black/50 border border-white/15 rounded-xl px-2.5 py-1.5 text-white placeholder:text-white/30 focus:outline-none focus:border-brand-green transition-colors resize-none h-14"
             />
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
+          {/* Actions Footer - Always visible */}
+          <div className="flex items-center justify-end gap-2 pt-2.5 mt-auto border-t border-white/10 shrink-0">
             <Button
               type="button"
               variant="ghost"
