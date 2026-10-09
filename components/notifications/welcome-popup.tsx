@@ -171,7 +171,7 @@ export default function WelcomePopup() {
                     ? isNewRegister
                       ? "Thành viên mới"
                       : "Chào mừng trở lại"
-                    : "Lời chào từ Hi Phim"}
+                    : "Lời chào"}
                 </span>
                 {isSuperAdmin && (
                   <span className="text-[9.5px] px-1.5 py-0.2 rounded-full font-mono font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
@@ -182,9 +182,9 @@ export default function WelcomePopup() {
               <h4 className="text-sm font-bold text-white truncate mt-0.5">
                 {currentUser
                   ? isNewRegister
-                    ? "Chào mừng bạn gia nhập! 🎉"
-                    : `Chào mừng trở lại, ${userName}! 👋`
-                  : "Chào mừng bạn quay trở lại! 🍿"}
+                    ? "Chào mừng bạn gia nhập!"
+                    : `Chào mừng trở lại, ${userName}!`
+                  : "Chào mừng bạn quay trở lại!"}
               </h4>
             </div>
           </div>
@@ -205,7 +205,8 @@ export default function WelcomePopup() {
           {currentUser ? (
             isNewRegister ? (
               <>
-                Tài khoản của bạn đã được kích hoạt thành công. Thưởng thức hơn 50.000+ tựa phim bom tấn miễn phí ngay nào!
+                Tài khoản của bạn đã được kích hoạt thành công. Thưởng thức hơn{" "}
+                <span className="text-brand-green font-bold">50.000+</span> tựa phim bom tấn miễn phí ngay nào!
               </>
             ) : (
               <>
@@ -214,7 +215,8 @@ export default function WelcomePopup() {
             )
           ) : (
             <>
-              Khám phá kho 50.000+ tựa phim bom tấn chất lượng cao và các tập mới được cập nhật liên tục hoàn toàn miễn phí tại Hi Phim.
+              Chúc bạn có những giây phút xem phim thư giãn tuyệt vời với hơn{" "}
+              <span className="text-brand-green font-bold">50.000+</span> tựa phim bom tấn chất lượng cao và các tập mới được cập nhật liên tục hoàn toàn miễn phí.
             </>
           )}
         </p>

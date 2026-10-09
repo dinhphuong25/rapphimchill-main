@@ -69,8 +69,8 @@ function formatRelativeTime(timestamp: number) {
 const DEFAULT_FALLBACK_NOTIFICATIONS: SystemNotificationItem[] = [
   {
     id: "sys_welcome_2026",
-    title: "Chào mừng bạn đến với Hi Phim!",
-    content: "Chúc bạn có những giây phút xem phim thư giãn tuyệt vời với hơn 50.000+ tựa phim bom tấn và tập mới cập nhật liên tục.",
+    title: "Chào mừng bạn ghé thăm!",
+    content: "Chúc bạn có những giây phút xem phim thư giãn tuyệt vời với hơn 50.000+ tựa phim bom tấn và tập mới cập nhật liên tục hoàn toàn miễn phí.",
     type: "success",
     createdAt: Date.now() - 3600000 * 24 * 2,
     author: "Ban Quản Trị",
@@ -596,8 +596,8 @@ export default function NotificationBell({ className }: { className?: string }) 
                   <div className="flex items-center justify-between gap-2">
                     <h4 className="text-xs sm:text-[13px] font-bold text-white leading-snug">
                       {user.createdAt && Date.now() - new Date(user.createdAt).getTime() < 86400000 * 3
-                        ? `🎉 Chào mừng thành viên mới, ${user.name || "bạn"}!`
-                        : `👋 Chào mừng quay trở lại, ${user.name || "bạn"}!`}
+                        ? `Chào mừng thành viên mới, ${user.name || "bạn"}!`
+                        : `Chào mừng quay trở lại, ${user.name || "bạn"}!`}
                     </h4>
                     <span className="text-[10px] font-mono text-white/40 shrink-0">Vừa xong</span>
                   </div>
@@ -611,10 +611,10 @@ export default function NotificationBell({ className }: { className?: string }) 
 
               {/* Always Pinned Welcome Notice from Ban Quản Trị */}
               {systemNotifs.find(
-                (n) => n.id === "sys_welcome_2026" || n.title.toLowerCase().includes("chào mừng bạn đến với hi phim")
+                (n) => n.id === "sys_welcome_2026" || n.title.toLowerCase().includes("chào mừng")
               ) && (() => {
                 const welcomeItem = systemNotifs.find(
-                  (n) => n.id === "sys_welcome_2026" || n.title.toLowerCase().includes("chào mừng bạn đến với hi phim")
+                  (n) => n.id === "sys_welcome_2026" || n.title.toLowerCase().includes("chào mừng")
                 )!;
                 return (
                   <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-950/50 via-[#121c16] to-[#0e1611] border border-brand-green/35 shadow-[0_0_15px_rgba(32,214,107,0.08)] space-y-1.5 group">
@@ -639,7 +639,15 @@ export default function NotificationBell({ className }: { className?: string }) 
                     </h4>
 
                     <p className="text-[11px] text-white/70 leading-relaxed">
-                      {welcomeItem.content}
+                      {welcomeItem.content.includes("50.000+") ? (
+                        <>
+                          {welcomeItem.content.split("50.000+")[0]}
+                          <span className="text-brand-green font-bold">50.000+</span>
+                          {welcomeItem.content.split("50.000+")[1]}
+                        </>
+                      ) : (
+                        welcomeItem.content
+                      )}
                     </p>
 
                     {welcomeItem.link && (
@@ -688,9 +696,9 @@ export default function NotificationBell({ className }: { className?: string }) 
 
               {/* Broadcast System Notifications List (Excluding Pinned Welcome Notice) */}
               {systemNotifs.filter(
-                (n) => n.id !== "sys_welcome_2026" && !n.title.toLowerCase().includes("chào mừng bạn đến với hi phim")
+                (n) => n.id !== "sys_welcome_2026" && !n.title.toLowerCase().includes("chào mừng")
               ).length === 0 &&
-              !systemNotifs.find((n) => n.id === "sys_welcome_2026" || n.title.toLowerCase().includes("chào mừng bạn đến với hi phim")) &&
+              !systemNotifs.find((n) => n.id === "sys_welcome_2026" || n.title.toLowerCase().includes("chào mừng")) &&
               (!announcementBanner?.enabled || !announcementBanner?.text) ? (
                 <div className="p-8 text-center text-white/50 flex flex-col items-center justify-center gap-2">
                   <Megaphone className="w-8 h-8 text-white/30 mb-1" />
@@ -702,7 +710,7 @@ export default function NotificationBell({ className }: { className?: string }) 
               ) : (
                 systemNotifs
                   .filter(
-                    (n) => n.id !== "sys_welcome_2026" && !n.title.toLowerCase().includes("chào mừng bạn đến với hi phim")
+                    (n) => n.id !== "sys_welcome_2026" && !n.title.toLowerCase().includes("chào mừng")
                   )
                   .map((item) => (
                   <div

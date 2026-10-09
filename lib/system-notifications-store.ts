@@ -17,8 +17,8 @@ const NOTIFICATIONS_FILE_PATH = path.join(process.cwd(), "data", "system-notific
 const DEFAULT_NOTIFICATIONS: SystemNotification[] = [
   {
     id: "sys_welcome_2026",
-    title: "Chào mừng bạn đến với Hi Phim!",
-    content: "Chúc bạn có những giây phút xem phim thư giãn tuyệt vời với hơn 50.000+ tựa phim bom tấn và tập mới cập nhật liên tục.",
+    title: "Chào mừng bạn ghé thăm!",
+    content: "Chúc bạn có những giây phút xem phim thư giãn tuyệt vời với hơn 50.000+ tựa phim bom tấn và tập mới cập nhật liên tục hoàn toàn miễn phí.",
     type: "success",
     createdAt: Date.now() - 3600000 * 24 * 2, // 2 days ago
     author: "Ban Quản Trị",
