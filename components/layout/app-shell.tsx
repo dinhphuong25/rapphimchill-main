@@ -32,6 +32,10 @@ function AppShellComponent({ children }: AppShellProps) {
   const showInstantRecently = activeTab === "/recently" && pathname !== "/recently";
   const showInstantFavorites = activeTab === "/favorites" && pathname !== "/favorites";
 
+  // Hide footer on movie detail page (/phim/...)
+  const isMovieDetailPage = pathname.startsWith("/phim");
+  const showFooter = !isMovieDetailPage || showInstantRecently || showInstantFavorites;
+
   return (
     <div className="min-h-screen bg-cinema-bg text-cinema-text">
       {/* Persistent Left Sidebar & Mobile Bottom Dock - Kept in DOM across transitions */}
@@ -48,8 +52,8 @@ function AppShellComponent({ children }: AppShellProps) {
         {showInstantRecently && <RecentlyWatchedClient />}
         {showInstantFavorites && <FavoritesClient />}
 
-        {/* Global Footer Card matching Hi Download */}
-        <Footer />
+        {/* Global Footer Card matching Hi Download (hidden on movie detail pages) */}
+        {showFooter && <Footer />}
       </div>
     </div>
   );

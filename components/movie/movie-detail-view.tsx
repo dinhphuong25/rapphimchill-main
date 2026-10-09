@@ -220,7 +220,7 @@ export default function MovieDetailView({ movie, episodes = [] }: MovieDetailVie
   };
 
   return (
-    <div className="min-h-screen bg-[#050807] text-white pb-6 sm:pb-12 selection:bg-brand-green selection:text-black">
+    <div className="min-h-screen bg-[#050807] text-white pb-20 sm:pb-24 lg:pb-12 selection:bg-brand-green selection:text-black">
       {/* ======================================================== */}
       {/* 1. HERO BACKDROP BANNER WITH TOP & BOTTOM GRADIENT       */}
       {/* ======================================================== */}
