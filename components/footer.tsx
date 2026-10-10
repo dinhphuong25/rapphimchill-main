@@ -75,9 +75,9 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
           </div>
 
           {/* Right: Quick Links */}
-          <div className="flex flex-col items-center sm:items-end gap-1.5 text-[12px] sm:text-[12.5px] font-medium text-white/85">
+          <div className="flex flex-col items-center gap-1.5 text-[12px] sm:text-[12.5px] font-medium text-white/85">
             {/* Row 1: Liên Hệ | Điều Khoản | Bảo Mật */}
-            <div className="flex items-center justify-center sm:justify-end flex-wrap gap-2.5 sm:gap-3">
+            <div className="flex items-center justify-center flex-wrap gap-2.5 sm:gap-3">
               {/* 1. Liên Hệ */}
               <button
                 type="button"
