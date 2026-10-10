@@ -30,9 +30,9 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
       {/* Footer Card Container matching Hi Download - Compact & Centered */}
       <div className="w-full max-w-[760px] mx-auto rounded-2xl border border-white/10 bg-[#0C130F]/90 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.5)] py-3.5 px-4 sm:py-4 sm:px-5">
         {/* Top Row: Brand Info (Left) + Quick Navigation Links (Right) */}
-        <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-2.5 sm:gap-3 text-center sm:text-left">
+        <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-3 text-center sm:text-left">
           {/* Left: Brand Identity & Tagline */}
-          <div className="flex flex-col items-center sm:items-start max-w-[420px]">
+          <div className="flex flex-col items-center sm:items-start shrink-0">
             <Link
               href="/"
               className="flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity"
@@ -41,12 +41,12 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
               <BrandLogo size="sm" showSlogan={false} />
             </Link>
             <p className="text-[11.5px] sm:text-[12px] text-white/55 font-normal leading-normal mt-0.5 sm:mt-1 text-center sm:text-left">
-              {customFooterText || "Nền tảng xem phim trực tuyến miễn phí phi lợi nhuận. Miễn trừ trách nhiệm pháp lý."}
+              {customFooterText || "Nền tảng xem phim trực tuyến miễn phí phi lợi nhuận."}
             </p>
           </div>
 
           {/* Right: Quick Links (Liên Hệ | Điều Khoản | Bảo Mật | Miễn Trừ Pháp Lý) */}
-          <div className="flex items-center justify-center flex-wrap gap-2.5 sm:gap-3 text-[12px] sm:text-[12.5px] font-medium text-white/85">
+          <div className="flex items-center justify-center sm:justify-end flex-wrap gap-2.5 sm:gap-3 text-[12px] sm:text-[12.5px] font-medium text-white/85">
             {/* 1. Liên Hệ */}
             <a
               href="https://www.facebook.com/dinhphuong205/"
