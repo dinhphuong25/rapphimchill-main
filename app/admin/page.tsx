@@ -107,7 +107,7 @@ export default function AdminDashboardPage() {
   const [usersList, setUsersList] = useState<any[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [userSearchTerm, setUserSearchTerm] = useState("");
-  const [userFilter, setUserFilter] = useState<"all" | "active" | "watching" | "banned" | "verified">("all");
+  const [userFilter, setUserFilter] = useState<"all" | "active" | "watching" | "banned" | "verified" | "unverified">("all");
   const [userSort, setUserSort] = useState<"recent" | "name" | "activity">("recent");
   const [userPage, setUserPage] = useState(1);
   const [userViewMode, setUserViewMode] = useState<"card" | "table">("card");
@@ -2644,9 +2644,21 @@ export default function AdminDashboardPage() {
             }).length;
             const watchingCount = usersList.filter((u) => Boolean(u.currentWatching)).length;
             const verifiedCount = usersList.filter((u) => Boolean(u.isVerified)).length;
+            const unverifiedCount = usersList.filter((u) => !u.isVerified).length;
             const bannedCount = usersList.filter(
               (u) => Boolean(u.isLocked || (u.bannedUntil && u.bannedUntil > Date.now()))
             ).length;
+
+            const stripAccents = (str: string | undefined | null) => {
+              if (!str) return "";
+              return String(str)
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/đ/g, "d")
+                .replace(/Đ/g, "d")
+                .toLowerCase()
+                .trim();
+            };
 
             const filteredUsers = usersList.filter((u) => {
               const isBanned = Boolean(u.isLocked || (u.bannedUntil && u.bannedUntil > Date.now()));
@@ -2657,15 +2669,34 @@ export default function AdminDashboardPage() {
               if (userFilter === "active" && !isActive24h) return false;
               if (userFilter === "watching" && !isWatching) return false;
               if (userFilter === "verified" && !u.isVerified) return false;
+              if (userFilter === "unverified" && u.isVerified) return false;
               if (userFilter === "banned" && !isBanned) return false;
 
               if (!userSearchTerm.trim()) return true;
-              const term = userSearchTerm.toLowerCase();
+              const rawTerm = userSearchTerm.trim().toLowerCase();
+              const normTerm = stripAccents(rawTerm);
+
+              const nameNorm = stripAccents(u.name);
+              const emailNorm = stripAccents(u.email);
+              const idNorm = stripAccents(u.id);
+              const movieNorm = stripAccents(u.currentWatching?.name);
+              const epNorm = stripAccents(u.currentWatching?.episodeName);
+              const slugNorm = stripAccents(u.currentWatching?.slug);
+              const roleNorm = stripAccents(u.role);
+              const banNorm = stripAccents(u.banReason);
+
               return (
-                (u.name && u.name.toLowerCase().includes(term)) ||
-                (u.email && u.email.toLowerCase().includes(term)) ||
-                (u.currentWatching?.name && u.currentWatching.name.toLowerCase().includes(term)) ||
-                (u.role && u.role.toLowerCase().includes(term))
+                nameNorm.includes(normTerm) ||
+                emailNorm.includes(normTerm) ||
+                idNorm.includes(normTerm) ||
+                movieNorm.includes(normTerm) ||
+                epNorm.includes(normTerm) ||
+                slugNorm.includes(normTerm) ||
+                roleNorm.includes(normTerm) ||
+                banNorm.includes(normTerm) ||
+                (u.email && u.email.toLowerCase().includes(rawTerm)) ||
+                (u.name && u.name.toLowerCase().includes(rawTerm)) ||
+                (u.id && String(u.id).toLowerCase().includes(rawTerm))
               );
             });
 
@@ -2761,7 +2792,7 @@ export default function AdminDashboardPage() {
 
                     {/* Search Box */}
                     <div className="relative">
-                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400" />
                       <input
                         type="text"
                         value={userSearchTerm}
@@ -2769,9 +2800,22 @@ export default function AdminDashboardPage() {
                           setUserSearchTerm(e.target.value);
                           setUserPage(1);
                         }}
-                        placeholder="Tìm theo tên, email, phim..."
-                        className="bg-[#0A0F0D]/90 border border-white/15 focus:border-brand-green focus:ring-1 focus:ring-brand-green/30 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder:text-white/35 transition-all w-52 sm:w-64"
+                        placeholder="Tìm theo tên, email, ID, phim..."
+                        className="bg-[#070C09]/90 border border-white/15 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-white/35 transition-all w-56 sm:w-72 md:w-80"
                       />
+                      {userSearchTerm && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUserSearchTerm("");
+                            setUserPage(1);
+                          }}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white p-0.5 rounded transition-colors cursor-pointer"
+                          title="Xóa tìm kiếm"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
 
                     {(userSearchTerm || userFilter !== "all") && (
@@ -2966,6 +3010,17 @@ export default function AdminDashboardPage() {
                   </button>
                   <button
                     type="button"
+                    onClick={() => { setUserFilter("unverified"); setUserPage(1); }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                      userFilter === "unverified"
+                        ? "bg-amber-400 text-black font-bold shadow-[0_0_15px_rgba(251,191,36,0.35)]"
+                        : "bg-white/[0.04] hover:bg-white/[0.08] text-white/70 hover:text-white border border-white/10"
+                    }`}
+                  >
+                    Chưa Xác Thực ({unverifiedCount})
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => { setUserFilter("banned"); setUserPage(1); }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                       userFilter === "banned"
@@ -2976,6 +3031,31 @@ export default function AdminDashboardPage() {
                     Bị Khóa / Hạn Chế ({bannedCount})
                   </button>
                 </div>
+
+                {/* Active Search / Filter State Indicator */}
+                {userSearchTerm && (
+                  <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-xs text-white animate-in fade-in">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Search className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span className="text-white/80 truncate">
+                        Kết quả tìm kiếm cho: <strong className="text-emerald-400 font-bold">&quot;{userSearchTerm}&quot;</strong>
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-[10px] font-bold shrink-0">
+                        Tìm thấy {filteredUsers.length} / {totalUsersCount} thành viên
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUserSearchTerm("");
+                        setUserPage(1);
+                      }}
+                      className="text-xs font-bold text-emerald-400 hover:text-emerald-300 hover:underline shrink-0 cursor-pointer"
+                    >
+                      Xóa tìm kiếm
+                    </button>
+                  </div>
+                )}
 
                 {/* ======================================================== */}
                 {/* 1. CARD VIEW (DEFAULT - FULL AUTHORITY & NEVER CLIPPED)  */}
@@ -3323,18 +3403,30 @@ export default function AdminDashboardPage() {
                             <span>Đang tải danh sách thành viên...</span>
                           </div>
                         ) : (
-                          <div className="space-y-3">
-                            <p>Không tìm thấy tài khoản thành viên nào phù hợp bộ lọc.</p>
+                          <div className="space-y-3 max-w-md mx-auto px-4">
+                            <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-white/40">
+                              <Search className="w-6 h-6" />
+                            </div>
+                            <p className="text-sm text-white/70 font-medium">
+                              {userSearchTerm.trim()
+                                ? `Không tìm thấy thành viên nào khớp với "${userSearchTerm.trim()}"`
+                                : "Không tìm thấy tài khoản thành viên nào phù hợp bộ lọc."}
+                            </p>
+                            {userSearchTerm.trim() && (
+                              <p className="text-xs text-white/40">
+                                Gợi ý: Thử tìm bằng tên không dấu, email hoặc User ID.
+                              </p>
+                            )}
                             <button
                               type="button"
                               onClick={() => {
                                 setUserSearchTerm("");
                                 setUserFilter("all");
                               }}
-                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-brand-green text-black text-xs font-bold hover:bg-emerald-300 transition-colors"
+                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-green text-black text-xs font-bold hover:bg-emerald-300 transition-colors shadow-[0_0_15px_rgba(16,185,129,0.2)] cursor-pointer"
                             >
                               <X className="w-3.5 h-3.5" />
-                              Hiển thị tất cả
+                              Hiển thị tất cả thành viên
                             </button>
                           </div>
                         )}
@@ -3654,14 +3746,39 @@ export default function AdminDashboardPage() {
 
                           {filteredUsers.length === 0 && (
                             <tr>
-                              <td colSpan={5} className="py-12 text-center text-white/40">
+                              <td colSpan={5} className="py-14 text-center text-white/40">
                                 {isLoadingUsers ? (
                                   <div className="flex items-center justify-center gap-2">
                                     <RefreshCw className="w-4 h-4 animate-spin text-brand-green" />
                                     <span>Đang tải danh sách thành viên...</span>
                                   </div>
                                 ) : (
-                                  "Không tìm thấy tài khoản thành viên nào phù hợp bộ lọc."
+                                  <div className="space-y-3 max-w-md mx-auto px-4">
+                                    <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-white/40">
+                                      <Search className="w-5 h-5" />
+                                    </div>
+                                    <p className="text-sm text-white/70 font-medium">
+                                      {userSearchTerm.trim()
+                                        ? `Không tìm thấy thành viên nào khớp với "${userSearchTerm.trim()}"`
+                                        : "Không tìm thấy tài khoản thành viên nào phù hợp bộ lọc."}
+                                    </p>
+                                    {userSearchTerm.trim() && (
+                                      <p className="text-xs text-white/40">
+                                        Gợi ý: Thử tìm bằng tên không dấu, email hoặc User ID.
+                                      </p>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setUserSearchTerm("");
+                                        setUserFilter("all");
+                                      }}
+                                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-brand-green text-black text-xs font-bold hover:bg-emerald-300 transition-colors shadow-[0_0_15px_rgba(16,185,129,0.2)] cursor-pointer"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                      Hiển thị tất cả thành viên
+                                    </button>
+                                  </div>
                                 )}
                               </td>
                             </tr>
