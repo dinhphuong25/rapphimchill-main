@@ -2,7 +2,8 @@
 
 import { memo, useState, useEffect } from "react";
 import Link from "next/link";
-import { Mail, Scale, Shield, ShieldAlert, X } from "lucide-react";
+import { Mail, Scale, Shield, ShieldAlert, X, Copy, Check, Send } from "lucide-react";
+import { toast } from "sonner";
 import BrandLogo from "@/components/ui/brand-logo";
 
 interface FooterProps {
@@ -10,7 +11,35 @@ interface FooterProps {
 }
 
 function FooterComponent({ customFooterText }: FooterProps = {}) {
-  const [activeModal, setActiveModal] = useState<"terms" | "privacy" | "disclaimer" | null>(null);
+  const [activeModal, setActiveModal] = useState<"terms" | "privacy" | "disclaimer" | "contact" | null>(null);
+  const [copiedEmail, setCopiedEmail] = useState(false);
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactTopic, setContactTopic] = useState("Góp ý phát triển tính năng");
+  const [contactMessage, setContactMessage] = useState("");
+
+  const handleCopyEmail = async () => {
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText("hi@dinhphuong.tech");
+        setCopiedEmail(true);
+        toast.success("Đã sao chép email hi@dinhphuong.tech!");
+        setTimeout(() => setCopiedEmail(false), 2500);
+      }
+    } catch {
+      toast.info("Email: hi@dinhphuong.tech");
+    }
+  };
+
+  const handleSendContact = (e: React.FormEvent) => {
+    e.preventDefault();
+    const subject = encodeURIComponent(`[Hi Phim - ${contactTopic}] ${contactName || "Liên hệ từ người dùng"}`);
+    const body = encodeURIComponent(
+      `Họ và tên: ${contactName}\nEmail người gửi: ${contactEmail}\nChủ đề: ${contactTopic}\n\nNội dung:\n${contactMessage}`
+    );
+    window.location.href = `mailto:hi@dinhphuong.tech?subject=${subject}&body=${body}`;
+    toast.success("Đang mở ứng dụng gửi thư tới hi@dinhphuong.tech!");
+  };
 
   // Close modal on Escape key
   useEffect(() => {
@@ -48,16 +77,15 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
           {/* Right: Quick Links (Liên Hệ | Điều Khoản | Bảo Mật | Miễn Trừ Pháp Lý) */}
           <div className="flex items-center justify-center sm:justify-end flex-wrap gap-2.5 sm:gap-3 text-[12px] sm:text-[12.5px] font-medium text-white/85">
             {/* 1. Liên Hệ */}
-            <a
-              href="https://www.facebook.com/dinhphuong205/"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={() => setActiveModal("contact")}
               className="flex items-center gap-1.5 hover:text-brand-green transition-colors cursor-pointer group"
-              title="Liên hệ Facebook"
+              title="Liên hệ với ban quản trị"
             >
               <Mail className="w-3.5 h-3.5 text-brand-green shrink-0 group-hover:scale-110 transition-transform" />
               <span>Liên Hệ</span>
-            </a>
+            </button>
 
             {/* Divider */}
             <div className="w-[1.5px] h-3 bg-white/20 hidden xs:block" />
@@ -106,10 +134,13 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
         {/* Divider */}
         <div className="h-px bg-white/10 my-2.5 sm:my-3" />
 
-        {/* Bottom Row: Copyright */}
-        <div className="text-center">
+        {/* Bottom Row: Copyright & Founder Info */}
+        <div className="text-center space-y-0.5">
           <p className="text-[11.5px] sm:text-[12px] text-white/85 font-medium">
             © 2026 Hi Phim. Toàn quyền được bảo lưu.
+          </p>
+          <p className="text-[11px] sm:text-[11.5px] text-white/50 font-normal">
+            Được thành lập và phát triển bởi <span className="text-brand-green font-medium">Đình Phương</span>.
           </p>
         </div>
       </div>
@@ -303,6 +334,177 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
                 className="px-5 py-2.5 rounded-xl bg-brand-green text-[#051309] font-bold text-xs sm:text-sm hover:opacity-90 active:scale-95 transition-all cursor-pointer shadow-md"
               >
                 Đã hiểu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Contact Form Modal */}
+      {activeModal === "contact" && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200"
+          onClick={() => setActiveModal(null)}
+        >
+          <div
+            className="w-full max-w-lg bg-[#0F1712] border border-white/15 rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[min(90vh,600px)] overflow-hidden animate-in zoom-in-95 duration-200 text-left select-text"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-white/10 shrink-0 bg-[#0F1712]">
+              <div className="flex items-center gap-2">
+                <Mail className="w-5 h-5 text-brand-green" />
+                <h3 className="text-base sm:text-lg font-bold text-white">Liên Hệ Ban Quản Trị</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveModal(null)}
+                className="p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                aria-label="Đóng"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body - Scrollable */}
+            <div className="px-5 sm:px-6 py-4 overflow-y-auto custom-scrollbar flex-1 text-xs sm:text-[13px] text-white/70 space-y-3.5 leading-relaxed">
+              <p>
+                Mọi ý kiến đóng góp, đề xuất tính năng, báo lỗi nội dung hoặc liên hệ hợp tác, bạn vui lòng gửi thư về hòm thư trực tiếp của chúng tôi:
+              </p>
+
+              {/* Direct Mail Banner */}
+              <div className="p-3.5 rounded-xl bg-white/[0.04] border border-brand-green/30 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-brand-green/15 text-brand-green flex items-center justify-center shrink-0">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] uppercase tracking-wider text-white/45 font-semibold">Email chính thức</p>
+                    <a
+                      href="mailto:hi@dinhphuong.tech"
+                      className="text-white hover:text-brand-green font-mono font-bold text-xs sm:text-[13.5px] truncate block transition-colors"
+                    >
+                      hi@dinhphuong.tech
+                    </a>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleCopyEmail}
+                    className="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white text-[11px] font-medium flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                    title="Sao chép địa chỉ email"
+                  >
+                    {copiedEmail ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-brand-green" />
+                        <span className="text-brand-green font-semibold">Đã chép</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5 text-white/70" />
+                        <span>Sao chép</span>
+                      </>
+                    )}
+                  </button>
+                  <a
+                    href="mailto:hi@dinhphuong.tech?subject=[Hi Phim] Liên hệ từ người dùng"
+                    className="px-2.5 py-1.5 rounded-lg bg-brand-green/20 hover:bg-brand-green/30 border border-brand-green/40 text-brand-green text-[11px] font-bold flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                    title="Gửi email ngay"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Mở Mail</span>
+                  </a>
+                </div>
+              </div>
+
+              {/* Contact Form */}
+              <form onSubmit={handleSendContact} className="space-y-3 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-white/70 mb-1">
+                      Họ và tên / Biệt danh <span className="text-rose-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="VD: Minh Quân"
+                      value={contactName}
+                      onChange={(e) => setContactName(e.target.value)}
+                      className="w-full h-9 px-3 rounded-xl bg-white/[0.04] border border-white/10 focus:border-brand-green/50 text-white placeholder-white/30 text-xs outline-none transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-white/70 mb-1">
+                      Email của bạn <span className="text-rose-400">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="email@example.com"
+                      value={contactEmail}
+                      onChange={(e) => setContactEmail(e.target.value)}
+                      className="w-full h-9 px-3 rounded-xl bg-white/[0.04] border border-white/10 focus:border-brand-green/50 text-white placeholder-white/30 text-xs outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-white/70 mb-1">
+                    Chủ đề liên hệ
+                  </label>
+                  <select
+                    value={contactTopic}
+                    onChange={(e) => setContactTopic(e.target.value)}
+                    className="w-full h-9 px-2.5 rounded-xl bg-[#141d17] border border-white/10 focus:border-brand-green/50 text-white text-xs outline-none transition-all cursor-pointer"
+                  >
+                    <option value="Góp ý phát triển tính năng">Góp ý phát triển tính năng</option>
+                    <option value="Báo lỗi phim / Server">Báo lỗi phim / Server hỏng</option>
+                    <option value="Yêu cầu phim mới">Yêu cầu cập nhật phim mới</option>
+                    <option value="Bản quyền / DMCA">Vấn đề bản quyền / DMCA</option>
+                    <option value="Hợp tác & Khác">Hợp tác & Khác</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-white/70 mb-1">
+                    Nội dung tin nhắn <span className="text-rose-400">*</span>
+                  </label>
+                  <textarea
+                    required
+                    rows={3}
+                    placeholder="Mô tả chi tiết nội dung bạn muốn gửi..."
+                    value={contactMessage}
+                    onChange={(e) => setContactMessage(e.target.value)}
+                    className="w-full p-2.5 rounded-xl bg-white/[0.04] border border-white/10 focus:border-brand-green/50 text-white placeholder-white/30 text-xs outline-none transition-all resize-none"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-[11px] text-white/40">
+                    Gửi trực tiếp đến: <span className="text-brand-green font-mono font-medium">hi@dinhphuong.tech</span>
+                  </span>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-xl bg-brand-green text-[#051309] font-bold text-xs hover:opacity-90 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5 shadow-md"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Gửi tin nhắn</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-5 sm:px-6 py-3 border-t border-white/10 bg-[#0F1712] flex items-center justify-between shrink-0 text-[11px] text-white/50">
+              <span>Phản hồi thông thường trong 24 giờ</span>
+              <button
+                type="button"
+                onClick={() => setActiveModal(null)}
+                className="px-3.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 hover:text-white transition-colors cursor-pointer"
+              >
+                Đóng
               </button>
             </div>
           </div>
