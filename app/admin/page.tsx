@@ -1732,7 +1732,7 @@ export default function AdminDashboardPage() {
                       <span>{config.maintenance.enabled ? "TẮT BẢO TRÌ NGAY (Mở Web)" : "BẬT CHẾ ĐỘ BẢO TRÌ"}</span>
                     </button>
                     <div className="flex items-center justify-between text-[11px] text-white/40 pt-1">
-                      <Link href="/maintenance" target="_blank" className="hover:text-white underline">
+                      <Link href="/maintenance?preview=1" target="_blank" className="hover:text-white underline">
                         Xem thử trang bảo trì
                       </Link>
                       <Link href="/?bypass=hiphim_secret_2026" target="_blank" className="hover:text-brand-green underline">
@@ -2307,36 +2307,77 @@ export default function AdminDashboardPage() {
               </div>
 
               {/* Maintenance Toggle Card */}
-              <div className="flex items-center justify-between p-5 rounded-2xl bg-white/[0.02] border border-white/10">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base font-extrabold text-white">Chế độ Bảo Trì Hệ Thống</span>
-                    {config.maintenance.enabled && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-3xl bg-[#0D1510]/80 border border-white/10 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
+                <div className="space-y-1.5 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-base font-extrabold text-white">Chế độ Bảo Trì Toàn Trang</span>
+                    {config.maintenance.enabled ? (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                         ĐANG KÍCH HOẠT
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        ĐANG TẮT (WEB HOẠT ĐỘNG)
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-white/50">
-                    Bật để khóa truy cập tạm thời khi cập nhật máy chủ. Quản trị viên vẫn truy cập được bình thường qua mã Bypass.
+                  <p className="text-xs text-white/60 leading-relaxed max-w-xl">
+                    Khi BẬT: Toàn bộ khán giả truy cập website sẽ được chuyển hướng trực tiếp sang trang <code className="text-emerald-400 font-mono">/maintenance</code>. Quản trị viên vẫn truy cập được bình thường.
                   </p>
                 </div>
 
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={config.maintenance.enabled}
-                    onChange={(e) => {
+                <div className="flex items-center gap-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const newEnabled = !config.maintenance.enabled;
                       const updated = {
                         ...config,
-                        maintenance: { ...config.maintenance, enabled: e.target.checked },
+                        maintenance: { ...config.maintenance, enabled: newEnabled },
                       };
                       setConfig(updated);
+                      await handleSaveConfig(updated);
+                      if (newEnabled) {
+                        toast.success("Đã BẬT bảo trì hệ thống! Toàn bộ khách truy cập sẽ được chuyển sang /maintenance.");
+                      } else {
+                        toast.success("Đã TẮT bảo trì! Website đã mở lại hoạt động bình thường.");
+                      }
                     }}
-                    className="sr-only peer"
-                  />
-                  <div className="w-12 h-6 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500" />
-                </label>
+                    className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all cursor-pointer shadow-lg active:scale-95 flex items-center gap-2 ${
+                      config.maintenance.enabled
+                        ? "bg-amber-400 hover:bg-amber-300 text-black shadow-amber-400/20"
+                        : "bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/20"
+                    }`}
+                  >
+                    <Wrench className="w-3.5 h-3.5" />
+                    <span>{config.maintenance.enabled ? "TẮT BẢO TRÌ NGAY" : "BẬT BẢO TRÌ NGAY"}</span>
+                  </button>
+
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={config.maintenance.enabled}
+                      onChange={async (e) => {
+                        const newEnabled = e.target.checked;
+                        const updated = {
+                          ...config,
+                          maintenance: { ...config.maintenance, enabled: newEnabled },
+                        };
+                        setConfig(updated);
+                        await handleSaveConfig(updated);
+                        if (newEnabled) {
+                          toast.success("Đã BẬT bảo trì hệ thống!");
+                        } else {
+                          toast.success("Đã TẮT bảo trì! Website đã mở lại hoạt động bình thường.");
+                        }
+                      }}
+                      className="sr-only peer"
+                    />
+                    <div className="w-12 h-6 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500" />
+                  </label>
+                </div>
               </div>
 
               {/* Maintenance Reason */}
@@ -2351,21 +2392,24 @@ export default function AdminDashboardPage() {
                       maintenance: { ...config.maintenance, reason: e.target.value },
                     })
                   }
-                  placeholder="Hệ thống đang được nâng cấp định kỳ..."
-                  className="w-full bg-black/60 border border-white/15 rounded-xl p-3.5 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-brand-green"
+                  placeholder="Hi Phim đang tiến hành nâng cấp cụm máy chủ và tối ưu hóa hệ thống..."
+                  className="w-full bg-[#080E0B] border border-white/15 focus:border-emerald-500 rounded-2xl p-4 text-xs text-white placeholder:text-white/30 focus:outline-none transition-colors"
                 />
               </div>
 
               {/* Quick Links */}
-              <div className="pt-2 border-t border-white/10 flex items-center gap-3">
+              <div className="pt-2 border-t border-white/10 flex items-center justify-between flex-wrap gap-2 text-xs">
                 <Link
-                  href="/maintenance"
+                  href="/maintenance?preview=1"
                   target="_blank"
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-green hover:underline"
+                  className="inline-flex items-center gap-1.5 font-bold text-emerald-400 hover:text-emerald-300 hover:underline"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Xem trực tiếp giao diện trang /maintenance</span>
+                  <span>Xem trước giao diện trang bảo trì (/maintenance?preview=1)</span>
                 </Link>
+                <span className="text-white/40">
+                  Trạng thái hiện tại: <strong className={config.maintenance.enabled ? "text-amber-400" : "text-emerald-400"}>{config.maintenance.enabled ? "Đang Khóa Web" : "Mở Bình Thường"}</strong>
+                </span>
               </div>
             </div>
           )}

@@ -1,3 +1,5 @@
+import { getSiteConfig, saveSiteConfig } from "./site-config";
+
 export interface MaintenanceState {
   enabled: boolean;
   reason?: string;
@@ -15,35 +17,63 @@ declare global {
   var __HIPHIM_MAINTENANCE__: MaintenanceState | undefined;
 }
 
-// In-memory global state for Node.js / Runtime worker
-if (!globalThis.__HIPHIM_MAINTENANCE__) {
-  globalThis.__HIPHIM_MAINTENANCE__ = {
-    enabled: process.env.MAINTENANCE_MODE === "true" || process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true",
-    reason: "Hệ thống đang được nâng cấp định kỳ để cải thiện trải nghiệm xem phim.",
-    estimatedEndTime: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-    startedAt: new Date().toISOString(),
-  };
-}
-
 export function getMaintenanceState(): MaintenanceState {
   const isEnvEnabled = process.env.MAINTENANCE_MODE === "true" || process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
-  const state = globalThis.__HIPHIM_MAINTENANCE__ || {
-    enabled: isEnvEnabled,
-    reason: "Hệ thống đang được nâng cấp định kỳ.",
-  };
-  if (isEnvEnabled) {
-    state.enabled = true;
+  let configMaintenance = false;
+  let reason = "Hệ thống đang được nâng cấp định kỳ để cải thiện trải nghiệm xem phim.";
+  let estimatedEndTime = "";
+
+  try {
+    const config = getSiteConfig();
+    configMaintenance = Boolean(config?.maintenance?.enabled);
+    if (config?.maintenance?.reason) {
+      reason = config.maintenance.reason;
+    }
+    if (config?.maintenance?.estimatedEndTime) {
+      estimatedEndTime = config.maintenance.estimatedEndTime;
+    }
+  } catch (err) {
+    console.warn("Could not read site config in getMaintenanceState:", err);
   }
-  return state;
+
+  const isEnabled = isEnvEnabled || configMaintenance || Boolean(globalThis.__HIPHIM_MAINTENANCE__?.enabled);
+
+  return {
+    enabled: isEnabled,
+    reason,
+    estimatedEndTime,
+    updatedAt: globalThis.__HIPHIM_MAINTENANCE__?.updatedAt,
+  };
 }
 
 export function setMaintenanceState(newState: Partial<MaintenanceState>): MaintenanceState {
   const current = getMaintenanceState();
+  const isEnabled = newState.enabled !== undefined ? Boolean(newState.enabled) : current.enabled;
+  const reason = newState.reason || current.reason || "Hệ thống đang được nâng cấp định kỳ để cải thiện trải nghiệm xem phim.";
+  const estimatedEndTime = newState.estimatedEndTime || current.estimatedEndTime || "";
+
+  // 1. Persist to disk via saveSiteConfig
+  try {
+    saveSiteConfig({
+      maintenance: {
+        enabled: isEnabled,
+        reason,
+        estimatedEndTime,
+      },
+    });
+  } catch (err) {
+    console.error("Could not persist maintenance config:", err);
+  }
+
   const updated: MaintenanceState = {
     ...current,
     ...newState,
+    enabled: isEnabled,
+    reason,
+    estimatedEndTime,
     updatedAt: new Date().toISOString(),
   };
+
   globalThis.__HIPHIM_MAINTENANCE__ = updated;
   return updated;
 }

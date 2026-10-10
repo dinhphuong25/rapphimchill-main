@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Sidebar from "@/components/sidebar";
 import Header from "@/components/header";
@@ -23,6 +23,44 @@ function AppShellComponent({ children }: AppShellProps) {
     pathname.startsWith("/watch") ||
     pathname.startsWith("/admin") ||
     pathname.startsWith("/maintenance");
+
+  // Real-time client listener for maintenance mode
+  useEffect(() => {
+    if (isStandalonePage) return;
+
+    const checkMaintenance = async () => {
+      try {
+        const res = await fetch("/api/system/maintenance", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.enabled) {
+            const hasBypass =
+              document.cookie.includes("hiphim_admin_session") ||
+              document.cookie.includes("hiphim_maintenance_bypass");
+            if (!hasBypass) {
+              window.location.replace("/maintenance");
+            }
+          }
+        }
+      } catch {
+        // ignore network error
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        checkMaintenance();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    const timer = setInterval(checkMaintenance, 12000);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      clearInterval(timer);
+    };
+  }, [isStandalonePage]);
 
   if (isStandalonePage) {
     return <>{children}</>;

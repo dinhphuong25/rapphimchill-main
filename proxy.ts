@@ -181,6 +181,37 @@ function containsSuspiciousPayload(urlStr: string): boolean {
   return SUSPICIOUS_PATTERNS.some((pattern) => pattern.test(urlStr));
 }
 
+let maintenanceCache = {
+  enabled: false,
+  lastChecked: 0,
+};
+
+async function getIsMaintenanceActive(request: NextRequest): Promise<boolean> {
+  const now = Date.now();
+  if (now - maintenanceCache.lastChecked < 2500) {
+    return maintenanceCache.enabled;
+  }
+
+  try {
+    const origin = request.nextUrl.origin;
+    const res = await fetch(`${origin}/api/system/maintenance`, {
+      cache: 'no-store',
+      headers: { 'x-proxy-check': '1' },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      maintenanceCache = {
+        enabled: Boolean(data?.enabled),
+        lastChecked: now,
+      };
+      return maintenanceCache.enabled;
+    }
+  } catch {
+    // Ignore fetch error, keep cached
+  }
+  return maintenanceCache.enabled;
+}
+
 export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const userAgent = request.headers.get('user-agent');
@@ -306,42 +337,54 @@ export async function proxy(request: NextRequest) {
     const maintenanceCookie = request.cookies.get('hiphim_maintenance_active')?.value;
     const secretToken = process.env.SYSTEM_MAINTENANCE_TOKEN || "hiphim_secret_2026";
     
-    // Check if bypass token in query or cookie is valid
+    // Check if bypass token in query or cookie is valid, or if logged in as admin
+    const hasAdminSession = Boolean(
+        request.cookies.get('hiphim_admin_session')?.value ||
+        request.cookies.get('hiphim_user_session')?.value
+    );
     const hasValidBypass = 
         bypassToken === secretToken || 
-        bypassCookie === secretToken;
-
-    // Check if maintenance is currently active:
-    // 1. Env variable MAINTENANCE_MODE = 'true'
-    // 2. Cookie hiphim_maintenance_active = 'true'
-    // 3. In-memory global state flag
-    const isMaintenanceActive = 
-        process.env.MAINTENANCE_MODE === 'true' || 
-        process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true' ||
-        maintenanceCookie === 'true' ||
-        (globalThis as any).__HIPHIM_MAINTENANCE__?.enabled === true;
+        bypassCookie === secretToken ||
+        hasAdminSession;
 
     // Paths exempt from maintenance redirection:
     const isExemptPath = 
         pathname === '/maintenance' ||
         pathname.startsWith('/admin') ||
-        pathname.startsWith('/api/admin') ||
-        pathname.startsWith('/api/system/') ||
-        pathname.startsWith('/api/cron/') ||
+        pathname.startsWith('/api/') ||
         pathname.startsWith('/_next/') ||
-        pathname === '/favicon.ico';
+        pathname.startsWith('/static/') ||
+        pathname === '/favicon.ico' ||
+        pathname === '/robots.txt' ||
+        pathname === '/sitemap.xml' ||
+        pathname === '/dmca-validation.html';
 
+    // Check if maintenance is currently active
+    let isMaintenanceActive = 
+        process.env.MAINTENANCE_MODE === 'true' || 
+        process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true' ||
+        maintenanceCookie === 'true' ||
+        (globalThis as any).__HIPHIM_MAINTENANCE__?.enabled === true;
+
+    // If not flagged by env/cookie, query internal system status (cached 2s) for HTML pages
+    if (!isMaintenanceActive && !isExemptPath) {
+        try {
+            isMaintenanceActive = await getIsMaintenanceActive(request);
+        } catch {
+            // fallback
+        }
+    }
+
+    // A. When Maintenance is ON: Redirect all non-exempt visitors to /maintenance
     if (isMaintenanceActive && !hasValidBypass && !isExemptPath) {
-        // Rewrite to /maintenance with HTTP 503 Service Unavailable (SEO Safe)
         const maintenanceUrl = new URL('/maintenance', request.url);
-        return NextResponse.rewrite(maintenanceUrl, {
-            status: 503,
-            statusText: 'Service Unavailable',
-            headers: {
-                'Retry-After': '3600',
-                'Cache-Control': 'no-store, max-age=0',
-            }
-        });
+        return NextResponse.redirect(maintenanceUrl, 307);
+    }
+
+    // B. When Maintenance is OFF: If visitor navigates to /maintenance, redirect back to /
+    if (pathname === '/maintenance' && !isMaintenanceActive && !request.nextUrl.searchParams.has('preview')) {
+        const homeUrl = new URL('/', request.url);
+        return NextResponse.redirect(homeUrl, 307);
     }
 
     // If valid bypass token was passed in query, set cookie and redirect to clean URL

@@ -55,11 +55,31 @@ export async function POST(req: NextRequest) {
       console.warn("Revalidate path warning:", e);
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: "Cập nhật cấu hình website thành công!",
       config: updatedConfig,
     });
+
+    if (updatedConfig.maintenance?.enabled) {
+      response.cookies.set("hiphim_maintenance_active", "true", {
+        path: "/",
+        httpOnly: false,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 86400 * 3,
+      });
+    } else {
+      response.cookies.set("hiphim_maintenance_active", "false", {
+        path: "/",
+        httpOnly: false,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 0,
+      });
+    }
+
+    return response;
   } catch (err: any) {
     console.error("Config save error:", err);
     return NextResponse.json(
