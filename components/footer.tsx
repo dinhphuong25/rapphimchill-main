@@ -172,7 +172,7 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
             </div>
 
             {/* Modal Body - Scrollable */}
-            <div className="px-5 sm:px-6 py-4 overflow-y-auto custom-scrollbar flex-1 text-xs sm:text-[13px] text-white/70 space-y-3 leading-relaxed">
+            <div className="px-5 sm:px-6 py-4 overflow-y-auto custom-scrollbar flex-1 text-xs sm:text-[13px] text-white/70 space-y-3 leading-relaxed text-justify">
               <p>
                 Chào mừng bạn đến với <strong>Hi Phim</strong>. Khi truy cập và sử dụng dịch vụ của chúng tôi, bạn đồng ý tuân thủ các điều khoản sau:
               </p>
@@ -237,7 +237,7 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
             </div>
 
             {/* Modal Body - Scrollable */}
-            <div className="px-5 sm:px-6 py-4 overflow-y-auto custom-scrollbar flex-1 text-xs sm:text-[13px] text-white/70 space-y-3 leading-relaxed">
+            <div className="px-5 sm:px-6 py-4 overflow-y-auto custom-scrollbar flex-1 text-xs sm:text-[13px] text-white/70 space-y-3 leading-relaxed text-justify">
               <p>
                 Hi Phim coi trọng quyền riêng tư của người dùng và cam kết bảo mật thông tin tối đa:
               </p>
@@ -302,7 +302,7 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
             </div>
 
             {/* Modal Body - Scrollable */}
-            <div className="px-5 sm:px-6 py-4 overflow-y-auto custom-scrollbar flex-1 text-xs sm:text-[13px] text-white/70 space-y-3 leading-relaxed">
+            <div className="px-5 sm:px-6 py-4 overflow-y-auto custom-scrollbar flex-1 text-xs sm:text-[13px] text-white/70 space-y-3 leading-relaxed text-justify">
               <p>
                 <strong>Tuyên bố từ chối trách nhiệm pháp lý đối với nội dung (Legal Disclaimer):</strong>
               </p>
@@ -367,7 +367,7 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
             </div>
 
             {/* Modal Body - Scrollable */}
-            <div className="px-5 sm:px-6 py-4 overflow-y-auto custom-scrollbar flex-1 text-xs sm:text-[13px] text-white/70 space-y-3.5 leading-relaxed">
+            <div className="px-5 sm:px-6 py-4 overflow-y-auto custom-scrollbar flex-1 text-xs sm:text-[13px] text-white/70 space-y-3.5 leading-relaxed text-justify">
               <p>
                 Mọi ý kiến đóng góp, đề xuất tính năng, báo lỗi nội dung hoặc liên hệ hợp tác, bạn vui lòng gửi thư về hòm thư trực tiếp của chúng tôi:
               </p>
