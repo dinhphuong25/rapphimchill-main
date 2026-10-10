@@ -66,8 +66,29 @@ const CACHE_ASSET_PATHS = [
     /\.eot$/,
 ];
 
+function isGoogleOrVerificationAgent(userAgent: string | null): boolean {
+    if (!userAgent) return false;
+    const lowerUA = userAgent.toLowerCase();
+    return (
+        lowerUA.includes('google') ||
+        lowerUA.includes('googlebot') ||
+        lowerUA.includes('tag-assistant') ||
+        lowerUA.includes('tagassistant') ||
+        lowerUA.includes('inspectiontool') ||
+        lowerUA.includes('analytics') ||
+        lowerUA.includes('mediapartners-google') ||
+        lowerUA.includes('adsbot') ||
+        lowerUA.includes('feedfetcher')
+    );
+}
+
 function isBlockedUserAgent(userAgent: string | null): boolean {
     if (!userAgent) return false;
+
+    // Never block Google bots, Google Tag Assistant, or Google Analytics verification
+    if (isGoogleOrVerificationAgent(userAgent)) {
+        return false;
+    }
 
     const lowerUA = userAgent.toLowerCase();
     return BLOCKED_USER_AGENTS.some(blocked => lowerUA.includes(blocked));
@@ -371,21 +392,25 @@ export async function proxy(request: NextRequest) {
     }
 
     // Strip URL tracking parameters to ensure ISR cache hit (Facebook fbclid issue)
-    const trackingParams = [
-        'fbclid', 'gclid', 'wbraid', 'gbraid', 'ref', 'source',
-        'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'
-    ];
-    
-    trackingParams.forEach(param => {
-        if (url.searchParams.has(param)) {
-            url.searchParams.delete(param);
-            hasModifiedParams = true;
-        }
-    });
+    // EXEMPT Google verification and Google Tag Assistant debug sessions
+    const isGoogleTesting = isGoogleOrVerificationAgent(userAgent) || url.searchParams.has('gtm_debug') || url.searchParams.has('_gl');
+    if (!isGoogleTesting) {
+        const trackingParams = [
+            'fbclid', 'gclid', 'wbraid', 'gbraid', 'ref', 'source',
+            'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'
+        ];
+        
+        trackingParams.forEach(param => {
+            if (url.searchParams.has(param)) {
+                url.searchParams.delete(param);
+                hasModifiedParams = true;
+            }
+        });
 
-    if (hasModifiedParams) {
-        // Redirect to the clean URL so it hits the static Next.js cache and prevents open redirect
-        return NextResponse.redirect(url, 307);
+        if (hasModifiedParams) {
+            // Redirect to the clean URL so it hits the static Next.js cache and prevents open redirect
+            return NextResponse.redirect(url, 307);
+        }
     }
 
     // Continue with request
