@@ -716,11 +716,11 @@ export default function AdminDashboardPage() {
   const totalFavorites = usersList.reduce((acc, u) => acc + (u.favoriteCount || 0), 0);
 
   return (
-    <div className="min-h-screen bg-[#070707] text-cinema-text flex flex-col select-none">
+    <div className="min-h-screen bg-[#060A08] text-cinema-text flex flex-col select-none">
       {/* ======================================================== */}
       {/* 1. TOP COMMAND BAR (RESPONSIVE FOR DESKTOP & MOBILE)     */}
       {/* ======================================================== */}
-      <header className="h-16 border-b border-white/[0.08] bg-[#0c0c0c]/90 backdrop-blur-2xl sticky top-0 z-50 flex items-center justify-between px-3 sm:px-6 lg:px-8 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+      <header className="h-16 border-b border-white/10 bg-[#0C130F]/90 backdrop-blur-2xl sticky top-0 z-50 flex items-center justify-between px-3 sm:px-6 lg:px-8 shadow-[0_4px_30px_rgba(0,0,0,0.6)]">
         {/* Left: Mobile Toggle + Brand + Breadcrumb */}
         <div className="flex items-center gap-3">
           {/* Mobile Menu Toggle Button */}
@@ -735,19 +735,19 @@ export default function AdminDashboardPage() {
 
           {/* Logo Brand */}
           <Link href="/" target="_blank" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-brand-green via-emerald-500 to-teal-400 flex items-center justify-center text-black font-black text-lg sm:text-xl shadow-[0_0_20px_rgba(34,197,94,0.4)] group-hover:scale-105 transition-transform">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-brand-green via-emerald-500 to-teal-400 flex items-center justify-center text-[#051309] font-black text-lg sm:text-xl shadow-[0_0_20px_rgba(34,197,94,0.45)] group-hover:scale-105 group-hover:shadow-[0_0_25px_rgba(34,197,94,0.6)] transition-all">
               H
             </div>
             <div className="hidden xs:block">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <span className="font-black text-base sm:text-lg tracking-tight text-white">
-                  Hi <span className="text-brand-green">Phim</span>
+                  Hi <span className="text-brand-green drop-shadow-[0_0_12px_rgba(34,197,94,0.5)]">Phim</span>
                 </span>
-                <span className="text-[9px] uppercase tracking-wider font-black px-2 py-0.5 rounded-full bg-brand-green/20 text-brand-green border border-brand-green/35">
+                <span className="text-[9px] uppercase tracking-wider font-black px-2 py-0.5 rounded-full bg-brand-green/15 text-brand-green border border-brand-green/30 shadow-[0_0_10px_rgba(34,197,94,0.15)]">
                   ADMIN SUITE
                 </span>
               </div>
-              <p className="text-[10px] text-white/40 font-mono hidden md:block">Trung Tâm Điều Hành Quản Trị</p>
+              <p className="text-[10px] text-white/45 font-mono hidden md:block">Trung Tâm Điều Hành Quản Trị</p>
             </div>
           </Link>
 
@@ -755,7 +755,7 @@ export default function AdminDashboardPage() {
           <div className="hidden xl:flex items-center gap-2 pl-4 border-l border-white/10 text-xs">
             <span className="text-white/40">Quản Trị</span>
             <ChevronRight className="w-3.5 h-3.5 text-white/30" />
-            <span className="text-white font-bold">
+            <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-0.5 rounded-lg border border-emerald-500/20 shadow-sm">
               {activeTab === "overview" && "Tổng Quan Hệ Thống"}
               {activeTab === "users" && "Quản Lý Thành Viên & Toàn Quyền"}
               {activeTab === "featured" && "Ghim Tiêu Điểm Phim"}
@@ -764,26 +764,27 @@ export default function AdminDashboardPage() {
               {activeTab === "maintenance" && "Chế Độ Bảo Trì"}
               {activeTab === "settings" && "Cấu Hình SEO & Chung"}
               {activeTab === "security" && "Bảo Mật & Mật Khẩu"}
+              {activeTab === "reports" && "Báo Lỗi Tập Phim"}
             </span>
           </div>
         </div>
 
         {/* Center: Super Admin Crown Badge (Desktop) */}
         <div className="hidden md:flex items-center gap-2">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-400/30 text-amber-300 shadow-[0_0_20px_rgba(251,191,36,0.1)]">
-            <Crown className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-400/30 text-amber-300 shadow-[0_0_20px_rgba(251,191,36,0.12)]">
+            <Crown className="w-3.5 h-3.5 text-amber-300 shrink-0 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]" />
             <div className="flex items-center gap-1.5 text-xs">
               <span className="text-white/60 font-semibold hidden lg:inline">Super Admin:</span>
               <span className="text-white font-mono font-bold tracking-tight">kimdinhphuong205@gmail.com</span>
             </div>
-            <span className="w-2 h-2 rounded-full bg-brand-green shadow-[0_0_8px_rgba(34,197,94,0.8)] animate-pulse" title="Toàn quyền tối cao" />
+            <span className="w-2 h-2 rounded-full bg-brand-green shadow-[0_0_8px_rgba(34,197,94,0.9)] animate-pulse" title="Toàn quyền tối cao" />
           </div>
         </div>
 
         {/* Right: Actions & Tools */}
         <div className="flex items-center gap-2 sm:gap-2.5">
           {/* API Health Status Pill */}
-          <div className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-white/[0.03] border border-white/10 text-xs font-mono text-white/70">
+          <div className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-xs font-mono text-white/70">
             <span className={`w-2 h-2 rounded-full ${apiPing && apiPing > 0 ? "bg-brand-green shadow-[0_0_6px_rgba(34,197,94,0.8)]" : "bg-amber-400"}`} />
             <span className="hidden md:inline">API: </span>{apiPing && apiPing > 0 ? `${apiPing}ms` : "Ping..."}
           </div>
@@ -792,7 +793,7 @@ export default function AdminDashboardPage() {
           <Link
             href="/"
             target="_blank"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/10 hover:border-white/20 transition-all shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 text-white/85 hover:text-white border border-white/10 hover:border-white/20 transition-all shadow-sm active:scale-95"
             title="Mở giao diện người dùng trên tab mới"
           >
             <Eye className="w-3.5 h-3.5 text-brand-green" />
@@ -805,7 +806,7 @@ export default function AdminDashboardPage() {
             type="button"
             onClick={() => handleSaveConfig()}
             disabled={isSaving}
-            className="flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-brand-green to-emerald-500 hover:from-brand-green-hover hover:to-emerald-400 text-black shadow-[0_0_25px_rgba(34,197,94,0.35)] transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+            className="flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-brand-green via-emerald-400 to-teal-400 hover:opacity-95 text-[#051309] shadow-[0_0_25px_rgba(34,197,94,0.4)] transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
             title="Lưu tất cả thay đổi cấu hình vào hệ thống"
           >
             <Save className={`w-3.5 h-3.5 ${isSaving ? "animate-spin" : ""}`} />
@@ -1056,11 +1057,11 @@ export default function AdminDashboardPage() {
       {/* 3. MAIN WORKSPACE CONTAINER (DESKTOP + TABLET + MOBILE)  */}
       {/* ======================================================== */}
       <div className="flex-1 flex flex-col lg:flex-row max-w-[1600px] w-full mx-auto p-3 sm:p-5 lg:p-7 gap-6">
-        {/* Desktop Sidebar (Categorized & Sticky) */}
-        <aside className="hidden lg:flex lg:w-64 shrink-0 flex-col gap-4 sticky top-20 self-start max-h-[calc(100vh-6rem)] overflow-y-auto scrollbar-thin">
+        {/* Desktop Sidebar (Categorized & Sticky Glass Container) */}
+        <aside className="hidden lg:flex lg:w-64 shrink-0 flex-col gap-4 sticky top-20 self-start max-h-[calc(100vh-6rem)] overflow-y-auto scrollbar-thin bg-[#0C130F]/90 border border-white/10 rounded-3xl p-3.5 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
           {/* Group 1: ĐIỀU HÀNH & GIÁM SÁT */}
           <div className="space-y-1">
-            <div className="px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white/30">
+            <div className="px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white/35">
               Điều Hành & Giám Sát
             </div>
             <button
@@ -1068,8 +1069,8 @@ export default function AdminDashboardPage() {
               onClick={() => switchTab("overview")}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === "overview"
-                  ? "bg-brand-green/20 text-brand-green border border-brand-green/40 shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
-                  : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
+                  ? "bg-gradient-to-r from-emerald-500/20 via-brand-green/15 to-transparent text-emerald-400 border border-emerald-500/35 shadow-[0_0_20px_rgba(32,214,107,0.15)]"
+                  : "text-white/65 hover:text-white hover:bg-white/[0.04] border border-transparent"
               }`}
             >
               <LayoutDashboard className="w-4 h-4" />
@@ -1080,8 +1081,8 @@ export default function AdminDashboardPage() {
               onClick={() => switchTab("users")}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === "users"
-                  ? "bg-brand-green/20 text-brand-green border border-brand-green/40 shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
-                  : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
+                  ? "bg-gradient-to-r from-emerald-500/20 via-brand-green/15 to-transparent text-emerald-400 border border-emerald-500/35 shadow-[0_0_20px_rgba(32,214,107,0.15)]"
+                  : "text-white/65 hover:text-white hover:bg-white/[0.04] border border-transparent"
               }`}
             >
               <Users className="w-4 h-4" />
@@ -1093,7 +1094,7 @@ export default function AdminDashboardPage() {
                     {watchingCount}
                   </span>
                 )}
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono font-bold">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-mono font-bold border border-emerald-500/25">
                   {usersList.length}
                 </span>
               </div>
@@ -1102,7 +1103,7 @@ export default function AdminDashboardPage() {
 
           {/* Group 2: NỘI DUNG & PHIM ẢNH */}
           <div className="space-y-1">
-            <div className="px-3 pt-2 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white/30">
+            <div className="px-3 pt-2 py-1 text-[10px] font-black uppercase tracking-wider text-white/35">
               Nội Dung & Phim Ảnh
             </div>
             <button
@@ -1110,8 +1111,8 @@ export default function AdminDashboardPage() {
               onClick={() => switchTab("featured")}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === "featured"
-                  ? "bg-brand-green/20 text-brand-green border border-brand-green/40 shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
-                  : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
+                  ? "bg-gradient-to-r from-emerald-500/20 via-brand-green/15 to-transparent text-emerald-400 border border-emerald-500/35 shadow-[0_0_20px_rgba(32,214,107,0.15)]"
+                  : "text-white/65 hover:text-white hover:bg-white/[0.04] border border-transparent"
               }`}
             >
               <Film className="w-4 h-4" />
@@ -1125,8 +1126,8 @@ export default function AdminDashboardPage() {
               onClick={() => switchTab("cache")}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === "cache"
-                  ? "bg-brand-green/20 text-brand-green border border-brand-green/40 shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
-                  : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
+                  ? "bg-gradient-to-r from-emerald-500/20 via-brand-green/15 to-transparent text-emerald-400 border border-emerald-500/35 shadow-[0_0_20px_rgba(32,214,107,0.15)]"
+                  : "text-white/65 hover:text-white hover:bg-white/[0.04] border border-transparent"
               }`}
             >
               <Database className="w-4 h-4" />
@@ -1137,8 +1138,8 @@ export default function AdminDashboardPage() {
               onClick={() => switchTab("reports")}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === "reports"
-                  ? "bg-brand-green/20 text-brand-green border border-brand-green/40 shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
-                  : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
+                  ? "bg-gradient-to-r from-emerald-500/20 via-brand-green/15 to-transparent text-emerald-400 border border-emerald-500/35 shadow-[0_0_20px_rgba(32,214,107,0.15)]"
+                  : "text-white/65 hover:text-white hover:bg-white/[0.04] border border-transparent"
               }`}
             >
               <AlertTriangle className="w-4 h-4 text-amber-400" />
@@ -1153,7 +1154,7 @@ export default function AdminDashboardPage() {
 
           {/* Group 3: TRUYỀN THÔNG */}
           <div className="space-y-1">
-            <div className="px-3 pt-2 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white/30">
+            <div className="px-3 pt-2 py-1 text-[10px] font-black uppercase tracking-wider text-white/35">
               Truyền Thông
             </div>
             <button
@@ -1161,8 +1162,8 @@ export default function AdminDashboardPage() {
               onClick={() => switchTab("announcement")}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === "announcement"
-                  ? "bg-brand-green/20 text-brand-green border border-brand-green/40 shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
-                  : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
+                  ? "bg-gradient-to-r from-emerald-500/20 via-brand-green/15 to-transparent text-emerald-400 border border-emerald-500/35 shadow-[0_0_20px_rgba(32,214,107,0.15)]"
+                  : "text-white/65 hover:text-white hover:bg-white/[0.04] border border-transparent"
               }`}
             >
               <Megaphone className="w-4 h-4" />
@@ -1175,7 +1176,7 @@ export default function AdminDashboardPage() {
 
           {/* Group 4: HỆ THỐNG & CẤU HÌNH */}
           <div className="space-y-1">
-            <div className="px-3 pt-2 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white/30">
+            <div className="px-3 pt-2 py-1 text-[10px] font-black uppercase tracking-wider text-white/35">
               Hệ Thống & Cấu Hình
             </div>
             <button
@@ -1183,8 +1184,8 @@ export default function AdminDashboardPage() {
               onClick={() => switchTab("maintenance")}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === "maintenance"
-                  ? "bg-brand-green/20 text-brand-green border border-brand-green/40 shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
-                  : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
+                  ? "bg-gradient-to-r from-emerald-500/20 via-brand-green/15 to-transparent text-emerald-400 border border-emerald-500/35 shadow-[0_0_20px_rgba(32,214,107,0.15)]"
+                  : "text-white/65 hover:text-white hover:bg-white/[0.04] border border-transparent"
               }`}
             >
               <Wrench className="w-4 h-4" />
@@ -1198,8 +1199,8 @@ export default function AdminDashboardPage() {
               onClick={() => switchTab("settings")}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === "settings"
-                  ? "bg-brand-green/20 text-brand-green border border-brand-green/40 shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
-                  : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
+                  ? "bg-gradient-to-r from-emerald-500/20 via-brand-green/15 to-transparent text-emerald-400 border border-emerald-500/35 shadow-[0_0_20px_rgba(32,214,107,0.15)]"
+                  : "text-white/65 hover:text-white hover:bg-white/[0.04] border border-transparent"
               }`}
             >
               <Settings className="w-4 h-4" />
@@ -1210,8 +1211,8 @@ export default function AdminDashboardPage() {
               onClick={() => switchTab("security")}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === "security"
-                  ? "bg-brand-green/20 text-brand-green border border-brand-green/40 shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
-                  : "text-white/60 hover:text-white hover:bg-white/5 border border-transparent"
+                  ? "bg-gradient-to-r from-emerald-500/20 via-brand-green/15 to-transparent text-emerald-400 border border-emerald-500/35 shadow-[0_0_20px_rgba(32,214,107,0.15)]"
+                  : "text-white/65 hover:text-white hover:bg-white/[0.04] border border-transparent"
               }`}
             >
               <Shield className="w-4 h-4" />
@@ -1221,8 +1222,8 @@ export default function AdminDashboardPage() {
 
           {/* Super Admin Status Footer Widget in Sidebar */}
           <div className="mt-auto pt-3 border-t border-white/10">
-            <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/10 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-amber-400/20 text-amber-300 border border-amber-400/30 flex items-center justify-center shrink-0">
+            <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-400/20 text-amber-300 border border-amber-400/30 flex items-center justify-center shrink-0 shadow-sm">
                 <Crown className="w-4 h-4" />
               </div>
               <div className="min-w-0">
@@ -1234,7 +1235,7 @@ export default function AdminDashboardPage() {
         </aside>
 
         {/* Tab Content Stage - with bottom padding pb-24 for mobile bottom bar */}
-        <main className="flex-1 min-w-0 bg-[#101010]/80 border border-white/10 rounded-3xl p-4 sm:p-6 lg:p-7 backdrop-blur-2xl shadow-2xl pb-24 lg:pb-7">
+        <main className="flex-1 min-w-0 bg-[#0C130F]/85 border border-white/10 rounded-3xl p-4 sm:p-6 lg:p-7 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] pb-24 lg:pb-7">
           
           {/* ======================================================== */}
           {/* TAB 1: TỔNG QUAN HỆ THỐNG (CINEMA EXECUTIVE COMMAND CENTER) */}
@@ -2704,7 +2705,7 @@ export default function AdminDashboardPage() {
                         onClick={() => setUserViewMode("table")}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                           userViewMode === "table"
-                            ? "bg-brand-green text-black shadow-[0_0_12px_rgba(34,197,94,0.3)]"
+                            ? "bg-gradient-to-r from-brand-green to-emerald-400 text-[#051309] font-extrabold shadow-[0_0_15px_rgba(34,197,94,0.35)]"
                             : "text-white/60 hover:text-white"
                         }`}
                         title="Xem dạng bảng dữ liệu cuộn mượt mà"
@@ -2725,7 +2726,7 @@ export default function AdminDashboardPage() {
                           setUserPage(1);
                         }}
                         placeholder="Tìm theo tên, email, phim..."
-                        className="bg-black/60 border border-white/15 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-brand-green w-48 sm:w-60 transition-all"
+                        className="bg-[#0A0F0D]/90 border border-white/15 focus:border-brand-green focus:ring-1 focus:ring-brand-green/30 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder:text-white/35 transition-all w-52 sm:w-64"
                       />
                     </div>
 
@@ -2737,7 +2738,7 @@ export default function AdminDashboardPage() {
                           setUserFilter("all");
                           setUserPage(1);
                         }}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs font-bold text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs font-bold text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
                       >
                         <X className="w-3.5 h-3.5" />
                         Xóa lọc
@@ -2750,19 +2751,19 @@ export default function AdminDashboardPage() {
                         setUserSort(e.target.value as typeof userSort);
                         setUserPage(1);
                       }}
-                      className="bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white/80 focus:outline-none focus:border-brand-green"
+                      className="bg-[#0A0F0D]/90 border border-white/15 rounded-xl px-3 py-2 text-xs text-white/85 focus:outline-none focus:border-brand-green cursor-pointer"
                       title="Sắp xếp danh sách thành viên"
                     >
-                      <option value="recent" className="bg-[#181818]">Mới tham gia</option>
-                      <option value="activity" className="bg-[#181818]">Hoạt động gần đây</option>
-                      <option value="name" className="bg-[#181818]">Theo tên</option>
+                      <option value="recent" className="bg-[#111A15] text-white">Mới tham gia</option>
+                      <option value="activity" className="bg-[#111A15] text-white">Hoạt động gần đây</option>
+                      <option value="name" className="bg-[#111A15] text-white">Theo tên</option>
                     </select>
 
                     <button
                       type="button"
                       onClick={exportUsersCsv}
                       disabled={filteredUsers.length === 0}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-brand-green/25 bg-brand-green/10 text-xs font-bold text-brand-green hover:bg-brand-green/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-brand-green/30 bg-brand-green/15 text-xs font-bold text-brand-green hover:bg-brand-green/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm active:scale-95 cursor-pointer"
                       title="Xuất danh sách đang hiển thị ra CSV"
                     >
                       <Download className="w-3.5 h-3.5" />
@@ -2774,7 +2775,7 @@ export default function AdminDashboardPage() {
                       type="button"
                       onClick={fetchUsers}
                       disabled={isLoadingUsers}
-                      className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 transition-colors cursor-pointer"
+                      className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 transition-all cursor-pointer active:scale-95"
                       title="Tải lại danh sách người dùng"
                     >
                       <RefreshCw className={`w-4 h-4 ${isLoadingUsers ? "animate-spin text-brand-green" : ""}`} />
@@ -2782,57 +2783,106 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
-                {/* 5 Stats Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                  <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] text-white/50 font-bold uppercase tracking-wider">Tổng Thành Viên</p>
-                      <p className="text-xl font-black text-white mt-0.5">{totalUsersCount}</p>
+                {/* 5 High-End KPI Metric Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+                  {/* Card 1: Tổng Thành Viên */}
+                  <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-b from-[#121B16]/90 via-[#0B110E]/90 to-[#070B09]/90 border border-white/10 hover:border-emerald-500/40 transition-all duration-300 group shadow-[0_4px_24px_rgba(0,0,0,0.35)]">
+                    <div className="absolute -top-10 -right-10 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all pointer-events-none" />
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[10.5px] text-white/50 font-bold uppercase tracking-wider">Tổng Thành Viên</span>
+                      <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 text-white/70 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:text-emerald-400 group-hover:border-emerald-500/30 transition-all">
+                        <Users className="w-4 h-4" />
+                      </div>
                     </div>
-                    <Users className="w-6 h-6 text-white/30" />
+                    <div className="flex items-baseline justify-between gap-1">
+                      <p className="text-2xl sm:text-3xl font-black font-mono text-white tracking-tight">{totalUsersCount}</p>
+                      <span className="text-[10px] font-semibold text-white/40">Tài khoản</span>
+                    </div>
                   </div>
-                  <div className="p-3.5 rounded-2xl bg-emerald-500/[0.05] border border-emerald-500/20 flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] text-emerald-400/70 font-bold uppercase tracking-wider">Online (24h)</p>
-                      <p className="text-xl font-black text-emerald-400 mt-0.5">{active24hCount}</p>
+
+                  {/* Card 2: Online (24h) */}
+                  <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-b from-emerald-950/20 via-[#0B110E]/90 to-[#070B09]/90 border border-emerald-500/20 hover:border-emerald-500/50 transition-all duration-300 group shadow-[0_4px_24px_rgba(0,0,0,0.35)]">
+                    <div className="absolute -top-10 -right-10 w-24 h-24 bg-emerald-500/15 rounded-full blur-2xl group-hover:bg-emerald-500/25 transition-all pointer-events-none" />
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[10.5px] text-emerald-400/80 font-bold uppercase tracking-wider">Online (24h)</span>
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:shadow-[0_0_12px_rgba(16,185,129,0.3)] transition-all">
+                        <Activity className="w-4 h-4" />
+                      </div>
                     </div>
-                    <Activity className="w-6 h-6 text-emerald-400/40" />
+                    <div className="flex items-baseline justify-between gap-1">
+                      <p className="text-2xl sm:text-3xl font-black font-mono text-emerald-400 tracking-tight">{active24hCount}</p>
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/25">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        Live
+                      </span>
+                    </div>
                   </div>
-                  <div className="p-3.5 rounded-2xl bg-brand-green/[0.05] border border-brand-green/20 flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] text-brand-green/70 font-bold uppercase tracking-wider">Đang Xem Phim</p>
-                      <p className="text-xl font-black text-brand-green mt-0.5">{watchingCount}</p>
+
+                  {/* Card 3: Đang Xem Phim */}
+                  <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-b from-brand-green/10 via-[#0B110E]/90 to-[#070B09]/90 border border-brand-green/25 hover:border-brand-green/50 transition-all duration-300 group shadow-[0_4px_24px_rgba(0,0,0,0.35)]">
+                    <div className="absolute -top-10 -right-10 w-24 h-24 bg-brand-green/15 rounded-full blur-2xl group-hover:bg-brand-green/25 transition-all pointer-events-none" />
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[10.5px] text-brand-green/80 font-bold uppercase tracking-wider">Đang Xem Phim</span>
+                      <div className="w-8 h-8 rounded-xl bg-brand-green/15 border border-brand-green/30 text-brand-green flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:shadow-[0_0_12px_rgba(34,197,94,0.3)] transition-all">
+                        <Film className="w-4 h-4" />
+                      </div>
                     </div>
-                    <Film className="w-6 h-6 text-brand-green/40" />
+                    <div className="flex items-baseline justify-between gap-1">
+                      <p className="text-2xl sm:text-3xl font-black font-mono text-brand-green tracking-tight">{watchingCount}</p>
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-brand-green bg-brand-green/10 px-2 py-0.5 rounded-full border border-brand-green/25">
+                        <span className="w-1.5 h-1.5 rounded-full bg-brand-green animate-ping" />
+                        Phát
+                      </span>
+                    </div>
                   </div>
-                  <div className="p-3.5 rounded-2xl bg-teal-500/[0.05] border border-teal-500/20 flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] text-teal-400/70 font-bold uppercase tracking-wider">Đã Xác Thực OTP</p>
-                      <p className="text-xl font-black text-teal-300 mt-0.5">{verifiedCount}</p>
+
+                  {/* Card 4: Đã Xác Thực OTP */}
+                  <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-b from-teal-950/20 via-[#0B110E]/90 to-[#070B09]/90 border border-teal-500/20 hover:border-teal-500/50 transition-all duration-300 group shadow-[0_4px_24px_rgba(0,0,0,0.35)]">
+                    <div className="absolute -top-10 -right-10 w-24 h-24 bg-teal-500/15 rounded-full blur-2xl group-hover:bg-teal-500/25 transition-all pointer-events-none" />
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[10.5px] text-teal-400/80 font-bold uppercase tracking-wider">Đã Xác Thực OTP</span>
+                      <div className="w-8 h-8 rounded-xl bg-teal-500/15 border border-teal-500/30 text-teal-400 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:shadow-[0_0_12px_rgba(20,184,166,0.3)] transition-all">
+                        <CheckCircle2 className="w-4 h-4" />
+                      </div>
                     </div>
-                    <CheckCircle2 className="w-6 h-6 text-teal-400/40" />
+                    <div className="flex items-baseline justify-between gap-1">
+                      <p className="text-2xl sm:text-3xl font-black font-mono text-teal-300 tracking-tight">{verifiedCount}</p>
+                      <span className="text-[10px] font-bold text-teal-300/80 bg-teal-500/10 px-2 py-0.5 rounded-full border border-teal-500/25">
+                        {totalUsersCount > 0 ? Math.round((verifiedCount / totalUsersCount) * 100) : 100}%
+                      </span>
+                    </div>
                   </div>
-                  <div className="p-3.5 rounded-2xl bg-red-500/[0.05] border border-red-500/20 flex items-center justify-between col-span-2 sm:col-span-1">
-                    <div>
-                      <p className="text-[10px] text-red-400/70 font-bold uppercase tracking-wider">Bị Khóa / Giới Hạn</p>
-                      <p className="text-xl font-black text-red-400 mt-0.5">{bannedCount}</p>
+
+                  {/* Card 5: Bị Khóa / Giới Hạn */}
+                  <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-b from-red-950/20 via-[#0B110E]/90 to-[#070B09]/90 border border-red-500/20 hover:border-red-500/50 transition-all duration-300 group shadow-[0_4px_24px_rgba(0,0,0,0.35)] col-span-2 sm:col-span-1">
+                    <div className="absolute -top-10 -right-10 w-24 h-24 bg-red-500/10 rounded-full blur-2xl group-hover:bg-red-500/20 transition-all pointer-events-none" />
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[10.5px] text-red-400/80 font-bold uppercase tracking-wider">Bị Khóa / Giới Hạn</span>
+                      <div className={`w-8 h-8 rounded-xl ${bannedCount > 0 ? "bg-red-500/20 border-red-500/40 text-red-400" : "bg-white/5 border-white/10 text-white/50"} border flex items-center justify-center shrink-0 group-hover:scale-105 transition-all`}>
+                        <ShieldAlert className="w-4 h-4" />
+                      </div>
                     </div>
-                    <ShieldAlert className="w-6 h-6 text-red-400/40" />
+                    <div className="flex items-baseline justify-between gap-1">
+                      <p className={`text-2xl sm:text-3xl font-black font-mono tracking-tight ${bannedCount > 0 ? "text-red-400" : "text-white"}`}>{bannedCount}</p>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${bannedCount > 0 ? "text-red-400 bg-red-500/15 border-red-500/30" : "text-emerald-400 bg-emerald-500/10 border-emerald-500/25"}`}>
+                        {bannedCount > 0 ? "Cần xử lý" : "An toàn"}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
                 {/* Filter Pills */}
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="mr-1 text-[11px] font-semibold text-white/40">
-                    Hiển thị <span className="text-white">{filteredUsers.length}</span> / {totalUsersCount}
+                  <span className="mr-1 text-[11px] font-semibold text-white/45">
+                    Hiển thị <span className="text-white font-mono font-bold">{filteredUsers.length}</span> / {totalUsersCount}
                   </span>
                   <button
                     type="button"
                     onClick={() => { setUserFilter("all"); setUserPage(1); }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                       userFilter === "all"
-                        ? "bg-brand-green text-black shadow-[0_0_12px_rgba(34,197,94,0.3)]"
-                        : "bg-white/5 hover:bg-white/10 text-white/70 border border-white/10"
+                        ? "bg-gradient-to-r from-brand-green to-emerald-400 text-[#051309] font-bold shadow-[0_0_15px_rgba(34,197,94,0.35)]"
+                        : "bg-white/[0.04] hover:bg-white/[0.08] text-white/70 hover:text-white border border-white/10"
                     }`}
                   >
                     Tất Cả ({totalUsersCount})
@@ -2842,8 +2892,8 @@ export default function AdminDashboardPage() {
                     onClick={() => { setUserFilter("active"); setUserPage(1); }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                       userFilter === "active"
-                        ? "bg-emerald-500 text-black shadow-[0_0_12px_rgba(16,185,129,0.3)]"
-                        : "bg-white/5 hover:bg-white/10 text-white/70 border border-white/10"
+                        ? "bg-gradient-to-r from-brand-green to-emerald-400 text-[#051309] font-bold shadow-[0_0_15px_rgba(34,197,94,0.35)]"
+                        : "bg-white/[0.04] hover:bg-white/[0.08] text-white/70 hover:text-white border border-white/10"
                     }`}
                   >
                     Đang Online / Hoạt Động ({active24hCount})
@@ -2853,8 +2903,8 @@ export default function AdminDashboardPage() {
                     onClick={() => { setUserFilter("watching"); setUserPage(1); }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                       userFilter === "watching"
-                        ? "bg-brand-green text-black shadow-[0_0_12px_rgba(34,197,94,0.3)]"
-                        : "bg-white/5 hover:bg-white/10 text-white/70 border border-white/10"
+                        ? "bg-gradient-to-r from-brand-green to-emerald-400 text-[#051309] font-bold shadow-[0_0_15px_rgba(34,197,94,0.35)]"
+                        : "bg-white/[0.04] hover:bg-white/[0.08] text-white/70 hover:text-white border border-white/10"
                     }`}
                   >
                     Đang Xem Phim ({watchingCount})
@@ -2864,8 +2914,8 @@ export default function AdminDashboardPage() {
                     onClick={() => { setUserFilter("verified"); setUserPage(1); }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                       userFilter === "verified"
-                        ? "bg-teal-500 text-black shadow-[0_0_12px_rgba(20,184,166,0.3)]"
-                        : "bg-white/5 hover:bg-white/10 text-white/70 border border-white/10"
+                        ? "bg-gradient-to-r from-teal-400 to-emerald-400 text-[#051309] font-bold shadow-[0_0_15px_rgba(20,184,166,0.35)]"
+                        : "bg-white/[0.04] hover:bg-white/[0.08] text-white/70 hover:text-white border border-white/10"
                     }`}
                   >
                     Đã Xác Thực OTP ({verifiedCount})
@@ -2875,8 +2925,8 @@ export default function AdminDashboardPage() {
                     onClick={() => { setUserFilter("banned"); setUserPage(1); }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                       userFilter === "banned"
-                        ? "bg-red-500 text-white shadow-[0_0_12px_rgba(239,68,68,0.3)]"
-                        : "bg-white/5 hover:bg-white/10 text-white/70 border border-white/10"
+                        ? "bg-red-500 text-white font-bold shadow-[0_0_15px_rgba(239,68,68,0.35)]"
+                        : "bg-white/[0.04] hover:bg-white/[0.08] text-white/70 hover:text-white border border-white/10"
                     }`}
                   >
                     Bị Khóa / Hạn Chế ({bannedCount})
@@ -2909,12 +2959,12 @@ export default function AdminDashboardPage() {
                       return (
                         <div
                           key={u.id}
-                          className={`rounded-2xl border transition-all p-5 flex flex-col justify-between gap-4 shadow-xl backdrop-blur-md relative overflow-hidden ${
+                          className={`rounded-3xl border transition-all duration-300 p-5 sm:p-5.5 flex flex-col justify-between gap-4 backdrop-blur-xl relative overflow-hidden group ${
                             isSuper
-                              ? "bg-gradient-to-br from-amber-500/[0.08] via-black/80 to-[#121212] border-amber-400/30 shadow-[0_0_30px_rgba(251,191,36,0.1)]"
+                              ? "bg-gradient-to-br from-amber-500/[0.12] via-[#0E1511]/90 to-[#070B09]/90 border-amber-400/35 shadow-[0_0_35px_rgba(251,191,36,0.15)]"
                               : isBanned
-                              ? "bg-gradient-to-br from-red-950/20 via-black/80 to-[#121212] border-red-500/30"
-                              : "bg-[#141414]/90 hover:bg-[#181818]/90 border-white/10 hover:border-white/20"
+                              ? "bg-gradient-to-br from-red-950/30 via-[#0E1210]/90 to-[#070B09]/90 border-red-500/35 shadow-[0_0_30px_rgba(239,68,68,0.12)]"
+                              : "bg-gradient-to-b from-[#111A15]/90 via-[#0B100D]/85 to-[#070B09]/90 border-white/10 hover:border-emerald-500/35 hover:shadow-[0_8px_30px_rgba(32,214,107,0.12)] shadow-[0_4px_24px_rgba(0,0,0,0.35)]"
                           }`}
                         >
                           {/* Top Row: User Avatar, Name, Role & OTP Toggle */}
@@ -3020,7 +3070,7 @@ export default function AdminDashboardPage() {
                           <div className="space-y-2.5">
                             {/* Watching Status */}
                             {cw ? (
-                              <div className="p-3 rounded-xl bg-black/60 border border-brand-green/20 space-y-2">
+                              <div className="p-3.5 rounded-2xl bg-[#060D09]/80 border border-emerald-500/25 space-y-2.5 backdrop-blur-md shadow-inner">
                                 <div className="flex items-center justify-between gap-2">
                                   <div className="flex items-center gap-1.5 min-w-0">
                                     <span className="w-2 h-2 rounded-full bg-brand-green animate-ping shrink-0" />
@@ -3073,7 +3123,7 @@ export default function AdminDashboardPage() {
                                 </div>
                               </div>
                             ) : (
-                              <div className="p-2.5 rounded-xl bg-black/30 border border-white/5 flex items-center justify-between text-xs text-white/50">
+                              <div className="p-3 rounded-2xl bg-white/[0.025] border border-white/5 flex items-center justify-between text-xs text-white/50">
                                 <span className="flex items-center gap-1.5 text-[11px]">
                                   <Film className="w-3.5 h-3.5 text-white/30" />
                                   Chưa có phiên xem phim nào đang phát
@@ -3126,13 +3176,13 @@ export default function AdminDashboardPage() {
                           </div>
 
                           {/* Bottom Action Bar: Full Authority - Completely visible without clipping */}
-                          <div className="flex items-center justify-between gap-2 pt-3 border-t border-white/10 flex-wrap">
+                          <div className="flex items-center justify-between gap-2 pt-3.5 border-t border-white/10 flex-wrap">
                             <div className="flex items-center gap-1.5">
                               {/* Soi Dữ Liệu */}
                               <button
                                 type="button"
                                 onClick={() => setInspectedUser(u)}
-                                className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/10 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                                className="px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-emerald-500/15 hover:text-emerald-400 hover:border-emerald-500/30 text-white/80 border border-white/10 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
                                 title="Xem toàn bộ lịch sử xem phim và danh sách yêu thích của thành viên"
                               >
                                 <Eye className="w-3.5 h-3.5 text-brand-green" />
@@ -3146,7 +3196,7 @@ export default function AdminDashboardPage() {
                                   setUserToResetPassword(u);
                                   setAdminNewPassword("");
                                 }}
-                                className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/10 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                                className="px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-amber-500/15 hover:text-amber-300 hover:border-amber-500/30 text-white/80 border border-white/10 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
                                 title="Admin cấp lại mật khẩu trực tiếp cho thành viên"
                               >
                                 <KeyRound className="w-3.5 h-3.5 text-amber-400" />
@@ -3253,10 +3303,10 @@ export default function AdminDashboardPage() {
                 {/* 2. TABLE VIEW (FULL MIN-WIDTH & HORIZONTAL SMOOTH SCROLL) */}
                 {/* ======================================================== */}
                 {userViewMode === "table" && (
-                  <div className="w-full border border-white/10 rounded-2xl overflow-hidden bg-black/40 shadow-xl">
+                  <div className="w-full border border-white/10 rounded-3xl overflow-hidden bg-gradient-to-b from-[#0D1510]/80 via-[#090F0C]/80 to-[#060A08]/90 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl">
                     <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
                       <table className="w-full min-w-[1100px] text-left text-xs text-white/80 divide-y divide-white/5">
-                        <thead className="bg-white/5 text-white/60 font-bold uppercase tracking-wider text-[10px] border-b border-white/10">
+                        <thead className="bg-white/[0.04] text-white/60 font-bold uppercase tracking-wider text-[10px] border-b border-white/10">
                           <tr>
                             <th className="px-4 py-3.5 min-w-[240px] whitespace-nowrap">Thành Viên</th>
                             <th className="px-4 py-3.5 min-w-[170px] whitespace-nowrap">Vai Trò & Xác Thực</th>
@@ -3579,26 +3629,26 @@ export default function AdminDashboardPage() {
                 )}
 
                 {totalUserPages > 1 && (
-                  <div className="flex items-center justify-between gap-3 pt-1">
-                    <span className="text-[11px] text-white/40">
-                      Trang {currentUserPage} / {totalUserPages}
+                  <div className="flex items-center justify-between gap-3 pt-2">
+                    <span className="text-xs text-white/50 font-medium">
+                      Trang <strong className="text-emerald-400 font-mono">{currentUserPage}</strong> / <span className="font-mono">{totalUserPages}</span>
                     </span>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         disabled={currentUserPage === 1}
                         onClick={() => setUserPage((page) => Math.max(1, page - 1))}
-                        className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-xs font-bold text-white/70 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="px-3.5 py-1.5 rounded-xl border border-white/10 bg-white/[0.04] text-xs font-bold text-white/70 hover:bg-white/10 hover:text-white hover:border-emerald-500/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                       >
-                        Trước
+                        ← Trang trước
                       </button>
                       <button
                         type="button"
                         disabled={currentUserPage === totalUserPages}
                         onClick={() => setUserPage((page) => Math.min(totalUserPages, page + 1))}
-                        className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-xs font-bold text-white/70 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="px-3.5 py-1.5 rounded-xl border border-white/10 bg-white/[0.04] text-xs font-bold text-white/70 hover:bg-white/10 hover:text-white hover:border-emerald-500/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                       >
-                        Sau
+                        Trang sau →
                       </button>
                     </div>
                   </div>
