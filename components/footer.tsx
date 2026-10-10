@@ -74,55 +74,55 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
             </p>
           </div>
 
-          {/* Right: Quick Links (Liên Hệ | Điều Khoản | Bảo Mật | Miễn Trừ Pháp Lý) */}
-          <div className="flex items-center justify-center sm:justify-end flex-wrap gap-2.5 sm:gap-3 text-[12px] sm:text-[12.5px] font-medium text-white/85">
-            {/* 1. Liên Hệ */}
-            <button
-              type="button"
-              onClick={() => setActiveModal("contact")}
-              className="flex items-center gap-1.5 hover:text-brand-green transition-colors cursor-pointer group"
-              title="Liên hệ với ban quản trị"
-            >
-              <Mail className="w-3.5 h-3.5 text-brand-green shrink-0 group-hover:scale-110 transition-transform" />
-              <span>Liên Hệ</span>
-            </button>
+          {/* Right: Quick Links */}
+          <div className="flex flex-col items-center sm:items-end gap-1.5 text-[12px] sm:text-[12.5px] font-medium text-white/85">
+            {/* Row 1: Liên Hệ | Điều Khoản | Bảo Mật */}
+            <div className="flex items-center justify-center sm:justify-end flex-wrap gap-2.5 sm:gap-3">
+              {/* 1. Liên Hệ */}
+              <button
+                type="button"
+                onClick={() => setActiveModal("contact")}
+                className="flex items-center gap-1.5 hover:text-brand-green transition-colors cursor-pointer group"
+                title="Liên hệ với ban quản trị"
+              >
+                <Mail className="w-3.5 h-3.5 text-brand-green shrink-0 group-hover:scale-110 transition-transform" />
+                <span>Liên Hệ</span>
+              </button>
 
-            {/* Divider */}
-            <div className="w-[1.5px] h-3 bg-white/20 hidden xs:block" />
+              {/* Divider */}
+              <div className="w-[1.5px] h-3 bg-white/20 hidden xs:block" />
 
-            {/* 2. Điều Khoản */}
-            <button
-              type="button"
-              onClick={() => setActiveModal("terms")}
-              className="flex items-center gap-1.5 hover:text-brand-green transition-colors cursor-pointer group"
-              title="Xem Điều khoản sử dụng"
-            >
-              <Scale className="w-3.5 h-3.5 text-brand-green shrink-0 group-hover:scale-110 transition-transform" />
-              <span>Điều Khoản</span>
-            </button>
+              {/* 2. Điều Khoản */}
+              <button
+                type="button"
+                onClick={() => setActiveModal("terms")}
+                className="flex items-center gap-1.5 hover:text-brand-green transition-colors cursor-pointer group"
+                title="Xem Điều khoản sử dụng"
+              >
+                <Scale className="w-3.5 h-3.5 text-brand-green shrink-0 group-hover:scale-110 transition-transform" />
+                <span>Điều Khoản</span>
+              </button>
 
-            {/* Divider */}
-            <div className="w-[1.5px] h-3 bg-white/20 hidden xs:block" />
+              {/* Divider */}
+              <div className="w-[1.5px] h-3 bg-white/20 hidden xs:block" />
 
-            {/* 3. Bảo Mật */}
-            <button
-              type="button"
-              onClick={() => setActiveModal("privacy")}
-              className="flex items-center gap-1.5 hover:text-brand-green transition-colors cursor-pointer group"
-              title="Xem Chính sách bảo mật"
-            >
-              <Shield className="w-3.5 h-3.5 text-brand-green shrink-0 group-hover:scale-110 transition-transform" />
-              <span>Bảo Mật</span>
-            </button>
+              {/* 3. Bảo Mật */}
+              <button
+                type="button"
+                onClick={() => setActiveModal("privacy")}
+                className="flex items-center gap-1.5 hover:text-brand-green transition-colors cursor-pointer group"
+                title="Xem Chính sách bảo mật"
+              >
+                <Shield className="w-3.5 h-3.5 text-brand-green shrink-0 group-hover:scale-110 transition-transform" />
+                <span>Bảo Mật</span>
+              </button>
+            </div>
 
-            {/* Divider */}
-            <div className="w-[1.5px] h-3 bg-white/20 hidden xs:block" />
-
-            {/* 4. Miễn Trừ Pháp Lý */}
+            {/* Row 2: Miễn Trừ Pháp Lý (xuống dòng riêng) */}
             <button
               type="button"
               onClick={() => setActiveModal("disclaimer")}
-              className="flex items-center gap-1.5 hover:text-brand-green transition-colors cursor-pointer group"
+              className="flex items-center gap-1.5 text-[11.5px] sm:text-[12px] text-white/75 hover:text-brand-green transition-colors cursor-pointer group"
               title="Xem Tuyên bố miễn trừ trách nhiệm pháp lý"
             >
               <ShieldAlert className="w-3.5 h-3.5 text-brand-green shrink-0 group-hover:scale-110 transition-transform" />
