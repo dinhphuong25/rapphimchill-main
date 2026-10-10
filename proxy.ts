@@ -190,8 +190,8 @@ export async function proxy(request: NextRequest) {
         request.headers.get('x-real-ip') ||
         'unknown';
 
-    // 1. Restrict HTTP Methods to GET, POST, HEAD, OPTIONS (Block PUT, DELETE, PATCH, TRACE, CONNECT)
-    const ALLOWED_METHODS = ['GET', 'POST', 'HEAD', 'OPTIONS'];
+    // 1. Restrict HTTP Methods to standard safe methods (Block TRACE, TRACK, CONNECT)
+    const ALLOWED_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
     if (!ALLOWED_METHODS.includes(request.method.toUpperCase())) {
         return new NextResponse('Method Not Allowed', { 
             status: 405,
@@ -199,8 +199,8 @@ export async function proxy(request: NextRequest) {
         });
     }
 
-    // Require User-Agent on POST requests (automated attack scripts often omit User-Agent)
-    if (request.method === 'POST' && (!userAgent || userAgent.trim() === '')) {
+    // Require User-Agent on mutating requests (automated attack scripts often omit User-Agent)
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method.toUpperCase()) && (!userAgent || userAgent.trim() === '')) {
         return new NextResponse('Forbidden - User Agent Required', { 
             status: 403,
             headers: { 'Content-Type': 'text/plain; charset=utf-8' }

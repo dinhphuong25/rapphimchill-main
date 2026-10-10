@@ -363,17 +363,27 @@ export default function AdminDashboardPage() {
   const handleToggleReportStatus = async (id: string, currentStatus: "pending" | "resolved") => {
     const nextStatus = currentStatus === "pending" ? "resolved" : "pending";
     try {
-      const res = await fetch("/api/report", {
+      let res = await fetch("/api/report", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status: nextStatus }),
       });
-      const data = await res.json();
-      if (data.success) {
+      if (res.status === 405 || !res.ok) {
+        const fallbackRes = await fetch("/api/report", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "update_status", id, status: nextStatus }),
+        });
+        if (fallbackRes.ok) res = fallbackRes;
+      }
+      const data = await res.json().catch(() => null);
+      if (data && data.success) {
         setReportsList((prev) =>
           prev.map((r) => (r.id === id ? { ...r, status: nextStatus } : r))
         );
         toast.success(nextStatus === "resolved" ? "Đã đánh dấu đã sửa lỗi!" : "Đã chuyển về chờ xử lý.");
+      } else {
+        toast.error((data && data.error) || "Lỗi khi cập nhật trạng thái báo cáo.");
       }
     } catch {
       toast.error("Lỗi khi cập nhật trạng thái báo cáo.");

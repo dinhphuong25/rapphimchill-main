@@ -21,6 +21,18 @@ export async function POST(req: NextRequest) {
       "unknown";
 
     const body = await req.json();
+
+    // Support admin status update via POST as resilient fallback
+    if (body.action === "update_status" || (body.id && (body.status === "pending" || body.status === "resolved") && !body.movieSlug)) {
+      const isAuthorized = await isAuthorizedAdminRequest(req);
+      if (!isAuthorized) {
+        return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      }
+      const { id, status } = body;
+      const ok = await updateReportStatus(id, status);
+      return NextResponse.json({ success: ok });
+    }
+
     const { movieSlug, movieName, episodeName, serverName, issueType, description } = body;
 
     // Verify user authentication

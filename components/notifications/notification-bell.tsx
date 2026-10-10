@@ -307,14 +307,26 @@ export default function NotificationBell({ className }: { className?: string }) 
     const newStatus = currentStatus === "pending" ? "resolved" : "pending";
     try {
       setUpdatingId(reportId);
-      const res = await fetch("/api/report", {
+      let res = await fetch("/api/report", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: reportId, status: newStatus }),
       });
 
-      const data = await res.json();
-      if (data.success) {
+      // If PATCH is not accepted or fails, gracefully fallback to POST
+      if (res.status === 405 || !res.ok) {
+        const fallbackRes = await fetch("/api/report", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "update_status", id: reportId, status: newStatus }),
+        });
+        if (fallbackRes.ok) {
+          res = fallbackRes;
+        }
+      }
+
+      const data = await res.json().catch(() => null);
+      if (data && data.success) {
         setReports((prev) =>
           prev.map((r) =>
             r.id === reportId
@@ -337,7 +349,7 @@ export default function NotificationBell({ className }: { className?: string }) 
           })
         );
       } else {
-        toast.error(data.error || "Không thể cập nhật trạng thái.");
+        toast.error((data && data.error) || "Không thể cập nhật trạng thái.");
       }
     } catch {
       toast.error("Có lỗi xảy ra khi cập nhật.");
