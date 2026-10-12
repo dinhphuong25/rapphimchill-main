@@ -45,41 +45,41 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
             </p>
           </div>
 
-          {/* Right: Quick Links */}
-          <div className="flex flex-col items-center gap-1.5 text-[12px] sm:text-[12.5px] font-medium text-white/85">
-            {/* Row 1: Điều Khoản | Bảo Mật */}
-            <div className="flex items-center justify-center flex-wrap gap-2.5 sm:gap-3">
-              {/* 1. Điều Khoản */}
-              <button
-                type="button"
-                onClick={() => setActiveModal("terms")}
-                className="flex items-center gap-1.5 hover:text-brand-green transition-colors cursor-pointer group"
-                title="Xem Điều khoản sử dụng"
-              >
-                <Scale className="w-3.5 h-3.5 text-brand-green shrink-0 group-hover:scale-110 transition-transform" />
-                <span>Điều Khoản</span>
-              </button>
+          {/* Right: Quick Links (cùng 1 hàng) */}
+          <div className="flex items-center justify-center sm:justify-end flex-wrap gap-2.5 sm:gap-3 text-[12px] sm:text-[12.5px] font-medium text-white/85">
+            {/* 1. Điều Khoản */}
+            <button
+              type="button"
+              onClick={() => setActiveModal("terms")}
+              className="flex items-center gap-1.5 hover:text-brand-green transition-colors cursor-pointer group"
+              title="Xem Điều khoản sử dụng"
+            >
+              <Scale className="w-3.5 h-3.5 text-brand-green shrink-0 group-hover:scale-110 transition-transform" />
+              <span>Điều Khoản</span>
+            </button>
 
-              {/* Divider */}
-              <div className="w-[1.5px] h-3 bg-white/20 hidden xs:block" />
+            {/* Divider */}
+            <div className="w-[1.5px] h-3 bg-white/20 hidden xs:block" />
 
-              {/* 2. Bảo Mật */}
-              <button
-                type="button"
-                onClick={() => setActiveModal("privacy")}
-                className="flex items-center gap-1.5 hover:text-brand-green transition-colors cursor-pointer group"
-                title="Xem Chính sách bảo mật"
-              >
-                <Shield className="w-3.5 h-3.5 text-brand-green shrink-0 group-hover:scale-110 transition-transform" />
-                <span>Bảo Mật</span>
-              </button>
-            </div>
+            {/* 2. Bảo Mật */}
+            <button
+              type="button"
+              onClick={() => setActiveModal("privacy")}
+              className="flex items-center gap-1.5 hover:text-brand-green transition-colors cursor-pointer group"
+              title="Xem Chính sách bảo mật"
+            >
+              <Shield className="w-3.5 h-3.5 text-brand-green shrink-0 group-hover:scale-110 transition-transform" />
+              <span>Bảo Mật</span>
+            </button>
 
-            {/* Row 2: Miễn Trừ Pháp Lý (xuống dòng riêng) */}
+            {/* Divider */}
+            <div className="w-[1.5px] h-3 bg-white/20 hidden xs:block" />
+
+            {/* 3. Miễn Trừ Pháp Lý */}
             <button
               type="button"
               onClick={() => setActiveModal("disclaimer")}
-              className="flex items-center gap-1.5 text-[11.5px] sm:text-[12px] text-white/75 hover:text-brand-green transition-colors cursor-pointer group"
+              className="flex items-center gap-1.5 hover:text-brand-green transition-colors cursor-pointer group"
               title="Xem Tuyên bố miễn trừ trách nhiệm pháp lý"
             >
               <ShieldAlert className="w-3.5 h-3.5 text-brand-green shrink-0 group-hover:scale-110 transition-transform" />
@@ -97,7 +97,7 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
             © 2026 Hi Phim. Toàn quyền được bảo lưu.
           </p>
           <p className="text-[11px] sm:text-[11.5px] text-white/50 font-normal">
-            Được thành lập và phát triển bởi <span className="text-brand-green font-medium">Đình Phương</span>.
+            Được thành lập và phát triển bởi <span className="text-brand-green font-medium">Kim Đình Phương</span>.
           </p>
         </div>
       </div>
