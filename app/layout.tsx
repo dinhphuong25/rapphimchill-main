@@ -91,6 +91,13 @@ export const metadata: Metadata = {
         alt: "Hi Phim - Xem Phim Online HD Vietsub Miễn Phí",
         type: "image/jpeg",
       },
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Hi Phim - Xem Phim Online HD Vietsub Miễn Phí",
+        type: "image/png",
+      },
     ],
   },
   twitter: {

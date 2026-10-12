@@ -87,6 +87,12 @@ export async function generateMetadata({ searchParams }: HomeProps) {
           height: 630,
           alt: "Hi Phim - Xem Phim Online HD Vietsub Miễn Phí",
         },
+        {
+          url: "/og-image.png",
+          width: 1200,
+          height: 630,
+          alt: "Hi Phim - Xem Phim Online HD Vietsub Miễn Phí",
+        },
       ],
     },
     twitter: {
