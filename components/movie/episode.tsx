@@ -412,10 +412,10 @@ export default function Episode({
         )}
 
         {/* Ad Notice / Disclaimer */}
-        <div className="pt-2.5 border-t border-white/[0.05] flex items-start gap-2 text-[11px] sm:text-[11.5px] text-zinc-400/60 leading-relaxed select-none">
-          <Info className="w-3.5 h-3.5 text-zinc-500/80 shrink-0 mt-0.5" />
-          <p>
-            Các quảng cáo trong phim được gắn cứng vào nguồn phim, chúng tôi đã cố gắng can thiệp để che quảng cáo nhưng vẫn còn, mong thông cảm...
+        <div className="pt-2.5 border-t border-white/[0.06] flex items-start gap-2 select-none">
+          <Info className="w-3.5 h-3.5 text-zinc-400 shrink-0 mt-0.5" />
+          <p className="text-[11.5px] font-medium text-zinc-300/85 leading-relaxed text-justify">
+            Quảng cáo trong video được nhúng cố định từ nguồn phát gốc. Đội ngũ kỹ thuật đã nỗ lực can thiệp để che chắn tối đa, rất mong quý khán giả thông cảm cho sự bất tiện này.
           </p>
         </div>
       </div>
