@@ -548,29 +548,45 @@ export default function MovieDetailView({ movie, episodes = [] }: MovieDetailVie
               </div>
             )}
 
-            {/* Đạo Diễn */}
+            {/* Đạo Diễn (Directors) */}
             {directorsList.length > 0 && (
-              <div className="text-xs text-white/70 space-y-0.5 pt-1">
-                <span className="text-white/45 font-medium flex items-center gap-1 mb-1">
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-white/60">
                   <Clapperboard className="w-3.5 h-3.5 text-brand-green" />
-                  <span>ĐẠO DIỄN:</span>
-                </span>
-                <p className="font-semibold text-white pl-4.5">
-                  {directorsList.join(", ")}
-                </p>
+                  <span>ĐẠO DIỄN</span>
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {directorsList.map((director, idx) => (
+                    <Link
+                      key={idx}
+                      href={`/search?query=${encodeURIComponent(director)}`}
+                      className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-brand-green/15 hover:border-brand-green/40 hover:text-brand-green border border-white/10 text-xs font-medium text-white/80 transition-colors"
+                    >
+                      {director}
+                    </Link>
+                  ))}
+                </div>
               </div>
             )}
 
-            {/* Diễn Viên */}
+            {/* Diễn Viên (Actors) */}
             {actorsList.length > 0 && (
-              <div className="text-xs text-white/70 space-y-0.5 pt-1">
-                <span className="text-white/45 font-medium flex items-center gap-1 mb-1">
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-white/60">
                   <Users className="w-3.5 h-3.5 text-brand-green" />
-                  <span>DIỄN VIÊN:</span>
-                </span>
-                <p className="font-normal text-white/80 pl-4.5 leading-relaxed">
-                  {actorsList.join(", ")}
-                </p>
+                  <span>DIỄN VIÊN</span>
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {actorsList.map((actor, idx) => (
+                    <Link
+                      key={idx}
+                      href={`/search?query=${encodeURIComponent(actor)}`}
+                      className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-brand-green/15 hover:border-brand-green/40 hover:text-brand-green border border-white/10 text-xs font-medium text-white/80 transition-colors"
+                    >
+                      {actor}
+                    </Link>
+                  ))}
+                </div>
               </div>
             )}
           </div>
