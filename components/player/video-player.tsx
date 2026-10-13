@@ -2383,6 +2383,8 @@ export default function VideoPlayer({
       style={{ transform: "translateZ(0)" }}
       onMouseMove={showControlsHandler} 
       onMouseLeave={() => isPlaying && setShowControls(false)}
+      onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
+      onDragStart={(e) => e.preventDefault()}
     >
       <video 
         ref={(el) => {
@@ -2394,8 +2396,13 @@ export default function VideoPlayer({
           }
         }} 
         crossOrigin="anonymous"
-        controlsList="nodownload noplaybackrate"
-        className="w-full h-full"
+        controls={false}
+        controlsList="nodownload noplaybackrate nofullscreen noremoteplayback"
+        disableRemotePlayback
+        onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        onDragStart={(e) => e.preventDefault()}
+        draggable={false}
+        className="w-full h-full pointer-events-none select-none"
           style={{
             ...getVideoTransformStyle(),
             backfaceVisibility: "hidden",

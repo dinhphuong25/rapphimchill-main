@@ -52,7 +52,14 @@ const EmbedPlayer = ({
   }, []);
 
   return (
-    <div className="relative bg-black w-full h-full group select-none overflow-hidden rounded-2xl border border-white/5 shadow-2xl">
+    <div 
+      className="relative bg-black w-full h-full group select-none overflow-hidden rounded-2xl border border-white/5 shadow-2xl"
+      onContextMenu={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onDragStart={(e) => e.preventDefault()}
+    >
       {/* Top gradient overlay for controls */}
       <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-black/85 via-black/40 to-transparent z-20 pointer-events-none transition-opacity duration-300 opacity-0 group-hover:opacity-100" />
 

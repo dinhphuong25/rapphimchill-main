@@ -54,6 +54,18 @@ export default function SecurityGuard() {
         e.preventDefault();
         e.stopPropagation();
       }
+
+      // Chặn Ctrl+S / Cmd+S (Save Webpage / Video)
+      if ((e.ctrlKey || e.metaKey) && (e.key === "S" || e.key === "s" || e.keyCode === 83)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      // Chặn Ctrl+P / Cmd+P (Print / PDF Extract)
+      if ((e.ctrlKey || e.metaKey) && (e.key === "P" || e.key === "p" || e.keyCode === 80)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
     };
 
     // 3. Chặn thao tác Drag & Drop mọi thứ
@@ -85,6 +97,74 @@ export default function SecurityGuard() {
 
     runConsoleWarning();
 
+    // 5. Chặn triệt để và triệt tiêu tiện ích download bên ngoài (IDM, Cốc Cốc, FetchV, CocoCut...)
+    const isDownloaderElement = (el: HTMLElement) => {
+      const id = (el.id || "").toLowerCase();
+      const cls = typeof el.className === "string" ? el.className.toLowerCase() : "";
+      return (
+        id.includes("idm") ||
+        id.includes("coccoc") ||
+        id.includes("download-helper") ||
+        id.includes("fetchv") ||
+        id.includes("cococut") ||
+        cls.includes("idm") ||
+        cls.includes("coccoc") ||
+        cls.includes("download-helper") ||
+        cls.includes("fetchv") ||
+        cls.includes("cococut")
+      );
+    };
+
+    const purgeDownloaderElements = () => {
+      try {
+        const suspicious = document.querySelectorAll(
+          '#__idm_frm__, #__idm_rpc__, #idm_net_panel, #idm_net_panel_bar, .idm_net_panel, [id*="idm_net_panel"], [class*="idm_net_panel"], [id^="__idm_"], div[id^="idm_"], iframe[id^="__idm_"], .coccoc-video-downloader, [class*="coccoc-download"], [id*="coccoc-download"], [class*="video-download-helper"], [class*="fetchv-"], [class*="cococut-"]'
+        );
+        suspicious.forEach((node) => {
+          try {
+            node.remove();
+          } catch {
+            (node as HTMLElement).style.setProperty("display", "none", "important");
+            (node as HTMLElement).style.setProperty("visibility", "hidden", "important");
+            (node as HTMLElement).style.setProperty("pointer-events", "none", "important");
+          }
+        });
+      } catch {}
+    };
+
+    purgeDownloaderElements();
+
+    const domObserver = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.addedNodes.length > 0) {
+          for (let i = 0; i < mutation.addedNodes.length; i++) {
+            const node = mutation.addedNodes[i];
+            if (node.nodeType === 1) {
+              const el = node as HTMLElement;
+              if (isDownloaderElement(el)) {
+                try {
+                  el.remove();
+                } catch {
+                  el.style.setProperty("display", "none", "important");
+                  el.style.setProperty("visibility", "hidden", "important");
+                  el.style.setProperty("pointer-events", "none", "important");
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    try {
+      domObserver.observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+      });
+    } catch {}
+
+    const intervalTimer = setInterval(purgeDownloaderElements, 1200);
+
     document.addEventListener("contextmenu", handleContextMenu);
     document.addEventListener("keydown", handleKeyDown);
     document.addEventListener("dragstart", handleDragStart);
@@ -92,6 +172,8 @@ export default function SecurityGuard() {
     document.addEventListener("cut", handleCopy);
 
     return () => {
+      domObserver.disconnect();
+      clearInterval(intervalTimer);
       document.removeEventListener("contextmenu", handleContextMenu);
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("dragstart", handleDragStart);

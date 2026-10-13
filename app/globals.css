@@ -375,3 +375,61 @@
     animation: bell-ring-wiggle 3.6s ease-in-out infinite;
   }
 }
+
+/* ==========================================================
+   AGGRESSIVE ANTI-DOWNLOADER & ANTI-SNIFFER SHIELD
+   Completely suppresses and hides IDM (Internet Download Manager),
+   Cốc Cốc, FetchV, Video DownloadHelper, CocoCut and downloader extensions
+   ========================================================== */
+#__idm_frm__,
+#__idm_rpc__,
+#idm_net_panel,
+#idm_net_panel_bar,
+.idm_net_panel,
+.idm_net_panel_bar,
+[id*="idm_net_panel"],
+[class*="idm_net_panel"],
+[id^="__idm_"],
+[id*="idm_btn"],
+[class*="idm_btn"],
+div[id^="idm_"],
+iframe[id^="__idm_"],
+embed[type*="idm"],
+.coccoc-video-downloader,
+[class*="coccoc-download"],
+[id*="coccoc-download"],
+[class*="video-download-helper"],
+[id*="video-download-helper"],
+[class*="vget-download"],
+[id*="vget-download"],
+[class*="fetchv-"],
+[id*="fetchv-"],
+[class*="cococut-"],
+[id*="cococut-"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  max-width: 0 !important;
+  max-height: 0 !important;
+  position: fixed !important;
+  top: -99999px !important;
+  left: -99999px !important;
+  z-index: -99999 !important;
+  clip: rect(0, 0, 0, 0) !important;
+  clip-path: inset(50%) !important;
+}
+
+video::-webkit-media-controls-enclosure {
+  overflow: hidden !important;
+}
+
+video::-internal-media-controls-download-button {
+  display: none !important;
+}
+
+video::-webkit-media-controls-download-button {
+  display: none !important;
+}
