@@ -19,6 +19,7 @@ import {
   Globe,
   X,
   Menu,
+  ChevronDown,
   Sparkles,
   ChevronRight,
   RotateCcw,
@@ -85,6 +86,40 @@ function SidebarContent({
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isPlayerFullscreen, setIsPlayerFullscreen] = useState(false);
+
+  // Check if current route is movie detail page (/phim/[slug]) on mobile
+  const isMovieDetailPage = Boolean(pathname && pathname.startsWith("/phim/"));
+  const [isDetailNavCollapsed, setIsDetailNavCollapsed] = useState(false);
+
+  // Auto-collapse after 1.5s on movie detail page, reset on other pages
+  useEffect(() => {
+    if (isMovieDetailPage) {
+      setIsDetailNavCollapsed(false);
+      const timer = setTimeout(() => {
+        setIsDetailNavCollapsed(true);
+      }, 1500);
+      return () => clearTimeout(timer);
+    } else {
+      setIsDetailNavCollapsed(false);
+    }
+  }, [isMovieDetailPage, pathname]);
+
+  // Auto-collapse when scrolling down on movie detail page
+  useEffect(() => {
+    if (!isMovieDetailPage) return;
+
+    let lastScrollY = window.scrollY;
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY + 30 && !isDetailNavCollapsed) {
+        setIsDetailNavCollapsed(true);
+      }
+      lastScrollY = currentScrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isMovieDetailPage, isDetailNavCollapsed]);
 
   useEffect(() => {
     const handleFs = (e: any) => {
@@ -427,14 +462,18 @@ function SidebarContent({
       <nav
         aria-label="Điều hướng chính"
         className={cn(
-          "lg:hidden fixed inset-x-0 bottom-0 left-0 right-0 z-[140] w-full pointer-events-auto select-none touch-manipulation",
+          "lg:hidden fixed inset-x-0 bottom-0 left-0 right-0 z-[140] w-full select-none touch-manipulation",
           "bg-[#131d17]/95 backdrop-blur-2xl border-t border-white/10 shadow-[0_-4px_24px_rgba(0,0,0,0.7)]",
-          isPlayerFullscreen && "hidden pointer-events-none"
+          "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+          isPlayerFullscreen && "hidden pointer-events-none",
+          isMovieDetailPage && isDetailNavCollapsed
+            ? "translate-y-full opacity-0 pointer-events-none"
+            : "translate-y-0 opacity-100 pointer-events-auto"
         )}
         style={{
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
-          transform: "translate3d(0, 0, 0)",
-          WebkitTransform: "translate3d(0, 0, 0)",
+          transform: isMovieDetailPage && isDetailNavCollapsed ? "translate3d(0, 100%, 0)" : "translate3d(0, 0, 0)",
+          WebkitTransform: isMovieDetailPage && isDetailNavCollapsed ? "translate3d(0, 100%, 0)" : "translate3d(0, 0, 0)",
         }}
       >
         <div className="w-full max-w-lg mx-auto h-[58px] flex items-center justify-between px-1.5">
@@ -609,6 +648,35 @@ function SidebarContent({
           })()}
         </div>
       </nav>
+
+      {/* Floating 3-Gạch Menu Toggle Button (Chỉ xuất hiện trên trang chi tiết phim mobile) */}
+      {isMovieDetailPage && !isPlayerFullscreen && (
+        <button
+          type="button"
+          onClick={() => setIsDetailNavCollapsed((prev) => !prev)}
+          className={cn(
+            "lg:hidden fixed z-[141] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+            "flex items-center gap-1.5 active:scale-95 cursor-pointer touch-manipulation",
+            isDetailNavCollapsed
+              ? "bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] right-3.5 px-3 py-2 rounded-2xl bg-[#0e1611]/92 backdrop-blur-xl border border-emerald-500/40 text-emerald-400 shadow-[0_8px_24px_rgba(0,0,0,0.65),0_0_16px_rgba(32,214,107,0.25)] hover:border-emerald-400 hover:text-emerald-300"
+              : "bottom-[calc(64px+env(safe-area-inset-bottom,0px))] right-3.5 px-2.5 py-1.5 rounded-xl bg-[#131d17]/95 backdrop-blur-xl border border-white/15 text-white/80 shadow-[0_4px_16px_rgba(0,0,0,0.5)] hover:text-white"
+          )}
+          aria-label={isDetailNavCollapsed ? "Mở thanh điều hướng" : "Thu gọn thanh điều hướng"}
+          title={isDetailNavCollapsed ? "Mở menu điều hướng" : "Thu gọn menu điều hướng"}
+        >
+          {isDetailNavCollapsed ? (
+            <>
+              <Menu className="w-4 h-4 text-emerald-400 stroke-[2.4]" />
+              <span className="text-[11px] font-bold tracking-tight text-white">Menu</span>
+            </>
+          ) : (
+            <>
+              <ChevronDown className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-[10.5px] font-semibold text-white/80">Thu gọn</span>
+            </>
+          )}
+        </button>
+      )}
 
       {/* Mobile Account Backdrop */}
       {isAccountOpen && (
