@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { Search, Server, Film } from "lucide-react";
+import { Search, Server, Film, Info } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 interface EpisodeData {
@@ -410,6 +410,14 @@ export default function Episode({
             {children}
           </div>
         )}
+
+        {/* Ad Notice / Disclaimer */}
+        <div className="pt-2.5 border-t border-white/[0.05] flex items-start gap-2 text-[11px] sm:text-[11.5px] text-zinc-400/60 leading-relaxed select-none">
+          <Info className="w-3.5 h-3.5 text-zinc-500/80 shrink-0 mt-0.5" />
+          <p>
+            Các quảng cáo trong phim được gắn cứng vào nguồn phim, chúng tôi đã cố gắng can thiệp để che quảng cáo nhưng vẫn còn, mong thông cảm...
+          </p>
+        </div>
       </div>
     </div>
   );

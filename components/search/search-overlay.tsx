@@ -639,18 +639,6 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                     </span>
                   )}
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    router.push(`/search?query=${encodeURIComponent(query.trim())}`);
-                    onClose();
-                  }}
-                  className="text-xs sm:text-sm font-bold text-brand-green hover:text-white transition-colors flex items-center gap-1.5 group"
-                >
-                  <span>Xem tất cả kết quả</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                </button>
               </div>
 
               {/* View Mode: Grid View (Default - Large posters) */}
