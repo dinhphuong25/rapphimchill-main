@@ -279,9 +279,9 @@ export default function VideoPlayer({
     }
     setIsSlowNetwork(false);
   }, []);
-  // Anti-Ad Banner Shield (Tự động phát hiện & che dải quảng cáo bài bạc ở mép trên - không hiện thông báo phiền)
-  const [adShieldMode, setAdShieldMode] = useState<'auto' | 'always' | 'off'>('auto');
-  const [isAdDetected, setIsAdDetected] = useState(false);
+  // Anti-Ad Banner Shield (Luôn kích hoạt khiên che dải quảng cáo bài bạc ở mép trên)
+  const [adShieldMode, setAdShieldMode] = useState<'always' | 'auto' | 'off'>('always');
+  const [isAdDetected, setIsAdDetected] = useState(true);
   const detectorCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const consecutiveDetectionsRef = useRef(0);
   const consecutiveMissesRef = useRef(0);
@@ -420,9 +420,10 @@ export default function VideoPlayer({
         setVideoFit(savedFit);
       }
 
-      // Khiên chắn quảng cáo cờ bạc luôn cố định ở chế độ thông minh 'auto' (tự động phát hiện & che khi có quảng cáo, không cho tắt)
-      setAdShieldMode('auto');
-      try { localStorage.setItem('cinema_ad_shield', 'auto'); } catch (e) {}
+      // Khiên chắn quảng cáo cờ bạc luôn cố định ở chế độ 'always' (luôn che sạch dải quảng cáo mép trên)
+      setAdShieldMode('always');
+      setIsAdDetected(true);
+      try { localStorage.setItem('cinema_ad_shield', 'always'); } catch (e) {}
 
       // Tải cấu hình tự động bỏ qua video quảng cáo cờ bạc (mặc định luôn BẬT)
       const savedAutoSkip = localStorage.getItem('cinema_auto_skip_ads');
@@ -1619,7 +1620,9 @@ export default function VideoPlayer({
       // 2. Đoạn intro sponsor cờ bạc đầu phim (0s - 480s / 8 phút) nơi video stream lồng dải quảng cáo bài bạc như 9922.com (cả chế độ thường & toàn màn hình web mobile)
       // 3. Quét hình ảnh thời gian thực (visual OCR / edge detector)
       // 4. KHI HẾT QUẢNG CÁO (cur > 480s hoặc ngoài dải banner), khiên che tự động tắt mượt mà, trả lại video nguyên bản cho người xem!
-      if (adShieldMode === 'auto') {
+      if (adShieldMode === 'always') {
+        setIsAdDetected(true);
+      } else if (adShieldMode === 'auto') {
         let isAdNow = false;
 
         // Ưu tiên 1: Dải banner từ playlist m3u8 nếu segment chứa từ khóa banner
@@ -1638,8 +1641,6 @@ export default function VideoPlayer({
         }
 
         setIsAdDetected(isAdNow);
-      } else if (adShieldMode === 'always') {
-        setIsAdDetected(true);
       } else {
         setIsAdDetected(false);
       }
@@ -1871,12 +1872,13 @@ export default function VideoPlayer({
     };
 
     const onSeekingEvent = () => {
-      // Khi tua video sang vị trí khác, tạm tắt khiên che và reset bộ đếm để quét lại tức thì vị trí mới
-      isVisualAdDetectedRef.current = false;
-      setIsAdDetected(false);
-      consecutiveDetectionsRef.current = 0;
-      consecutiveMissesRef.current = 0;
-      prevFrameLuminanceRef.current = null;
+      if (adShieldMode !== 'always') {
+        isVisualAdDetectedRef.current = false;
+        setIsAdDetected(false);
+        consecutiveDetectionsRef.current = 0;
+        consecutiveMissesRef.current = 0;
+        prevFrameLuminanceRef.current = null;
+      }
 
       let isBuffered = false;
       if (video.buffered.length > 0) {
@@ -2444,17 +2446,17 @@ export default function VideoPlayer({
         </div>
       )}
 
-      {/* Intelligent Anti-Ad Banner Shield (Chỉ che dải mỏng mép trên khi thực sự có watermark cờ bạc, không che phim bình thường) */}
+      {/* Intelligent Anti-Ad Banner Shield (Che sạch hoàn toàn dải watermark quảng cáo cờ bạc mép trên) */}
       <div 
         className={cn(
-          "absolute top-0 left-0 right-0 z-[45] transition-all duration-500 overflow-hidden pointer-events-none select-none",
+          "absolute top-0 left-0 right-0 z-[28] transition-all duration-300 overflow-hidden pointer-events-none select-none",
           isAdDetected
-            ? "opacity-100 h-[12%] sm:h-[11%]" 
+            ? "opacity-100 h-[17.5%] sm:h-[16.5%]" 
             : "opacity-0 h-0 pointer-events-none"
         )}
       >
         {/* Cinematic gradient mask with frosted blur to obliterate gambling text */}
-        <div className="w-full h-full bg-gradient-to-b from-[#050807]/98 via-[#050807]/90 via-70% to-transparent backdrop-blur-[3px]" />
+        <div className="w-full h-full bg-gradient-to-b from-black via-black/95 via-55% to-transparent backdrop-blur-[6px]" />
       </div>
 
 
