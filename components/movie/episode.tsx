@@ -415,7 +415,7 @@ export default function Episode({
         <div className="pt-2.5 border-t border-white/[0.06] flex items-start gap-2 select-none">
           <Info className="w-3.5 h-3.5 text-zinc-400 shrink-0 mt-0.5" />
           <p className="text-[11.5px] font-medium text-zinc-300/85 leading-relaxed text-justify">
-            Quảng cáo trong video được nhúng cố định từ nguồn phát gốc. Đội ngũ kỹ thuật đã nỗ lực can thiệp để che chắn tối đa, rất mong quý khán giả thông cảm cho sự bất tiện này.
+            Quảng cáo trong video được nhúng cố định từ nguồn phát gốc. Đội ngũ kỹ thuật đã nỗ lực can thiệp để che chắn tối đa, rất mong mọi người thông cảm cho sự bất tiện này.
           </p>
         </div>
       </div>
