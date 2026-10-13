@@ -90,24 +90,18 @@ function SidebarContent({
   // Check if current route is movie detail page (/phim/[slug]) on mobile
   const isMovieDetailPage = Boolean(pathname && pathname.startsWith("/phim/"));
   const [isDetailNavCollapsed, setIsDetailNavCollapsed] = useState(false);
-  const [hasJustCollapsed, setHasJustCollapsed] = useState(false);
 
   // Auto-collapse immediately with clear entrance animation on movie detail page
   useEffect(() => {
     if (isMovieDetailPage) {
       setIsDetailNavCollapsed(false);
-      setHasJustCollapsed(false);
       // Wait 300ms so initial frame is rendered, then trigger visible slide-down animation
       const timer = setTimeout(() => {
         setIsDetailNavCollapsed(true);
-        setHasJustCollapsed(true);
-        // Turn off beacon pulse after 2.5s
-        setTimeout(() => setHasJustCollapsed(false), 2500);
       }, 300);
       return () => clearTimeout(timer);
     } else {
       setIsDetailNavCollapsed(false);
-      setHasJustCollapsed(false);
     }
   }, [isMovieDetailPage, pathname]);
 
@@ -660,21 +654,12 @@ function SidebarContent({
       {isMovieDetailPage && !isPlayerFullscreen && (
         <button
           type="button"
-          onClick={() => {
-            setIsDetailNavCollapsed((prev) => !prev);
-            setHasJustCollapsed(false);
-          }}
+          onClick={() => setIsDetailNavCollapsed((prev) => !prev)}
           className={cn(
             "lg:hidden fixed z-[141] transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)]",
             "flex items-center gap-1.5 active:scale-95 cursor-pointer touch-manipulation select-none",
             isDetailNavCollapsed
-              ? cn(
-                  "bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] right-3.5 px-3 py-2 rounded-2xl",
-                  "bg-[#0e1611]/95 backdrop-blur-xl border text-emerald-400",
-                  hasJustCollapsed
-                    ? "border-emerald-400 shadow-[0_0_24px_rgba(32,214,107,0.7)] scale-105 ring-2 ring-emerald-400/40"
-                    : "border-emerald-500/40 shadow-[0_8px_24px_rgba(0,0,0,0.65),0_0_16px_rgba(32,214,107,0.25)] hover:border-emerald-400 hover:text-emerald-300"
-                )
+              ? "bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] right-3.5 px-3 py-2 rounded-2xl bg-[#0e1611]/95 backdrop-blur-xl border border-emerald-500/40 text-emerald-400 shadow-[0_8px_24px_rgba(0,0,0,0.65),0_0_16px_rgba(32,214,107,0.25)] hover:border-emerald-400 hover:text-emerald-300"
               : "bottom-[calc(64px+env(safe-area-inset-bottom,0px))] right-3.5 px-2.5 py-1.5 rounded-xl bg-[#131d17]/95 backdrop-blur-xl border border-white/15 text-white/80 shadow-[0_4px_16px_rgba(0,0,0,0.5)] hover:text-white"
           )}
           aria-label={isDetailNavCollapsed ? "Mở thanh điều hướng" : "Thu gọn thanh điều hướng"}
@@ -682,13 +667,6 @@ function SidebarContent({
         >
           {isDetailNavCollapsed ? (
             <>
-              {/* Subtle animated green beacon ping dot so users immediately notice where the menu collapsed */}
-              {hasJustCollapsed && (
-                <span className="relative flex h-2 w-2 mr-0.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-              )}
               <Menu className="w-4 h-4 text-emerald-400 stroke-[2.4]" />
               <span className="text-[11px] font-bold tracking-tight text-white">Menu</span>
             </>
