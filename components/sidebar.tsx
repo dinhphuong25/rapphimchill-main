@@ -576,7 +576,7 @@ function SidebarContent({
         aria-label="Điều hướng chính"
         className={cn(
           "lg:hidden fixed inset-x-0 bottom-0 left-0 right-0 z-[140] w-full select-none touch-manipulation",
-          "bg-[#131d17]/95 backdrop-blur-2xl border-t border-white/10 shadow-[0_-4px_24px_rgba(0,0,0,0.7)]",
+          "bg-[#0B100E]/95 backdrop-blur-2xl border-t border-white/[0.08] shadow-[0_-8px_32px_rgba(0,0,0,0.85)]",
           "transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] will-change-transform",
           isPlayerFullscreen && "hidden pointer-events-none",
           isMovieDetailPage && isDetailNavCollapsed
@@ -602,16 +602,17 @@ function SidebarContent({
                 aria-label="Trang Chủ"
               >
                 {active ? (
-                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(32,214,107,0.45)]">
+                  <div className="w-[88%] h-[49px] rounded-2xl bg-gradient-to-b from-[#20D66B]/20 via-[#20D66B]/10 to-transparent border border-[#20D66B]/40 shadow-[0_0_16px_rgba(32,214,107,0.25),inset_0_1px_1px_rgba(255,255,255,0.15)] flex flex-col items-center justify-center gap-0.5 relative transition-all duration-200">
+                    <span className="absolute top-1 w-3.5 h-[2px] rounded-full bg-brand-green shadow-[0_0_6px_rgba(32,214,107,0.9)]" />
                     <SidebarAnimatedIcon type="home" size={20} />
-                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
+                    <span className="text-[9.5px] font-extrabold text-brand-green tracking-tight leading-none drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
                       Trang chủ
                     </span>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-1 py-1">
-                    <SidebarAnimatedIcon type="home" size={19} />
-                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
+                  <div className="flex flex-col items-center justify-center gap-1 py-1 text-white/60 hover:text-white transition-colors">
+                    <SidebarAnimatedIcon type="home" size={19} className="opacity-80" />
+                    <span className="text-[9.5px] font-semibold tracking-tight leading-none">
                       Trang chủ
                     </span>
                   </div>
@@ -632,16 +633,17 @@ function SidebarContent({
                 aria-label="Lịch Sử Xem"
               >
                 {active ? (
-                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(32,214,107,0.45)]">
+                  <div className="w-[88%] h-[49px] rounded-2xl bg-gradient-to-b from-[#20D66B]/20 via-[#20D66B]/10 to-transparent border border-[#20D66B]/40 shadow-[0_0_16px_rgba(32,214,107,0.25),inset_0_1px_1px_rgba(255,255,255,0.15)] flex flex-col items-center justify-center gap-0.5 relative transition-all duration-200">
+                    <span className="absolute top-1 w-3.5 h-[2px] rounded-full bg-brand-green shadow-[0_0_6px_rgba(32,214,107,0.9)]" />
                     <SidebarAnimatedIcon type="history" size={20} />
-                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
+                    <span className="text-[9.5px] font-extrabold text-brand-green tracking-tight leading-none drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
                       Lịch sử
                     </span>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-1 py-1">
-                    <SidebarAnimatedIcon type="history" size={19} />
-                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
+                  <div className="flex flex-col items-center justify-center gap-1 py-1 text-white/60 hover:text-white transition-colors">
+                    <SidebarAnimatedIcon type="history" size={19} className="opacity-80" />
+                    <span className="text-[9.5px] font-semibold tracking-tight leading-none">
                       Lịch sử
                     </span>
                   </div>
@@ -662,16 +664,17 @@ function SidebarContent({
                 aria-label="Yêu Thích"
               >
                 {active ? (
-                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(32,214,107,0.45)]">
+                  <div className="w-[88%] h-[49px] rounded-2xl bg-gradient-to-b from-[#20D66B]/20 via-[#20D66B]/10 to-transparent border border-[#20D66B]/40 shadow-[0_0_16px_rgba(32,214,107,0.25),inset_0_1px_1px_rgba(255,255,255,0.15)] flex flex-col items-center justify-center gap-0.5 relative transition-all duration-200">
+                    <span className="absolute top-1 w-3.5 h-[2px] rounded-full bg-brand-green shadow-[0_0_6px_rgba(32,214,107,0.9)]" />
                     <SidebarAnimatedIcon type="heart" size={20} />
-                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
+                    <span className="text-[9.5px] font-extrabold text-brand-green tracking-tight leading-none drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
                       Yêu thích
                     </span>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-1 py-1">
-                    <SidebarAnimatedIcon type="heart" size={19} />
-                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
+                  <div className="flex flex-col items-center justify-center gap-1 py-1 text-white/60 hover:text-white transition-colors">
+                    <SidebarAnimatedIcon type="heart" size={19} className="opacity-80" />
+                    <span className="text-[9.5px] font-semibold tracking-tight leading-none">
                       Yêu thích
                     </span>
                   </div>
@@ -700,28 +703,29 @@ function SidebarContent({
                 aria-label="Tài Khoản"
               >
                 {active ? (
-                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(32,214,107,0.45)]">
+                  <div className="w-[88%] h-[49px] rounded-2xl bg-gradient-to-b from-[#20D66B]/20 via-[#20D66B]/10 to-transparent border border-[#20D66B]/40 shadow-[0_0_16px_rgba(32,214,107,0.25),inset_0_1px_1px_rgba(255,255,255,0.15)] flex flex-col items-center justify-center gap-0.5 relative transition-all duration-200">
+                    <span className="absolute top-1 w-3.5 h-[2px] rounded-full bg-brand-green shadow-[0_0_6px_rgba(32,214,107,0.9)]" />
                     {user?.avatar ? (
-                      <div className="w-[19px] h-[19px] rounded-full overflow-hidden shrink-0 border border-[#051309] relative">
+                      <div className="w-[19px] h-[19px] rounded-full overflow-hidden shrink-0 border border-brand-green relative shadow-[0_0_8px_rgba(32,214,107,0.5)]">
                         <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="19px" />
                       </div>
                     ) : (
                       <AnimatedUserIcon size={20} />
                     )}
-                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
+                    <span className="text-[9.5px] font-extrabold text-brand-green tracking-tight leading-none drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
                       Tài khoản
                     </span>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-1 py-1">
+                  <div className="flex flex-col items-center justify-center gap-1 py-1 text-white/60 hover:text-white transition-colors">
                     {user?.avatar ? (
                       <div className="w-[20px] h-[20px] rounded-full overflow-hidden shrink-0 border border-white/20 relative">
                         <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="20px" />
                       </div>
                     ) : (
-                      <AnimatedUserIcon size={19} />
+                      <AnimatedUserIcon size={19} className="opacity-80" />
                     )}
-                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
+                    <span className="text-[9.5px] font-semibold tracking-tight leading-none">
                       Tài khoản
                     </span>
                   </div>
@@ -742,16 +746,17 @@ function SidebarContent({
                 aria-label="Tải App"
               >
                 {active ? (
-                  <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(32,214,107,0.45)]">
+                  <div className="w-[88%] h-[49px] rounded-2xl bg-gradient-to-b from-[#20D66B]/20 via-[#20D66B]/10 to-transparent border border-[#20D66B]/40 shadow-[0_0_16px_rgba(32,214,107,0.25),inset_0_1px_1px_rgba(255,255,255,0.15)] flex flex-col items-center justify-center gap-0.5 relative transition-all duration-200">
+                    <span className="absolute top-1 w-3.5 h-[2px] rounded-full bg-brand-green shadow-[0_0_6px_rgba(32,214,107,0.9)]" />
                     <SidebarAnimatedIcon type="smartphone" size={20} />
-                    <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
+                    <span className="text-[9.5px] font-extrabold text-brand-green tracking-tight leading-none drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
                       Tải app
                     </span>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-1 py-1">
-                    <SidebarAnimatedIcon type="smartphone" size={19} />
-                    <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
+                  <div className="flex flex-col items-center justify-center gap-1 py-1 text-white/60 hover:text-white transition-colors">
+                    <SidebarAnimatedIcon type="smartphone" size={19} className="opacity-80" />
+                    <span className="text-[9.5px] font-semibold tracking-tight leading-none">
                       Tải app
                     </span>
                   </div>
