@@ -1,7 +1,7 @@
 "use client";
 
 import React, { memo } from "react";
-import { motion, type Transition } from "framer-motion";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 export interface AnimatedSidebarIconProps {
@@ -11,27 +11,13 @@ export interface AnimatedSidebarIconProps {
   isActive?: boolean;
 }
 
-const SPRING_SNAPPY: Transition = {
-  type: "spring",
-  stiffness: 400,
-  damping: 18,
-};
-
-const SPRING_BOUNCE: Transition = {
-  type: "spring",
-  stiffness: 300,
-  damping: 12,
-};
-
 /**
- * 1. Home Icon (Trang Chủ)
- * Nóc nhà nảy nhẹ, cửa nhà vẽ mở ra đầy ấm cúng
+ * 1. Home Icon (Trang Chủ) - Lineal Color Phong cách Flaticon
+ * Nóc nhà màu cam ấm, tường xanh trời, khói ống khói bay liên tục, ánh đèn cửa sổ nhấp nhô
  */
 export const AnimatedHomeIcon = memo(function AnimatedHomeIcon({
   className,
-  size = 18,
-  isHovered = false,
-  isActive = false,
+  size = 20,
 }: AnimatedSidebarIconProps) {
   return (
     <div className={cn("relative flex items-center justify-center shrink-0", className)}>
@@ -40,34 +26,79 @@ export const AnimatedHomeIcon = memo(function AnimatedHomeIcon({
         height={size}
         viewBox="0 0 24 24"
         fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        animate={isHovered ? { y: [0, -2.5, 0], scale: [1, 1.08, 1] } : { y: 0, scale: 1 }}
-        transition={SPRING_BOUNCE}
         className="overflow-visible"
+        animate={{ scale: [1, 1.05, 1] }}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
       >
-        <path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-        <motion.path
-          d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"
-          animate={isHovered ? { pathLength: [0, 1], opacity: [0.4, 1] } : { pathLength: 1, opacity: 1 }}
-          transition={{ duration: 0.35, ease: "easeInOut" }}
+        {/* Ống khói với các hạt khói bay lượn liên tục */}
+        <path d="M18 10V5h-2v3" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
+        <motion.circle
+          cx="17"
+          cy="3"
+          r="1"
+          fill="#cbd5e1"
+          animate={{ y: [0, -5], opacity: [0.9, 0], scale: [0.8, 1.4] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut" }}
         />
+        <motion.circle
+          cx="18"
+          cy="1.5"
+          r="0.75"
+          fill="#cbd5e1"
+          animate={{ y: [0, -6], opacity: [0.8, 0], scale: [0.7, 1.3] }}
+          transition={{ duration: 1.8, delay: 0.6, repeat: Infinity, ease: "easeOut" }}
+        />
+
+        {/* Thân nhà màu xanh da trời trong trẻo */}
+        <path
+          d="M4 10.5V20a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-9.5"
+          fill="#38bdf8"
+          fillOpacity="0.25"
+          stroke="#38bdf8"
+          strokeWidth="1.75"
+          strokeLinejoin="round"
+        />
+
+        {/* Nóc nhà màu cam san hô nhấp nhô nhẹ */}
+        <motion.path
+          d="m2.5 11 8.35-7.3a1.75 1.75 0 0 1 2.3 0l8.35 7.3"
+          fill="#f97316"
+          fillOpacity="0.35"
+          stroke="#fb923c"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          animate={{ y: [0, -0.8, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        />
+
+        {/* Cửa nhà màu vàng hổ phách tỏa ánh đèn ấm áp */}
+        <motion.rect
+          x="9.5"
+          y="13"
+          width="5"
+          height="8"
+          rx="1"
+          fill="#facc15"
+          stroke="#eab308"
+          strokeWidth="1.5"
+          animate={{ fillOpacity: [0.5, 0.95, 0.5] }}
+          transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+        />
+        {/* Nắm cửa */}
+        <circle cx="13.2" cy="17" r="0.6" fill="#713f12" />
       </motion.svg>
     </div>
   );
 });
 
 /**
- * 2. Clapperboard Icon (Chiếu Rạp)
- * Thanh đập mở lên góc -20° rồi gõ đập đóng xuống giòn giã phong cách đạo diễn
+ * 2. Clapperboard Icon (Chiếu Rạp) - Lineal Color Phong cách Flaticon
+ * Bảng đập phim trường với thanh đập mở ra gõ đóng liên tục, ngôi sao vàng điện ảnh tỏa sáng
  */
 export const AnimatedClapperboardIcon = memo(function AnimatedClapperboardIcon({
   className,
-  size = 18,
-  isHovered = false,
-  isActive = false,
+  size = 20,
 }: AnimatedSidebarIconProps) {
   return (
     <div className={cn("relative flex items-center justify-center shrink-0", className)}>
@@ -76,38 +107,57 @@ export const AnimatedClapperboardIcon = memo(function AnimatedClapperboardIcon({
         height={size}
         viewBox="0 0 24 24"
         fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
         className="overflow-visible"
       >
-        {/* Bản lề nắp đập phía trên */}
+        {/* Thân bảng clapperboard màu xanh đậm điện ảnh */}
+        <rect
+          x="3.5"
+          y="10.5"
+          width="17"
+          height="10.5"
+          rx="1.5"
+          fill="#1e293b"
+          stroke="#e2e8f0"
+          strokeWidth="1.5"
+        />
+        {/* Ngôi sao vàng Hollywood nhấp nháy xoay nhẹ */}
+        <motion.path
+          d="M12 13.5l.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2-1.45-1.4 2-.3z"
+          fill="#fbbf24"
+          animate={{ scale: [1, 1.25, 1], rotate: [0, 8, -8, 0] }}
+          transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+          style={{ transformOrigin: "12px 15.5px" }}
+        />
+
+        {/* Thanh đập clapperboard mở lên và gõ đóng liên tục theo chu kỳ */}
         <motion.g
-          animate={isHovered ? { rotate: [0, -22, 2, 0] } : { rotate: 0 }}
-          transition={SPRING_SNAPPY}
-          style={{ transformOrigin: "4px 11px" }}
+          animate={{ rotate: [0, 0, -22, 2, -1, 0, 0] }}
+          transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+          style={{ transformOrigin: "3.5px 10.5px" }}
         >
-          <path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.4-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.4Z" />
-          <path d="m6.2 5.3 3.1 3.9" />
-          <path d="m12.4 3.4 3.1 4" />
+          <path
+            d="M3.5 10.5l16.5-4-1-2.5a1.5 1.5 0 0 0-1.8-.9L4.8 6.5a1.5 1.5 0 0 0-.9 1.8z"
+            fill="#f59e0b"
+            stroke="#fbbf24"
+            strokeWidth="1.5"
+          />
+          {/* Sọc vạch phim trường đen vàng */}
+          <path d="m7 9.5 2.5-3.5" stroke="#1e293b" strokeWidth="2" strokeLinecap="round" />
+          <path d="m12 8.3 2.5-3.5" stroke="#1e293b" strokeWidth="2" strokeLinecap="round" />
+          <path d="m17 7.1 2-2.8" stroke="#1e293b" strokeWidth="2" strokeLinecap="round" />
         </motion.g>
-        {/* Thân bảng clapperboard phía dưới */}
-        <path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
       </svg>
     </div>
   );
 });
 
 /**
- * 3. Tv Icon (Phim Bộ)
- * Râu ăng-ten lắc lư ngộ nghĩnh, màn hình TV rung nảy bắt sóng
+ * 3. Tv Icon (Phim Bộ) - Lineal Color Phong cách Flaticon
+ * Tivi màu tím retro, ăng-ten lắc lư bắt sóng, nút play phát sóng nhấp nhô
  */
 export const AnimatedTvIcon = memo(function AnimatedTvIcon({
   className,
-  size = 18,
-  isHovered = false,
-  isActive = false,
+  size = 20,
 }: AnimatedSidebarIconProps) {
   return (
     <div className={cn("relative flex items-center justify-center shrink-0", className)}>
@@ -116,45 +166,70 @@ export const AnimatedTvIcon = memo(function AnimatedTvIcon({
         height={size}
         viewBox="0 0 24 24"
         fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
         className="overflow-visible"
       >
-        {/* Râu ăng-ten lắc lư */}
+        {/* Râu ăng-ten lắc lư qua lại liên tục */}
         <motion.g
-          animate={isHovered ? { rotate: [0, -14, 14, -6, 0] } : { rotate: 0 }}
-          transition={{ duration: 0.5, ease: "easeInOut" }}
+          animate={{ rotate: [-8, 8, -6, 6, -8] }}
+          transition={{ duration: 3.6, repeat: Infinity, ease: "easeInOut" }}
           style={{ transformOrigin: "12px 7px" }}
         >
-          <polyline points="17 2 12 7 7 2" />
+          <line x1="12" y1="7" x2="6.5" y2="1.5" stroke="#a855f7" strokeWidth="1.5" strokeLinecap="round" />
+          <line x1="12" y1="7" x2="17.5" y2="1.5" stroke="#a855f7" strokeWidth="1.5" strokeLinecap="round" />
+          <circle cx="6.5" cy="1.5" r="1" fill="#c084fc" />
+          <circle cx="17.5" cy="1.5" r="1" fill="#c084fc" />
         </motion.g>
-        {/* Màn hình TV */}
-        <motion.rect
-          x="2"
+
+        {/* Vỏ Tivi màu tím neon sang trọng */}
+        <rect
+          x="2.5"
           y="7"
-          width="20"
-          height="15"
-          rx="2"
-          animate={isHovered ? { scale: [1, 1.08, 0.98, 1] } : { scale: 1 }}
-          transition={{ duration: 0.4 }}
-          style={{ transformOrigin: "12px 14px" }}
+          width="19"
+          height="14.5"
+          rx="2.5"
+          fill="#3b0764"
+          fillOpacity="0.4"
+          stroke="#c084fc"
+          strokeWidth="1.75"
         />
+
+        {/* Màn hình phát sóng màu xanh ngọc Cyan */}
+        <rect
+          x="4.5"
+          y="9"
+          width="12"
+          height="10.5"
+          rx="1.5"
+          fill="#06b6d4"
+          fillOpacity="0.25"
+          stroke="#22d3ee"
+          strokeWidth="1.25"
+        />
+        {/* Biểu tượng Play nhịp đập trên màn hình */}
+        <motion.path
+          d="m8.5 11.5 4.5 2.75-4.5 2.75z"
+          fill="#22d3ee"
+          animate={{ scale: [1, 1.25, 1], opacity: [0.75, 1, 0.75] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+          style={{ transformOrigin: "10.5px 14.25px" }}
+        />
+
+        {/* Các nút bấm điều khiển sắc màu */}
+        <circle cx="18.5" cy="11.5" r="1" fill="#facc15" />
+        <circle cx="18.5" cy="14.5" r="1" fill="#f43f5e" />
+        <line x1="17.5" y1="17.5" x2="19.5" y2="17.5" stroke="#a855f7" strokeWidth="1.2" strokeLinecap="round" />
       </svg>
     </div>
   );
 });
 
 /**
- * 4. Film Icon (Phim Lẻ)
- * Khung cuộn phim điện ảnh nghiêng và cuộn chuyển động nhịp nhàng
+ * 4. Film Icon (Phim Lẻ) - Lineal Color Phong cách Flaticon
+ * Cuộn phim điện ảnh màu vàng kim hoàng gia xoay tròn liên tục
  */
 export const AnimatedFilmIcon = memo(function AnimatedFilmIcon({
   className,
-  size = 18,
-  isHovered = false,
-  isActive = false,
+  size = 20,
 }: AnimatedSidebarIconProps) {
   return (
     <div className={cn("relative flex items-center justify-center shrink-0", className)}>
@@ -163,37 +238,36 @@ export const AnimatedFilmIcon = memo(function AnimatedFilmIcon({
         height={size}
         viewBox="0 0 24 24"
         fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        animate={isHovered ? { rotate: [0, -12, 12, -4, 0], scale: [1, 1.12, 1] } : { rotate: 0, scale: 1 }}
-        transition={SPRING_BOUNCE}
         className="overflow-visible"
+        animate={{ rotate: 360 }}
+        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
         style={{ transformOrigin: "12px 12px" }}
       >
-        <rect width="18" height="18" x="3" y="3" rx="2" />
-        <path d="M7 3v18" />
-        <path d="M3 7.5h4" />
-        <path d="M3 12h18" />
-        <path d="M3 16.5h4" />
-        <path d="M17 3v18" />
-        <path d="M17 7.5h4" />
-        <path d="M17 16.5h4" />
+        {/* Vòng ngoài cuộn phim mạ vàng */}
+        <circle cx="12" cy="12" r="9.5" fill="#f59e0b" fillOpacity="0.2" stroke="#f59e0b" strokeWidth="1.75" />
+        {/* Lõi giữa cuộn phim */}
+        <circle cx="12" cy="12" r="3.2" fill="#d97706" stroke="#fbbf24" strokeWidth="1.5" />
+        <circle cx="12" cy="12" r="1.2" fill="#1e293b" />
+
+        {/* Các lỗ khoét cuộn phim màu vàng nhạt Flaticon */}
+        <circle cx="12" cy="6.2" r="1.6" fill="#fef08a" stroke="#d97706" strokeWidth="1" />
+        <circle cx="17" cy="9.2" r="1.6" fill="#fef08a" stroke="#d97706" strokeWidth="1" />
+        <circle cx="17" cy="14.8" r="1.6" fill="#fef08a" stroke="#d97706" strokeWidth="1" />
+        <circle cx="12" cy="17.8" r="1.6" fill="#fef08a" stroke="#d97706" strokeWidth="1" />
+        <circle cx="7" cy="14.8" r="1.6" fill="#fef08a" stroke="#d97706" strokeWidth="1" />
+        <circle cx="7" cy="9.2" r="1.6" fill="#fef08a" stroke="#d97706" strokeWidth="1" />
       </motion.svg>
     </div>
   );
 });
 
 /**
- * 5. Cat Icon (Hoạt Hình / Anime)
- * Chú mèo vểnh tai lắc lư siêu đáng yêu và chớp mắt
+ * 5. Cat Icon (Hoạt Hình / Anime) - Lineal Color Phong cách Flaticon
+ * Chú mèo vàng cam dễ thương, tai vểnh lắc lư, mắt chớp nháy liên tục
  */
 export const AnimatedCatIcon = memo(function AnimatedCatIcon({
   className,
-  size = 18,
-  isHovered = false,
-  isActive = false,
+  size = 20,
 }: AnimatedSidebarIconProps) {
   return (
     <div className={cn("relative flex items-center justify-center shrink-0", className)}>
@@ -202,48 +276,67 @@ export const AnimatedCatIcon = memo(function AnimatedCatIcon({
         height={size}
         viewBox="0 0 24 24"
         fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        animate={isHovered ? { rotate: [0, -16, 16, -8, 8, 0], scale: [1, 1.18, 1] } : { rotate: 0, scale: 1 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
         className="overflow-visible"
+        animate={{ rotate: [-7, 7, -5, 5, -7], y: [0, -1, 0] }}
+        transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
         style={{ transformOrigin: "12px 18px" }}
       >
-        <path d="M12 5c.67 0 1.35.09 2 .26 1.78-2 5.03-2.84 6.42-2.26 1.4.58-.42 7-.42 7 .57 1.07 1 2.24 1 3.44C21 17.9 16.97 21 12 21s-9-3.1-9-7.56c0-1.25.5-2.4 1-3.44 0 0-1.89-6.42-.5-7 1.39-.58 4.72.26 6.5 2.26.65-.17 1.33-.26 2-.26z" />
-        <path d="M2 13h5" />
-        <path d="M22 13h-5" />
+        {/* Khuôn mặt mèo màu cam đào */}
+        <path
+          d="M12 5c.7 0 1.4.1 2 .3 1.8-2 5-2.8 6.4-2.3 1.4.6-.4 7-.4 7 .6 1.1 1 2.2 1 3.4 0 5.4-4 8.6-9 8.6s-9-3.2-9-8.6c0-1.2.4-2.3 1-3.4 0 0-1.8-6.4-.4-7 1.4-.5 4.6.3 6.4 2.3.6-.2 1.3-.3 2-.3z"
+          fill="#fb923c"
+          fillOpacity="0.35"
+          stroke="#fb923c"
+          strokeWidth="1.75"
+        />
+
+        {/* Tai trong màu hồng phấn */}
+        <path d="M18.5 6.5c-.5 1-1.5 2-2.5 2.5" stroke="#f472b6" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M5.5 6.5c.5 1 1.5 2 2.5 2.5" stroke="#f472b6" strokeWidth="1.5" strokeLinecap="round" />
+
+        {/* Đôi mắt vàng chớp nháy liên tục */}
         <motion.circle
           cx="9"
           cy="13"
-          r="1"
-          fill="currentColor"
-          animate={isHovered ? { scaleY: [1, 0.1, 1] } : { scaleY: 1 }}
-          transition={{ duration: 0.3, delay: 0.15 }}
+          r="1.2"
+          fill="#fef08a"
+          stroke="#ca8a04"
+          strokeWidth="0.8"
+          animate={{ scaleY: [1, 1, 0.1, 1, 1] }}
+          transition={{ duration: 3.2, repeat: Infinity }}
+          style={{ transformOrigin: "9px 13px" }}
         />
         <motion.circle
           cx="15"
           cy="13"
-          r="1"
-          fill="currentColor"
-          animate={isHovered ? { scaleY: [1, 0.1, 1] } : { scaleY: 1 }}
-          transition={{ duration: 0.3, delay: 0.15 }}
+          r="1.2"
+          fill="#fef08a"
+          stroke="#ca8a04"
+          strokeWidth="0.8"
+          animate={{ scaleY: [1, 1, 0.1, 1, 1] }}
+          transition={{ duration: 3.2, repeat: Infinity }}
+          style={{ transformOrigin: "15px 13px" }}
         />
+
+        {/* Chiếc mũi xinh màu hồng dâu và nụ cười */}
+        <circle cx="12" cy="15.2" r="0.8" fill="#f43f5e" />
+        <path d="M10.8 16.5q1.2.9 2.4 0" stroke="#fb923c" strokeWidth="1.2" strokeLinecap="round" />
+
+        {/* Ria mép */}
+        <line x1="2" y1="13.5" x2="6.5" y2="13.5" stroke="#fdba74" strokeWidth="1.2" strokeLinecap="round" />
+        <line x1="17.5" y1="13.5" x2="22" y2="13.5" stroke="#fdba74" strokeWidth="1.2" strokeLinecap="round" />
       </motion.svg>
     </div>
   );
 });
 
 /**
- * 6. Flame Icon (Mới Cập Nhật / Thịnh Hành)
- * Ngọn lửa bập bùng, nhảy múa vươn cao với sức sống rực rỡ
+ * 6. Flame Icon (Mới Cập Nhật / Thịnh Hành) - Lineal Color Phong cách Flaticon
+ * Ngọn lửa đỏ cam rực lửa bập bùng, lõi vàng kim nhảy múa, tàn lửa bay liên tục
  */
 export const AnimatedFlameIcon = memo(function AnimatedFlameIcon({
   className,
-  size = 18,
-  isHovered = false,
-  isActive = false,
+  size = 20,
 }: AnimatedSidebarIconProps) {
   return (
     <div className={cn("relative flex items-center justify-center shrink-0", className)}>
@@ -252,29 +345,53 @@ export const AnimatedFlameIcon = memo(function AnimatedFlameIcon({
         height={size}
         viewBox="0 0 24 24"
         fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        animate={
-          isHovered
-            ? {
-                scale: [1, 1.25, 0.95, 1.15, 1],
-                rotate: [0, -8, 8, -4, 0],
-                y: [0, -3, 0],
-              }
-            : { scale: 1, rotate: 0, y: 0 }
-        }
-        transition={{ duration: 0.55, ease: "easeInOut" }}
         className="overflow-visible"
-        style={{ transformOrigin: "12px 20px" }}
+        animate={{
+          scale: [1, 1.18, 0.96, 1.14, 1],
+          rotate: [-4, 4, -2, 3, -4],
+          y: [0, -2, 0],
+        }}
+        transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+        style={{ transformOrigin: "12px 21px" }}
       >
-        <path d="M8.9 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+        {/* Ngọn lửa ngoài màu đỏ ruby / cam cháy */}
+        <path
+          d="M8.9 14.5A2.5 2.5 0 0 0 11 12c0-1.4-.5-2-1-3-1.1-2.1-.2-4.1 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.2.4-2.3 1-3a2.5 2.5 0 0 0 2.5 2.5z"
+          fill="#ef4444"
+          fillOpacity="0.35"
+          stroke="#f97316"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {/* Lõi lửa vàng kim nhảy múa nhiệt huyết */}
         <motion.path
-          d="M12 18a3 3 0 0 0 3-3c0-1-1-2-1.5-2.5S12 11 12 11s-.5 1-1 1.5S9.5 14 9.5 15a2.5 2.5 0 0 0 2.5 3z"
-          animate={isHovered ? { scale: [1, 1.3, 0.9, 1], opacity: [0.6, 1, 0.8, 1] } : { scale: 1, opacity: 0.8 }}
-          transition={{ duration: 0.4 }}
-          style={{ transformOrigin: "12px 16px" }}
+          d="M12 19a3.5 3.5 0 0 0 3.5-3.5c0-1.2-1.2-2.3-1.8-3S12 11 12 11s-.6 1.2-1.2 1.8S9 14.3 9 15.5A3.5 3.5 0 0 0 12 19z"
+          fill="#facc15"
+          stroke="#eab308"
+          strokeWidth="1.2"
+          animate={{ scale: [1, 1.3, 0.9, 1.2, 1], y: [0, -1.5, 0] }}
+          transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+          style={{ transformOrigin: "12px 17px" }}
+        />
+
+        {/* Đốm tàn lửa bay lên liên tục */}
+        <motion.circle
+          cx="14"
+          cy="6"
+          r="0.8"
+          fill="#fef08a"
+          animate={{ y: [0, -5], opacity: [1, 0], scale: [1, 0.4] }}
+          transition={{ duration: 1.2, repeat: Infinity, ease: "easeOut" }}
+        />
+        <motion.circle
+          cx="10"
+          cy="4"
+          r="0.6"
+          fill="#fef08a"
+          animate={{ y: [0, -6], opacity: [1, 0], scale: [1, 0.3] }}
+          transition={{ duration: 1.5, delay: 0.4, repeat: Infinity, ease: "easeOut" }}
         />
       </motion.svg>
     </div>
@@ -282,14 +399,12 @@ export const AnimatedFlameIcon = memo(function AnimatedFlameIcon({
 });
 
 /**
- * 7. Layers Icon (Thể Loại)
- * 3 tầng phân lớp tách ra và nhấc bổng 3D isometric rồi xếp lại gọn gàng
+ * 7. Layers Icon (Thể Loại) - Lineal Color Phong cách Flaticon
+ * 3 tầng phân lớp xanh lục, xanh cyan và tím indigo nhấp nhô lơ lửng 3D liên tục
  */
 export const AnimatedLayersIcon = memo(function AnimatedLayersIcon({
   className,
-  size = 18,
-  isHovered = false,
-  isActive = false,
+  size = 20,
 }: AnimatedSidebarIconProps) {
   return (
     <div className={cn("relative flex items-center justify-center shrink-0", className)}>
@@ -298,29 +413,37 @@ export const AnimatedLayersIcon = memo(function AnimatedLayersIcon({
         height={size}
         viewBox="0 0 24 24"
         fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
         className="overflow-visible"
       >
-        {/* Tầng trên cùng */}
+        {/* Tầng trên cùng màu xanh ngọc lục bảo */}
         <motion.path
           d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"
-          animate={isHovered ? { y: [0, -2, 0] } : { y: 0 }}
-          transition={SPRING_BOUNCE}
+          fill="#10b981"
+          fillOpacity="0.4"
+          stroke="#34d399"
+          strokeWidth="1.75"
+          animate={{ y: [0, -2.5, 0] }}
+          transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
         />
-        {/* Tầng giữa */}
+
+        {/* Tầng giữa màu xanh cyan */}
         <motion.path
           d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"
-          animate={isHovered ? { y: [0, -4, 0] } : { y: 0 }}
-          transition={{ ...SPRING_BOUNCE, delay: 0.05 }}
+          stroke="#38bdf8"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          animate={{ y: [0, -4.5, 0] }}
+          transition={{ duration: 2.8, delay: 0.2, repeat: Infinity, ease: "easeInOut" }}
         />
-        {/* Tầng dưới cùng */}
+
+        {/* Tầng dưới cùng màu tím indigo */}
         <motion.path
           d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"
-          animate={isHovered ? { y: [0, -7, 0] } : { y: 0 }}
-          transition={{ ...SPRING_BOUNCE, delay: 0.1 }}
+          stroke="#818cf8"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          animate={{ y: [0, -6.5, 0] }}
+          transition={{ duration: 2.8, delay: 0.4, repeat: Infinity, ease: "easeInOut" }}
         />
       </svg>
     </div>
@@ -328,14 +451,12 @@ export const AnimatedLayersIcon = memo(function AnimatedLayersIcon({
 });
 
 /**
- * 8. Globe Icon (Quốc Gia)
- * Quả địa cầu quay tròn 3D trên trục tọa độ kết nối toàn cầu
+ * 8. Globe Icon (Quốc Gia) - Lineal Color Phong cách Flaticon
+ * Quả địa cầu đại dương xanh thẳm, lục địa xanh mát, vệ tinh vàng bay quanh liên tục
  */
 export const AnimatedGlobeIcon = memo(function AnimatedGlobeIcon({
   className,
-  size = 18,
-  isHovered = false,
-  isActive = false,
+  size = 20,
 }: AnimatedSidebarIconProps) {
   return (
     <div className={cn("relative flex items-center justify-center shrink-0", className)}>
@@ -344,40 +465,54 @@ export const AnimatedGlobeIcon = memo(function AnimatedGlobeIcon({
         height={size}
         viewBox="0 0 24 24"
         fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        animate={isHovered ? { rotate: 360, scale: [1, 1.12, 1] } : { rotate: 0, scale: 1 }}
-        transition={{ duration: 0.75, ease: [0.34, 1.56, 0.64, 1] }}
         className="overflow-visible"
-        style={{ transformOrigin: "12px 12px" }}
+        animate={{ scale: [1, 1.06, 1] }}
+        transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
       >
-        <circle cx="12" cy="12" r="10" />
-        <line x1="2" y1="12" x2="22" y2="12" />
-        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+        {/* Đại dương xanh biển */}
+        <circle cx="12" cy="12" r="9.5" fill="#0284c7" fillOpacity="0.25" stroke="#38bdf8" strokeWidth="1.75" />
+        <line x1="2.5" y1="12" x2="21.5" y2="12" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="2 2" />
+
+        {/* Lục địa xanh lá kinh tuyến chuyển động */}
+        <motion.path
+          d="M12 2.5a15.3 15.3 0 0 1 4 9.5 15.3 15.3 0 0 1-4 9.5 15.3 15.3 0 0 1-4-9.5 15.3 15.3 0 0 1 4-9.5z"
+          fill="#10b981"
+          fillOpacity="0.3"
+          stroke="#34d399"
+          strokeWidth="1.5"
+          animate={{ scaleX: [1, 0.2, 1, 0.2, 1] }}
+          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          style={{ transformOrigin: "12px 12px" }}
+        />
+
+        {/* Ngôi sao vệ tinh mạ vàng bay vòng tròn quanh quỹ đạo */}
+        <motion.g
+          animate={{ rotate: 360 }}
+          transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+          style={{ transformOrigin: "12px 12px" }}
+        >
+          <circle cx="12" cy="1" r="1.5" fill="#fbbf24" stroke="#f59e0b" strokeWidth="0.8" />
+        </motion.g>
       </motion.svg>
     </div>
   );
 });
 
 /**
- * 9. Calendar Icon (Năm Phát Hành)
- * Cuốn lịch nhấp nháy ghim và các mốc thời gian sáng chạy dọc
+ * 9. Calendar Icon (Năm Phát Hành) - Lineal Color Phong cách Flaticon
+ * Cuốn lịch đỏ nổi bật với ghim vàng và các chấm ngày tháng rực rỡ lượn sóng liên tục
  */
 export const AnimatedCalendarIcon = memo(function AnimatedCalendarIcon({
   className,
-  size = 18,
-  isHovered = false,
-  isActive = false,
+  size = 20,
 }: AnimatedSidebarIconProps) {
   const dots = [
-    { cx: 8, cy: 14, delay: 0 },
-    { cx: 12, cy: 14, delay: 0.08 },
-    { cx: 16, cy: 14, delay: 0.16 },
-    { cx: 8, cy: 18, delay: 0.24 },
-    { cx: 12, cy: 18, delay: 0.32 },
-    { cx: 16, cy: 18, delay: 0.4 },
+    { cx: 8, cy: 14, color: "#38bdf8" },
+    { cx: 12, cy: 14, color: "#facc15" },
+    { cx: 16, cy: 14, color: "#f43f5e" },
+    { cx: 8, cy: 18, color: "#34d399" },
+    { cx: 12, cy: 18, color: "#a855f7" },
+    { cx: 16, cy: 18, color: "#fb923c" },
   ];
 
   return (
@@ -387,28 +522,29 @@ export const AnimatedCalendarIcon = memo(function AnimatedCalendarIcon({
         height={size}
         viewBox="0 0 24 24"
         fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        animate={isHovered ? { y: [0, -2, 0], scale: [1, 1.08, 1] } : { y: 0, scale: 1 }}
-        transition={SPRING_BOUNCE}
         className="overflow-visible"
+        animate={{ y: [0, -1.5, 0] }}
+        transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
       >
-        <path d="M8 2v4" />
-        <path d="M16 2v4" />
-        <rect width="18" height="18" x="3" y="4" rx="2" />
-        <path d="M3 10h18" />
+        {/* Thân cuốn lịch */}
+        <rect x="3" y="4" width="18" height="17" rx="2" fill="#1e293b" stroke="#cbd5e1" strokeWidth="1.75" />
+        {/* Thanh gáy lịch màu đỏ nổi bật */}
+        <path d="M3 4h18v5H3z" fill="#e11d48" />
+
+        {/* Khuyên ghim màu vàng kim */}
+        <line x1="8" y1="2" x2="8" y2="6" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" />
+        <line x1="16" y1="2" x2="16" y2="6" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" />
+
+        {/* Các mốc ngày tháng đa sắc nhấp nháy gợn sóng liên tục */}
         {dots.map((dot, idx) => (
           <motion.circle
             key={idx}
             cx={dot.cx}
             cy={dot.cy}
-            r="1"
-            fill="currentColor"
-            stroke="none"
-            animate={isHovered ? { opacity: [1, 0.2, 1], scale: [1, 1.5, 1] } : { opacity: 0.8, scale: 1 }}
-            transition={{ duration: 0.35, delay: dot.delay }}
+            r="1.25"
+            fill={dot.color}
+            animate={{ scale: [0.8, 1.4, 0.8], opacity: [0.4, 1, 0.4] }}
+            transition={{ duration: 1.8, delay: idx * 0.2, repeat: Infinity, ease: "easeInOut" }}
           />
         ))}
       </motion.svg>
@@ -417,14 +553,12 @@ export const AnimatedCalendarIcon = memo(function AnimatedCalendarIcon({
 });
 
 /**
- * 10. History Icon (Lịch Sử Xem)
- * Kim đồng hồ xoay ngược 360° lùi về quá khứ để tìm lại phim đã xem
+ * 10. History Icon (Lịch Sử Xem) - Lineal Color Phong cách Flaticon
+ * Đồng hồ màu xanh ngọc bích kim quay tích tắc không ngừng ngược dòng thời gian
  */
 export const AnimatedHistoryIcon = memo(function AnimatedHistoryIcon({
   className,
-  size = 18,
-  isHovered = false,
-  isActive = false,
+  size = 20,
 }: AnimatedSidebarIconProps) {
   return (
     <div className={cn("relative flex items-center justify-center shrink-0", className)}>
@@ -433,93 +567,62 @@ export const AnimatedHistoryIcon = memo(function AnimatedHistoryIcon({
         height={size}
         viewBox="0 0 24 24"
         fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
         className="overflow-visible"
       >
-        {/* Vòng kim tròn có mũi tên ngược */}
-        <motion.g
-          animate={isHovered ? { rotate: [0, -25, 0] } : { rotate: 0 }}
-          transition={SPRING_SNAPPY}
-          style={{ transformOrigin: "12px 12px" }}
-        >
-          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-          <path d="M3 3v5h5" />
-        </motion.g>
-        {/* Kim giờ xoay ngược 360 độ */}
+        {/* Mặt đồng hồ bấm giờ màu xanh ngọc Teal */}
+        <circle cx="12" cy="12" r="9" fill="#0f766e" fillOpacity="0.2" stroke="#2dd4bf" strokeWidth="1.75" />
+        {/* Nút bấm trên đỉnh */}
+        <path d="M12 3v2" stroke="#facc15" strokeWidth="2" strokeLinecap="round" />
+
+        {/* Cung tên xoay ngược màu vàng */}
+        <motion.path
+          d="M3 12a9 9 0 0 1 9-9"
+          stroke="#facc15"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          animate={{ opacity: [0.4, 1, 0.4] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
+
+        {/* Kim giờ (Xoay 360 độ liên tục) */}
         <motion.line
           x1="12"
           y1="12"
           x2="12"
-          y2="7"
-          animate={isHovered ? { rotate: [0, -360] } : { rotate: 0 }}
-          transition={{ duration: 0.7, ease: [0.34, 1.56, 0.64, 1] }}
+          y2="7.5"
+          stroke="#e2e8f0"
+          strokeWidth="2"
+          strokeLinecap="round"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
           style={{ transformOrigin: "12px 12px" }}
         />
-        {/* Kim phút */}
+        {/* Kim giây màu đỏ cam quay nhanh tích tắc */}
         <motion.line
           x1="12"
           y1="12"
-          x2="16"
+          x2="16.5"
           y2="14"
-          animate={isHovered ? { rotate: [0, -120, 0] } : { rotate: 0 }}
-          transition={{ duration: 0.6, ease: "easeInOut" }}
+          stroke="#f43f5e"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
           style={{ transformOrigin: "12px 12px" }}
         />
+        <circle cx="12" cy="12" r="1.5" fill="#facc15" />
       </svg>
     </div>
   );
 });
 
 /**
- * 11. Heart Icon (Phim Yêu Thích)
- * Trái tim đập thình thịch 2 nhịp nồng nàn đầy cảm xúc
+ * 11. Heart Icon (Phim Yêu Thích) - Lineal Color Phong cách Flaticon
+ * Trái tim hồng ngọc 3D đập thình thịch 2 nhịp liên tục với hào quang tỏa sáng
  */
 export const AnimatedHeartIcon = memo(function AnimatedHeartIcon({
   className,
-  size = 18,
-  isHovered = false,
-  isActive = false,
-}: AnimatedSidebarIconProps) {
-  return (
-    <div className={cn("relative flex items-center justify-center shrink-0", className)}>
-      <motion.svg
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
-        fill={isActive ? "currentColor" : "none"}
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        animate={
-          isHovered
-            ? {
-                scale: [1, 1.35, 1.05, 1.25, 1],
-              }
-            : { scale: 1 }
-        }
-        transition={{ duration: 0.55, ease: "easeInOut" }}
-        className="overflow-visible"
-        style={{ transformOrigin: "12px 12px" }}
-      >
-        <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-      </motion.svg>
-    </div>
-  );
-});
-
-/**
- * 12. Smartphone Icon (Tải App Mobile)
- * Điện thoại rung nảy haptic vibration báo thông báo app mới
- */
-export const AnimatedSmartphoneIcon = memo(function AnimatedSmartphoneIcon({
-  className,
-  size = 16,
-  isHovered = false,
-  isActive = false,
+  size = 20,
 }: AnimatedSidebarIconProps) {
   return (
     <div className={cn("relative flex items-center justify-center shrink-0", className)}>
@@ -528,24 +631,85 @@ export const AnimatedSmartphoneIcon = memo(function AnimatedSmartphoneIcon({
         height={size}
         viewBox="0 0 24 24"
         fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        animate={
-          isHovered
-            ? {
-                rotate: [0, -15, 15, -12, 12, -6, 6, 0],
-                scale: [1, 1.15, 1],
-              }
-            : { rotate: 0, scale: 1 }
-        }
-        transition={{ duration: 0.6, ease: "easeInOut" }}
         className="overflow-visible"
+        animate={{ scale: [1, 1.25, 1.05, 1.18, 1, 1] }}
+        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+        style={{ transformOrigin: "12px 12px" }}
+      >
+        {/* Hào quang nhịp đập của trái tim */}
+        <motion.path
+          d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z"
+          fill="#f43f5e"
+          animate={{ opacity: [0.15, 0.45, 0.15] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        />
+        {/* Trái tim màu đỏ ruby bóng bẩy */}
+        <path
+          d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z"
+          fill="#e11d48"
+          stroke="#fb7185"
+          strokeWidth="1.5"
+          strokeLinejoin="round"
+        />
+        {/* Vệt sáng bóng phản chiếu */}
+        <path d="M6 8a3 3 0 0 1 3-3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" opacity="0.75" />
+      </motion.svg>
+    </div>
+  );
+});
+
+/**
+ * 12. Smartphone Icon (Tải App Mobile) - Lineal Color Phong cách Flaticon
+ * Điện thoại thông minh màu tím neon rung nảy haptic vibration, mũi tên tải xuống chuyển động
+ */
+export const AnimatedSmartphoneIcon = memo(function AnimatedSmartphoneIcon({
+  className,
+  size = 20,
+}: AnimatedSidebarIconProps) {
+  return (
+    <div className={cn("relative flex items-center justify-center shrink-0", className)}>
+      <motion.svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        className="overflow-visible"
+        animate={{
+          rotate: [0, 0, -12, 12, -8, 8, -4, 4, 0, 0],
+          scale: [1, 1, 1.1, 1.1, 1.08, 1.08, 1, 1, 1, 1],
+        }}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         style={{ transformOrigin: "12px 18px" }}
       >
-        <rect width="14" height="20" x="5" y="2" rx="2" ry="2" />
-        <path d="M12 18h.01" />
+        {/* Thân máy smartphone viền mỏng */}
+        <rect x="5" y="2" width="14" height="20" rx="3" fill="#1e1b4b" stroke="#818cf8" strokeWidth="1.75" />
+
+        {/* Màn hình phát sáng màu xanh tím */}
+        <rect x="6.5" y="4" width="11" height="15" rx="1.5" fill="#4f46e5" fillOpacity="0.4" />
+
+        {/* Loa thoại */}
+        <line x1="10" y1="3" x2="14" y2="3" stroke="#c7d2fe" strokeWidth="1" strokeLinecap="round" />
+
+        {/* Mũi tên tải xuống màu xanh lá nhấp nhô liên tục */}
+        <motion.path
+          d="m9.5 11 2.5 2.5 2.5-2.5M12 7.5v6"
+          stroke="#22c55e"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          animate={{ y: [0, 2, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+        />
+
+        {/* Chấm đèn thông báo màu xanh ngọc nhấp nháy */}
+        <motion.circle
+          cx="17"
+          cy="4"
+          r="1.5"
+          fill="#22c55e"
+          animate={{ scale: [1, 1.5, 1], opacity: [0.7, 1, 0.7] }}
+          transition={{ duration: 1.2, repeat: Infinity }}
+        />
       </motion.svg>
     </div>
   );
