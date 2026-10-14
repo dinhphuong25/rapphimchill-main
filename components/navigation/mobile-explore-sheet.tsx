@@ -119,14 +119,6 @@ export default function MobileExploreSheet({
       border: "border-orange-500/30 hover:border-orange-500/60",
       image: "https://images.unsplash.com/photo-1501139083538-0139583c060f?w=400&auto=format&fit=crop&q=85",
     },
-    {
-      id: "tai-app",
-      label: "Tải App",
-      href: "/tai-app",
-      gradient: "from-[#1d1135] via-[#271447] to-[#32175c]",
-      border: "border-purple-500/30 hover:border-purple-500/60",
-      image: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&auto=format&fit=crop&q=85",
-    },
   ];
 
   // Lock body scroll when opened
