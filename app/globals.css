@@ -512,6 +512,12 @@
     will-change: transform;
     transform: translateZ(0);
   }
+  .anim-sync-spin {
+    animation: icon-spin-smooth 4.8s linear infinite;
+    transform-origin: 12px 12px;
+    will-change: transform;
+    transform: translateZ(0);
+  }
   .anim-clapper {
     animation: icon-clapper-beat 3.2s ease-in-out infinite;
     transform-origin: 3px 7px;
@@ -634,6 +640,7 @@
   @media (prefers-reduced-motion: reduce) {
     .anim-spin-slow,
     .anim-spin-fast,
+    .anim-sync-spin,
     .anim-clapper,
     .anim-antenna-left,
     .anim-antenna-right,

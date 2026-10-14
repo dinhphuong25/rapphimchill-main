@@ -299,10 +299,11 @@ export const AnimatedCatIcon = memo(function AnimatedCatIcon({
 });
 
 /**
- * 6. Flame Icon (Trending / Mới Cập Nhật) - Lineal Color Phong cách Flaticon (GPU Accelerated)
- * Ngọn lửa đỏ cam rực cháy bồng bềnh, tàn lửa bay lơ lửng trên GPU.
+ * 6. Refresh / Sync Circle Icon (Mới Cập Nhật) - Lineal Color Phong cách Flaticon (GPU Accelerated)
+ * 2 mũi tên vòng cung đa sắc (lam ngọc & vàng neon) xoay tròn 360 độ liên tục,
+ * tâm phát sáng với vệt phản chiếu ánh sáng lướt qua trên GPU Compositor.
  */
-export const AnimatedFlameIcon = memo(function AnimatedFlameIcon({
+export const AnimatedRefreshIcon = memo(function AnimatedRefreshIcon({
   className,
   size = 20,
 }: AnimatedSidebarIconProps) {
@@ -315,38 +316,82 @@ export const AnimatedFlameIcon = memo(function AnimatedFlameIcon({
         fill="none"
         className="overflow-visible will-change-transform"
       >
-        {/* Tàn lửa bay lơ lửng */}
-        <circle cx="15" cy="5" r="1" fill="#fde047" className="anim-spark-1" />
-        <circle cx="8" cy="6" r="0.8" fill="#fb923c" className="anim-spark-2" />
+        <defs>
+          {/* Gradient cung tên trên: Lam ngọc sang Xanh Emerald */}
+          <linearGradient id="syncCyanGreenGrad" x1="4" y1="4" x2="20" y2="12" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#38bdf8" />
+            <stop offset="50%" stopColor="#20d66b" />
+            <stop offset="100%" stopColor="#059669" />
+          </linearGradient>
 
-        {/* Ngọn lửa đỏ cam rực rỡ bên ngoài */}
-        <path
-          d="M8.5 14.5A3.5 3.5 0 0 0 12 18a3.5 3.5 0 0 0 3.5-3.5c0-2-1.5-3.5-2.5-5C11 12 10 13 8.5 14.5Z"
-          fill="#ea580c"
-          fillOpacity="0.4"
-        />
-        <path
-          d="M12 2c1 3 4 4.5 4 9a6 6 0 1 1-12 0c0-4 3.5-6.5 4.5-9 1 2 2 3.5 3.5 0Z"
-          fill="#f97316"
-          stroke="#dc2626"
-          strokeWidth="1.75"
-          strokeLinejoin="round"
-          className="anim-flame"
-        />
+          {/* Gradient cung tên dưới: Vàng Neon sang Cam tươi */}
+          <linearGradient id="syncYellowOrangeGrad" x1="20" y1="20" x2="4" y2="12" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#fef08a" />
+            <stop offset="45%" stopColor="#facc15" />
+            <stop offset="100%" stopColor="#ea580c" />
+          </linearGradient>
+        </defs>
 
-        {/* Lõi lửa vàng rực sáng */}
-        <path
-          d="M12 12c.8 1.5 2 2.5 2 4a3 3 0 1 1-6 0c0-2 1.5-3 2.5-4 .5.8 1 1 1.5 0Z"
-          fill="#fef08a"
-          stroke="#facc15"
-          strokeWidth="1.25"
-          strokeLinejoin="round"
-          className="anim-shine"
-        />
+        {/* Vòng quay kép 2 mũi tên đối xứng xoay 360 độ liên tục GPU */}
+        <g className="anim-sync-spin" style={{ transformOrigin: "12px 12px" }}>
+          {/* Cung tên trên (Xanh lam - ngọc lục bảo) */}
+          <path
+            d="M5.5 12a6.5 6.5 0 0 1 12.3-3"
+            stroke="url(#syncCyanGreenGrad)"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          />
+          {/* Đầu mũi tên trên */}
+          <polygon
+            points="17,3.5 21,8.5 15.5,9.5"
+            fill="#20d66b"
+            stroke="#059669"
+            strokeWidth="1"
+            strokeLinejoin="round"
+          />
+
+          {/* Cung tên dưới (Vàng neon - cam ấm) */}
+          <path
+            d="M18.5 12a6.5 6.5 0 0 1-12.3 3"
+            stroke="url(#syncYellowOrangeGrad)"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          />
+          {/* Đầu mũi tên dưới */}
+          <polygon
+            points="7,20.5 3,15.5 8.5,14.5"
+            fill="#facc15"
+            stroke="#d97706"
+            strokeWidth="1"
+            strokeLinejoin="round"
+          />
+
+          {/* Vệt phản quang lướt trên cung tên */}
+          <path
+            d="M8 6.5a6.5 6.5 0 0 1 5.5-1.5"
+            stroke="#ffffff"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+            opacity="0.8"
+          />
+          <path
+            d="M16 17.5a6.5 6.5 0 0 1-5.5 1.5"
+            stroke="#ffffff"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+            opacity="0.8"
+          />
+        </g>
+
+        {/* Chấm tròn phát sáng tâm với ngôi sao 4 cánh ở trung tâm */}
+        <circle cx="12" cy="12" r="2.2" fill="#0f172a" stroke="#38bdf8" strokeWidth="1" />
+        <circle cx="12" cy="12" r="1.2" fill="#facc15" className="anim-shine" />
       </svg>
     </div>
   );
 });
+
+export const AnimatedFlameIcon = AnimatedRefreshIcon;
 
 /**
  * 7. Layers Icon (Thể Loại) - Lineal Color Phong cách Flaticon (GPU Accelerated)
@@ -667,6 +712,7 @@ export type SidebarIconType =
   | "film"
   | "cat"
   | "flame"
+  | "refresh"
   | "layers"
   | "globe"
   | "calendar"
@@ -697,7 +743,8 @@ export function SidebarAnimatedIcon({
     case "cat":
       return <AnimatedCatIcon className={className} size={size} isHovered={isHovered} isActive={isActive} />;
     case "flame":
-      return <AnimatedFlameIcon className={className} size={size} isHovered={isHovered} isActive={isActive} />;
+    case "refresh":
+      return <AnimatedRefreshIcon className={className} size={size} isHovered={isHovered} isActive={isActive} />;
     case "layers":
       return <AnimatedLayersIcon className={className} size={size} isHovered={isHovered} isActive={isActive} />;
     case "globe":

@@ -70,7 +70,7 @@ const NAV_MAIN: NavMainItem[] = [
   { href: "/?typeList=phim-bo", label: "Phim Bộ", iconType: "tv", typeList: "phim-bo" },
   { href: "/?typeList=phim-le", label: "Phim Lẻ", iconType: "film", typeList: "phim-le" },
   { href: "/?typeList=hoat-hinh", label: "Hoạt Hình", iconType: "cat", typeList: "hoat-hinh" },
-  { href: "/new-updates", label: "Mới Cập Nhật", iconType: "flame" },
+  { href: "/new-updates", label: "Mới Cập Nhật", iconType: "refresh" },
 ];
 
 interface NavPersonalItem {
