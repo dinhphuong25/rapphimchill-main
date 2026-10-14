@@ -4,7 +4,7 @@ import { useState, useEffect, memo, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
-import { Search, LayoutGrid, Smartphone, ChevronLeft } from "lucide-react";
+import { Search, Smartphone, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SearchOverlay from "@/components/search/search-overlay";
 import UserMenu from "@/components/auth/user-menu";
@@ -165,7 +165,7 @@ function HeaderComponent({}: HeaderProps) {
                 aria-label={isMenuOpen ? "Đóng menu khám phá" : "Mở menu khám phá"}
                 title="Menu khám phá"
                 className={cn(
-                  "lg:hidden relative flex items-center gap-1.5 h-[38px] px-3.5 rounded-full border transition-all duration-200 cursor-pointer group shrink-0 select-none touch-manipulation overflow-hidden",
+                  "lg:hidden relative flex items-center justify-center h-[38px] px-4 rounded-full border transition-all duration-200 cursor-pointer group shrink-0 select-none touch-manipulation overflow-hidden",
                   // Active / Open State vs Default State
                   isMenuOpen
                     ? "bg-[#14231b] border-brand-green shadow-[0_0_16px_rgba(32,214,107,0.35)]"
@@ -173,20 +173,10 @@ function HeaderComponent({}: HeaderProps) {
                   "active:scale-95"
                 )}
               >
-                {/* 4-square Grid Icon — Hi Phim Emerald */}
-                <LayoutGrid
-                  className={cn(
-                    "w-4 h-4 text-brand-green transition-all duration-200 shrink-0",
-                    isMenuOpen
-                      ? "scale-110 drop-shadow-[0_0_8px_rgba(32,214,107,0.9)]"
-                      : "group-hover:scale-105"
-                  )}
-                />
-
                 {/* Menu Text */}
                 <span
                   className={cn(
-                    "text-[13px] tracking-wide leading-none select-none transition-colors",
+                    "text-[13.5px] tracking-wide leading-none select-none transition-colors",
                     isMenuOpen
                       ? "text-brand-green font-extrabold"
                       : "font-bold text-white group-hover:text-white"

@@ -6,11 +6,9 @@ import Image from "next/image";
 import {
   X,
   ChevronDown,
-  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { instantMovieStore } from "@/lib/instant-movie-store";
-import { SidebarAnimatedIcon, SidebarIconType } from "@/components/ui/animated-sidebar-icons";
 
 interface MobileExploreSheetProps {
   isOpen: boolean;
@@ -25,14 +23,10 @@ interface MobileExploreSheetProps {
 interface ExploreCard {
   id: string;
   label: string;
-  iconType: SidebarIconType;
   href?: string;
   action?: "categories" | "countries" | "years";
   gradient: string;
-  fadeOverlay: string;
   border: string;
-  iconColor: string;
-  iconBg: string;
   image: string;
   typeList?: string;
 }
@@ -47,119 +41,91 @@ export default function MobileExploreSheet({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollDown, setCanScrollDown] = useState(false);
 
-  // 10 Balanced Cards (5 Pairs) — Styled identically to Onflix with Hi Phim brand colors
+  // 10 Balanced Cards (5 Pairs) — Styled cleanly with centered typography
   const CARDS: ExploreCard[] = [
     {
       id: "home",
       label: "Trang Chủ",
-      iconType: "home",
       href: "/",
-      gradient: "from-[#082317] via-[#0d2d1f] to-[#123827]",
-      fadeOverlay: "from-[#082317] via-[#082317]/60 to-transparent",
+      gradient: "from-[#082317]/90 via-[#0d2d1f]/80 to-[#123827]/90",
       border: "border-emerald-500/30 hover:border-brand-green/60",
-      iconColor: "text-brand-green",
-      iconBg: "bg-brand-green/20",
       image: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&auto=format&fit=crop&q=85",
     },
     {
       id: "phim-chieu-rap",
       label: "Chiếu Rạp",
-      iconType: "clapperboard",
       href: "/?typeList=phim-chieu-rap",
       typeList: "phim-chieu-rap",
-      gradient: "from-[#280c12] via-[#351018] to-[#42141f]",
-      fadeOverlay: "from-[#280c12] via-[#280c12]/60 to-transparent",
+      gradient: "from-[#280c12]/90 via-[#351018]/80 to-[#42141f]/90",
       border: "border-rose-500/30 hover:border-rose-500/60",
-      iconColor: "text-rose-400",
-      iconBg: "bg-rose-500/20",
       image: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400&auto=format&fit=crop&q=85",
     },
     {
       id: "phim-bo",
       label: "Phim Bộ",
-      iconType: "tv",
       href: "/?typeList=phim-bo",
       typeList: "phim-bo",
-      gradient: "from-[#0c1d3b] via-[#112448] to-[#172c57]",
-      fadeOverlay: "from-[#0c1d3b] via-[#0c1d3b]/60 to-transparent",
+      gradient: "from-[#0c1d3b]/90 via-[#112448]/80 to-[#172c57]/90",
       border: "border-sky-500/30 hover:border-sky-500/60",
-      iconColor: "text-sky-400",
-      iconBg: "bg-sky-500/20",
       image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=85",
     },
     {
       id: "phim-le",
       label: "Phim Lẻ",
-      iconType: "film",
       href: "/?typeList=phim-le",
       typeList: "phim-le",
-      gradient: "from-[#08291b] via-[#0b3323] to-[#0f3d2b]",
-      fadeOverlay: "from-[#08291b] via-[#08291b]/60 to-transparent",
+      gradient: "from-[#08291b]/90 via-[#0b3323]/80 to-[#0f3d2b]/90",
       border: "border-emerald-500/30 hover:border-emerald-500/60",
-      iconColor: "text-emerald-400",
-      iconBg: "bg-emerald-500/20",
       image: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=400&auto=format&fit=crop&q=85",
     },
     {
       id: "hoat-hinh",
       label: "Hoạt Hình",
-      iconType: "cat",
       href: "/?typeList=hoat-hinh",
       typeList: "hoat-hinh",
-      gradient: "from-[#291b06] via-[#352308] to-[#422c0a]",
-      fadeOverlay: "from-[#291b06] via-[#291b06]/60 to-transparent",
+      gradient: "from-[#291b06]/90 via-[#352308]/80 to-[#422c0a]/90",
       border: "border-amber-500/30 hover:border-amber-500/60",
-      iconColor: "text-amber-400",
-      iconBg: "bg-amber-500/20",
       image: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&auto=format&fit=crop&q=85",
     },
     {
       id: "new-updates",
       label: "Mới Cập Nhật",
-      iconType: "refresh",
       href: "/new-updates",
-      gradient: "from-[#082924] via-[#0b332d] to-[#0f3d36]",
-      fadeOverlay: "from-[#082924] via-[#082924]/60 to-transparent",
+      gradient: "from-[#082924]/90 via-[#0b332d]/80 to-[#0f3d36]/90",
       border: "border-teal-500/30 hover:border-teal-500/60",
-      iconColor: "text-teal-400",
-      iconBg: "bg-teal-500/20",
       image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&auto=format&fit=crop&q=85",
     },
     {
       id: "categories",
       label: "Thể Loại",
-      iconType: "layers",
       action: "categories",
-      gradient: "from-[#280f08] via-[#34140a] to-[#41190d]",
-      fadeOverlay: "from-[#280f08] via-[#280f08]/60 to-transparent",
+      gradient: "from-[#280f08]/90 via-[#34140a]/80 to-[#41190d]/90",
       border: "border-amber-500/30 hover:border-amber-500/60",
-      iconColor: "text-amber-400",
-      iconBg: "bg-amber-500/20",
       image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&auto=format&fit=crop&q=85",
     },
     {
       id: "countries",
       label: "Quốc Gia",
-      iconType: "globe",
       action: "countries",
-      gradient: "from-[#0a2624] via-[#0d312e] to-[#113d39]",
-      fadeOverlay: "from-[#0a2624] via-[#0a2624]/60 to-transparent",
+      gradient: "from-[#0a2624]/90 via-[#0d312e]/80 to-[#113d39]/90",
       border: "border-teal-500/30 hover:border-teal-500/60",
-      iconColor: "text-teal-400",
-      iconBg: "bg-teal-500/20",
       image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400&auto=format&fit=crop&q=85",
     },
     {
       id: "years",
       label: "Năm Phát Hành",
-      iconType: "calendar",
       action: "years",
-      gradient: "from-[#26170c] via-[#311e10] to-[#3d2514]",
-      fadeOverlay: "from-[#26170c] via-[#26170c]/60 to-transparent",
+      gradient: "from-[#26170c]/90 via-[#311e10]/80 to-[#3d2514]/90",
       border: "border-orange-500/30 hover:border-orange-500/60",
-      iconColor: "text-orange-400",
-      iconBg: "bg-orange-500/20",
       image: "https://images.unsplash.com/photo-1501139083538-0139583c060f?w=400&auto=format&fit=crop&q=85",
+    },
+    {
+      id: "tai-app",
+      label: "Tải App",
+      href: "/tai-app",
+      gradient: "from-[#1d1135]/90 via-[#271447]/80 to-[#32175c]/90",
+      border: "border-purple-500/30 hover:border-purple-500/60",
+      image: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&auto=format&fit=crop&q=85",
     },
   ];
 
@@ -261,40 +227,34 @@ export default function MobileExploreSheet({
               const cardContent = (
                 <div
                   className={cn(
-                    "relative overflow-hidden rounded-2xl border p-3 h-[66px] sm:h-[70px] flex items-center justify-between group active:scale-[0.96] transition-all duration-200 cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.5)]",
+                    "relative overflow-hidden rounded-2xl border h-[66px] sm:h-[70px] flex items-center justify-center p-3 group active:scale-[0.97] transition-all duration-200 cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.5)] select-none",
                     card.border
                   )}
                 >
-                  {/* Background Gradient */}
-                  <div className={cn("absolute inset-0 bg-gradient-to-r", card.gradient)} />
-
-                  {/* Top Ambient Subtle Highlight */}
-                  <div className="absolute inset-x-0 top-0 h-[1px] bg-white/15 pointer-events-none" />
-
-                  {/* Right Character / Movie Artwork with Gentle Artistic Fade */}
-                  <div className="absolute right-0 top-0 bottom-0 w-[50%] pointer-events-none overflow-hidden select-none">
+                  {/* Subtle Background Cinematic Image */}
+                  <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
                     <Image
                       src={card.image}
                       alt=""
                       fill
                       unoptimized
-                      className="object-cover object-center opacity-85 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300"
-                      sizes="200px"
+                      className="object-cover object-center opacity-30 group-hover:opacity-45 group-hover:scale-108 transition-all duration-500"
+                      sizes="220px"
                     />
-                    <div className={cn("absolute inset-0 bg-gradient-to-r", card.fadeOverlay)} />
                   </div>
 
-                  {/* Left Content: Icon Badge + Bold Title */}
-                  <div className="relative z-10 flex items-center gap-2.5 min-w-0 pr-2">
-                    <div
-                      className={cn(
-                        "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border border-white/15 shadow-sm backdrop-blur-md overflow-visible",
-                        card.iconBg
-                      )}
-                    >
-                      <SidebarAnimatedIcon type={card.iconType} size={18} />
-                    </div>
-                    <span className="font-black text-[13.5px] sm:text-[14.5px] text-white tracking-tight truncate drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
+                  {/* Themed Gradient Overlay */}
+                  <div className={cn("absolute inset-0 bg-gradient-to-r", card.gradient)} />
+
+                  {/* Vignette Dimmer for pristine text contrast */}
+                  <div className="absolute inset-0 bg-black/25 backdrop-blur-[0.5px]" />
+
+                  {/* Top Ambient Subtle Highlight */}
+                  <div className="absolute inset-x-0 top-0 h-[1px] bg-white/20 pointer-events-none" />
+
+                  {/* Centered Typography: Balanced & Beautiful */}
+                  <div className="relative z-10 flex items-center justify-center text-center px-2 w-full">
+                    <span className="font-black text-[14.5px] sm:text-[15.5px] text-white tracking-tight leading-snug drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)] group-hover:text-brand-green group-hover:scale-[1.02] transition-all duration-200 truncate">
                       {card.label}
                     </span>
                   </div>
