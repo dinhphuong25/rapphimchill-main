@@ -10,6 +10,7 @@ import SearchOverlay from "@/components/search/search-overlay";
 import UserMenu from "@/components/auth/user-menu";
 import NotificationBell from "@/components/notifications/notification-bell";
 import BrandLogo from "@/components/ui/brand-logo";
+import { AnimatedSearchIcon } from "@/components/ui/animated-header-icons";
 import { pipStore } from "@/lib/pip-store";
 import { preconnect } from "react-dom";
 
@@ -245,8 +246,8 @@ function HeaderComponent({}: HeaderProps) {
             >
               {/* Search Pill Content */}
               <div className="flex items-center gap-2 z-10 min-w-0">
-                <Search className="w-3.5 h-3.5 text-brand-green shrink-0" />
-                <span className="text-white/50 group-hover:text-white/80 font-medium text-[12.5px] whitespace-nowrap">
+                <AnimatedSearchIcon size={17} />
+                <span className="text-white/60 group-hover:text-white/90 font-medium text-[12.5px] whitespace-nowrap">
                   Tìm kiếm...
                 </span>
               </div>

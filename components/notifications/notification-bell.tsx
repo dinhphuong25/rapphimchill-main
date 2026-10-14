@@ -23,6 +23,7 @@ import {
   Film,
   Clapperboard,
 } from "lucide-react";
+import { AnimatedHeaderBellIcon } from "@/components/ui/animated-header-icons";
 import { useUserAuth } from "@/context/user-auth-context";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -417,12 +418,10 @@ export default function NotificationBell({ className }: { className?: string }) 
         aria-label="Thông báo hệ thống và báo lỗi tập"
         title="Thông báo"
       >
-        <Bell
-          className={cn(
-            "w-4 h-4 transition-transform group-hover:scale-110",
-            isOpen ? "text-brand-green" : "text-white/80 group-hover:text-brand-green",
-            badgeCount > 0 && hasUnread && "animate-bell-wiggle text-white"
-          )}
+        <AnimatedHeaderBellIcon
+          size={21}
+          hasUnread={badgeCount > 0 && hasUnread}
+          isOpen={isOpen}
         />
 
         {/* Outer Radar Ping Effect Wave for unread notifications in Green */}
