@@ -47,7 +47,7 @@ export default function MobileExploreSheet({
       id: "home",
       label: "Trang Chủ",
       href: "/",
-      gradient: "from-[#082317]/90 via-[#0d2d1f]/80 to-[#123827]/90",
+      gradient: "from-[#082317] via-[#0d2d1f] to-[#123827]",
       border: "border-emerald-500/30 hover:border-brand-green/60",
       image: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&auto=format&fit=crop&q=85",
     },
@@ -56,7 +56,7 @@ export default function MobileExploreSheet({
       label: "Chiếu Rạp",
       href: "/?typeList=phim-chieu-rap",
       typeList: "phim-chieu-rap",
-      gradient: "from-[#280c12]/90 via-[#351018]/80 to-[#42141f]/90",
+      gradient: "from-[#280c12] via-[#351018] to-[#42141f]",
       border: "border-rose-500/30 hover:border-rose-500/60",
       image: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400&auto=format&fit=crop&q=85",
     },
@@ -65,7 +65,7 @@ export default function MobileExploreSheet({
       label: "Phim Bộ",
       href: "/?typeList=phim-bo",
       typeList: "phim-bo",
-      gradient: "from-[#0c1d3b]/90 via-[#112448]/80 to-[#172c57]/90",
+      gradient: "from-[#0c1d3b] via-[#112448] to-[#172c57]",
       border: "border-sky-500/30 hover:border-sky-500/60",
       image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=85",
     },
@@ -74,7 +74,7 @@ export default function MobileExploreSheet({
       label: "Phim Lẻ",
       href: "/?typeList=phim-le",
       typeList: "phim-le",
-      gradient: "from-[#08291b]/90 via-[#0b3323]/80 to-[#0f3d2b]/90",
+      gradient: "from-[#08291b] via-[#0b3323] to-[#0f3d2b]",
       border: "border-emerald-500/30 hover:border-emerald-500/60",
       image: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=400&auto=format&fit=crop&q=85",
     },
@@ -83,7 +83,7 @@ export default function MobileExploreSheet({
       label: "Hoạt Hình",
       href: "/?typeList=hoat-hinh",
       typeList: "hoat-hinh",
-      gradient: "from-[#291b06]/90 via-[#352308]/80 to-[#422c0a]/90",
+      gradient: "from-[#291b06] via-[#352308] to-[#422c0a]",
       border: "border-amber-500/30 hover:border-amber-500/60",
       image: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&auto=format&fit=crop&q=85",
     },
@@ -91,7 +91,7 @@ export default function MobileExploreSheet({
       id: "new-updates",
       label: "Mới Cập Nhật",
       href: "/new-updates",
-      gradient: "from-[#082924]/90 via-[#0b332d]/80 to-[#0f3d36]/90",
+      gradient: "from-[#082924] via-[#0b332d] to-[#0f3d36]",
       border: "border-teal-500/30 hover:border-teal-500/60",
       image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&auto=format&fit=crop&q=85",
     },
@@ -99,7 +99,7 @@ export default function MobileExploreSheet({
       id: "categories",
       label: "Thể Loại",
       action: "categories",
-      gradient: "from-[#280f08]/90 via-[#34140a]/80 to-[#41190d]/90",
+      gradient: "from-[#280f08] via-[#34140a] to-[#41190d]",
       border: "border-amber-500/30 hover:border-amber-500/60",
       image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&auto=format&fit=crop&q=85",
     },
@@ -107,7 +107,7 @@ export default function MobileExploreSheet({
       id: "countries",
       label: "Quốc Gia",
       action: "countries",
-      gradient: "from-[#0a2624]/90 via-[#0d312e]/80 to-[#113d39]/90",
+      gradient: "from-[#0a2624] via-[#0d312e] to-[#113d39]",
       border: "border-teal-500/30 hover:border-teal-500/60",
       image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400&auto=format&fit=crop&q=85",
     },
@@ -115,7 +115,7 @@ export default function MobileExploreSheet({
       id: "years",
       label: "Năm Phát Hành",
       action: "years",
-      gradient: "from-[#26170c]/90 via-[#311e10]/80 to-[#3d2514]/90",
+      gradient: "from-[#26170c] via-[#311e10] to-[#3d2514]",
       border: "border-orange-500/30 hover:border-orange-500/60",
       image: "https://images.unsplash.com/photo-1501139083538-0139583c060f?w=400&auto=format&fit=crop&q=85",
     },
@@ -123,7 +123,7 @@ export default function MobileExploreSheet({
       id: "tai-app",
       label: "Tải App",
       href: "/tai-app",
-      gradient: "from-[#1d1135]/90 via-[#271447]/80 to-[#32175c]/90",
+      gradient: "from-[#1d1135] via-[#271447] to-[#32175c]",
       border: "border-purple-500/30 hover:border-purple-500/60",
       image: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&auto=format&fit=crop&q=85",
     },
@@ -227,34 +227,34 @@ export default function MobileExploreSheet({
               const cardContent = (
                 <div
                   className={cn(
-                    "relative overflow-hidden rounded-2xl border h-[66px] sm:h-[70px] flex items-center justify-center p-3 group active:scale-[0.97] transition-all duration-200 cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.5)] select-none",
+                    "relative overflow-hidden rounded-2xl border h-[68px] sm:h-[72px] flex items-center justify-center p-3 group active:scale-[0.97] transition-all duration-200 cursor-pointer shadow-[0_4px_24px_rgba(0,0,0,0.6)] select-none",
                     card.border
                   )}
                 >
-                  {/* Subtle Background Cinematic Image */}
+                  {/* High Clarity Background Cinematic Image */}
                   <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
                     <Image
                       src={card.image}
                       alt=""
                       fill
                       unoptimized
-                      className="object-cover object-center opacity-30 group-hover:opacity-45 group-hover:scale-108 transition-all duration-500"
-                      sizes="220px"
+                      className="object-cover object-center opacity-75 group-hover:opacity-90 group-hover:scale-108 transition-all duration-500"
+                      sizes="240px"
                     />
                   </div>
 
-                  {/* Themed Gradient Overlay */}
-                  <div className={cn("absolute inset-0 bg-gradient-to-r", card.gradient)} />
+                  {/* Gentle Themed Gradient Tint */}
+                  <div className={cn("absolute inset-0 bg-gradient-to-r opacity-50 group-hover:opacity-40 transition-opacity", card.gradient)} />
 
-                  {/* Vignette Dimmer for pristine text contrast */}
-                  <div className="absolute inset-0 bg-black/25 backdrop-blur-[0.5px]" />
+                  {/* Balanced Vignette — Keeps Background Art Visible while Maximizing Text Contrast */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/60 pointer-events-none" />
 
                   {/* Top Ambient Subtle Highlight */}
-                  <div className="absolute inset-x-0 top-0 h-[1px] bg-white/20 pointer-events-none" />
+                  <div className="absolute inset-x-0 top-0 h-[1px] bg-white/25 pointer-events-none" />
 
-                  {/* Centered Typography: Balanced & Beautiful */}
+                  {/* Centered Typography: Balanced, Bright & Highly Legible */}
                   <div className="relative z-10 flex items-center justify-center text-center px-2 w-full">
-                    <span className="font-black text-[14.5px] sm:text-[15.5px] text-white tracking-tight leading-snug drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)] group-hover:text-brand-green group-hover:scale-[1.02] transition-all duration-200 truncate">
+                    <span className="font-black text-[15px] sm:text-[16px] text-white tracking-tight leading-snug drop-shadow-[0_2px_12px_rgba(0,0,0,1)] [text-shadow:_0_1px_8px_rgb(0_0_0_/_90%),_0_2px_16px_rgb(0_0_0_/_90%)] group-hover:text-brand-green group-hover:scale-[1.03] transition-all duration-200 truncate">
                       {card.label}
                     </span>
                   </div>
