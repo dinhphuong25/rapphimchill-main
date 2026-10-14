@@ -50,6 +50,7 @@ import MobileExploreSheet from "@/components/navigation/mobile-explore-sheet";
 import BrandLogo from "@/components/ui/brand-logo";
 import { useNavigationTab } from "@/context/navigation-tab-context";
 import { SidebarAnimatedIcon, type SidebarIconType } from "@/components/ui/animated-sidebar-icons";
+import { AnimatedUserIcon } from "@/components/ui/animated-header-icons";
 
 interface SidebarProps {
   categories?: { slug: string; name: string }[];
@@ -602,14 +603,14 @@ function SidebarContent({
               >
                 {active ? (
                   <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(32,214,107,0.45)]">
-                    <Home className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
+                    <SidebarAnimatedIcon type="home" size={20} />
                     <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
                       Trang chủ
                     </span>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-1 py-1">
-                    <Home className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
+                    <SidebarAnimatedIcon type="home" size={19} />
                     <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
                       Trang chủ
                     </span>
@@ -632,14 +633,14 @@ function SidebarContent({
               >
                 {active ? (
                   <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(32,214,107,0.45)]">
-                    <Clock className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
+                    <SidebarAnimatedIcon type="history" size={20} />
                     <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
                       Lịch sử
                     </span>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-1 py-1">
-                    <Clock className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
+                    <SidebarAnimatedIcon type="history" size={19} />
                     <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
                       Lịch sử
                     </span>
@@ -662,14 +663,14 @@ function SidebarContent({
               >
                 {active ? (
                   <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(32,214,107,0.45)]">
-                    <Heart className="w-[18px] h-[18px] text-[#051309] fill-[#051309] stroke-[2.6]" />
+                    <SidebarAnimatedIcon type="heart" size={20} />
                     <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
                       Yêu thích
                     </span>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-1 py-1">
-                    <Heart className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
+                    <SidebarAnimatedIcon type="heart" size={19} />
                     <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
                       Yêu thích
                     </span>
@@ -705,7 +706,7 @@ function SidebarContent({
                         <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="19px" />
                       </div>
                     ) : (
-                      <User className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
+                      <AnimatedUserIcon size={20} />
                     )}
                     <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
                       Tài khoản
@@ -718,7 +719,7 @@ function SidebarContent({
                         <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="20px" />
                       </div>
                     ) : (
-                      <User className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
+                      <AnimatedUserIcon size={19} />
                     )}
                     <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
                       Tài khoản
@@ -742,14 +743,14 @@ function SidebarContent({
               >
                 {active ? (
                   <div className="w-[92%] h-[50px] rounded-[22px] bg-[#20D66B] flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(32,214,107,0.45)]">
-                    <Smartphone className="w-[18px] h-[18px] text-[#051309] stroke-[2.6]" />
+                    <SidebarAnimatedIcon type="smartphone" size={20} />
                     <span className="text-[9.5px] font-black text-[#051309] tracking-tight leading-none">
                       Tải app
                     </span>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-1 py-1">
-                    <Smartphone className="w-[19px] h-[19px] text-white/70 stroke-[2]" />
+                    <SidebarAnimatedIcon type="smartphone" size={19} />
                     <span className="text-[9.5px] font-bold text-white/70 tracking-tight leading-none">
                       Tải app
                     </span>

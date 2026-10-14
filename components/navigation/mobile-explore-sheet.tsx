@@ -5,20 +5,12 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   X,
-  Home,
-  Tv,
-  Film,
-  Clapperboard,
-  Cat,
-  Flame,
-  Globe,
-  Calendar,
-  Layers,
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { instantMovieStore } from "@/lib/instant-movie-store";
+import { SidebarAnimatedIcon, SidebarIconType } from "@/components/ui/animated-sidebar-icons";
 
 interface MobileExploreSheetProps {
   isOpen: boolean;
@@ -33,7 +25,7 @@ interface MobileExploreSheetProps {
 interface ExploreCard {
   id: string;
   label: string;
-  icon: any;
+  iconType: SidebarIconType;
   href?: string;
   action?: "categories" | "countries" | "years";
   gradient: string;
@@ -60,7 +52,7 @@ export default function MobileExploreSheet({
     {
       id: "home",
       label: "Trang Chủ",
-      icon: Home,
+      iconType: "home",
       href: "/",
       gradient: "from-[#082317] via-[#0d2d1f] to-[#123827]",
       fadeOverlay: "from-[#082317] via-[#082317]/60 to-transparent",
@@ -72,7 +64,7 @@ export default function MobileExploreSheet({
     {
       id: "phim-chieu-rap",
       label: "Chiếu Rạp",
-      icon: Clapperboard,
+      iconType: "clapperboard",
       href: "/?typeList=phim-chieu-rap",
       typeList: "phim-chieu-rap",
       gradient: "from-[#280c12] via-[#351018] to-[#42141f]",
@@ -85,7 +77,7 @@ export default function MobileExploreSheet({
     {
       id: "phim-bo",
       label: "Phim Bộ",
-      icon: Tv,
+      iconType: "tv",
       href: "/?typeList=phim-bo",
       typeList: "phim-bo",
       gradient: "from-[#0c1d3b] via-[#112448] to-[#172c57]",
@@ -98,7 +90,7 @@ export default function MobileExploreSheet({
     {
       id: "phim-le",
       label: "Phim Lẻ",
-      icon: Film,
+      iconType: "film",
       href: "/?typeList=phim-le",
       typeList: "phim-le",
       gradient: "from-[#08291b] via-[#0b3323] to-[#0f3d2b]",
@@ -111,7 +103,7 @@ export default function MobileExploreSheet({
     {
       id: "hoat-hinh",
       label: "Hoạt Hình",
-      icon: Cat,
+      iconType: "cat",
       href: "/?typeList=hoat-hinh",
       typeList: "hoat-hinh",
       gradient: "from-[#291b06] via-[#352308] to-[#422c0a]",
@@ -124,7 +116,7 @@ export default function MobileExploreSheet({
     {
       id: "new-updates",
       label: "Mới Cập Nhật",
-      icon: Flame,
+      iconType: "flame",
       href: "/new-updates",
       gradient: "from-[#301206] via-[#3d1808] to-[#4a1e0a]",
       fadeOverlay: "from-[#301206] via-[#301206]/60 to-transparent",
@@ -136,7 +128,7 @@ export default function MobileExploreSheet({
     {
       id: "categories",
       label: "Thể Loại",
-      icon: Layers,
+      iconType: "layers",
       action: "categories",
       gradient: "from-[#280f08] via-[#34140a] to-[#41190d]",
       fadeOverlay: "from-[#280f08] via-[#280f08]/60 to-transparent",
@@ -148,7 +140,7 @@ export default function MobileExploreSheet({
     {
       id: "countries",
       label: "Quốc Gia",
-      icon: Globe,
+      iconType: "globe",
       action: "countries",
       gradient: "from-[#0a2624] via-[#0d312e] to-[#113d39]",
       fadeOverlay: "from-[#0a2624] via-[#0a2624]/60 to-transparent",
@@ -160,7 +152,7 @@ export default function MobileExploreSheet({
     {
       id: "years",
       label: "Năm Phát Hành",
-      icon: Calendar,
+      iconType: "calendar",
       action: "years",
       gradient: "from-[#26170c] via-[#311e10] to-[#3d2514]",
       fadeOverlay: "from-[#26170c] via-[#26170c]/60 to-transparent",
@@ -266,8 +258,6 @@ export default function MobileExploreSheet({
         >
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
             {CARDS.map((card) => {
-              const Icon = card.icon;
-
               const cardContent = (
                 <div
                   className={cn(
@@ -298,12 +288,11 @@ export default function MobileExploreSheet({
                   <div className="relative z-10 flex items-center gap-2.5 min-w-0 pr-2">
                     <div
                       className={cn(
-                        "w-7 h-7 rounded-xl flex items-center justify-center shrink-0 border border-white/10 shadow-sm",
-                        card.iconBg,
-                        card.iconColor
+                        "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border border-white/15 shadow-sm backdrop-blur-md overflow-visible",
+                        card.iconBg
                       )}
                     >
-                      <Icon className="w-3.5 h-3.5" />
+                      <SidebarAnimatedIcon type={card.iconType} size={18} />
                     </div>
                     <span className="font-black text-[13.5px] sm:text-[14.5px] text-white tracking-tight truncate drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
                       {card.label}
