@@ -1,7 +1,6 @@
 "use client";
 
 import { memo } from "react";
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 export interface AnimatedHeaderIconProps {
@@ -10,10 +9,9 @@ export interface AnimatedHeaderIconProps {
 }
 
 /**
- * 1. Kính Lúp Tìm Kiếm (Search Icon) - Phong cách Flaticon Lineal Color
- * Tròng kính phản chiếu ánh ngọc lam, viền vàng kim loại, cán titan sang trọng.
- * Chuyển động liên tục: Kính lúp rà quét góc đa chiều, vệt sáng phản quang lướt qua,
- * cùng tia sao lấp lánh (sparkle) nở rộ liên tục tuần hoàn.
+ * 1. Kính Lúp Tìm Kiếm (Search Icon) - Phong cách Flaticon Lineal Color (GPU Accelerated)
+ * Tròng kính lam ngọc phản quang, viền vàng kim loại, cán titan.
+ * Chuyển động rà quét và sao lấp lánh chạy hoàn toàn trên GPU Compositor thread.
  */
 export const AnimatedSearchIcon = memo(function AnimatedSearchIcon({
   className,
@@ -21,23 +19,12 @@ export const AnimatedSearchIcon = memo(function AnimatedSearchIcon({
 }: AnimatedHeaderIconProps) {
   return (
     <div className={cn("relative flex items-center justify-center shrink-0 select-none", className)}>
-      <motion.svg
+      <svg
         width={size}
         height={size}
         viewBox="0 0 24 24"
         fill="none"
-        className="overflow-visible"
-        animate={{
-          rotate: [-6, 6, -3, 3, -6],
-          x: [-0.5, 0.8, -0.8, 0.5, -0.5],
-          y: [-0.5, -1, 0.5, 0, -0.5],
-        }}
-        transition={{
-          duration: 4.5,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-        style={{ transformOrigin: "10px 10px" }}
+        className="overflow-visible anim-search will-change-transform"
       >
         <defs>
           {/* Gradient tròng kính lúp lam ngọc */}
@@ -80,13 +67,12 @@ export const AnimatedSearchIcon = memo(function AnimatedSearchIcon({
         />
 
         {/* Vệt phản chiếu ánh sáng trắng trên mặt kính */}
-        <motion.path
+        <path
           d="M6 7.5a4.5 4.5 0 0 1 4.5-4"
           stroke="#ffffff"
           strokeWidth="1.5"
           strokeLinecap="round"
-          animate={{ opacity: [0.4, 0.95, 0.4] }}
-          transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+          className="anim-shine"
         />
 
         {/* Chốt nối cán kính lúp màu vàng kim */}
@@ -118,27 +104,18 @@ export const AnimatedSearchIcon = memo(function AnimatedSearchIcon({
           opacity="0.8"
         />
 
-        {/* Ngôi sao lấp lánh (Sparkle) 4 cánh trên góc kính lúp */}
-        <motion.g
+        {/* Ngôi sao lấp lánh 4 cánh trên góc kính lúp GPU */}
+        <g
           transform="translate(13.5, 4.5)"
-          animate={{
-            scale: [0, 1.25, 0],
-            rotate: [0, 90, 180],
-            opacity: [0, 1, 0],
-          }}
-          transition={{
-            duration: 2.8,
-            repeat: Infinity,
-            repeatDelay: 0.8,
-            ease: "easeInOut",
-          }}
+          className="anim-sparkle"
+          style={{ transformOrigin: "13.5px 4.5px" }}
         >
           <path
             d="M0 -3 C0 -1 1 0 3 0 C1 0 0 1 0 3 C0 1 -1 0 -3 0 C-1 0 0 -1 0 -3 Z"
             fill="#facc15"
           />
-        </motion.g>
-      </motion.svg>
+        </g>
+      </svg>
     </div>
   );
 });
@@ -149,34 +126,21 @@ export interface AnimatedHeaderBellProps extends AnimatedHeaderIconProps {
 }
 
 /**
- * 2. Chuông Thông Báo (Notification Bell Icon) - Phong cách Flaticon Lineal Color
- * Quả chuông vàng 3D với nẹp ruby đỏ, con lắc đung đưa, sóng âm thanh lan tỏa.
- * Chuyển động liên tục tuần hoàn: Chuông lắc lư ngân vang theo nhịp vật lý,
- * con lắc đu đưa bên dưới và sóng âm tỏa ra 2 bên.
+ * 2. Chuông Thông Báo (Notification Bell Icon) - Phong cách Flaticon Lineal Color (GPU Accelerated)
+ * Quả chuông vàng 3D với nẹp ruby đỏ, chuông ngân và con lắc đung đưa mượt mà trên GPU.
  */
 export const AnimatedHeaderBellIcon = memo(function AnimatedHeaderBellIcon({
   className,
   size = 20,
-  hasUnread = false,
-  isOpen = false,
 }: AnimatedHeaderBellProps) {
   return (
     <div className={cn("relative flex items-center justify-center shrink-0 select-none", className)}>
-      <motion.svg
+      <svg
         width={size}
         height={size}
         viewBox="0 0 24 24"
         fill="none"
-        className="overflow-visible"
-        animate={{
-          rotate: [0, -14, 14, -10, 10, -4, 4, 0, 0, 0],
-        }}
-        transition={{
-          duration: 3,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-        style={{ transformOrigin: "12px 3px" }}
+        className="overflow-visible anim-bell will-change-transform"
       >
         <defs>
           {/* Gradient thân chuông vàng óng */}
@@ -195,40 +159,20 @@ export const AnimatedHeaderBellIcon = memo(function AnimatedHeaderBellIcon({
           </linearGradient>
         </defs>
 
-        {/* Sóng âm thanh bên trái phát ra khi lắc chuông */}
-        <motion.path
+        {/* Sóng âm thanh 2 bên phát ra khi lắc chuông GPU */}
+        <path
           d="M3 8a8 8 0 0 0 0 8"
           stroke="#facc15"
           strokeWidth="1.5"
           strokeLinecap="round"
-          animate={{
-            opacity: [0, 0.8, 0],
-            scale: [0.8, 1.2, 0.8],
-          }}
-          transition={{
-            duration: 3,
-            repeat: Infinity,
-            times: [0, 0.25, 0.55],
-          }}
-          style={{ transformOrigin: "4px 12px" }}
+          className="anim-shine"
         />
-
-        {/* Sóng âm thanh bên phải phát ra khi lắc chuông */}
-        <motion.path
+        <path
           d="M21 8a8 8 0 0 1 0 8"
           stroke="#facc15"
           strokeWidth="1.5"
           strokeLinecap="round"
-          animate={{
-            opacity: [0, 0.8, 0],
-            scale: [0.8, 1.2, 0.8],
-          }}
-          transition={{
-            duration: 3,
-            repeat: Infinity,
-            times: [0, 0.25, 0.55],
-          }}
-          style={{ transformOrigin: "20px 12px" }}
+          className="anim-shine"
         />
 
         {/* Quai treo chóp chuông tròn vàng kim */}
@@ -240,19 +184,10 @@ export const AnimatedHeaderBellIcon = memo(function AnimatedHeaderBellIcon({
         />
         <circle cx="12" cy="3" r="1.5" fill="#facc15" />
 
-        {/* Con lắc chuông (Clapper) bên dưới đung đưa nhịp nhàng */}
-        <motion.g
-          animate={{
-            x: [0, 2.5, -2.5, 1.8, -1.8, 0, 0],
-          }}
-          transition={{
-            duration: 3,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        >
+        {/* Con lắc chuông bên dưới đung đưa nhịp nhàng GPU */}
+        <g className="anim-bell-clapper">
           <circle cx="12" cy="19.5" r="2.2" fill="#d97706" stroke="#facc15" strokeWidth="1" />
-        </motion.g>
+        </g>
 
         {/* Thân chuông vàng Lineal Color nổi bật */}
         <path
@@ -272,24 +207,21 @@ export const AnimatedHeaderBellIcon = memo(function AnimatedHeaderBellIcon({
         />
 
         {/* Vệt sáng bóng phản quang bên sườn chuông */}
-        <motion.path
+        <path
           d="M9.5 7.5c-.8 1.5-1 3.5-.8 5"
           stroke="#ffffff"
           strokeWidth="1.5"
           strokeLinecap="round"
-          animate={{ opacity: [0.5, 0.95, 0.5] }}
-          transition={{ duration: 1.8, repeat: Infinity }}
+          className="anim-shine"
         />
-      </motion.svg>
+      </svg>
     </div>
   );
 });
 
 /**
- * 3. Icon Người Dùng (User Login / Profile Icon) - Phong cách Flaticon Lineal Color
- * Chàng trai mê điện ảnh với mái tóc xanh chàm, gương mặt tươi vui, áo polo xanh emerald.
- * Chuyển động liên tục tuần hoàn: Đầu nghiêng chào thân thiện, nhịp thở nhấp nhô sống động,
- * đôi mắt nháy sáng chào mừng quý khán giả đăng nhập.
+ * 3. Icon Người Dùng (User Login / Profile Icon) - Phong cách Flaticon Lineal Color (GPU Accelerated)
+ * Chàng trai mê điện ảnh với mái tóc xanh chàm, nghiêng đầu chớp mắt trên GPU.
  */
 export const AnimatedUserIcon = memo(function AnimatedUserIcon({
   className,
@@ -297,20 +229,12 @@ export const AnimatedUserIcon = memo(function AnimatedUserIcon({
 }: AnimatedHeaderIconProps) {
   return (
     <div className={cn("relative flex items-center justify-center shrink-0 select-none", className)}>
-      <motion.svg
+      <svg
         width={size}
         height={size}
         viewBox="0 0 24 24"
         fill="none"
-        className="overflow-visible"
-        animate={{
-          y: [0, -1, 0, -0.6, 0],
-        }}
-        transition={{
-          duration: 3.2,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
+        className="overflow-visible will-change-transform"
       >
         <defs>
           {/* Gradient làn da ấm áp */}
@@ -352,18 +276,8 @@ export const AnimatedUserIcon = memo(function AnimatedUserIcon({
           strokeLinejoin="round"
         />
 
-        {/* Nhóm đầu cử động nghiêng chào */}
-        <motion.g
-          animate={{
-            rotate: [0, -7, 7, -4, 4, 0, 0],
-          }}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          style={{ transformOrigin: "12px 14px" }}
-        >
+        {/* Nhóm đầu cử động nghiêng chào GPU */}
+        <g className="anim-user-head">
           {/* Khuôn mặt tròn đầy sức sống */}
           <circle
             cx="12"
@@ -386,37 +300,23 @@ export const AnimatedUserIcon = memo(function AnimatedUserIcon({
           <circle cx="7.2" cy="10" r="1.1" fill="#fed7aa" stroke="#ea580c" strokeWidth="0.8" />
           <circle cx="16.8" cy="10" r="1.1" fill="#fed7aa" stroke="#ea580c" strokeWidth="0.8" />
 
-          {/* 2 mắt hạt tiêu chớp mắt thân thiện */}
-          <motion.ellipse
+          {/* 2 mắt chớp mắt tự nhiên GPU */}
+          <ellipse
             cx="10.2"
             cy="9.8"
             rx="0.7"
             ry="0.9"
             fill="#1e1b4b"
-            animate={{
-              scaleY: [1, 1, 0.1, 1, 1],
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              times: [0, 0.45, 0.5, 0.55, 1],
-            }}
+            className="anim-cat-blink"
             style={{ transformOrigin: "10.2px 9.8px" }}
           />
-          <motion.ellipse
+          <ellipse
             cx="13.8"
             cy="9.8"
             rx="0.7"
             ry="0.9"
             fill="#1e1b4b"
-            animate={{
-              scaleY: [1, 1, 0.1, 1, 1],
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              times: [0, 0.45, 0.5, 0.55, 1],
-            }}
+            className="anim-cat-blink"
             style={{ transformOrigin: "13.8px 9.8px" }}
           />
 
@@ -431,24 +331,18 @@ export const AnimatedUserIcon = memo(function AnimatedUserIcon({
             strokeWidth="1"
             strokeLinecap="round"
           />
-        </motion.g>
+        </g>
 
-        {/* Hào quang nhỏ lấp lánh cạnh người dùng */}
-        <motion.circle
+        {/* Hào quang nhỏ lấp lánh cạnh người dùng GPU */}
+        <circle
           cx="19.5"
           cy="6.5"
           r="1.2"
           fill="#facc15"
-          animate={{
-            scale: [0.5, 1.3, 0.5],
-            opacity: [0.3, 1, 0.3],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-          }}
+          className="anim-sparkle"
+          style={{ transformOrigin: "19.5px 6.5px" }}
         />
-      </motion.svg>
+      </svg>
     </div>
   );
 });
