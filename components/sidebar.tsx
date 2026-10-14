@@ -49,25 +49,132 @@ import { instantMovieStore } from "@/lib/instant-movie-store";
 import MobileExploreSheet from "@/components/navigation/mobile-explore-sheet";
 import BrandLogo from "@/components/ui/brand-logo";
 import { useNavigationTab } from "@/context/navigation-tab-context";
+import { SidebarAnimatedIcon, type SidebarIconType } from "@/components/ui/animated-sidebar-icons";
 
 interface SidebarProps {
   categories?: { slug: string; name: string }[];
   countries?: { slug: string; name: string }[];
 }
 
-const NAV_MAIN = [
-  { href: "/", label: "Trang Chủ", icon: Home },
-  { href: "/?typeList=phim-chieu-rap", label: "Chiếu Rạp", icon: Clapperboard, typeList: "phim-chieu-rap" },
-  { href: "/?typeList=phim-bo", label: "Phim Bộ", icon: Tv, typeList: "phim-bo" },
-  { href: "/?typeList=phim-le", label: "Phim Lẻ", icon: Film, typeList: "phim-le" },
-  { href: "/?typeList=hoat-hinh", label: "Hoạt Hình", icon: Cat, typeList: "hoat-hinh" },
-  { href: "/new-updates", label: "Mới Cập Nhật", icon: Flame },
+interface NavMainItem {
+  href: string;
+  label: string;
+  iconType: SidebarIconType;
+  typeList?: string;
+}
+
+const NAV_MAIN: NavMainItem[] = [
+  { href: "/", label: "Trang Chủ", iconType: "home" },
+  { href: "/?typeList=phim-chieu-rap", label: "Chiếu Rạp", iconType: "clapperboard", typeList: "phim-chieu-rap" },
+  { href: "/?typeList=phim-bo", label: "Phim Bộ", iconType: "tv", typeList: "phim-bo" },
+  { href: "/?typeList=phim-le", label: "Phim Lẻ", iconType: "film", typeList: "phim-le" },
+  { href: "/?typeList=hoat-hinh", label: "Hoạt Hình", iconType: "cat", typeList: "hoat-hinh" },
+  { href: "/new-updates", label: "Mới Cập Nhật", iconType: "flame" },
 ];
 
-const NAV_PERSONAL = [
-  { href: "/recently", label: "Lịch Sử Xem", icon: History },
-  { href: "/favorites", label: "Phim Yêu Thích", icon: Heart },
+interface NavPersonalItem {
+  href: string;
+  label: string;
+  iconType: SidebarIconType;
+}
+
+const NAV_PERSONAL: NavPersonalItem[] = [
+  { href: "/recently", label: "Lịch Sử Xem", iconType: "history" },
+  { href: "/favorites", label: "Phim Yêu Thích", iconType: "heart" },
 ];
+
+function SidebarMainNavItem({
+  item,
+  active,
+  onClick,
+  onPrefetch,
+}: {
+  item: NavMainItem;
+  active: boolean;
+  onClick: () => void;
+  onPrefetch?: () => void;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <Link
+      href={item.href}
+      scroll={false}
+      prefetch={true}
+      onClick={onClick}
+      onMouseEnter={() => {
+        setIsHovered(true);
+        onPrefetch?.();
+      }}
+      onMouseLeave={() => setIsHovered(false)}
+      onTouchStart={onPrefetch}
+      className={cn(
+        "relative flex items-center gap-3 lg:gap-2 px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-colors duration-150 group overflow-hidden",
+        active
+          ? "bg-gradient-to-r from-brand-green/20 via-brand-green/10 to-transparent text-brand-green font-bold shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
+          : "text-white/60 hover:text-white hover:bg-white/5"
+      )}
+      aria-current={active ? "page" : undefined}
+    >
+      {active && (
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 lg:h-3.5 bg-brand-green rounded-r-full shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
+      )}
+      <SidebarAnimatedIcon
+        type={item.iconType}
+        isHovered={isHovered}
+        isActive={active}
+        className={cn(
+          "w-[18px] h-[18px] lg:w-4 lg:h-4 shrink-0 transition-colors duration-150",
+          active ? "text-brand-green" : "text-white/60 group-hover:text-white"
+        )}
+      />
+      <span className="truncate">{item.label}</span>
+    </Link>
+  );
+}
+
+function SidebarPersonalNavItem({
+  item,
+  active,
+  onClick,
+}: {
+  item: NavPersonalItem;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <Link
+      href={item.href}
+      prefetch={true}
+      onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className={cn(
+        "w-full relative flex items-center gap-3 lg:gap-2 px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-all duration-150 group overflow-hidden text-left cursor-pointer",
+        active
+          ? "bg-gradient-to-r from-brand-green/20 via-brand-green/10 to-transparent text-brand-green font-bold shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
+          : "text-white/60 hover:text-white hover:bg-white/5"
+      )}
+      aria-current={active ? "page" : undefined}
+    >
+      {active && (
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 lg:h-3.5 bg-brand-green rounded-r-full shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
+      )}
+      <SidebarAnimatedIcon
+        type={item.iconType}
+        isHovered={isHovered}
+        isActive={active}
+        className={cn(
+          "w-[18px] h-[18px] lg:w-4 lg:h-4 shrink-0 transition-colors duration-150",
+          active ? "text-brand-green" : "text-white/60 group-hover:text-white"
+        )}
+      />
+      <span className="truncate">{item.label}</span>
+    </Link>
+  );
+}
 
 function SidebarContent({
   categories: propCategories = [],
@@ -86,6 +193,10 @@ function SidebarContent({
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isPlayerFullscreen, setIsPlayerFullscreen] = useState(false);
+  const [isCategoryHovered, setIsCategoryHovered] = useState(false);
+  const [isCountryHovered, setIsCountryHovered] = useState(false);
+  const [isYearHovered, setIsYearHovered] = useState(false);
+  const [isAppHovered, setIsAppHovered] = useState(false);
 
   // Check if current route is movie detail page (/phim/[slug]) on mobile
   const isMovieDetailPage = Boolean(pathname && pathname.startsWith("/phim/"));
@@ -986,41 +1097,20 @@ function SidebarContent({
               MENU CHÍNH
             </span>
 
-            {NAV_MAIN.map((item) => {
-              const active = isLinkActive(item.href, item.typeList);
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  scroll={false}
-                  prefetch={true}
-                  onClick={() => {
-                    setIsMobileOpen(false);
-                    navigateToTab(item.href);
-                  }}
-                  onMouseEnter={() => {
-                    if (item.typeList) instantMovieStore.prefetch(item.typeList);
-                  }}
-                  onTouchStart={() => {
-                    if (item.typeList) instantMovieStore.prefetch(item.typeList);
-                  }}
-                  className={cn(
-                    "relative flex items-center gap-3 lg:gap-2 px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-colors duration-150 group overflow-hidden",
-                    active
-                      ? "bg-gradient-to-r from-brand-green/20 via-brand-green/10 to-transparent text-brand-green font-bold shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
-                      : "text-white/60 hover:text-white hover:bg-white/5"
-                  )}
-                  aria-current={active ? "page" : undefined}
-                >
-                  {active && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 lg:h-3.5 bg-brand-green rounded-r-full shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
-                  )}
-                  <Icon className={cn("w-[18px] h-[18px] lg:w-4 lg:h-4 shrink-0 transition-transform group-hover:scale-110", active ? "text-brand-green" : "text-white/60 group-hover:text-white")} />
-                  <span className="truncate">{item.label}</span>
-                </Link>
-              );
-            })}
+            {NAV_MAIN.map((item) => (
+              <SidebarMainNavItem
+                key={item.href}
+                item={item}
+                active={isLinkActive(item.href, item.typeList)}
+                onClick={() => {
+                  setIsMobileOpen(false);
+                  navigateToTab(item.href);
+                }}
+                onPrefetch={() => {
+                  if (item.typeList) instantMovieStore.prefetch(item.typeList);
+                }}
+              />
+            ))}
           </div>
 
           {/* Divider 1 */}
@@ -1040,8 +1130,10 @@ function SidebarContent({
                 e.stopPropagation();
                 setActiveModal("categories");
               }}
+              onMouseEnter={() => setIsCategoryHovered(true)}
+              onMouseLeave={() => setIsCategoryHovered(false)}
               className={cn(
-                "w-full relative flex items-center justify-between px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-colors duration-150 group text-left",
+                "w-full relative flex items-center justify-between px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-colors duration-150 group text-left cursor-pointer",
                 currentCategory
                   ? "bg-gradient-to-r from-brand-green/20 via-brand-green/10 to-transparent text-brand-green font-bold shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
                   : "text-white/65 hover:text-white hover:bg-white/5"
@@ -1051,7 +1143,15 @@ function SidebarContent({
                 <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 lg:h-3.5 bg-brand-green rounded-r-full shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
               )}
               <div className="flex items-center gap-3 lg:gap-2 min-w-0">
-                <Layers className={cn("w-[18px] h-[18px] lg:w-4 lg:h-4 shrink-0 transition-transform group-hover:scale-110", currentCategory ? "text-brand-green" : "text-white/60 group-hover:text-white")} />
+                <SidebarAnimatedIcon
+                  type="layers"
+                  isHovered={isCategoryHovered}
+                  isActive={!!currentCategory}
+                  className={cn(
+                    "w-[18px] h-[18px] lg:w-4 lg:h-4 shrink-0 transition-colors duration-150",
+                    currentCategory ? "text-brand-green" : "text-white/60 group-hover:text-white"
+                  )}
+                />
                 <div className="flex flex-col min-w-0">
                   <span className="truncate">Thể Loại</span>
                   {activeCategoryObj && (
@@ -1078,8 +1178,10 @@ function SidebarContent({
                 e.stopPropagation();
                 setActiveModal("countries");
               }}
+              onMouseEnter={() => setIsCountryHovered(true)}
+              onMouseLeave={() => setIsCountryHovered(false)}
               className={cn(
-                "w-full relative flex items-center justify-between px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-colors duration-150 group text-left",
+                "w-full relative flex items-center justify-between px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-colors duration-150 group text-left cursor-pointer",
                 currentCountry
                   ? "bg-gradient-to-r from-brand-green/20 via-brand-green/10 to-transparent text-brand-green font-bold shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
                   : "text-white/65 hover:text-white hover:bg-white/5"
@@ -1089,7 +1191,15 @@ function SidebarContent({
                 <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 lg:h-3.5 bg-brand-green rounded-r-full shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
               )}
               <div className="flex items-center gap-3 lg:gap-2 min-w-0">
-                <Globe className={cn("w-[18px] h-[18px] lg:w-4 lg:h-4 shrink-0 transition-transform group-hover:scale-110", currentCountry ? "text-brand-green" : "text-white/60 group-hover:text-white")} />
+                <SidebarAnimatedIcon
+                  type="globe"
+                  isHovered={isCountryHovered}
+                  isActive={!!currentCountry}
+                  className={cn(
+                    "w-[18px] h-[18px] lg:w-4 lg:h-4 shrink-0 transition-colors duration-150",
+                    currentCountry ? "text-brand-green" : "text-white/60 group-hover:text-white"
+                  )}
+                />
                 <div className="flex flex-col min-w-0">
                   <span className="truncate">Quốc Gia</span>
                   {activeCountryObj && (
@@ -1116,8 +1226,10 @@ function SidebarContent({
                 e.stopPropagation();
                 setActiveModal("years");
               }}
+              onMouseEnter={() => setIsYearHovered(true)}
+              onMouseLeave={() => setIsYearHovered(false)}
               className={cn(
-                "w-full relative flex items-center justify-between px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-colors duration-150 group text-left",
+                "w-full relative flex items-center justify-between px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-colors duration-150 group text-left cursor-pointer",
                 currentYear
                   ? "bg-gradient-to-r from-brand-green/20 via-brand-green/10 to-transparent text-brand-green font-bold shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
                   : "text-white/65 hover:text-white hover:bg-white/5"
@@ -1127,7 +1239,15 @@ function SidebarContent({
                 <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 lg:h-3.5 bg-brand-green rounded-r-full shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
               )}
               <div className="flex items-center gap-3 lg:gap-2 min-w-0">
-                <Calendar className={cn("w-[18px] h-[18px] lg:w-4 lg:h-4 shrink-0 transition-transform group-hover:scale-110", currentYear ? "text-brand-green" : "text-white/60 group-hover:text-white")} />
+                <SidebarAnimatedIcon
+                  type="calendar"
+                  isHovered={isYearHovered}
+                  isActive={!!currentYear}
+                  className={cn(
+                    "w-[18px] h-[18px] lg:w-4 lg:h-4 shrink-0 transition-colors duration-150",
+                    currentYear ? "text-brand-green" : "text-white/60 group-hover:text-white"
+                  )}
+                />
                 <div className="flex flex-col min-w-0">
                   <span className="whitespace-nowrap">Năm Phát Hành</span>
                   {currentYear && (
@@ -1156,34 +1276,17 @@ function SidebarContent({
               CÁ NHÂN
             </span>
 
-            {NAV_PERSONAL.map((item) => {
-              const active = currentActiveTab === item.href;
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  prefetch={true}
-                  onClick={() => {
-                    setIsMobileOpen(false);
-                    navigateToTab(item.href);
-                  }}
-                  className={cn(
-                    "w-full relative flex items-center gap-3 lg:gap-2 px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-all duration-150 group overflow-hidden text-left cursor-pointer",
-                    active
-                      ? "bg-gradient-to-r from-brand-green/20 via-brand-green/10 to-transparent text-brand-green font-bold shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
-                      : "text-white/60 hover:text-white hover:bg-white/5"
-                  )}
-                  aria-current={active ? "page" : undefined}
-                >
-                  {active && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 lg:h-3.5 bg-brand-green rounded-r-full shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
-                  )}
-                  <Icon className={cn("w-[18px] h-[18px] lg:w-4 lg:h-4 shrink-0 transition-transform group-hover:scale-110", active ? "text-brand-green" : "text-white/60 group-hover:text-white")} />
-                  <span className="truncate">{item.label}</span>
-                </Link>
-              );
-            })}
+            {NAV_PERSONAL.map((item) => (
+              <SidebarPersonalNavItem
+                key={item.href}
+                item={item}
+                active={currentActiveTab === item.href}
+                onClick={() => {
+                  setIsMobileOpen(false);
+                  navigateToTab(item.href);
+                }}
+              />
+            ))}
           </div>
 
           {/* Divider 3 */}
@@ -1198,6 +1301,8 @@ function SidebarContent({
                 setIsMobileOpen(false);
                 navigateToTab("/tai-app");
               }}
+              onMouseEnter={() => setIsAppHovered(true)}
+              onMouseLeave={() => setIsAppHovered(false)}
               className={cn(
                 "w-full relative flex items-center justify-between px-3 lg:px-2 py-2.5 lg:py-2 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-all duration-200 group overflow-hidden border text-left cursor-pointer",
                 "border-brand-green/40 hover:border-brand-green/80 shadow-[0_0_12px_rgba(32,214,107,0.12)] hover:shadow-[0_0_16px_rgba(32,214,107,0.22)]",
@@ -1220,7 +1325,12 @@ function SidebarContent({
                       : "bg-brand-green/10 text-brand-green group-hover:bg-brand-green/20 border border-brand-green/20"
                   )}
                 >
-                  <Smartphone className="w-3.5 h-3.5 lg:w-3 lg:h-3" />
+                  <SidebarAnimatedIcon
+                    type="smartphone"
+                    isHovered={isAppHovered}
+                    isActive={pathname === "/tai-app"}
+                    className="w-3.5 h-3.5 lg:w-3 lg:h-3"
+                  />
                 </div>
                 <div className="flex flex-col min-w-0">
                   <span className="truncate leading-tight font-semibold text-white group-hover:text-brand-green transition-colors">
