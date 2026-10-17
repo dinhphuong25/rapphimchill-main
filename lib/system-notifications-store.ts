@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { ensureVercelDatabase, vercelSql } from "@/lib/vercel-db";
+import seedNotifications from "./seed-notifications.json";
 
 export interface SystemNotification {
   id: string;
@@ -79,6 +80,27 @@ async function ensureTable() {
         data JSONB
       )
     `;
+
+    // Tự động khôi phục thông báo hệ thống nếu bảng trống
+    try {
+      const cnt = await vercelSql`SELECT count(*) as count FROM hiphim_system_notifications`;
+      if (Number(cnt[0]?.count || 0) === 0 && Array.isArray(seedNotifications) && seedNotifications.length > 0) {
+        for (const n of seedNotifications as any[]) {
+          await vercelSql`
+            INSERT INTO hiphim_system_notifications (
+              id, title, content, type, link, created_at, author, data
+            ) VALUES (
+              ${n.id}, ${n.title}, ${n.content}, ${n.type}, ${n.link || null},
+              ${Number(n.createdAt || n.created_at) || Date.now()}, ${n.author || "Ban Quản Trị"},
+              ${JSON.stringify(n)}::jsonb
+            ) ON CONFLICT (id) DO NOTHING
+          `;
+        }
+      }
+    } catch (seedErr) {
+      console.warn("Could not seed system notifications:", seedErr);
+    }
+
     return true;
   } catch (err) {
     console.error("Error ensuring system notifications table:", err);

@@ -52,6 +52,12 @@ export async function ensureVercelDatabase(): Promise<boolean> {
           expires_at BIGINT NOT NULL
         )
       `;
+      await vercelSql!`
+        CREATE TABLE IF NOT EXISTS hiphim_site_config (
+          key TEXT PRIMARY KEY,
+          data JSONB NOT NULL
+        )
+      `;
 
       // Tự động seed tài khoản từ seed-data.json sang PostgreSQL
       try {
@@ -68,6 +74,16 @@ export async function ensureVercelDatabase(): Promise<boolean> {
         }
       } catch (seedErr) {
         console.warn("[DB] Could not seed default users from seed-data.json:", seedErr);
+      }
+
+      // Khôi phục cấu hình website vào bộ nhớ
+      try {
+        const cfgRows = await vercelSql!`SELECT data FROM hiphim_site_config WHERE key = 'main'`;
+        if (cfgRows.length > 0 && cfgRows[0]?.data) {
+          globalThis.__HIPHIM_SITE_CONFIG__ = cfgRows[0].data as any;
+        }
+      } catch (cfgErr) {
+        // ignore
       }
     })().catch((error) => {
       schemaPromise = null;

@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { vercelSql } from "@/lib/vercel-db";
 
 export interface SiteConfig {
   siteName: string;
@@ -132,6 +133,14 @@ export function saveSiteConfig(newConfig: Partial<SiteConfig>): SiteConfig {
   };
 
   globalThis.__HIPHIM_SITE_CONFIG__ = updated;
+
+  if (vercelSql) {
+    vercelSql`
+      INSERT INTO hiphim_site_config (key, data)
+      VALUES ('main', ${JSON.stringify(updated)}::jsonb)
+      ON CONFLICT (key) DO UPDATE SET data = EXCLUDED.data
+    `.catch((dbErr) => console.warn("[DB] Could not persist site config to PostgreSQL:", dbErr));
+  }
 
   try {
     const dir = path.dirname(CONFIG_FILE_PATH);

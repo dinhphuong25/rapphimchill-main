@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { ensureVercelDatabase, vercelSql } from "@/lib/vercel-db";
+import seedReports from "./seed-reports.json";
 
 export interface MovieReport {
   id: string;
@@ -81,6 +82,28 @@ async function ensureReportsTable() {
       await vercelSql`ALTER TABLE hiphim_reports ADD COLUMN IF NOT EXISTS resolved_at BIGINT`;
     } catch {
       // Ignore if columns already exist or alter is not permitted
+    }
+
+    // Tự động khôi phục toàn bộ 15 báo lỗi phim nếu bảng trống
+    try {
+      const cnt = await vercelSql`SELECT count(*) as count FROM hiphim_reports`;
+      if (Number(cnt[0]?.count || 0) === 0 && Array.isArray(seedReports) && seedReports.length > 0) {
+        for (const r of seedReports as any[]) {
+          await vercelSql`
+            INSERT INTO hiphim_reports (
+              id, movie_slug, movie_name, episode_name, server_name,
+              issue_type, description, status, created_at,
+              user_id, user_email, user_name, resolved_at, data
+            ) VALUES (
+              ${r.id}, ${r.movie_slug}, ${r.movie_name}, ${r.episode_name || ""}, ${r.server_name || ""},
+              ${r.issue_type}, ${r.description || ""}, ${r.status || "pending"}, ${Number(r.created_at) || Date.now()},
+              ${r.user_id || null}, ${r.user_email || null}, ${r.user_name || null}, ${r.resolved_at ? Number(r.resolved_at) : null}, ${JSON.stringify(r.data || r)}::jsonb
+            ) ON CONFLICT (id) DO NOTHING
+          `;
+        }
+      }
+    } catch (seedErr) {
+      console.warn("Could not seed reports:", seedErr);
     }
 
     return true;
