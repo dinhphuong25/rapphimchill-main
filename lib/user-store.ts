@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { ensureVercelDatabase, vercelSql } from "@/lib/vercel-db";
+import seedUsers from "./seed-data.json";
 
 const USERS_FILE_PATH = path.join(process.cwd(), "data", "users.json");
 const PENDING_FILE_PATH = path.join(process.cwd(), "data", "pending-registrations.json");
@@ -204,12 +205,13 @@ function readUsers(): User[] {
     ensureDirectory();
     if (fs.existsSync(USERS_FILE_PATH)) {
       const data = fs.readFileSync(USERS_FILE_PATH, "utf-8");
-      return JSON.parse(data) || [];
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
   } catch (err) {
     console.error("Error reading users.json:", err);
   }
-  return [];
+  return (seedUsers as unknown as User[]) || [];
 }
 
 function writeUsers(users: User[]): void {

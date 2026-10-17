@@ -1,6 +1,5 @@
 import { neon } from "@neondatabase/serverless";
-import fs from "fs";
-import path from "path";
+import seedUsers from "./seed-data.json";
 
 const databaseUrl = (
   process.env.DATABASE_URL ||
@@ -39,26 +38,21 @@ export async function ensureVercelDatabase(): Promise<boolean> {
         )
       `;
 
-      // Tự động seed tài khoản từ data/users.json sang PostgreSQL
+      // Tự động seed tài khoản từ seed-data.json sang PostgreSQL
       try {
-        const usersFile = path.join(process.cwd(), "data", "users.json");
-        if (fs.existsSync(usersFile)) {
-          const raw = fs.readFileSync(usersFile, "utf-8");
-          const localUsers = JSON.parse(raw);
-          if (Array.isArray(localUsers)) {
-            for (const user of localUsers) {
-              if (user?.email && user?.id) {
-                await vercelSql!`
-                  INSERT INTO hiphim_users (email, id, data)
-                  VALUES (${user.email.toLowerCase()}, ${user.id}, ${JSON.stringify(user)}::jsonb)
-                  ON CONFLICT (email) DO NOTHING
-                `;
-              }
+        if (Array.isArray(seedUsers)) {
+          for (const user of seedUsers as any[]) {
+            if (user?.email && user?.id) {
+              await vercelSql!`
+                INSERT INTO hiphim_users (email, id, data)
+                VALUES (${user.email.toLowerCase()}, ${user.id}, ${JSON.stringify(user)}::jsonb)
+                ON CONFLICT (email) DO NOTHING
+              `;
             }
           }
         }
       } catch (seedErr) {
-        console.warn("[DB] Could not seed default users from users.json:", seedErr);
+        console.warn("[DB] Could not seed default users from seed-data.json:", seedErr);
       }
     })().catch((error) => {
       schemaPromise = null;
