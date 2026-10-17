@@ -168,7 +168,7 @@ function HeaderComponent({}: HeaderProps) {
                   "lg:hidden relative flex items-center gap-1.5 h-[38px] px-3.5 rounded-full border transition-all duration-200 cursor-pointer group shrink-0 select-none touch-manipulation overflow-hidden",
                   // Active / Open State vs Default State
                   isMenuOpen
-                    ? "bg-[#14231b] border-brand-green shadow-[0_0_16px_rgba(32,214,107,0.35)]"
+                    ? "bg-[#14231b] border-brand-green"
                     : "bg-[#14231b]/85 hover:bg-[#151D19] border-brand-green/35 hover:border-brand-green/50 active:border-brand-green/60 shadow-[0_2px_10px_rgba(0,0,0,0.5)]",
                   "active:scale-95"
                 )}
@@ -177,9 +177,7 @@ function HeaderComponent({}: HeaderProps) {
                 <LayoutGrid
                   className={cn(
                     "w-4 h-4 text-brand-green transition-all duration-200 shrink-0",
-                    isMenuOpen
-                      ? "scale-110 drop-shadow-[0_0_8px_rgba(32,214,107,0.9)]"
-                      : "group-hover:scale-105"
+                    isMenuOpen ? "scale-105" : "group-hover:scale-105"
                   )}
                 />
 

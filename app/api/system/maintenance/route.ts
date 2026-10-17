@@ -15,12 +15,12 @@ export async function GET(req: NextRequest) {
   const reason = searchParams.get("reason");
   const duration = parseInt(searchParams.get("duration") || "60", 10);
 
-  // 1. Check current status without secret
+  // 1. Check current status without secret (Cache at Edge for 30s to protect serverless quotas)
   if (!action) {
     const state = getMaintenanceState();
     return NextResponse.json(state, {
       headers: {
-        "Cache-Control": "no-store, max-age=0",
+        "Cache-Control": "public, s-maxage=30, max-age=10, stale-while-revalidate=120",
       },
     });
   }

@@ -12,7 +12,7 @@ const getMovie = async (slug: string) => {
       return api.get(slug);
     },
     [`phim-detail-${slug}`],
-    { revalidate: 60, tags: ["movies", `movie-${slug}`] }
+    { revalidate: 1800, tags: ["movies", `movie-${slug}`] }
   )();
 };
 

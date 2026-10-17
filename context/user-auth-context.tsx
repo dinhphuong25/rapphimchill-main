@@ -480,10 +480,19 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    // Poll every 3.5 seconds
-    heartbeatIntervalRef.current = setInterval(checkBanStatus, 3500);
+    // Check on visibility change (when tab is reopened or focused)
+    const handleVis = () => {
+      if (document.visibilityState === "visible") {
+        checkBanStatus();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVis);
+
+    // Poll every 3 minutes (180,000ms) instead of 3.5s to protect Vercel limits
+    heartbeatIntervalRef.current = setInterval(checkBanStatus, 180000);
 
     return () => {
+      document.removeEventListener("visibilitychange", handleVis);
       if (heartbeatIntervalRef.current) {
         clearInterval(heartbeatIntervalRef.current);
         heartbeatIntervalRef.current = null;

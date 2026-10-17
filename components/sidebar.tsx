@@ -50,7 +50,6 @@ import MobileExploreSheet from "@/components/navigation/mobile-explore-sheet";
 import BrandLogo from "@/components/ui/brand-logo";
 import { useNavigationTab } from "@/context/navigation-tab-context";
 import { SidebarAnimatedIcon, type SidebarIconType } from "@/components/ui/animated-sidebar-icons";
-import { AnimatedUserIcon } from "@/components/ui/animated-header-icons";
 
 interface SidebarProps {
   categories?: { slug: string; name: string }[];
@@ -112,13 +111,13 @@ function SidebarMainNavItem({
       className={cn(
         "relative flex items-center gap-3 lg:gap-2 px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-colors duration-150 group overflow-hidden",
         active
-          ? "bg-gradient-to-r from-brand-green/20 via-brand-green/10 to-transparent text-brand-green font-bold shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
+          ? "bg-brand-green/12 text-brand-green font-semibold"
           : "text-white/60 hover:text-white hover:bg-white/5"
       )}
       aria-current={active ? "page" : undefined}
     >
       {active && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 lg:h-3.5 bg-brand-green rounded-r-full shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 lg:h-3.5 bg-brand-green rounded-r-full" />
       )}
       <SidebarAnimatedIcon
         type={item.iconType}
@@ -155,13 +154,13 @@ function SidebarPersonalNavItem({
       className={cn(
         "w-full relative flex items-center gap-3 lg:gap-2 px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-all duration-150 group overflow-hidden text-left cursor-pointer",
         active
-          ? "bg-gradient-to-r from-brand-green/20 via-brand-green/10 to-transparent text-brand-green font-bold shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
+          ? "bg-brand-green/12 text-brand-green font-semibold"
           : "text-white/60 hover:text-white hover:bg-white/5"
       )}
       aria-current={active ? "page" : undefined}
     >
       {active && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 lg:h-3.5 bg-brand-green rounded-r-full shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 lg:h-3.5 bg-brand-green rounded-r-full" />
       )}
       <SidebarAnimatedIcon
         type={item.iconType}
@@ -575,21 +574,20 @@ function SidebarContent({
       <nav
         aria-label="Điều hướng chính"
         className={cn(
-          "lg:hidden fixed inset-x-0 bottom-0 left-0 right-0 z-[140] w-full select-none touch-manipulation",
-          "bg-[#0B100E]/95 backdrop-blur-2xl border-t border-white/[0.08] shadow-[0_-8px_32px_rgba(0,0,0,0.85)]",
+          "lg:hidden fixed bottom-0 left-0 right-0 z-[140] w-full select-none touch-manipulation pointer-events-none",
+          "px-3 pb-2 pb-[max(0.6rem,env(safe-area-inset-bottom,0px))]",
           "transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] will-change-transform",
-          isPlayerFullscreen && "hidden pointer-events-none",
+          isPlayerFullscreen && "hidden",
           isMovieDetailPage && isDetailNavCollapsed
             ? "translate-y-full opacity-0 pointer-events-none"
             : "translate-y-0 opacity-100 pointer-events-auto"
         )}
         style={{
-          paddingBottom: "env(safe-area-inset-bottom, 0px)",
           transform: isMovieDetailPage && isDetailNavCollapsed ? "translate3d(0, 100%, 0)" : "translate3d(0, 0, 0)",
           WebkitTransform: isMovieDetailPage && isDetailNavCollapsed ? "translate3d(0, 100%, 0)" : "translate3d(0, 0, 0)",
         }}
       >
-        <div className="w-full max-w-lg mx-auto h-[58px] flex items-center justify-between px-1.5">
+        <div className="w-full max-w-lg mx-auto h-[56px] flex items-center justify-between px-2 rounded-full bg-[#0e1612]/95 backdrop-blur-2xl border border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.7)] pointer-events-auto">
           {/* Tab 1: Trang Chủ */}
           {(() => {
             const active = currentActiveTab === "/";
@@ -602,15 +600,14 @@ function SidebarContent({
                 aria-label="Trang Chủ"
               >
                 {active ? (
-                  <div className="w-[88%] h-[49px] rounded-2xl bg-gradient-to-b from-[#20D66B]/20 via-[#20D66B]/10 to-transparent border border-[#20D66B]/40 shadow-[0_0_16px_rgba(32,214,107,0.25),inset_0_1px_1px_rgba(255,255,255,0.15)] flex flex-col items-center justify-center gap-0.5 relative transition-all duration-200">
-                    <span className="absolute top-1 w-3.5 h-[2px] rounded-full bg-brand-green shadow-[0_0_6px_rgba(32,214,107,0.9)]" />
-                    <SidebarAnimatedIcon type="home" size={20} />
-                    <span className="text-[9.5px] font-extrabold text-brand-green tracking-tight leading-none drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
+                  <div className="w-[88%] h-[44px] rounded-full bg-brand-green/15 flex flex-col items-center justify-center gap-0.5 relative transition-colors duration-150">
+                    <SidebarAnimatedIcon type="home" size={20} className="text-brand-green" isActive={true} />
+                    <span className="text-[10px] font-bold text-brand-green tracking-tight leading-none">
                       Trang chủ
                     </span>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-1 py-1 text-white/60 hover:text-white transition-colors">
+                  <div className="flex flex-col items-center justify-center gap-1 py-1 text-white/70 hover:text-white transition-colors">
                     <SidebarAnimatedIcon type="home" size={19} className="opacity-80" />
                     <span className="text-[9.5px] font-semibold tracking-tight leading-none">
                       Trang chủ
@@ -633,15 +630,14 @@ function SidebarContent({
                 aria-label="Lịch Sử Xem"
               >
                 {active ? (
-                  <div className="w-[88%] h-[49px] rounded-2xl bg-gradient-to-b from-[#20D66B]/20 via-[#20D66B]/10 to-transparent border border-[#20D66B]/40 shadow-[0_0_16px_rgba(32,214,107,0.25),inset_0_1px_1px_rgba(255,255,255,0.15)] flex flex-col items-center justify-center gap-0.5 relative transition-all duration-200">
-                    <span className="absolute top-1 w-3.5 h-[2px] rounded-full bg-brand-green shadow-[0_0_6px_rgba(32,214,107,0.9)]" />
-                    <SidebarAnimatedIcon type="history" size={20} />
-                    <span className="text-[9.5px] font-extrabold text-brand-green tracking-tight leading-none drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
+                  <div className="w-[88%] h-[44px] rounded-full bg-brand-green/15 flex flex-col items-center justify-center gap-0.5 relative transition-colors duration-150">
+                    <SidebarAnimatedIcon type="history" size={20} className="text-brand-green" isActive={true} />
+                    <span className="text-[10px] font-bold text-brand-green tracking-tight leading-none">
                       Lịch sử
                     </span>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-1 py-1 text-white/60 hover:text-white transition-colors">
+                  <div className="flex flex-col items-center justify-center gap-1 py-1 text-white/70 hover:text-white transition-colors">
                     <SidebarAnimatedIcon type="history" size={19} className="opacity-80" />
                     <span className="text-[9.5px] font-semibold tracking-tight leading-none">
                       Lịch sử
@@ -664,15 +660,14 @@ function SidebarContent({
                 aria-label="Yêu Thích"
               >
                 {active ? (
-                  <div className="w-[88%] h-[49px] rounded-2xl bg-gradient-to-b from-[#20D66B]/20 via-[#20D66B]/10 to-transparent border border-[#20D66B]/40 shadow-[0_0_16px_rgba(32,214,107,0.25),inset_0_1px_1px_rgba(255,255,255,0.15)] flex flex-col items-center justify-center gap-0.5 relative transition-all duration-200">
-                    <span className="absolute top-1 w-3.5 h-[2px] rounded-full bg-brand-green shadow-[0_0_6px_rgba(32,214,107,0.9)]" />
-                    <SidebarAnimatedIcon type="heart" size={20} />
-                    <span className="text-[9.5px] font-extrabold text-brand-green tracking-tight leading-none drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
+                  <div className="w-[88%] h-[44px] rounded-full bg-brand-green/15 flex flex-col items-center justify-center gap-0.5 relative transition-colors duration-150">
+                    <SidebarAnimatedIcon type="heart" size={20} className="text-brand-green" isActive={true} />
+                    <span className="text-[10px] font-bold text-brand-green tracking-tight leading-none">
                       Yêu thích
                     </span>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-1 py-1 text-white/60 hover:text-white transition-colors">
+                  <div className="flex flex-col items-center justify-center gap-1 py-1 text-white/70 hover:text-white transition-colors">
                     <SidebarAnimatedIcon type="heart" size={19} className="opacity-80" />
                     <span className="text-[9.5px] font-semibold tracking-tight leading-none">
                       Yêu thích
@@ -703,27 +698,26 @@ function SidebarContent({
                 aria-label="Tài Khoản"
               >
                 {active ? (
-                  <div className="w-[88%] h-[49px] rounded-2xl bg-gradient-to-b from-[#20D66B]/20 via-[#20D66B]/10 to-transparent border border-[#20D66B]/40 shadow-[0_0_16px_rgba(32,214,107,0.25),inset_0_1px_1px_rgba(255,255,255,0.15)] flex flex-col items-center justify-center gap-0.5 relative transition-all duration-200">
-                    <span className="absolute top-1 w-3.5 h-[2px] rounded-full bg-brand-green shadow-[0_0_6px_rgba(32,214,107,0.9)]" />
+                  <div className="w-[88%] h-[44px] rounded-full bg-brand-green/15 flex flex-col items-center justify-center gap-0.5 relative transition-colors duration-150">
                     {user?.avatar ? (
-                      <div className="w-[19px] h-[19px] rounded-full overflow-hidden shrink-0 border border-brand-green relative shadow-[0_0_8px_rgba(32,214,107,0.5)]">
+                      <div className="w-[19px] h-[19px] rounded-full overflow-hidden shrink-0 border border-brand-green relative">
                         <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="19px" />
                       </div>
                     ) : (
-                      <AnimatedUserIcon size={20} />
+                      <User className="w-5 h-5 text-brand-green" strokeWidth={1.85} />
                     )}
-                    <span className="text-[9.5px] font-extrabold text-brand-green tracking-tight leading-none drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
+                    <span className="text-[10px] font-bold text-brand-green tracking-tight leading-none">
                       Tài khoản
                     </span>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-1 py-1 text-white/60 hover:text-white transition-colors">
+                  <div className="flex flex-col items-center justify-center gap-1 py-1 text-white/70 hover:text-white transition-colors">
                     {user?.avatar ? (
                       <div className="w-[20px] h-[20px] rounded-full overflow-hidden shrink-0 border border-white/20 relative">
                         <Image src={user.avatar} alt="" fill unoptimized className="object-cover" sizes="20px" />
                       </div>
                     ) : (
-                      <AnimatedUserIcon size={19} className="opacity-80" />
+                      <User className="w-[19px] h-[19px] text-white/70 hover:text-white opacity-80" strokeWidth={1.85} />
                     )}
                     <span className="text-[9.5px] font-semibold tracking-tight leading-none">
                       Tài khoản
@@ -746,15 +740,14 @@ function SidebarContent({
                 aria-label="Tải App"
               >
                 {active ? (
-                  <div className="w-[88%] h-[49px] rounded-2xl bg-gradient-to-b from-[#20D66B]/20 via-[#20D66B]/10 to-transparent border border-[#20D66B]/40 shadow-[0_0_16px_rgba(32,214,107,0.25),inset_0_1px_1px_rgba(255,255,255,0.15)] flex flex-col items-center justify-center gap-0.5 relative transition-all duration-200">
-                    <span className="absolute top-1 w-3.5 h-[2px] rounded-full bg-brand-green shadow-[0_0_6px_rgba(32,214,107,0.9)]" />
-                    <SidebarAnimatedIcon type="smartphone" size={20} />
-                    <span className="text-[9.5px] font-extrabold text-brand-green tracking-tight leading-none drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
+                  <div className="w-[88%] h-[44px] rounded-full bg-brand-green/20 border border-brand-green/50 shadow-[0_0_14px_rgba(32,214,107,0.35)] flex flex-col items-center justify-center gap-0.5 relative transition-all duration-150">
+                    <SidebarAnimatedIcon type="smartphone" size={20} className="text-brand-green" isActive={true} />
+                    <span className="text-[10px] font-extrabold text-brand-green tracking-tight leading-none">
                       Tải app
                     </span>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-1 py-1 text-white/60 hover:text-white transition-colors">
+                  <div className="flex flex-col items-center justify-center gap-1 py-1 text-white/70 hover:text-white transition-colors">
                     <SidebarAnimatedIcon type="smartphone" size={19} className="opacity-80" />
                     <span className="text-[9.5px] font-semibold tracking-tight leading-none">
                       Tải app
@@ -776,8 +769,8 @@ function SidebarContent({
             "lg:hidden fixed z-[141] transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)]",
             "flex items-center gap-1.5 active:scale-95 cursor-pointer touch-manipulation select-none",
             isDetailNavCollapsed
-              ? "bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] right-3.5 px-3 py-2 rounded-2xl bg-[#0e1611]/95 backdrop-blur-xl border border-emerald-500/40 text-emerald-400 shadow-[0_8px_24px_rgba(0,0,0,0.65),0_0_16px_rgba(32,214,107,0.25)] hover:border-emerald-400 hover:text-emerald-300"
-              : "bottom-[calc(64px+env(safe-area-inset-bottom,0px))] right-3.5 px-2.5 py-1.5 rounded-xl bg-[#131d17]/95 backdrop-blur-xl border border-white/15 text-white/80 shadow-[0_4px_16px_rgba(0,0,0,0.5)] hover:text-white"
+              ? "bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] right-3.5 px-3 py-2 rounded-2xl bg-[#0e1611]/95 backdrop-blur-xl border border-emerald-500/40 text-emerald-400 shadow-[0_8px_24px_rgba(0,0,0,0.65)] hover:border-emerald-400 hover:text-emerald-300"
+              : "bottom-[calc(72px+env(safe-area-inset-bottom,0px))] right-3.5 px-2.5 py-1.5 rounded-xl bg-[#131d17]/95 backdrop-blur-xl border border-white/15 text-white/80 shadow-[0_4px_16px_rgba(0,0,0,0.5)] hover:text-white"
           )}
           aria-label={isDetailNavCollapsed ? "Mở thanh điều hướng" : "Thu gọn thanh điều hướng"}
           title={isDetailNavCollapsed ? "Mở menu điều hướng" : "Thu gọn menu điều hướng"}
@@ -807,8 +800,8 @@ function SidebarContent({
       {/* Mobile Account Floating Sheet */}
       {isAccountOpen && (
         <div
-          className="lg:hidden fixed left-1/2 -translate-x-1/2 z-[130] w-[calc(100%-24px)] max-w-[390px] max-h-[calc(100dvh-5.5rem)] overflow-y-auto overscroll-contain bg-[#0B100E]/95 backdrop-blur-2xl border border-white/[0.08] rounded-3xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.85)] animate-in fade-in slide-in-from-bottom-5 duration-200 pointer-events-auto select-none"
-          style={{ bottom: "max(4.5rem, calc(env(safe-area-inset-bottom, 0px) + 4.25rem))" }}
+          className="lg:hidden fixed left-1/2 -translate-x-1/2 z-[130] w-[calc(100%-24px)] max-w-[390px] max-h-[calc(100dvh-5.5rem)] overflow-y-auto overscroll-contain bg-[#121c17]/95 backdrop-blur-2xl border border-white/15 rounded-3xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.85)] animate-in fade-in slide-in-from-bottom-5 duration-200 pointer-events-auto select-none"
+          style={{ bottom: "max(4.75rem, calc(env(safe-area-inset-bottom, 0px) + 4.5rem))" }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Top Pill Handle */}
@@ -822,8 +815,8 @@ function SidebarContent({
                   <div className={cn(
                     "w-9 h-9 sm:w-10 sm:h-10 rounded-2xl font-black text-sm sm:text-base flex items-center justify-center shrink-0 relative",
                     isSuperAdmin
-                      ? "bg-gradient-to-tr from-amber-400 via-emerald-400 to-brand-green text-black ring-2 ring-amber-400/60 shadow-[0_0_15px_rgba(251,191,36,0.35)]"
-                      : "bg-gradient-to-tr from-brand-green to-emerald-300 text-black shadow-[0_0_12px_rgba(32,214,107,0.4)]"
+                      ? "bg-gradient-to-tr from-amber-400 via-emerald-400 to-brand-green text-black ring-2 ring-amber-400/60"
+                      : "bg-gradient-to-tr from-brand-green to-emerald-300 text-black"
                   )}>
                     {(user.name || user.email || "U").charAt(0).toUpperCase()}
                     {isSuperAdmin && (
@@ -854,7 +847,7 @@ function SidebarContent({
 
               {/* Super Admin Control Center Hub */}
               {isSuperAdmin && (
-                <div className="mb-2.5 p-2.5 sm:p-3 rounded-2xl bg-gradient-to-br from-emerald-950/70 via-[#0c140f] to-black border border-emerald-500/35 shadow-[0_4px_25px_rgba(0,0,0,0.6),0_0_20px_rgba(34,197,94,0.15)] space-y-2">
+                <div className="mb-2.5 p-2.5 sm:p-3 rounded-2xl bg-gradient-to-br from-emerald-950/70 via-[#0c140f] to-black border border-emerald-500/35 shadow-[0_4px_25px_rgba(0,0,0,0.6)] space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold text-emerald-400/90 uppercase tracking-wider flex items-center gap-1.5">
                       <Shield className="w-3.5 h-3.5 text-emerald-400" />
@@ -866,7 +859,7 @@ function SidebarContent({
                   <Link
                     href="/admin"
                     onClick={() => setIsAccountOpen(false)}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-500/25 via-brand-green/30 to-emerald-500/25 hover:from-emerald-500/35 hover:to-brand-green/40 border border-emerald-400/40 shadow-[0_0_15px_rgba(34,197,94,0.2)] transition-all group cursor-pointer active:scale-[0.98]"
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-500/25 via-brand-green/30 to-emerald-500/25 hover:from-emerald-500/35 hover:to-brand-green/40 border border-emerald-400/40 transition-all group cursor-pointer active:scale-[0.98]"
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="w-5 h-5 rounded-md bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform shrink-0">
@@ -998,7 +991,7 @@ function SidebarContent({
               {/* Not Logged In View */}
               <div className="flex items-center justify-between pb-2.5 border-b border-white/10 mb-2.5">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-2xl bg-brand-green/15 border border-brand-green/30 flex items-center justify-center text-brand-green shadow-[0_0_15px_rgba(32,214,107,0.2)]">
+                  <div className="w-8 h-8 rounded-2xl bg-brand-green/15 border border-brand-green/30 flex items-center justify-center text-brand-green">
                     <User className="w-4 h-4" />
                   </div>
                   <div>
@@ -1027,7 +1020,7 @@ function SidebarContent({
                     setIsAccountOpen(false);
                     openAuthModal("login");
                   }}
-                  className="h-9 sm:h-10 rounded-xl bg-brand-green hover:bg-brand-green-hover text-black font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-[0_0_20px_rgba(32,214,107,0.35)] active:scale-95 transition-all cursor-pointer"
+                  className="h-9 sm:h-10 rounded-xl bg-brand-green hover:bg-brand-green-hover text-black font-extrabold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer"
                 >
                   <LogIn className="w-3.5 h-3.5" />
                   Đăng Nhập
@@ -1141,12 +1134,12 @@ function SidebarContent({
               className={cn(
                 "w-full relative flex items-center justify-between px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-colors duration-150 group text-left cursor-pointer",
                 currentCategory
-                  ? "bg-gradient-to-r from-brand-green/20 via-brand-green/10 to-transparent text-brand-green font-bold shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
+                  ? "bg-brand-green/12 text-brand-green font-semibold"
                   : "text-white/65 hover:text-white hover:bg-white/5"
               )}
             >
               {currentCategory && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 lg:h-3.5 bg-brand-green rounded-r-full shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 lg:h-3.5 bg-brand-green rounded-r-full" />
               )}
               <div className="flex items-center gap-3 lg:gap-2 min-w-0">
                 <SidebarAnimatedIcon
@@ -1189,12 +1182,12 @@ function SidebarContent({
               className={cn(
                 "w-full relative flex items-center justify-between px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-colors duration-150 group text-left cursor-pointer",
                 currentCountry
-                  ? "bg-gradient-to-r from-brand-green/20 via-brand-green/10 to-transparent text-brand-green font-bold shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
+                  ? "bg-brand-green/12 text-brand-green font-semibold"
                   : "text-white/65 hover:text-white hover:bg-white/5"
               )}
             >
               {currentCountry && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 lg:h-3.5 bg-brand-green rounded-r-full shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 lg:h-3.5 bg-brand-green rounded-r-full" />
               )}
               <div className="flex items-center gap-3 lg:gap-2 min-w-0">
                 <SidebarAnimatedIcon
@@ -1237,12 +1230,12 @@ function SidebarContent({
               className={cn(
                 "w-full relative flex items-center justify-between px-3 lg:px-2 py-2 lg:py-1.5 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-colors duration-150 group text-left cursor-pointer",
                 currentYear
-                  ? "bg-gradient-to-r from-brand-green/20 via-brand-green/10 to-transparent text-brand-green font-bold shadow-[inset_0_1px_0_rgba(34,197,94,0.2)]"
+                  ? "bg-brand-green/12 text-brand-green font-semibold"
                   : "text-white/65 hover:text-white hover:bg-white/5"
               )}
             >
               {currentYear && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 lg:h-3.5 bg-brand-green rounded-r-full shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 lg:h-3.5 bg-brand-green rounded-r-full" />
               )}
               <div className="flex items-center gap-3 lg:gap-2 min-w-0">
                 <SidebarAnimatedIcon
@@ -1311,10 +1304,10 @@ function SidebarContent({
               onMouseLeave={() => setIsAppHovered(false)}
               className={cn(
                 "w-full relative flex items-center justify-between px-3 lg:px-2 py-2.5 lg:py-2 rounded-xl text-sm lg:text-[13px] font-medium lg:font-semibold transition-all duration-200 group overflow-hidden border text-left cursor-pointer",
-                "border-brand-green/40 hover:border-brand-green/80 shadow-[0_0_12px_rgba(32,214,107,0.12)] hover:shadow-[0_0_16px_rgba(32,214,107,0.22)]",
+                "border-brand-green/45 hover:border-brand-green/80 shadow-[0_0_14px_rgba(32,214,107,0.18)] hover:shadow-[0_0_20px_rgba(32,214,107,0.28)]",
                 pathname === "/tai-app"
                   ? "bg-brand-green/15 text-white border-brand-green/70"
-                  : "bg-white/[0.03] hover:bg-white/[0.07] text-white/80 hover:text-white"
+                  : "bg-brand-green/[0.04] hover:bg-brand-green/[0.08] text-white/80 hover:text-white"
               )}
               aria-current={pathname === "/tai-app" ? "page" : undefined}
             >
@@ -1327,8 +1320,8 @@ function SidebarContent({
                   className={cn(
                     "w-6 h-6 lg:w-5 lg:h-5 rounded-lg flex items-center justify-center transition-colors shrink-0",
                     pathname === "/tai-app"
-                      ? "bg-brand-green/20 text-brand-green"
-                      : "bg-brand-green/10 text-brand-green group-hover:bg-brand-green/20 border border-brand-green/20"
+                      ? "bg-brand-green/20 text-brand-green shadow-[0_0_8px_rgba(32,214,107,0.3)]"
+                      : "bg-brand-green/10 text-brand-green group-hover:bg-brand-green/20 border border-brand-green/30 shadow-[0_0_6px_rgba(32,214,107,0.2)]"
                   )}
                 >
                   <SidebarAnimatedIcon
@@ -1415,16 +1408,13 @@ function SidebarContent({
               isClosing ? "scale-95 opacity-0 duration-150" : "animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
             )}
           >
-            {/* Top Ambient Glow Line */}
-            <div className="absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#20D66B]/40 to-transparent pointer-events-none" />
-
             {/* Mobile Sheet Handle Bar */}
             <div className="sm:hidden w-10 h-1 bg-white/20 hover:bg-white/30 rounded-full mx-auto mb-2 shrink-0 cursor-pointer" onClick={closeModal} />
 
             {/* Modal Header */}
             <div className="relative z-10 flex items-center justify-between pb-3 sm:pb-3.5 border-b border-white/[0.08] shrink-0 gap-3">
               <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#20D66B]/15 border border-[#20D66B]/30 flex items-center justify-center text-[#20D66B] shrink-0 shadow-[0_0_12px_rgba(32,214,107,0.2)]">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#20D66B]/15 border border-[#20D66B]/30 flex items-center justify-center text-[#20D66B] shrink-0">
                   {activeModal === "categories" && <Layers className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.4]" />}
                   {activeModal === "countries" && <Globe className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.4]" />}
                   {activeModal === "years" && <Calendar className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.4]" />}
@@ -1509,7 +1499,7 @@ function SidebarContent({
                           className={cn(
                             "px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all select-none active:scale-95 cursor-pointer",
                             categoryThematicFilter === f.id
-                              ? "bg-[#20D66B]/15 text-[#20D66B] border border-[#20D66B]/45 font-extrabold shadow-[0_0_12px_rgba(32,214,107,0.15)]"
+                              ? "bg-[#20D66B]/15 text-[#20D66B] border border-[#20D66B]/45 font-extrabold"
                               : "bg-white/[0.04] hover:bg-white/[0.08] text-white/60 hover:text-white border border-white/[0.08]"
                           )}
                         >
@@ -1537,7 +1527,7 @@ function SidebarContent({
                             className={cn(
                               "group relative flex items-center justify-between h-11 sm:h-12 px-3 rounded-xl border text-left transition-all duration-200 active:scale-95 min-w-0 cursor-pointer",
                               active
-                                ? "bg-[#20D66B]/15 text-[#20D66B] border-[#20D66B]/60 font-black shadow-[0_0_14px_rgba(32,214,107,0.2)]"
+                                ? "bg-[#20D66B]/15 text-[#20D66B] border-[#20D66B]/60 font-black"
                                 : "bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.08] hover:border-[#20D66B]/30 text-white font-bold"
                             )}
                           >
@@ -1546,8 +1536,8 @@ function SidebarContent({
                                 className={cn(
                                   "w-[7px] h-[7px] rounded-full shrink-0 transition-all",
                                   active
-                                    ? "bg-[#20D66B] scale-125 shadow-[0_0_8px_rgba(32,214,107,0.9)]"
-                                    : "bg-[#20D66B] opacity-80 group-hover:opacity-100 group-hover:scale-110 shadow-[0_0_6px_rgba(32,214,107,0.5)]"
+                                    ? "bg-[#20D66B] scale-125"
+                                    : "bg-[#20D66B] opacity-80 group-hover:opacity-100 group-hover:scale-110"
                                 )}
                               />
                               <span className={cn("text-xs sm:text-[13px] md:text-sm truncate", active ? "text-[#20D66B] font-extrabold" : "text-white font-bold")}>
@@ -1657,7 +1647,7 @@ function SidebarContent({
                           className={cn(
                             "px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all select-none active:scale-95 cursor-pointer",
                             countryRegionFilter === f.id
-                              ? "bg-[#20D66B]/15 text-[#20D66B] border border-[#20D66B]/45 font-extrabold shadow-[0_0_12px_rgba(32,214,107,0.15)]"
+                              ? "bg-[#20D66B]/15 text-[#20D66B] border border-[#20D66B]/45 font-extrabold"
                               : "bg-white/[0.04] hover:bg-white/[0.08] text-white/60 hover:text-white border border-white/[0.08]"
                           )}
                         >
@@ -1686,7 +1676,7 @@ function SidebarContent({
                             className={cn(
                               "group relative flex items-center gap-2.5 h-11 sm:h-12 px-3 rounded-xl border text-left transition-all duration-200 active:scale-95 min-w-0 cursor-pointer",
                               active
-                                ? "bg-[#20D66B]/15 text-[#20D66B] border-[#20D66B]/60 font-black shadow-[0_0_14px_rgba(32,214,107,0.2)]"
+                                ? "bg-[#20D66B]/15 text-[#20D66B] border-[#20D66B]/60 font-black"
                                 : "bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.08] hover:border-[#20D66B]/30 text-white font-bold"
                             )}
                           >
@@ -1812,7 +1802,7 @@ function SidebarContent({
                           className={cn(
                             "px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all select-none active:scale-95 cursor-pointer",
                             yearDecade === f.id
-                              ? "bg-[#20D66B]/15 text-[#20D66B] border border-[#20D66B]/45 font-extrabold shadow-[0_0_12px_rgba(32,214,107,0.15)]"
+                              ? "bg-[#20D66B]/15 text-[#20D66B] border border-[#20D66B]/45 font-extrabold"
                               : "bg-white/[0.04] hover:bg-white/[0.08] text-white/60 hover:text-white border border-white/[0.08]"
                           )}
                         >
@@ -1841,7 +1831,7 @@ function SidebarContent({
                             className={cn(
                               "group relative h-11 sm:h-12 px-2 rounded-xl border text-center transition-all duration-200 active:scale-95 min-w-0 flex items-center justify-center cursor-pointer",
                               active
-                                ? "bg-[#20D66B]/15 text-[#20D66B] border-[#20D66B]/60 font-black shadow-[0_0_14px_rgba(32,214,107,0.2)]"
+                                ? "bg-[#20D66B]/15 text-[#20D66B] border-[#20D66B]/60 font-black"
                                 : "bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.08] hover:border-[#20D66B]/30 text-white font-bold"
                             )}
                           >

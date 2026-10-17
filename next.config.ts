@@ -135,8 +135,12 @@ const nextConfig: NextConfig = {
         headers: [{ key: "Cache-Control", value: "no-store, no-cache, must-revalidate, private, max-age=0" }],
       },
       {
-        source: "/api/system/:path*",
-        headers: [{ key: "Cache-Control", value: "no-store, no-cache, must-revalidate, private, max-age=0" }],
+        source: "/api/announcement",
+        headers: [{ key: "Cache-Control", value: "public, s-maxage=60, max-age=30, stale-while-revalidate=300" }],
+      },
+      {
+        source: "/api/system/maintenance",
+        headers: [{ key: "Cache-Control", value: "public, s-maxage=30, max-age=10, stale-while-revalidate=120" }],
       },
       {
         source: "/api/cron/:path*",

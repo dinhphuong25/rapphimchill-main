@@ -14,12 +14,19 @@ export async function GET() {
     const config = getSiteConfig();
     const systemNotifications = await getSystemNotifications(30);
 
-    return NextResponse.json({
-      success: true,
-      announcement: config.announcement,
-      siteName: config.siteName,
-      notifications: systemNotifications,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        announcement: config.announcement,
+        siteName: config.siteName,
+        notifications: systemNotifications,
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=60, max-age=30, stale-while-revalidate=300",
+        },
+      }
+    );
   } catch (error) {
     console.error("Error loading announcements and notifications:", error);
     return NextResponse.json(

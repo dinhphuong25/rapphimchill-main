@@ -65,7 +65,7 @@ export default function UserMenu() {
         className="pointer-events-auto flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 h-9 sm:h-10 rounded-full bg-[#111714]/80 backdrop-blur-md hover:bg-white/[0.08] border border-white/10 hover:border-brand-green/40 hover:shadow-[0_0_20px_rgba(32,214,107,0.2)] text-white/80 hover:text-white transition-all duration-300 text-xs font-medium group active:scale-95 shrink-0"
         aria-label="Đăng nhập tài khoản"
       >
-        <AnimatedUserIcon size={19} />
+        <User className="w-4 h-4 text-brand-green group-hover:scale-110 transition-transform shrink-0" strokeWidth={1.85} />
         <span className="font-semibold text-white/90 group-hover:text-white">Đăng Nhập</span>
       </button>
     );

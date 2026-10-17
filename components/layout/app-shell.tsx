@@ -30,7 +30,7 @@ function AppShellComponent({ children }: AppShellProps) {
 
     const checkMaintenance = async () => {
       try {
-        const res = await fetch("/api/system/maintenance", { cache: "no-store" });
+        const res = await fetch("/api/system/maintenance");
         if (res.ok) {
           const data = await res.json();
           if (data?.enabled) {
@@ -54,7 +54,7 @@ function AppShellComponent({ children }: AppShellProps) {
     };
 
     document.addEventListener("visibilitychange", handleVisibility);
-    const timer = setInterval(checkMaintenance, 12000);
+    const timer = setInterval(checkMaintenance, 300000); // 5 minutes
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibility);

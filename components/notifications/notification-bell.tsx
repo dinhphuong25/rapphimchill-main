@@ -247,13 +247,25 @@ export default function NotificationBell({ className }: { className?: string }) 
     [fetchSystemNotifications, fetchReports]
   );
 
-  // Initial fetch and 35s polling
+  // Initial fetch and 5-minute background refresh (protecting Vercel serverless quotas)
   useEffect(() => {
     refreshAll(false);
+
+    const handleVis = () => {
+      if (document.visibilityState === "visible") {
+        refreshAll(true);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVis);
+
     const interval = setInterval(() => {
       refreshAll(true);
-    }, 35000);
-    return () => clearInterval(interval);
+    }, 300000); // 5 minutes
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVis);
+      clearInterval(interval);
+    };
   }, [refreshAll]);
 
   // Real-time custom events

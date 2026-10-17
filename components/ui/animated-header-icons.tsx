@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import { User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface AnimatedHeaderIconProps {
@@ -220,129 +221,19 @@ export const AnimatedHeaderBellIcon = memo(function AnimatedHeaderBellIcon({
 });
 
 /**
- * 3. Icon Người Dùng (User Login / Profile Icon) - Phong cách Flaticon Lineal Color (GPU Accelerated)
- * Chàng trai mê điện ảnh với mái tóc xanh chàm, nghiêng đầu chớp mắt trên GPU.
+ * 3. Icon Người Dùng (User Login / Profile Icon) - Hiện đại, đơn sắc, tinh tế đồng bộ rạp phim
  */
 export const AnimatedUserIcon = memo(function AnimatedUserIcon({
   className,
-  size = 20,
+  size = 18,
 }: AnimatedHeaderIconProps) {
   return (
     <div className={cn("relative flex items-center justify-center shrink-0 select-none", className)}>
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
-        fill="none"
-        className="overflow-visible will-change-transform"
-      >
-        <defs>
-          {/* Gradient làn da ấm áp */}
-          <linearGradient id="userSkinGrad" x1="9" y1="6" x2="15" y2="13" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#fef08a" />
-            <stop offset="60%" stopColor="#fed7aa" />
-            <stop offset="100%" stopColor="#fca5a5" />
-          </linearGradient>
-
-          {/* Gradient mái tóc xanh tím sành điệu */}
-          <linearGradient id="userHairGrad" x1="8" y1="3" x2="16" y2="9" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#818cf8" />
-            <stop offset="100%" stopColor="#4338ca" />
-          </linearGradient>
-
-          {/* Gradient áo polo xanh ngọc emerald Hi Phim */}
-          <linearGradient id="userShirtGrad" x1="4" y1="16" x2="20" y2="22" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#34d399" />
-            <stop offset="50%" stopColor="#10b981" />
-            <stop offset="100%" stopColor="#047857" />
-          </linearGradient>
-        </defs>
-
-        {/* Thân người & áo polo xanh Emerald Lineal Color */}
-        <path
-          d="M5 21a7 7 0 0 1 14 0"
-          fill="url(#userShirtGrad)"
-          stroke="#065f46"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-        />
-
-        {/* Cổ áo trắng viền ngực */}
-        <path
-          d="m10 16 2 2.5 2-2.5"
-          fill="#ffffff"
-          stroke="#cbd5e1"
-          strokeWidth="1"
-          strokeLinejoin="round"
-        />
-
-        {/* Nhóm đầu cử động nghiêng chào GPU */}
-        <g className="anim-user-head">
-          {/* Khuôn mặt tròn đầy sức sống */}
-          <circle
-            cx="12"
-            cy="10"
-            r="4.5"
-            fill="url(#userSkinGrad)"
-            stroke="#ea580c"
-            strokeWidth="1.25"
-          />
-
-          {/* Mái tóc vuốt hiện đại phong cách Flaticon */}
-          <path
-            d="M7.5 9.5c0-2.8 2-4.5 4.5-4.5 2.8 0 4.5 1.5 4.5 3.5 0 .5-.3.8-.7.8-1 0-1.8-1-3.8-1-2 0-3.5 1-4.5 1.2Z"
-            fill="url(#userHairGrad)"
-            stroke="#3730a3"
-            strokeWidth="1.2"
-          />
-
-          {/* Tai nhỏ 2 bên */}
-          <circle cx="7.2" cy="10" r="1.1" fill="#fed7aa" stroke="#ea580c" strokeWidth="0.8" />
-          <circle cx="16.8" cy="10" r="1.1" fill="#fed7aa" stroke="#ea580c" strokeWidth="0.8" />
-
-          {/* 2 mắt chớp mắt tự nhiên GPU */}
-          <ellipse
-            cx="10.2"
-            cy="9.8"
-            rx="0.7"
-            ry="0.9"
-            fill="#1e1b4b"
-            className="anim-cat-blink"
-            style={{ transformOrigin: "10.2px 9.8px" }}
-          />
-          <ellipse
-            cx="13.8"
-            cy="9.8"
-            rx="0.7"
-            ry="0.9"
-            fill="#1e1b4b"
-            className="anim-cat-blink"
-            style={{ transformOrigin: "13.8px 9.8px" }}
-          />
-
-          {/* Má hồng hào tươi tắn */}
-          <circle cx="9" cy="11.2" r="0.9" fill="#f43f5e" opacity="0.45" />
-          <circle cx="15" cy="11.2" r="0.9" fill="#f43f5e" opacity="0.45" />
-
-          {/* Nụ cười mỉm đáng yêu */}
-          <path
-            d="M10.8 12c.5.5 1.9.5 2.4 0"
-            stroke="#991b1b"
-            strokeWidth="1"
-            strokeLinecap="round"
-          />
-        </g>
-
-        {/* Hào quang nhỏ lấp lánh cạnh người dùng GPU */}
-        <circle
-          cx="19.5"
-          cy="6.5"
-          r="1.2"
-          fill="#facc15"
-          className="anim-sparkle"
-          style={{ transformOrigin: "19.5px 6.5px" }}
-        />
-      </svg>
+      <User
+        style={{ width: size, height: size }}
+        className="text-brand-green transition-transform duration-200 group-hover:scale-110"
+        strokeWidth={1.85}
+      />
     </div>
   );
 });
