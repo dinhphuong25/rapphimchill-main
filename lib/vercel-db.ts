@@ -1,11 +1,26 @@
 import { neon } from "@neondatabase/serverless";
 import seedUsers from "./seed-data.json";
 
-const databaseUrl = (
-  process.env.DATABASE_URL ||
-  process.env.POSTGRES_URL ||
-  process.env.POSTGRES_PRISMA_URL
-)?.trim();
+function getDatabaseUrl(): string | undefined {
+  const primary = (
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.POSTGRES_PRISMA_URL
+  )?.trim();
+  if (primary) return primary;
+
+  // Tự động tìm bất kỳ biến môi trường nào chứa chuỗi postgresql://
+  for (const [key, val] of Object.entries(process.env)) {
+    if (typeof val === "string" && val.trim().startsWith("postgresql://")) {
+      console.log(`[DB] Auto-detected PostgreSQL connection string in env variable: ${key}`);
+      return val.trim();
+    }
+  }
+
+  return undefined;
+}
+
+const databaseUrl = getDatabaseUrl();
 
 export const vercelSql = databaseUrl ? neon(databaseUrl) : null;
 
