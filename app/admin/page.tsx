@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Film,
   Megaphone,
+  DollarSign,
   Wrench,
   Database,
   Settings,
@@ -63,11 +64,21 @@ import { toast } from "sonner";
 import Link from "next/link";
 import type { SiteConfig } from "@/lib/site-config";
 
+type AdminTab =
+  | "overview"
+  | "featured"
+  | "announcement"
+  | "ads"
+  | "maintenance"
+  | "cache"
+  | "settings"
+  | "security"
+  | "users"
+  | "reports";
+
 export default function AdminDashboardPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<
-    "overview" | "featured" | "announcement" | "maintenance" | "cache" | "settings" | "security" | "users" | "reports"
-  >("overview");
+  const [activeTab, setActiveTab] = useState<AdminTab>("overview");
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   // Reports Management state
@@ -477,7 +488,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const switchTab = (tab: "overview" | "featured" | "announcement" | "maintenance" | "cache" | "settings" | "security" | "users" | "reports") => {
+  const switchTab = (tab: AdminTab) => {
     setActiveTab(tab);
     setIsMobileDrawerOpen(false);
     if (typeof window !== "undefined") {
@@ -760,6 +771,7 @@ export default function AdminDashboardPage() {
               {activeTab === "users" && "Quản Lý Thành Viên & Toàn Quyền"}
               {activeTab === "featured" && "Ghim Tiêu Điểm Phim"}
               {activeTab === "announcement" && "Banner Thông Báo"}
+              {activeTab === "ads" && "Quản Lý Quảng Cáo (Popup & Catfish)"}
               {activeTab === "cache" && "Bộ Nhớ Đệm & Đồng Bộ"}
               {activeTab === "maintenance" && "Chế Độ Bảo Trì"}
               {activeTab === "settings" && "Cấu Hình SEO & Chung"}
@@ -982,6 +994,21 @@ export default function AdminDashboardPage() {
                       <span className="w-2 h-2 rounded-full bg-brand-green ml-auto animate-ping" />
                     )}
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => switchTab("ads")}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                      activeTab === "ads"
+                        ? "bg-brand-green text-black shadow-[0_0_15px_rgba(34,197,94,0.3)]"
+                        : "text-white/70 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    <DollarSign className="w-4 h-4" />
+                    <span>Quảng Cáo (Ads)</span>
+                    {config.ads?.enabled && (
+                      <span className="w-2 h-2 rounded-full bg-brand-green ml-auto" />
+                    )}
+                  </button>
                 </div>
 
                 {/* Group 4: HỆ THỐNG & BẢO MẬT */}
@@ -1169,6 +1196,21 @@ export default function AdminDashboardPage() {
               <Megaphone className="w-4 h-4" />
               <span>Banner Thông Báo</span>
               {config.announcement.enabled && (
+                <span className="w-2 h-2 rounded-full bg-brand-green ml-auto animate-pulse" />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => switchTab("ads")}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === "ads"
+                  ? "bg-gradient-to-r from-emerald-500/20 via-brand-green/15 to-transparent text-emerald-400 border border-emerald-500/35 shadow-[0_0_20px_rgba(32,214,107,0.15)]"
+                  : "text-white/65 hover:text-white hover:bg-white/[0.04] border border-transparent"
+              }`}
+            >
+              <DollarSign className="w-4 h-4" />
+              <span>Quảng Cáo (Ads)</span>
+              {config.ads?.enabled && (
                 <span className="w-2 h-2 rounded-full bg-brand-green ml-auto animate-pulse" />
               )}
             </button>
@@ -2290,6 +2332,238 @@ export default function AdminDashboardPage() {
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* TAB: QUẢN LÝ QUẢNG CÁO (POPUP & CATFISH) */}
+          {/* ======================================================== */}
+          {activeTab === "ads" && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-extrabold text-white flex items-center gap-2">
+                  <DollarSign className="w-6 h-6 text-brand-green" />
+                  Quản Lý Hệ Thống Quảng Cáo
+                </h2>
+                <p className="text-xs text-white/50 mt-1">
+                  Cấu hình 2 vị trí quảng cáo chiến lược: Popup giữa màn hình và Catfish bám chân trang.
+                </p>
+              </div>
+
+              {/* Master Toggle: Kích hoạt toàn bộ quảng cáo */}
+              <div className="flex items-center justify-between p-5 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-xl shadow-lg">
+                <div className="space-y-0.5">
+                  <span className="text-sm font-bold text-white block">Kích hoạt Hệ Thống Quảng Cáo</span>
+                  <span className="text-xs text-white/40 block">Bật hoặc tắt toàn bộ quảng cáo trên website</span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config?.ads?.enabled ?? true}
+                    onChange={(e) => {
+                      if (!config) return;
+                      const updated = {
+                        ...config,
+                        ads: {
+                          ...(config.ads || {}),
+                          enabled: e.target.checked,
+                        },
+                      };
+                      setConfig(updated);
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-green" />
+                </label>
+              </div>
+
+              {/* Link trỏ đích chung (Target URL) */}
+              <div className="space-y-2 p-5 rounded-2xl bg-white/[0.02] border border-white/10">
+                <label className="text-xs font-bold text-white/80 block uppercase tracking-wider">
+                  Đường Dẫn Đích Khi Nhấp Quảng Cáo (Target URL)
+                </label>
+                <p className="text-[11px] text-white/40">
+                  Khi người dùng bấm vào banner Popup hoặc Catfish, liên kết này sẽ được mở ở tab mới.
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={config?.ads?.targetUrl || ""}
+                    onChange={(e) => {
+                      if (!config) return;
+                      const updated = {
+                        ...config,
+                        ads: {
+                          ...(config.ads || {}),
+                          targetUrl: e.target.value,
+                        },
+                      };
+                      setConfig(updated);
+                    }}
+                    placeholder="https://154.82.109.157/2138063.html"
+                    className="flex-1 bg-black/60 border border-white/15 rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-brand-green font-mono"
+                  />
+                  {config?.ads?.targetUrl && (
+                    <a
+                      href={config.ads.targetUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Thử Link</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* 2 Cards: Popup & Catfish */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                {/* 1. POPUP */}
+                <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/10 space-y-4 flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-bold uppercase tracking-wider text-amber-400 block">1. Popup</span>
+                        <h4 className="text-sm font-bold text-white">Giữa Màn Hình</h4>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={config?.ads?.showPopup ?? true}
+                          onChange={(e) => {
+                            if (!config) return;
+                            const updated = {
+                              ...config,
+                              ads: {
+                                ...(config.ads || {}),
+                                showPopup: e.target.checked,
+                              },
+                            };
+                            setConfig(updated);
+                          }}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-400" />
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-white/40 leading-relaxed">
+                      Modal popup nổi lên giữa màn hình khi người dùng truy cập web, có nền mờ và nút tắt tròn X.
+                    </p>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-white/60 block">Đường dẫn ảnh</label>
+                      <input
+                        type="text"
+                        value={config?.ads?.popupImage || ""}
+                        onChange={(e) => {
+                          if (!config) return;
+                          const updated = {
+                            ...config,
+                            ads: {
+                              ...(config.ads || {}),
+                              popupImage: e.target.value,
+                            },
+                          };
+                          setConfig(updated);
+                        }}
+                        placeholder="/ads/popup.jpg"
+                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-brand-green font-mono"
+                      />
+                    </div>
+                  </div>
+                  {config?.ads?.popupImage && (
+                    <div className="pt-2 border-t border-white/5">
+                      <span className="text-[10px] text-white/40 block mb-1.5 font-bold">Xem trước:</span>
+                      <div className="rounded-xl overflow-hidden border border-white/15 bg-black/40 p-1 max-h-[160px] flex items-center justify-center">
+                        <img
+                          src={config.ads.popupImage}
+                          alt="Popup preview"
+                          className="max-h-[150px] w-auto object-contain rounded-lg"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. CATFISH */}
+                <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/10 space-y-4 flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 block">2. Catfish</span>
+                        <h4 className="text-sm font-bold text-white">Chân Trang (Sticky Bottom)</h4>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={config?.ads?.showBottomBanner ?? true}
+                          onChange={(e) => {
+                            if (!config) return;
+                            const updated = {
+                              ...config,
+                              ads: {
+                                ...(config.ads || {}),
+                                showBottomBanner: e.target.checked,
+                              },
+                            };
+                            setConfig(updated);
+                          }}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-green" />
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-white/40 leading-relaxed">
+                      Banner dính cố định ở đáy màn hình khi cuộn trang, có nút tắt QC x góc phải.
+                    </p>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-white/60 block">Đường dẫn ảnh động / banner</label>
+                      <input
+                        type="text"
+                        value={config?.ads?.bottomBannerImage || ""}
+                        onChange={(e) => {
+                          if (!config) return;
+                          const updated = {
+                            ...config,
+                            ads: {
+                              ...(config.ads || {}),
+                              bottomBannerImage: e.target.value,
+                            },
+                          };
+                          setConfig(updated);
+                        }}
+                        placeholder="/ads/banner-bottom.gif"
+                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-brand-green font-mono"
+                      />
+                    </div>
+                  </div>
+                  {config?.ads?.bottomBannerImage && (
+                    <div className="pt-2 border-t border-white/5">
+                      <span className="text-[10px] text-white/40 block mb-1.5 font-bold">Xem trước:</span>
+                      <div className="rounded-xl overflow-hidden border border-white/15 bg-black/40 p-1 max-h-[160px] flex items-center justify-center">
+                        <img
+                          src={config.ads.bottomBannerImage}
+                          alt="Catfish preview"
+                          className="max-h-[85px] w-auto object-contain rounded-lg"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Nút lưu cấu hình */}
+              <div className="flex justify-end pt-4">
+                <button
+                  type="button"
+                  onClick={() => handleSaveConfig()}
+                  disabled={isSaving}
+                  className="px-6 py-3 rounded-2xl bg-brand-green hover:bg-brand-green-hover text-black font-extrabold text-xs flex items-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(32,214,107,0.4)] active:scale-95 transition-all disabled:opacity-50"
+                >
+                  <Save className={`w-4 h-4 ${isSaving ? "animate-spin" : ""}`} />
+                  <span>{isSaving ? "Đang lưu..." : "Lưu Cấu Hình Quảng Cáo"}</span>
+                </button>
               </div>
             </div>
           )}

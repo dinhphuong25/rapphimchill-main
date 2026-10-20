@@ -41,23 +41,40 @@ export function AdFloatingSystemComponent() {
       .then((res) => res.json())
       .then((data) => {
         if (data?.ads) {
-          setAdConfig((prev) => ({ ...prev, ...data.ads }));
+          setAdConfig((prev) => ({
+            ...prev,
+            ...data.ads,
+            showBottomBanner: data.ads.showBottomBanner ?? true,
+            showPopup: data.ads.showPopup ?? true,
+          }));
         }
       })
       .catch(() => {});
 
-    // Kiểm tra xem trong phiên lướt web này người dùng đã tắt popup chưa
+    // Kiểm tra xem trong 5 phút qua người dùng đã tắt popup chưa
     try {
-      const popupClosed = sessionStorage.getItem("hiphim_ad_popup_closed");
-      if (!popupClosed) {
-        // Tự động bật popup sau 400ms khi vừa vào trang
+      const popupClosedAt = sessionStorage.getItem("hiphim_ad_popup_closed");
+      const isPopupExpired =
+        !popupClosedAt || Date.now() - Number(popupClosedAt) > 5 * 60 * 1000;
+      if (isPopupExpired) {
+        // Tự động bật popup sau 350ms khi vừa vào trang
         const timer = setTimeout(() => {
           setShowPopup(true);
-        }, 400);
+        }, 350);
         return () => clearTimeout(timer);
       }
     } catch {
       setShowPopup(true);
+    }
+
+    // Kiểm tra xem catfish banner có bị đóng trong 5 phút qua không
+    try {
+      const bottomClosedAt = sessionStorage.getItem("hiphim_ad_bottom_closed");
+      if (bottomClosedAt && Date.now() - Number(bottomClosedAt) < 5 * 60 * 1000) {
+        setShowBottomBanner(false);
+      }
+    } catch {
+      // ignore
     }
   }, []);
 
