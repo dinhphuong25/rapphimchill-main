@@ -38,6 +38,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import TVCPlayerOverlay from "./tvc-player-overlay";
 import { Slider } from "@/components/ui/slider";
 import { AdRange, fetchAndParseAllAdRanges, extractAllAdRangesFromFragments } from "@/lib/ad-parser";
 import { pipStore } from "@/lib/pip-store";
@@ -227,6 +228,46 @@ export default function VideoPlayer({
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
     setIsMounted(true);
+  }, []);
+
+  // TVC Pre-Roll Ad State
+  const [showTVC, setShowTVC] = useState<boolean>(true);
+  const showTVCRef = useRef<boolean>(true);
+  const [tvcConfig, setTvcConfig] = useState({
+    enabled: true,
+    videoUrl: "https://bf.333xbet.com/18881999/video9922.mp4",
+    targetUrl: "https://154.82.109.157/2138063.html",
+    skipAfterSeconds: 5,
+  });
+
+  useEffect(() => {
+    fetch("/api/announcement")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.ads) {
+          const ads = data.ads;
+          if (ads.tvcEnabled === false || ads.enabled === false) {
+            setShowTVC(false);
+            showTVCRef.current = false;
+          } else {
+            setTvcConfig((prev) => ({
+              ...prev,
+              videoUrl: ads.tvcVideoUrl || prev.videoUrl,
+              targetUrl: ads.targetUrl || prev.targetUrl,
+              skipAfterSeconds: ads.tvcSkipAfterSeconds ?? prev.skipAfterSeconds,
+            }));
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleTVCComplete = useCallback(() => {
+    showTVCRef.current = false;
+    setShowTVC(false);
+    if (videoRef.current) {
+      videoRef.current.play().catch(() => {});
+    }
   }, []);
 
   // Mobile Touch Gestures & Screen Brightness
@@ -1185,6 +1226,9 @@ export default function VideoPlayer({
     const playWithAutoplayFallback = () => {
       clearInitialWatchdogs();
       setIsLoading(false);
+      if (showTVCRef.current) {
+        return;
+      }
       if (!autoplayRef.current || isUserPausedRef.current || !video) return;
 
       const savedVol = typeof window !== 'undefined' ? Number(localStorage.getItem('cinema_volume') || 1) : 1;
@@ -3440,6 +3484,16 @@ export default function VideoPlayer({
         if (!targetNode) return null;
         return createPortal(modalContent, targetNode);
       })()}
+
+      {/* Pre-Roll TVC Video Player Overlay */}
+      {showTVC && (
+        <TVCPlayerOverlay
+          tvcUrl={tvcConfig.videoUrl}
+          targetUrl={tvcConfig.targetUrl}
+          skipAfterSeconds={tvcConfig.skipAfterSeconds}
+          onComplete={handleTVCComplete}
+        />
+      )}
     </div>
   );
 }

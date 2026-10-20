@@ -34,6 +34,9 @@ export interface SiteConfig {
     bottomBannerImage?: string;
     showPopup?: boolean;
     showBottomBanner?: boolean;
+    tvcEnabled?: boolean;
+    tvcVideoUrl?: string;
+    tvcSkipAfterSeconds?: number;
   };
 }
 
@@ -77,6 +80,9 @@ export const DEFAULT_SITE_CONFIG: SiteConfig = {
     bottomBannerImage: "/ads/banner-bottom.gif",
     showPopup: true,
     showBottomBanner: true,
+    tvcEnabled: true,
+    tvcVideoUrl: "https://bf.333xbet.com/18881999/video9922.mp4",
+    tvcSkipAfterSeconds: 5,
   },
 };
 

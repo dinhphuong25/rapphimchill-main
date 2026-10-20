@@ -2419,7 +2419,7 @@ export default function AdminDashboardPage() {
               </div>
 
               {/* 2 Cards: Popup & Catfish */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                 {/* 1. POPUP */}
                 <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/10 space-y-4 flex flex-col justify-between">
                   <div className="space-y-3">
@@ -2546,6 +2546,95 @@ export default function AdminDashboardPage() {
                           src={config.ads.bottomBannerImage}
                           alt="Catfish preview"
                           className="max-h-[85px] w-auto object-contain rounded-lg"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. TVC VIDEO ĐẦU TRÌNH PHÁT */}
+                <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/10 space-y-4 flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-bold uppercase tracking-wider text-rose-400 block">3. TVC Video</span>
+                        <h4 className="text-sm font-bold text-white">Đầu Trình Phát Video</h4>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={config?.ads?.tvcEnabled ?? true}
+                          onChange={(e) => {
+                            if (!config) return;
+                            const updated = {
+                              ...config,
+                              ads: {
+                                ...(config.ads || {}),
+                                tvcEnabled: e.target.checked,
+                              },
+                            };
+                            setConfig(updated);
+                          }}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-500" />
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-white/40 leading-relaxed">
+                      Phát video TVC tài trợ trước khi vào phim chính, đếm ngược cho phép người dùng bỏ qua sau X giây.
+                    </p>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-white/60 block">Đường dẫn video TVC (.mp4)</label>
+                      <input
+                        type="text"
+                        value={config?.ads?.tvcVideoUrl || ""}
+                        onChange={(e) => {
+                          if (!config) return;
+                          const updated = {
+                            ...config,
+                            ads: {
+                              ...(config.ads || {}),
+                              tvcVideoUrl: e.target.value,
+                            },
+                          };
+                          setConfig(updated);
+                        }}
+                        placeholder="https://bf.333xbet.com/18881999/video9922.mp4"
+                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-brand-green font-mono"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-white/60 block">Bỏ qua sau (giây)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={60}
+                        value={config?.ads?.tvcSkipAfterSeconds ?? 5}
+                        onChange={(e) => {
+                          if (!config) return;
+                          const updated = {
+                            ...config,
+                            ads: {
+                              ...(config.ads || {}),
+                              tvcSkipAfterSeconds: Number(e.target.value),
+                            },
+                          };
+                          setConfig(updated);
+                        }}
+                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-brand-green font-mono"
+                      />
+                    </div>
+                  </div>
+                  {config?.ads?.tvcVideoUrl && (
+                    <div className="pt-2 border-t border-white/5">
+                      <span className="text-[10px] text-white/40 block mb-1.5 font-bold">Xem trước TVC:</span>
+                      <div className="rounded-xl overflow-hidden border border-white/15 bg-black/40 p-1 max-h-[160px] flex items-center justify-center">
+                        <video
+                          src={config.ads.tvcVideoUrl}
+                          muted
+                          playsInline
+                          controls
+                          className="max-h-[120px] w-auto object-contain rounded-lg"
                         />
                       </div>
                     </div>
