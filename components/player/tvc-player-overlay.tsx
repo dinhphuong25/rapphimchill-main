@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Volume2, VolumeX, ExternalLink, SkipForward } from "lucide-react";
+import { Volume2, VolumeX, SkipForward } from "lucide-react";
 
 interface TVCPlayerOverlayProps {
   tvcUrl?: string;
@@ -94,12 +94,6 @@ export default function TVCPlayerOverlay({
     }
   };
 
-  const formatSeconds = (sec: number) => {
-    const m = Math.floor(sec / 60);
-    const s = Math.floor(sec % 60);
-    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-  };
-
   return (
     <div
       className="absolute inset-0 z-[60] bg-black flex items-center justify-center overflow-hidden select-none cursor-pointer"
@@ -117,34 +111,6 @@ export default function TVCPlayerOverlay({
         onError={onComplete}
         className="w-full h-full object-contain pointer-events-none"
       />
-
-      {/* Top Header Bar: Nhãn QC & Thời lượng tối giản */}
-      <div className="absolute top-2.5 sm:top-3 inset-x-3 sm:inset-x-4 flex items-center justify-between z-20 pointer-events-auto">
-        <div className="flex items-center gap-1.5">
-          <span className="px-2 py-0.5 rounded bg-black/60 border border-white/15 text-[10px] sm:text-[11px] font-medium text-white/80 backdrop-blur-sm">
-            Quảng cáo
-          </span>
-          {duration > 0 && (
-            <span className="text-[10px] sm:text-[11px] text-white/60 font-mono bg-black/50 px-1.5 py-0.5 rounded backdrop-blur-sm hidden xs:inline">
-              {formatSeconds(currentTime)} / {formatSeconds(duration)}
-            </span>
-          )}
-        </div>
-
-        {targetUrl && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenAd();
-            }}
-            className="flex items-center gap-1 px-2.5 py-1 rounded bg-black/60 hover:bg-black/85 text-white/80 hover:text-white text-[10px] sm:text-[11px] font-medium border border-white/15 hover:border-white/35 transition-all shadow-sm backdrop-blur-sm cursor-pointer active:scale-95"
-          >
-            <span>Truy cập</span>
-            <ExternalLink className="w-3 h-3 text-white/70" />
-          </button>
-        )}
-      </div>
 
       {/* Bottom Controls Bar: Mute & Nút Bỏ Qua Quảng Cáo Nhỏ Gọn, Tối Giản */}
       <div className="absolute bottom-2.5 sm:bottom-4 inset-x-3 sm:inset-x-4 flex items-center justify-between z-20 pointer-events-auto">
