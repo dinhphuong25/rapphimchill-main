@@ -266,6 +266,16 @@ export default function VideoPlayer({
     showTVCRef.current = false;
     setShowTVC(false);
     if (videoRef.current) {
+      const savedVol = typeof window !== 'undefined' ? Number(localStorage.getItem('cinema_volume') || 1) : 1;
+      const targetVol = savedVol > 0 ? savedVol : 1;
+      try {
+        videoRef.current.volume = targetVol;
+        videoRef.current.muted = false;
+      } catch {}
+      setIsMuted(false);
+      setIsAutoplayMuted(false);
+      autoplayMutedRef.current = false;
+      setIsPlaying(true);
       videoRef.current.play().catch(() => {});
     }
   }, []);

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Volume2, VolumeX, SkipForward } from "lucide-react";
+import { VolumeX, ExternalLink, SkipForward } from "lucide-react";
 
 interface TVCPlayerOverlayProps {
   tvcUrl?: string;
@@ -21,8 +21,8 @@ export default function TVCPlayerOverlay({
   const [duration, setDuration] = useState<number>(0);
   const [canSkip, setCanSkip] = useState<boolean>(false);
   const [countdown, setCountdown] = useState<number>(skipAfterSeconds);
-  const [isMuted, setIsMuted] = useState<boolean>(false);
   const [hasStarted, setHasStarted] = useState<boolean>(false);
+  const [isAutoplayMuted, setIsAutoplayMuted] = useState<boolean>(false);
 
   useEffect(() => {
     // Safety fallback: Nếu video không load được trong 5s, tự động vào phim chính
@@ -35,19 +35,50 @@ export default function TVCPlayerOverlay({
     return () => clearTimeout(fallbackTimer);
   }, [hasStarted, onComplete]);
 
-  // Cố gắng tự động phát video TVC
+  // Tự động phát video TVC có tiếng
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    video.play().catch(() => {
-      // Nếu trình duyệt chặn âm thanh tự động, phát ở chế độ tắt tiếng (muted)
-      video.muted = true;
-      setIsMuted(true);
-      video.play().catch(() => {
-        onComplete();
-      });
-    });
+    // Thiết lập bật tiếng mặc định
+    video.muted = false;
+    video.volume = 1;
+
+    const unmute = () => {
+      if (videoRef.current) {
+        videoRef.current.muted = false;
+        videoRef.current.volume = 1;
+        setIsAutoplayMuted(false);
+      }
+    };
+
+    const tryPlay = video.play();
+    if (tryPlay !== undefined) {
+      tryPlay
+        .then(() => {
+          setIsAutoplayMuted(false);
+        })
+        .catch(() => {
+          // Trình duyệt (Chrome/Edge/Safari) chặn phát tiếng khi chưa có tương tác người dùng
+          video.muted = true;
+          setIsAutoplayMuted(true);
+          video.play().catch(() => {
+            onComplete();
+          });
+
+          // Lắng nghe tương tác đầu tiên ở bất kỳ đâu trên trang để bật tiếng ngay lập tức
+          const handleFirstInteraction = () => {
+            unmute();
+            window.removeEventListener("click", handleFirstInteraction, true);
+            window.removeEventListener("touchstart", handleFirstInteraction, true);
+            window.removeEventListener("keydown", handleFirstInteraction, true);
+          };
+
+          window.addEventListener("click", handleFirstInteraction, true);
+          window.addEventListener("touchstart", handleFirstInteraction, true);
+          window.addEventListener("keydown", handleFirstInteraction, true);
+        });
+    }
   }, [onComplete]);
 
   const handleTimeUpdate = () => {
@@ -74,15 +105,6 @@ export default function TVCPlayerOverlay({
     }
   };
 
-  const toggleMute = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const video = videoRef.current;
-    if (video) {
-      video.muted = !video.muted;
-      setIsMuted(video.muted);
-    }
-  };
-
   const handleSkip = (e: React.MouseEvent) => {
     e.stopPropagation();
     onComplete();
@@ -94,10 +116,30 @@ export default function TVCPlayerOverlay({
     }
   };
 
+  const handleVideoClick = () => {
+    // Nếu đang bị tắt tiếng do chính sách trình duyệt, lần chạm đầu tiên sẽ bật tiếng
+    if (videoRef.current && videoRef.current.muted) {
+      videoRef.current.muted = false;
+      videoRef.current.volume = 1;
+      setIsAutoplayMuted(false);
+      return;
+    }
+    handleOpenAd();
+  };
+
+  const handleUnmuteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (videoRef.current) {
+      videoRef.current.muted = false;
+      videoRef.current.volume = 1;
+      setIsAutoplayMuted(false);
+    }
+  };
+
   return (
     <div
       className="absolute inset-0 z-[60] bg-black flex items-center justify-center overflow-hidden select-none cursor-pointer"
-      onClick={handleOpenAd}
+      onClick={handleVideoClick}
     >
       {/* Video TVC */}
       <video
@@ -112,43 +154,54 @@ export default function TVCPlayerOverlay({
         className="w-full h-full object-contain pointer-events-none"
       />
 
-      {/* Bottom Controls Bar: Mute & Nút Bỏ Qua Quảng Cáo Nhỏ Gọn, Tối Giản */}
-      <div className="absolute bottom-2.5 sm:bottom-4 inset-x-3 sm:inset-x-4 flex items-center justify-between z-20 pointer-events-auto">
-        {/* Toggle Mute Nhỏ Gọn */}
-        <button
-          type="button"
-          onClick={toggleMute}
-          aria-label={isMuted ? "Bật âm thanh" : "Tắt âm thanh"}
-          className="flex items-center gap-1 px-2 py-1 rounded bg-black/60 hover:bg-black/85 text-white/80 hover:text-white border border-white/15 text-[11px] backdrop-blur-sm transition-all shadow-sm active:scale-95 cursor-pointer"
-        >
-          {isMuted ? (
-            <>
-              <VolumeX className="w-3.5 h-3.5 text-white/90" />
-              <span className="text-[10px] text-white/80">Bật tiếng</span>
-            </>
-          ) : (
-            <Volume2 className="w-3.5 h-3.5 text-white/90" />
-          )}
-        </button>
-
-        {/* Nút Bỏ qua quảng cáo: Nhỏ gọn, tối giản, màu trung tính chuẩn Youtube/Netflix */}
-        <div>
-          {canSkip ? (
-            <button
-              type="button"
-              onClick={handleSkip}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded bg-black/75 hover:bg-black/90 active:bg-black text-white text-[11px] sm:text-xs font-medium border border-white/25 hover:border-white/50 backdrop-blur-md shadow-sm transition-all cursor-pointer active:scale-95"
-            >
-              <span>Bỏ qua quảng cáo</span>
-              <SkipForward className="w-3.5 h-3.5 text-white" />
-            </button>
-          ) : (
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded bg-black/60 text-white/70 border border-white/15 text-[10px] sm:text-[11px] font-medium backdrop-blur-sm shadow-sm">
-              <span>Bỏ qua sau</span>
-              <span className="font-mono text-white font-semibold">{countdown}s</span>
-            </div>
-          )}
+      {/* Nút Bật Tiếng Nhỏ Gọn (Chỉ hiện khi trình duyệt chặn tự động phát âm thanh) */}
+      {isAutoplayMuted && (
+        <div className="absolute top-2.5 sm:top-3.5 left-3 sm:left-4 z-20 pointer-events-auto">
+          <button
+            type="button"
+            onClick={handleUnmuteClick}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/80 hover:bg-black text-white text-[11px] sm:text-xs font-semibold border border-white/25 shadow-lg backdrop-blur-md cursor-pointer active:scale-95 animate-pulse"
+          >
+            <VolumeX className="w-3.5 h-3.5 text-amber-400" />
+            <span>Chạm để bật tiếng</span>
+          </button>
         </div>
+      )}
+
+      {/* Nút Truy Cập ở góc trên bên phải */}
+      {targetUrl && (
+        <div className="absolute top-2.5 sm:top-3.5 right-3 sm:right-4 z-20 pointer-events-auto">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleOpenAd();
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/65 hover:bg-black/90 text-white/90 hover:text-white text-[11px] sm:text-xs font-medium border border-white/20 hover:border-white/40 transition-all shadow-sm backdrop-blur-md cursor-pointer active:scale-95"
+          >
+            <span>Truy cập</span>
+            <ExternalLink className="w-3.5 h-3.5 text-white/80" />
+          </button>
+        </div>
+      )}
+
+      {/* Góc dưới bên phải: Nút Bỏ Qua Quảng Cáo Nhỏ Gọn, Tối Giản */}
+      <div className="absolute bottom-2.5 sm:bottom-4 right-3 sm:right-4 z-20 pointer-events-auto">
+        {canSkip ? (
+          <button
+            type="button"
+            onClick={handleSkip}
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded bg-black/75 hover:bg-black/90 active:bg-black text-white text-[11px] sm:text-xs font-medium border border-white/25 hover:border-white/50 backdrop-blur-md shadow-sm transition-all cursor-pointer active:scale-95"
+          >
+            <span>Bỏ qua quảng cáo</span>
+            <SkipForward className="w-3.5 h-3.5 text-white" />
+          </button>
+        ) : (
+          <div className="flex items-center gap-1 px-2.5 py-1 rounded bg-black/60 text-white/70 border border-white/15 text-[10px] sm:text-[11px] font-medium backdrop-blur-sm shadow-sm">
+            <span>Bỏ qua sau</span>
+            <span className="font-mono text-white font-semibold">{countdown}s</span>
+          </div>
+        )}
       </div>
 
       {/* Progress bar của TVC tối giản */}
