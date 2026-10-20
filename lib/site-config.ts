@@ -61,7 +61,7 @@ export const DEFAULT_SITE_CONFIG: SiteConfig = {
     autoplay: true,
     defaultVolume: 1,
   },
-  customFooterText: "Hi Phim — Nền tảng xem phim miễn phí phi lợi nhuận.",
+  customFooterText: "Hi Phim — Nền tảng xem phim miễn phí.",
 };
 
 declare global {

@@ -41,7 +41,7 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
               <BrandLogo size="sm" showSlogan={false} />
             </Link>
             <p className="text-[11.5px] sm:text-[12px] text-white/55 font-normal leading-normal mt-0.5 sm:mt-1 text-center sm:text-left">
-              {customFooterText || "Nền tảng xem phim trực tuyến miễn phí phi lợi nhuận."}
+              {customFooterText ? customFooterText.replace(/\s*phi lợi nhuận/gi, "") : "Nền tảng xem phim trực tuyến miễn phí."}
             </p>
           </div>
 
@@ -96,9 +96,10 @@ function FooterComponent({ customFooterText }: FooterProps = {}) {
           <p className="text-[11.5px] sm:text-[12px] text-white/85 font-medium">
             © 2026 Hi Phim. Toàn quyền được bảo lưu.
           </p>
-          <p className="text-[11px] sm:text-[11.5px] text-white/50 font-normal">
+          {/* Tạm ẩn người thành lập và phát triển */}
+          {/* <p className="text-[11px] sm:text-[11.5px] text-white/50 font-normal">
             Được thành lập và phát triển bởi <span className="text-brand-green font-medium">Kim Đình Phương</span>.
-          </p>
+          </p> */}
         </div>
       </div>
 
