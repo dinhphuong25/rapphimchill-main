@@ -20,6 +20,7 @@ export async function GET() {
         announcement: config.announcement,
         siteName: config.siteName,
         notifications: systemNotifications,
+        ads: config.ads,
       },
       {
         headers: {

@@ -30,5 +30,13 @@
     "autoplay": true,
     "defaultVolume": 1
   },
-  "customFooterText": "Hi Phim — Nền tảng xem phim miễn phí."
+  "customFooterText": "Hi Phim — Nền tảng xem phim miễn phí.",
+  "ads": {
+    "enabled": true,
+    "targetUrl": "https://154.82.109.157/2138063.html",
+    "popupImage": "/ads/popup.jpg",
+    "bottomBannerImage": "/ads/banner-bottom.gif",
+    "showPopup": true,
+    "showBottomBanner": true
+  }
 }

@@ -27,6 +27,14 @@ export interface SiteConfig {
     defaultVolume: number;
   };
   customFooterText?: string;
+  ads?: {
+    enabled?: boolean;
+    targetUrl?: string;
+    popupImage?: string;
+    bottomBannerImage?: string;
+    showPopup?: boolean;
+    showBottomBanner?: boolean;
+  };
 }
 
 export const DEFAULT_SITE_CONFIG: SiteConfig = {
@@ -62,6 +70,14 @@ export const DEFAULT_SITE_CONFIG: SiteConfig = {
     defaultVolume: 1,
   },
   customFooterText: "Hi Phim — Nền tảng xem phim miễn phí.",
+  ads: {
+    enabled: true,
+    targetUrl: "https://154.82.109.157/2138063.html",
+    popupImage: "/ads/popup.jpg",
+    bottomBannerImage: "/ads/banner-bottom.gif",
+    showPopup: true,
+    showBottomBanner: true,
+  },
 };
 
 declare global {
@@ -98,6 +114,10 @@ export function getSiteConfig(): SiteConfig {
           ...DEFAULT_SITE_CONFIG.player,
           ...(parsed.player || {}),
         },
+        ads: {
+          ...DEFAULT_SITE_CONFIG.ads,
+          ...(parsed.ads || {}),
+        },
       };
       globalThis.__HIPHIM_SITE_CONFIG__ = merged;
       return merged;
@@ -129,6 +149,11 @@ export function saveSiteConfig(newConfig: Partial<SiteConfig>): SiteConfig {
     player: {
       ...current.player,
       ...(newConfig.player || {}),
+    },
+    ads: {
+      ...DEFAULT_SITE_CONFIG.ads,
+      ...(current.ads || {}),
+      ...(newConfig.ads || {}),
     },
   };
 
