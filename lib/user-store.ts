@@ -591,10 +591,6 @@ export async function updateUserPersistent(userId: string, updates: Partial<User
 
 export async function getAllUsersForAdminPersistent(): Promise<UserAdminDetail[]> {
   if (!(await ensureVercelDatabase())) return getAllUsersForAdmin();
-  for (const localUser of readUsers()) {
-    await vercelSql!`INSERT INTO hiphim_users (email, id, data) VALUES (${localUser.email}, ${localUser.id}, ${JSON.stringify(localUser)}::jsonb)
-      ON CONFLICT (email) DO NOTHING`;
-  }
   const rows = await vercelSql!`SELECT data FROM hiphim_users ORDER BY data->>'createdAt' DESC`;
   return (rows as Array<{ data: User }>).map((row) => toAdminUserDetail(row.data));
 }

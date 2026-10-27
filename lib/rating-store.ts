@@ -49,7 +49,10 @@ function writeRatingsToFile(data: StoredRatingData): void {
   }
 }
 
+let ratingsTableEnsured = false;
+
 async function ensureRatingsTable() {
+  if (ratingsTableEnsured) return true;
   if (!(await ensureVercelDatabase()) || !vercelSql) return false;
   try {
     await vercelSql`
@@ -61,6 +64,7 @@ async function ensureRatingsTable() {
         data JSONB
       )
     `;
+    ratingsTableEnsured = true;
     return true;
   } catch (err) {
     console.error("Error ensuring ratings table:", err);

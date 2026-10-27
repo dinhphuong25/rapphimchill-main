@@ -65,7 +65,10 @@ function writeNotificationsToFile(notifications: SystemNotification[]): void {
   }
 }
 
+let notificationsTableEnsured = false;
+
 async function ensureTable() {
+  if (notificationsTableEnsured) return true;
   if (!(await ensureVercelDatabase()) || !vercelSql) return false;
   try {
     await vercelSql`
@@ -81,26 +84,7 @@ async function ensureTable() {
       )
     `;
 
-    // Tự động khôi phục thông báo hệ thống nếu bảng trống
-    try {
-      const cnt = await vercelSql`SELECT count(*) as count FROM hiphim_system_notifications`;
-      if (Number(cnt[0]?.count || 0) === 0 && Array.isArray(seedNotifications) && seedNotifications.length > 0) {
-        for (const n of seedNotifications as any[]) {
-          await vercelSql`
-            INSERT INTO hiphim_system_notifications (
-              id, title, content, type, link, created_at, author, data
-            ) VALUES (
-              ${n.id}, ${n.title}, ${n.content}, ${n.type}, ${n.link || null},
-              ${Number(n.createdAt || n.created_at) || Date.now()}, ${n.author || "Ban Quản Trị"},
-              ${JSON.stringify(n)}::jsonb
-            ) ON CONFLICT (id) DO NOTHING
-          `;
-        }
-      }
-    } catch (seedErr) {
-      console.warn("Could not seed system notifications:", seedErr);
-    }
-
+    notificationsTableEnsured = true;
     return true;
   } catch (err) {
     console.error("Error ensuring system notifications table:", err);

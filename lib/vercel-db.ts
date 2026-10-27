@@ -24,26 +24,27 @@ const databaseUrl = getDatabaseUrl();
 
 export const vercelSql = databaseUrl ? neon(databaseUrl) : null;
 
-let schemaPromise: Promise<void> | null = null;
+let isSchemaEnsured = false;
+let schemaPromise: Promise<boolean> | null = null;
 
 export async function ensureVercelDatabase(): Promise<boolean> {
   if (!vercelSql) {
     if (process.env.NODE_ENV === "production") {
-      throw new Error("DATABASE_URL hoặc POSTGRES_URL chưa được cấu hình trên Vercel.");
+      throw new Error("DATABASE_URL hoặc POSTGRES_URL chưa được cấu hình.");
     }
     return false;
   }
-  if (!schemaPromise) {
-    schemaPromise = (async () => {
+  if (isSchemaEnsured) return true;
+  if (schemaPromise) return schemaPromise;
+
+  schemaPromise = (async () => {
+    try {
       await vercelSql!`
         CREATE TABLE IF NOT EXISTS hiphim_users (
           email TEXT PRIMARY KEY,
           id TEXT NOT NULL UNIQUE,
           data JSONB NOT NULL
         )
-      `;
-      await vercelSql!`
-        CREATE INDEX IF NOT EXISTS hiphim_users_id_idx ON hiphim_users (id)
       `;
       await vercelSql!`
         CREATE TABLE IF NOT EXISTS hiphim_pending_registrations (
@@ -59,21 +60,20 @@ export async function ensureVercelDatabase(): Promise<boolean> {
         )
       `;
 
-      // Tự động seed tài khoản từ seed-data.json sang PostgreSQL
-      try {
-        if (Array.isArray(seedUsers)) {
-          for (const user of seedUsers as any[]) {
-            if (user?.email && user?.id) {
-              await vercelSql!`
-                INSERT INTO hiphim_users (email, id, data)
-                VALUES (${user.email.toLowerCase()}, ${user.id}, ${JSON.stringify(user)}::jsonb)
-                ON CONFLICT (email) DO NOTHING
-              `;
-            }
+      // Chỉ seed khi bảng hiphim_users hoàn toàn trống (1 query count)
+      const countRes = await vercelSql!`SELECT count(*) as count FROM hiphim_users`;
+      const count = Number(countRes[0]?.count || 0);
+      if (count === 0 && Array.isArray(seedUsers) && seedUsers.length > 0) {
+        console.log("[DB] Bảng hiphim_users trống, đang nạp dữ liệu ban đầu...");
+        for (const user of seedUsers as any[]) {
+          if (user?.email && user?.id) {
+            await vercelSql!`
+              INSERT INTO hiphim_users (email, id, data)
+              VALUES (${user.email.toLowerCase()}, ${user.id}, ${JSON.stringify(user)}::jsonb)
+              ON CONFLICT (email) DO NOTHING
+            `;
           }
         }
-      } catch (seedErr) {
-        console.warn("[DB] Could not seed default users from seed-data.json:", seedErr);
       }
 
       // Khôi phục cấu hình website vào bộ nhớ
@@ -82,14 +82,17 @@ export async function ensureVercelDatabase(): Promise<boolean> {
         if (cfgRows.length > 0 && cfgRows[0]?.data) {
           globalThis.__HIPHIM_SITE_CONFIG__ = cfgRows[0].data as any;
         }
-      } catch (cfgErr) {
+      } catch {
         // ignore
       }
-    })().catch((error) => {
+
+      isSchemaEnsured = true;
+      return true;
+    } catch (error) {
       schemaPromise = null;
       throw error;
-    });
-  }
-  await schemaPromise;
-  return true;
+    }
+  })();
+
+  return schemaPromise;
 }
