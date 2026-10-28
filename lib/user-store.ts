@@ -575,6 +575,13 @@ async function getPersistentUserForAdmin(userId: string): Promise<User | null> {
   return user === undefined ? findUserById(userId) : user;
 }
 
+let adminUsersCache: { data: UserAdminDetail[]; timestamp: number } | null = null;
+const ADMIN_USERS_CACHE_TTL = 15000; // 15 seconds fast in-memory cache
+
+export function invalidateAdminUsersCache(): void {
+  adminUsersCache = null;
+}
+
 async function updatePersistentUser(userId: string, updates: Partial<User>): Promise<User | null> {
   const user = await getPersistentUserForAdmin(userId);
   if (!user) return null;
@@ -582,6 +589,7 @@ async function updatePersistentUser(userId: string, updates: Partial<User>): Pro
   if (!(await writePersistentUser(updated))) {
     return updateUser(userId, updates);
   }
+  invalidateAdminUsersCache();
   return updated;
 }
 
@@ -589,10 +597,15 @@ export async function updateUserPersistent(userId: string, updates: Partial<User
   return updatePersistentUser(userId, updates);
 }
 
-export async function getAllUsersForAdminPersistent(): Promise<UserAdminDetail[]> {
+export async function getAllUsersForAdminPersistent(forceFresh = false): Promise<UserAdminDetail[]> {
+  if (!forceFresh && adminUsersCache && Date.now() - adminUsersCache.timestamp < ADMIN_USERS_CACHE_TTL) {
+    return adminUsersCache.data;
+  }
   if (!(await ensureVercelDatabase())) return getAllUsersForAdmin();
   const rows = await vercelSql!`SELECT data FROM hiphim_users ORDER BY data->>'createdAt' DESC`;
-  return (rows as Array<{ data: User }>).map((row) => toAdminUserDetail(row.data));
+  const result = (rows as Array<{ data: User }>).map((row) => toAdminUserDetail(row.data));
+  adminUsersCache = { data: result, timestamp: Date.now() };
+  return result;
 }
 
 export async function banUserPersistent(
@@ -625,6 +638,7 @@ export async function deleteUserPersistent(userId: string): Promise<{ success: b
   const user = await getPersistentUserForAdmin(userId);
   if (!user) return { success: false, error: "Không tìm thấy người dùng" };
   if (isSuperAdmin(user.email)) return { success: false, error: "Không thể xóa tài khoản Super Admin!" };
+  invalidateAdminUsersCache();
   if (!(await ensureVercelDatabase())) return deleteUser(userId);
   await vercelSql!`DELETE FROM hiphim_users WHERE id = ${userId}`;
   return { success: true };

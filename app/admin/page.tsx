@@ -339,10 +339,11 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (forceFresh = false) => {
     setIsLoadingUsers(true);
     try {
-      const res = await fetch("/api/admin/users");
+      const url = forceFresh ? "/api/admin/users?fresh=true" : "/api/admin/users";
+      const res = await fetch(url);
       const data = await res.json();
       if (data.success) {
         setUsersList(data.users || []);
@@ -727,90 +728,89 @@ export default function AdminDashboardPage() {
   const totalFavorites = usersList.reduce((acc, u) => acc + (u.favoriteCount || 0), 0);
 
   return (
-    <div className="min-h-screen bg-[#060A08] text-cinema-text flex flex-col select-none">
+    <div className="min-h-screen bg-[#0B0F12] text-zinc-200 flex flex-col">
       {/* ======================================================== */}
       {/* 1. TOP COMMAND BAR (RESPONSIVE FOR DESKTOP & MOBILE)     */}
       {/* ======================================================== */}
-      <header className="h-16 border-b border-white/10 bg-[#0C130F]/90 backdrop-blur-2xl sticky top-0 z-50 flex items-center justify-between px-3 sm:px-6 lg:px-8 shadow-[0_4px_30px_rgba(0,0,0,0.6)]">
+      <header className="h-14 border-b border-white/[0.08] bg-[#0E1317]/95 backdrop-blur-md sticky top-0 z-50 flex items-center justify-between px-3 sm:px-6">
         {/* Left: Mobile Toggle + Brand + Breadcrumb */}
         <div className="flex items-center gap-3">
           {/* Mobile Menu Toggle Button */}
           <button
             type="button"
             onClick={() => setIsMobileDrawerOpen(true)}
-            className="lg:hidden p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 transition-colors cursor-pointer"
+            className="lg:hidden p-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-400 hover:text-white border border-white/[0.08] transition-colors cursor-pointer"
             title="Mở menu điều hướng quản trị"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-4 h-4" />
           </button>
 
           {/* Logo Brand */}
           <Link href="/" target="_blank" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-brand-green via-emerald-500 to-teal-400 flex items-center justify-center text-[#051309] font-black text-lg sm:text-xl shadow-[0_0_20px_rgba(34,197,94,0.45)] group-hover:scale-105 group-hover:shadow-[0_0_25px_rgba(34,197,94,0.6)] transition-all">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-black font-black text-base transition-transform group-hover:scale-105">
               H
             </div>
             <div className="hidden xs:block">
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="font-black text-base sm:text-lg tracking-tight text-white">
-                  Hi <span className="text-brand-green drop-shadow-[0_0_12px_rgba(34,197,94,0.5)]">Phim</span>
+                <span className="font-bold text-sm tracking-tight text-white">
+                  Hi Phim
                 </span>
-                <span className="text-[9px] uppercase tracking-wider font-black px-2 py-0.5 rounded-full bg-brand-green/15 text-brand-green border border-brand-green/30 shadow-[0_0_10px_rgba(34,197,94,0.15)]">
-                  ADMIN SUITE
+                <span className="text-[10px] font-mono font-medium px-1.5 py-0.2 rounded bg-white/[0.06] text-zinc-400 border border-white/[0.06]">
+                  ADMIN
                 </span>
               </div>
-              <p className="text-[10px] text-white/45 font-mono hidden md:block">Trung Tâm Điều Hành Quản Trị</p>
             </div>
           </Link>
 
           {/* Desktop Breadcrumb Navigation */}
-          <div className="hidden xl:flex items-center gap-2 pl-4 border-l border-white/10 text-xs">
-            <span className="text-white/40">Quản Trị</span>
-            <ChevronRight className="w-3.5 h-3.5 text-white/30" />
-            <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-0.5 rounded-lg border border-emerald-500/20 shadow-sm">
-              {activeTab === "overview" && "Tổng Quan Hệ Thống"}
-              {activeTab === "users" && "Quản Lý Thành Viên & Toàn Quyền"}
-              {activeTab === "featured" && "Ghim Tiêu Điểm Phim"}
-              {activeTab === "announcement" && "Banner Thông Báo"}
-              {activeTab === "ads" && "Quản Lý Quảng Cáo (Popup & Catfish)"}
-              {activeTab === "cache" && "Bộ Nhớ Đệm & Đồng Bộ"}
-              {activeTab === "maintenance" && "Chế Độ Bảo Trì"}
-              {activeTab === "settings" && "Cấu Hình SEO & Chung"}
-              {activeTab === "security" && "Bảo Mật & Mật Khẩu"}
+          <div className="hidden xl:flex items-center gap-2 pl-4 border-l border-white/[0.08] text-xs">
+            <span className="text-zinc-500">Quản Trị</span>
+            <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
+            <span className="text-zinc-200 font-medium bg-white/[0.05] px-2.5 py-0.5 rounded-md border border-white/[0.06]">
+              {activeTab === "overview" && "Tổng Quan"}
+              {activeTab === "users" && "Quản Lý Thành Viên"}
+              {activeTab === "featured" && "Ghim Tiêu Điểm"}
+              {activeTab === "announcement" && "Thông Báo"}
+              {activeTab === "ads" && "Quảng Cáo"}
+              {activeTab === "cache" && "Bộ Nhớ Đệm"}
+              {activeTab === "maintenance" && "Bảo Trì"}
+              {activeTab === "settings" && "Cấu Hình Chung"}
+              {activeTab === "security" && "Bảo Mật"}
               {activeTab === "reports" && "Báo Lỗi Tập Phim"}
             </span>
           </div>
         </div>
 
-        {/* Center: Super Admin Crown Badge (Desktop) */}
+        {/* Center: Super Admin Badge (Desktop) */}
         <div className="hidden md:flex items-center gap-2">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-400/30 text-amber-300 shadow-[0_0_20px_rgba(251,191,36,0.12)]">
-            <Crown className="w-3.5 h-3.5 text-amber-300 shrink-0 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]" />
+          <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-white/[0.03] border border-white/[0.08] text-zinc-300">
+            <Crown className="w-3.5 h-3.5 text-amber-400/80 shrink-0" />
             <div className="flex items-center gap-1.5 text-xs">
-              <span className="text-white/60 font-semibold hidden lg:inline">Super Admin:</span>
-              <span className="text-white font-mono font-bold tracking-tight">kimdinhphuong205@gmail.com</span>
+              <span className="text-zinc-500 font-normal hidden lg:inline">Admin:</span>
+              <span className="text-zinc-200 font-mono text-xs">kimdinhphuong205@gmail.com</span>
             </div>
-            <span className="w-2 h-2 rounded-full bg-brand-green shadow-[0_0_8px_rgba(34,197,94,0.9)] animate-pulse" title="Toàn quyền tối cao" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" title="Đang trực tuyến" />
           </div>
         </div>
 
         {/* Right: Actions & Tools */}
         <div className="flex items-center gap-2 sm:gap-2.5">
           {/* API Health Status Pill */}
-          <div className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-xs font-mono text-white/70">
-            <span className={`w-2 h-2 rounded-full ${apiPing && apiPing > 0 ? "bg-brand-green shadow-[0_0_6px_rgba(34,197,94,0.8)]" : "bg-amber-400"}`} />
-            <span className="hidden md:inline">API: </span>{apiPing && apiPing > 0 ? `${apiPing}ms` : "Ping..."}
+          <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-lg bg-white/[0.03] border border-white/[0.08] text-xs font-mono text-zinc-400">
+            <span className={`w-1.5 h-1.5 rounded-full ${apiPing && apiPing > 0 ? "bg-emerald-500" : "bg-amber-400"}`} />
+            <span>{apiPing && apiPing > 0 ? `${apiPing}ms` : "Ping..."}</span>
           </div>
 
           {/* View Website Button */}
           <Link
             href="/"
             target="_blank"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 text-white/85 hover:text-white border border-white/10 hover:border-white/20 transition-all shadow-sm active:scale-95"
+            className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 hover:text-white border border-white/[0.08] transition-colors"
             title="Mở giao diện người dùng trên tab mới"
           >
-            <Eye className="w-3.5 h-3.5 text-brand-green" />
+            <Eye className="w-3.5 h-3.5 text-zinc-400" />
             <span className="hidden sm:inline">Xem Web</span>
-            <ExternalLink className="w-3 h-3 text-white/40 ml-0.5 hidden sm:inline" />
+            <ExternalLink className="w-3 h-3 text-zinc-500 ml-0.5 hidden sm:inline" />
           </Link>
 
           {/* Master Save Button */}
@@ -818,7 +818,7 @@ export default function AdminDashboardPage() {
             type="button"
             onClick={() => handleSaveConfig()}
             disabled={isSaving}
-            className="flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-brand-green via-emerald-400 to-teal-400 hover:opacity-95 text-[#051309] shadow-[0_0_25px_rgba(34,197,94,0.4)] transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500 hover:bg-emerald-400 text-black transition-colors disabled:opacity-50 cursor-pointer"
             title="Lưu tất cả thay đổi cấu hình vào hệ thống"
           >
             <Save className={`w-3.5 h-3.5 ${isSaving ? "animate-spin" : ""}`} />
@@ -829,7 +829,7 @@ export default function AdminDashboardPage() {
           <button
             type="button"
             onClick={handleLogout}
-            className="p-1.5 sm:p-2 rounded-xl text-white/40 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all cursor-pointer"
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-colors cursor-pointer"
             title="Đăng xuất khỏi Admin"
           >
             <LogOut className="w-4 h-4" />
@@ -883,38 +883,38 @@ export default function AdminDashboardPage() {
               {/* Navigation Groups */}
               <nav className="space-y-4">
                 {/* Group 1: ĐIỀU HÀNH & GIÁM SÁT */}
-                <div className="space-y-1">
-                  <p className="px-2 text-[10px] font-black uppercase tracking-wider text-white/30">Điều Hành & Giám Sát</p>
+                <div className="space-y-0.5">
+                  <p className="px-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Điều Hành & Giám Sát</p>
                   <button
                     type="button"
                     onClick={() => switchTab("overview")}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors ${
                       activeTab === "overview"
-                        ? "bg-brand-green text-black shadow-[0_0_15px_rgba(34,197,94,0.3)]"
-                        : "text-white/70 hover:text-white hover:bg-white/5"
+                        ? "bg-white/[0.08] text-white font-medium border border-white/[0.08]"
+                        : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
                     }`}
                   >
-                    <LayoutDashboard className="w-4 h-4" />
-                    <span>Tổng Quan Hệ Thống</span>
+                    <LayoutDashboard className="w-4 h-4 text-zinc-400" />
+                    <span>Tổng Quan</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => switchTab("users")}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors ${
                       activeTab === "users"
-                        ? "bg-brand-green text-black shadow-[0_0_15px_rgba(34,197,94,0.3)]"
-                        : "text-white/70 hover:text-white hover:bg-white/5"
+                        ? "bg-white/[0.08] text-white font-medium border border-white/[0.08]"
+                        : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
                     }`}
                   >
-                    <Users className="w-4 h-4" />
-                    <span>Quản Lý Thành Viên</span>
+                    <Users className="w-4 h-4 text-zinc-400" />
+                    <span>Thành Viên</span>
                     <div className="ml-auto flex items-center gap-1.5">
                       {watchingCount > 0 && (
-                        <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold ${activeTab === "users" ? "bg-black/30 text-black" : "bg-brand-green/20 text-brand-green animate-pulse"}`}>
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 font-mono">
                           {watchingCount} xem
                         </span>
                       )}
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${activeTab === "users" ? "bg-black/20 text-black" : "bg-white/10 text-white/60"}`}>
+                      <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-white/[0.06] text-zinc-400 border border-white/[0.06]">
                         {usersList.length}
                       </span>
                     </div>
@@ -922,54 +922,48 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* Group 2: NỘI DUNG & PHIM ẢNH */}
-                <div className="space-y-1">
-                  <p className="px-2 text-[10px] font-black uppercase tracking-wider text-white/30">Nội Dung & Phim Ảnh</p>
+                <div className="space-y-0.5">
+                  <p className="px-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Nội Dung & Phim Ảnh</p>
                   <button
                     type="button"
                     onClick={() => switchTab("featured")}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors ${
                       activeTab === "featured"
-                        ? "bg-brand-green text-black shadow-[0_0_15px_rgba(34,197,94,0.3)]"
-                        : "text-white/70 hover:text-white hover:bg-white/5"
+                        ? "bg-white/[0.08] text-white font-medium border border-white/[0.08]"
+                        : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
                     }`}
                   >
-                    <Film className="w-4 h-4" />
-                    <span>Ghim Phim Tiêu Điểm</span>
-                    <span className={`ml-auto text-[10px] px-1.5 py-0.2 rounded-full font-mono ${activeTab === "featured" ? "bg-black/20 text-black" : "bg-white/10 text-white/50"}`}>
+                    <Film className="w-4 h-4 text-zinc-400" />
+                    <span>Ghim Tiêu Điểm</span>
+                    <span className="ml-auto text-[10px] px-1.5 py-0.2 rounded font-mono bg-white/[0.06] text-zinc-400 border border-white/[0.06]">
                       {config.featuredSlugs.length}
                     </span>
                   </button>
                   <button
                     type="button"
                     onClick={() => switchTab("cache")}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors ${
                       activeTab === "cache"
-                        ? "bg-brand-green text-black shadow-[0_0_15px_rgba(34,197,94,0.3)]"
-                        : "text-white/70 hover:text-white hover:bg-white/5"
+                        ? "bg-white/[0.08] text-white font-medium border border-white/[0.08]"
+                        : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
                     }`}
                   >
-                    <Database className="w-4 h-4" />
-                    <span>Bộ Nhớ Đệm & Sync</span>
+                    <Database className="w-4 h-4 text-zinc-400" />
+                    <span>Bộ Nhớ Đệm</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => switchTab("reports")}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer ${
                       activeTab === "reports"
-                        ? "bg-brand-green text-black shadow-[0_0_15px_rgba(34,197,94,0.3)]"
-                        : "text-white/70 hover:text-white hover:bg-white/5"
+                        ? "bg-white/[0.08] text-white font-medium border border-white/[0.08]"
+                        : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
                     }`}
                   >
-                    <AlertTriangle className="w-4 h-4 text-amber-400" />
+                    <AlertTriangle className="w-4 h-4 text-amber-400/80" />
                     <span>Báo Lỗi Phim</span>
                     {reportsList.filter((r) => r.status === "pending").length > 0 && (
-                      <span
-                        className={`ml-auto text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
-                          activeTab === "reports"
-                            ? "bg-black/30 text-black"
-                            : "bg-amber-500/25 text-amber-400 border border-amber-500/30 animate-pulse"
-                        }`}
-                      >
+                      <span className="ml-auto text-[10px] px-1.5 py-0.2 rounded font-mono bg-amber-500/10 text-amber-400 border border-amber-500/20">
                         {reportsList.filter((r) => r.status === "pending").length}
                       </span>
                     )}
@@ -977,81 +971,81 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* Group 3: TRUYỀN THÔNG */}
-                <div className="space-y-1">
-                  <p className="px-2 text-[10px] font-black uppercase tracking-wider text-white/30">Truyền Thông</p>
+                <div className="space-y-0.5">
+                  <p className="px-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Truyền Thông</p>
                   <button
                     type="button"
                     onClick={() => switchTab("announcement")}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors ${
                       activeTab === "announcement"
-                        ? "bg-brand-green text-black shadow-[0_0_15px_rgba(34,197,94,0.3)]"
-                        : "text-white/70 hover:text-white hover:bg-white/5"
+                        ? "bg-white/[0.08] text-white font-medium border border-white/[0.08]"
+                        : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
                     }`}
                   >
-                    <Megaphone className="w-4 h-4" />
-                    <span>Banner Thông Báo</span>
+                    <Megaphone className="w-4 h-4 text-zinc-400" />
+                    <span>Thông Báo</span>
                     {config.announcement.enabled && (
-                      <span className="w-2 h-2 rounded-full bg-brand-green ml-auto animate-ping" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 ml-auto" />
                     )}
                   </button>
                   <button
                     type="button"
                     onClick={() => switchTab("ads")}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors ${
                       activeTab === "ads"
-                        ? "bg-brand-green text-black shadow-[0_0_15px_rgba(34,197,94,0.3)]"
-                        : "text-white/70 hover:text-white hover:bg-white/5"
+                        ? "bg-white/[0.08] text-white font-medium border border-white/[0.08]"
+                        : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
                     }`}
                   >
-                    <DollarSign className="w-4 h-4" />
+                    <DollarSign className="w-4 h-4 text-zinc-400" />
                     <span>Quảng Cáo (Ads)</span>
                     {config.ads?.enabled && (
-                      <span className="w-2 h-2 rounded-full bg-brand-green ml-auto" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 ml-auto" />
                     )}
                   </button>
                 </div>
 
                 {/* Group 4: HỆ THỐNG & BẢO MẬT */}
-                <div className="space-y-1">
-                  <p className="px-2 text-[10px] font-black uppercase tracking-wider text-white/30">Hệ Thống & Cấu Hình</p>
+                <div className="space-y-0.5">
+                  <p className="px-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Hệ Thống & Cấu Hình</p>
                   <button
                     type="button"
                     onClick={() => switchTab("maintenance")}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors ${
                       activeTab === "maintenance"
-                        ? "bg-brand-green text-black shadow-[0_0_15px_rgba(34,197,94,0.3)]"
-                        : "text-white/70 hover:text-white hover:bg-white/5"
+                        ? "bg-white/[0.08] text-white font-medium border border-white/[0.08]"
+                        : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
                     }`}
                   >
-                    <Wrench className="w-4 h-4" />
+                    <Wrench className="w-4 h-4 text-zinc-400" />
                     <span>Chế Độ Bảo Trì</span>
                     {config.maintenance.enabled && (
-                      <span className="w-2 h-2 rounded-full bg-amber-400 ml-auto animate-pulse" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 ml-auto" />
                     )}
                   </button>
                   <button
                     type="button"
                     onClick={() => switchTab("settings")}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors ${
                       activeTab === "settings"
-                        ? "bg-brand-green text-black shadow-[0_0_15px_rgba(34,197,94,0.3)]"
-                        : "text-white/70 hover:text-white hover:bg-white/5"
+                        ? "bg-white/[0.08] text-white font-medium border border-white/[0.08]"
+                        : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
                     }`}
                   >
-                    <Settings className="w-4 h-4" />
-                    <span>Cấu Hình SEO & Chung</span>
+                    <Settings className="w-4 h-4 text-zinc-400" />
+                    <span>Cấu Hình Chung</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => switchTab("security")}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors ${
                       activeTab === "security"
-                        ? "bg-brand-green text-black shadow-[0_0_15px_rgba(34,197,94,0.3)]"
-                        : "text-white/70 hover:text-white hover:bg-white/5"
+                        ? "bg-white/[0.08] text-white font-medium border border-white/[0.08]"
+                        : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
                     }`}
                   >
-                    <Shield className="w-4 h-4" />
-                    <span>Bảo Mật & Mật Khẩu</span>
+                    <Shield className="w-4 h-4 text-zinc-400" />
+                    <span>Bảo Mật</span>
                   </button>
                 </div>
               </nav>
@@ -1085,43 +1079,43 @@ export default function AdminDashboardPage() {
       {/* ======================================================== */}
       <div className="flex-1 flex flex-col lg:flex-row max-w-[1600px] w-full mx-auto p-3 sm:p-5 lg:p-7 gap-6">
         {/* Desktop Sidebar (Categorized & Sticky Glass Container) */}
-        <aside className="hidden lg:flex lg:w-64 shrink-0 flex-col gap-4 sticky top-20 self-start max-h-[calc(100vh-6rem)] overflow-y-auto scrollbar-thin bg-[#0C130F]/90 border border-white/10 rounded-3xl p-3.5 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
+        <aside className="hidden lg:flex lg:w-60 shrink-0 flex-col gap-4 sticky top-18 self-start max-h-[calc(100vh-5.5rem)] overflow-y-auto scrollbar-thin bg-[#11161A] border border-white/[0.08] rounded-xl p-3">
           {/* Group 1: ĐIỀU HÀNH & GIÁM SÁT */}
-          <div className="space-y-1">
-            <div className="px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white/35">
+          <div className="space-y-0.5">
+            <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
               Điều Hành & Giám Sát
             </div>
             <button
               type="button"
               onClick={() => switchTab("overview")}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer ${
                 activeTab === "overview"
-                  ? "bg-gradient-to-r from-emerald-500/20 via-brand-green/15 to-transparent text-emerald-400 border border-emerald-500/35 shadow-[0_0_20px_rgba(32,214,107,0.15)]"
-                  : "text-white/65 hover:text-white hover:bg-white/[0.04] border border-transparent"
+                  ? "bg-white/[0.08] text-white font-medium border border-white/[0.08]"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] border border-transparent"
               }`}
             >
-              <LayoutDashboard className="w-4 h-4" />
-              <span>Tổng Quan Hệ Thống</span>
+              <LayoutDashboard className="w-4 h-4 text-zinc-400" />
+              <span>Tổng Quan</span>
             </button>
             <button
               type="button"
               onClick={() => switchTab("users")}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer ${
                 activeTab === "users"
-                  ? "bg-gradient-to-r from-emerald-500/20 via-brand-green/15 to-transparent text-emerald-400 border border-emerald-500/35 shadow-[0_0_20px_rgba(32,214,107,0.15)]"
-                  : "text-white/65 hover:text-white hover:bg-white/[0.04] border border-transparent"
+                  ? "bg-white/[0.08] text-white font-medium border border-white/[0.08]"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] border border-transparent"
               }`}
             >
-              <Users className="w-4 h-4" />
-              <span>Quản Lý Thành Viên</span>
+              <Users className="w-4 h-4 text-zinc-400" />
+              <span>Thành Viên</span>
               <div className="ml-auto flex items-center gap-1.5">
                 {watchingCount > 0 && (
-                  <span className="flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full bg-brand-green/20 text-brand-green font-bold animate-pulse" title={`${watchingCount} người đang xem phim`}>
+                  <span className="flex items-center gap-1 text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 font-mono" title={`${watchingCount} người đang xem phim`}>
                     <Radio className="w-2.5 h-2.5" />
                     {watchingCount}
                   </span>
                 )}
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-mono font-bold border border-emerald-500/25">
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-white/[0.06] text-zinc-400 font-mono border border-white/[0.06]">
                   {usersList.length}
                 </span>
               </div>
@@ -1129,50 +1123,50 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Group 2: NỘI DUNG & PHIM ẢNH */}
-          <div className="space-y-1">
-            <div className="px-3 pt-2 py-1 text-[10px] font-black uppercase tracking-wider text-white/35">
+          <div className="space-y-0.5">
+            <div className="px-3 pt-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
               Nội Dung & Phim Ảnh
             </div>
             <button
               type="button"
               onClick={() => switchTab("featured")}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer ${
                 activeTab === "featured"
-                  ? "bg-gradient-to-r from-emerald-500/20 via-brand-green/15 to-transparent text-emerald-400 border border-emerald-500/35 shadow-[0_0_20px_rgba(32,214,107,0.15)]"
-                  : "text-white/65 hover:text-white hover:bg-white/[0.04] border border-transparent"
+                  ? "bg-white/[0.08] text-white font-medium border border-white/[0.08]"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] border border-transparent"
               }`}
             >
-              <Film className="w-4 h-4" />
-              <span>Ghim Phim Tiêu Điểm</span>
-              <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/50 font-mono">
+              <Film className="w-4 h-4 text-zinc-400" />
+              <span>Ghim Tiêu Điểm</span>
+              <span className="ml-auto text-[10px] px-1.5 py-0.2 rounded bg-white/[0.06] text-zinc-400 font-mono border border-white/[0.06]">
                 {config.featuredSlugs.length}
               </span>
             </button>
             <button
               type="button"
               onClick={() => switchTab("cache")}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer ${
                 activeTab === "cache"
-                  ? "bg-gradient-to-r from-emerald-500/20 via-brand-green/15 to-transparent text-emerald-400 border border-emerald-500/35 shadow-[0_0_20px_rgba(32,214,107,0.15)]"
-                  : "text-white/65 hover:text-white hover:bg-white/[0.04] border border-transparent"
+                  ? "bg-white/[0.08] text-white font-medium border border-white/[0.08]"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] border border-transparent"
               }`}
             >
-              <Database className="w-4 h-4" />
-              <span>Bộ Nhớ Đệm & Sync</span>
+              <Database className="w-4 h-4 text-zinc-400" />
+              <span>Bộ Nhớ Đệm</span>
             </button>
             <button
               type="button"
               onClick={() => switchTab("reports")}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer ${
                 activeTab === "reports"
-                  ? "bg-gradient-to-r from-emerald-500/20 via-brand-green/15 to-transparent text-emerald-400 border border-emerald-500/35 shadow-[0_0_20px_rgba(32,214,107,0.15)]"
-                  : "text-white/65 hover:text-white hover:bg-white/[0.04] border border-transparent"
+                  ? "bg-white/[0.08] text-white font-medium border border-white/[0.08]"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] border border-transparent"
               }`}
             >
-              <AlertTriangle className="w-4 h-4 text-amber-400" />
+              <AlertTriangle className="w-4 h-4 text-amber-400/80" />
               <span>Báo Lỗi Phim</span>
               {reportsList.filter((r) => r.status === "pending").length > 0 && (
-                <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-mono font-bold border border-amber-500/30">
+                <span className="ml-auto text-[10px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-400 font-mono border border-amber-500/20">
                   {reportsList.filter((r) => r.status === "pending").length}
                 </span>
               )}
@@ -1180,93 +1174,93 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Group 3: TRUYỀN THÔNG */}
-          <div className="space-y-1">
-            <div className="px-3 pt-2 py-1 text-[10px] font-black uppercase tracking-wider text-white/35">
+          <div className="space-y-0.5">
+            <div className="px-3 pt-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
               Truyền Thông
             </div>
             <button
               type="button"
               onClick={() => switchTab("announcement")}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer ${
                 activeTab === "announcement"
-                  ? "bg-gradient-to-r from-emerald-500/20 via-brand-green/15 to-transparent text-emerald-400 border border-emerald-500/35 shadow-[0_0_20px_rgba(32,214,107,0.15)]"
-                  : "text-white/65 hover:text-white hover:bg-white/[0.04] border border-transparent"
+                  ? "bg-white/[0.08] text-white font-medium border border-white/[0.08]"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] border border-transparent"
               }`}
             >
-              <Megaphone className="w-4 h-4" />
-              <span>Banner Thông Báo</span>
+              <Megaphone className="w-4 h-4 text-zinc-400" />
+              <span>Thông Báo</span>
               {config.announcement.enabled && (
-                <span className="w-2 h-2 rounded-full bg-brand-green ml-auto animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 ml-auto" />
               )}
             </button>
             <button
               type="button"
               onClick={() => switchTab("ads")}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer ${
                 activeTab === "ads"
-                  ? "bg-gradient-to-r from-emerald-500/20 via-brand-green/15 to-transparent text-emerald-400 border border-emerald-500/35 shadow-[0_0_20px_rgba(32,214,107,0.15)]"
-                  : "text-white/65 hover:text-white hover:bg-white/[0.04] border border-transparent"
+                  ? "bg-white/[0.08] text-white font-medium border border-white/[0.08]"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] border border-transparent"
               }`}
             >
-              <DollarSign className="w-4 h-4" />
+              <DollarSign className="w-4 h-4 text-zinc-400" />
               <span>Quảng Cáo (Ads)</span>
               {config.ads?.enabled && (
-                <span className="w-2 h-2 rounded-full bg-brand-green ml-auto animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 ml-auto" />
               )}
             </button>
           </div>
 
           {/* Group 4: HỆ THỐNG & CẤU HÌNH */}
-          <div className="space-y-1">
-            <div className="px-3 pt-2 py-1 text-[10px] font-black uppercase tracking-wider text-white/35">
+          <div className="space-y-0.5">
+            <div className="px-3 pt-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
               Hệ Thống & Cấu Hình
             </div>
             <button
               type="button"
               onClick={() => switchTab("maintenance")}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer ${
                 activeTab === "maintenance"
-                  ? "bg-gradient-to-r from-emerald-500/20 via-brand-green/15 to-transparent text-emerald-400 border border-emerald-500/35 shadow-[0_0_20px_rgba(32,214,107,0.15)]"
-                  : "text-white/65 hover:text-white hover:bg-white/[0.04] border border-transparent"
+                  ? "bg-white/[0.08] text-white font-medium border border-white/[0.08]"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] border border-transparent"
               }`}
             >
-              <Wrench className="w-4 h-4" />
+              <Wrench className="w-4 h-4 text-zinc-400" />
               <span>Chế Độ Bảo Trì</span>
               {config.maintenance.enabled && (
-                <span className="w-2 h-2 rounded-full bg-amber-400 ml-auto animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 ml-auto" />
               )}
             </button>
             <button
               type="button"
               onClick={() => switchTab("settings")}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer ${
                 activeTab === "settings"
-                  ? "bg-gradient-to-r from-emerald-500/20 via-brand-green/15 to-transparent text-emerald-400 border border-emerald-500/35 shadow-[0_0_20px_rgba(32,214,107,0.15)]"
-                  : "text-white/65 hover:text-white hover:bg-white/[0.04] border border-transparent"
+                  ? "bg-white/[0.08] text-white font-medium border border-white/[0.08]"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] border border-transparent"
               }`}
             >
-              <Settings className="w-4 h-4" />
-              <span>Cấu Hình SEO & Chung</span>
+              <Settings className="w-4 h-4 text-zinc-400" />
+              <span>Cấu Hình Chung</span>
             </button>
             <button
               type="button"
               onClick={() => switchTab("security")}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer ${
                 activeTab === "security"
-                  ? "bg-gradient-to-r from-emerald-500/20 via-brand-green/15 to-transparent text-emerald-400 border border-emerald-500/35 shadow-[0_0_20px_rgba(32,214,107,0.15)]"
-                  : "text-white/65 hover:text-white hover:bg-white/[0.04] border border-transparent"
+                  ? "bg-white/[0.08] text-white font-medium border border-white/[0.08]"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] border border-transparent"
               }`}
             >
-              <Shield className="w-4 h-4" />
-              <span>Bảo Mật & Mật Khẩu</span>
+              <Shield className="w-4 h-4 text-zinc-400" />
+              <span>Bảo Mật</span>
             </button>
           </div>
 
           {/* Super Admin Status Footer Widget in Sidebar */}
-          <div className="mt-auto pt-3 border-t border-white/10">
-            <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-amber-400/20 text-amber-300 border border-amber-400/30 flex items-center justify-center shrink-0 shadow-sm">
-                <Crown className="w-4 h-4" />
+          <div className="mt-auto pt-3 border-t border-white/[0.08]">
+            <div className="p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.08] flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-md bg-white/[0.05] border border-white/[0.08] text-amber-400/80 flex items-center justify-center shrink-0">
+                <Crown className="w-3.5 h-3.5" />
               </div>
               <div className="min-w-0">
                 <p className="text-[10px] text-white/50 font-bold uppercase tracking-wider">Quyền Hạn Cao Nhất</p>
@@ -1277,57 +1271,53 @@ export default function AdminDashboardPage() {
         </aside>
 
         {/* Tab Content Stage - with bottom padding pb-24 for mobile bottom bar */}
-        <main className="flex-1 min-w-0 bg-[#0C130F]/85 border border-white/10 rounded-3xl p-4 sm:p-6 lg:p-7 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] pb-24 lg:pb-7">
+        <main className="flex-1 min-w-0 bg-[#0E1317]/60 border border-white/[0.08] rounded-xl p-4 sm:p-6 pb-24 lg:pb-7">
           
           {/* ======================================================== */}
-          {/* TAB 1: TỔNG QUAN HỆ THỐNG (CINEMA EXECUTIVE COMMAND CENTER) */}
+          {/* TAB 1: TỔNG QUAN HỆ THỐNG                                */}
           {/* ======================================================== */}
           {activeTab === "overview" && (
-            <div className="space-y-6">
+            <div className="space-y-5">
               {/* 1. Hero Greeting & Operational Status Banner */}
-              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-950/40 via-zinc-950/80 to-black border border-white/10 p-6 sm:p-7 shadow-2xl backdrop-blur-xl">
-                {/* Decorative glow background */}
-                <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-brand-green/10 rounded-full blur-3xl pointer-events-none" />
-                <div className="absolute bottom-0 left-1/3 -mb-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
-
-                <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="relative overflow-hidden rounded-xl bg-[#11161A] border border-white/[0.08] p-5 sm:p-6">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                   <div className="space-y-2 max-w-2xl">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-300 text-[10px] font-black uppercase tracking-wider">
-                        <Crown className="w-3 h-3" />
-                        TRUNG TÂM ĐIỀU HÀNH TỐI CAO
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-white/[0.05] border border-white/[0.08] text-zinc-300 text-[11px] font-mono">
+                        <Crown className="w-3 h-3 text-amber-400/80" />
+                        Admin Workspace
                       </span>
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-green/15 border border-brand-green/30 text-brand-green text-[10px] font-bold">
-                        <span className="w-2 h-2 rounded-full bg-brand-green animate-ping inline-block" />
-                        100% Trực Tuyến
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        Trực Tuyến
                       </span>
                     </div>
 
-                    <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                      Xin chào, <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-brand-green">Super Admin Kim Đình Phương</span>
+                    <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                      Xin chào, Kim Đình Phương
                     </h2>
 
-                    <p className="text-xs sm:text-[13px] text-white/60 leading-relaxed">
-                      Toàn bộ nền tảng Hi Phim đang trong trạng thái vận hành tối ưu. Giám sát các luồng xem phim thời gian thực, thành viên hoạt động, bảo mật tài khoản và hệ thống phân phối nội dung.
+                    <p className="text-xs sm:text-[13px] text-zinc-400 leading-relaxed">
+                      Toàn bộ nền tảng Hi Phim đang trong trạng thái vận hành ổn định. Giám sát các luồng xem phim, thành viên và phân phối nội dung.
                     </p>
 
                     {/* Operational health badges */}
-                    <div className="flex items-center gap-2.5 pt-2 flex-wrap text-[11px] font-semibold">
-                      <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-black/40 border border-white/10 text-white/80">
-                        <span className="w-2 h-2 rounded-full bg-brand-green shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
+                    <div className="flex items-center gap-2 pt-2 flex-wrap text-xs">
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/[0.03] border border-white/[0.06] text-zinc-300 text-[11px]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                         <span>Hệ thống: Bình thường</span>
                       </div>
-                      <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-black/40 border border-white/10 text-white/80">
-                        <span className={`w-2 h-2 rounded-full ${config.maintenance.enabled ? "bg-amber-400 animate-pulse" : "bg-brand-green"}`} />
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/[0.03] border border-white/[0.06] text-zinc-300 text-[11px]">
+                        <span className={`w-1.5 h-1.5 rounded-full ${config.maintenance.enabled ? "bg-amber-400" : "bg-emerald-500"}`} />
                         <span>Bảo trì: {config.maintenance.enabled ? "Đang BẬT" : "Đang Tắt"}</span>
                       </div>
-                      <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-black/40 border border-white/10 text-white/80">
-                        <span className={`w-2 h-2 rounded-full ${config.announcement.enabled ? "bg-brand-green" : "bg-white/30"}`} />
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/[0.03] border border-white/[0.06] text-zinc-300 text-[11px]">
+                        <span className={`w-1.5 h-1.5 rounded-full ${config.announcement.enabled ? "bg-emerald-500" : "bg-zinc-600"}`} />
                         <span>Banner: {config.announcement.enabled ? "Đang Hiện" : "Đang Ẩn"}</span>
                       </div>
-                      <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-black/40 border border-white/10 text-white/80">
-                        <Activity className="w-3 h-3 text-cyan-400" />
-                        <span>Độ trễ API: {apiPing !== null && apiPing > 0 ? `${apiPing}ms` : "..."}</span>
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/[0.03] border border-white/[0.06] text-zinc-300 text-[11px] font-mono">
+                        <Activity className="w-3 h-3 text-zinc-400" />
+                        <span>API: {apiPing !== null && apiPing > 0 ? `${apiPing}ms` : "..."}</span>
                       </div>
                     </div>
                   </div>
@@ -1336,140 +1326,135 @@ export default function AdminDashboardPage() {
                   <div className="flex flex-row lg:flex-col gap-2 shrink-0">
                     <button
                       onClick={() => switchTab("users")}
-                      className="flex-1 lg:flex-initial flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.08] border border-white/10 text-white text-xs font-bold transition-all group cursor-pointer"
+                      className="flex-1 lg:flex-initial flex items-center justify-between gap-3 px-3.5 py-2 rounded-lg bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] text-zinc-200 text-xs font-medium transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4 text-brand-green" />
+                        <Users className="w-3.5 h-3.5 text-zinc-400" />
                         <span>Quản lý thành viên</span>
                       </div>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold">
+                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-white/[0.06] text-zinc-400 border border-white/[0.06]">
                         {totalUsersCount}
                       </span>
                     </button>
 
                     <button
                       onClick={() => switchTab("featured")}
-                      className="flex-1 lg:flex-initial flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.08] border border-white/10 text-white text-xs font-bold transition-all group cursor-pointer"
+                      className="flex-1 lg:flex-initial flex items-center justify-between gap-3 px-3.5 py-2 rounded-lg bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] text-zinc-200 text-xs font-medium transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
-                        <Film className="w-4 h-4 text-amber-300" />
+                        <Film className="w-3.5 h-3.5 text-zinc-400" />
                         <span>Phim ghim trang chủ</span>
                       </div>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-amber-400/20 text-amber-300 font-bold">
+                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-white/[0.06] text-zinc-400 border border-white/[0.06]">
                         {config.featuredSlugs.length}
                       </span>
                     </button>
 
                     <button
                       onClick={() => switchTab("settings")}
-                      className="flex-1 lg:flex-initial flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.08] border border-white/10 text-white text-xs font-bold transition-all group cursor-pointer"
+                      className="flex-1 lg:flex-initial flex items-center justify-between gap-3 px-3.5 py-2 rounded-lg bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] text-zinc-200 text-xs font-medium transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
-                        <Settings className="w-4 h-4 text-cyan-300" />
+                        <Settings className="w-3.5 h-3.5 text-zinc-400" />
                         <span>Cấu hình toàn trang</span>
                       </div>
-                      <ArrowRight className="w-3.5 h-3.5 text-white/30 group-hover:translate-x-0.5 transition-transform" />
+                      <ArrowRight className="w-3.5 h-3.5 text-zinc-500" />
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* 2. Four Master Glowing Metric Cards */}
+              {/* 2. Four Master Metric Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 {/* Metric Card 1: Users */}
-                <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-500/[0.07] to-white/[0.02] border border-emerald-500/20 hover:border-emerald-500/40 transition-all flex flex-col justify-between group shadow-lg">
+                <div className="p-4 sm:p-5 rounded-xl bg-[#11161A] border border-white/[0.08] hover:border-white/20 transition-all flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-bold text-white/70 uppercase tracking-wider">Thành Viên Hệ Thống</span>
-                      <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                      <span className="text-xs font-medium text-zinc-400">Thành Viên</span>
+                      <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-300">
                         <Users className="w-4 h-4" />
                       </div>
                     </div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-black text-white tracking-tight">{totalUsersCount}</span>
-                      <span className="text-xs text-white/50">tài khoản</span>
+                      <span className="text-2xl sm:text-3xl font-bold text-white tracking-tight">{totalUsersCount}</span>
+                      <span className="text-xs text-zinc-500">tài khoản</span>
                     </div>
-                    <div className="mt-3 space-y-1 text-[11px] text-white/60">
+                    <div className="mt-3 space-y-1 text-xs text-zinc-400">
                       <div className="flex items-center justify-between">
                         <span>Đã xác thực OTP:</span>
-                        <strong className="text-emerald-400 font-mono font-bold">
+                        <strong className="text-emerald-400 font-mono font-medium">
                           {verifiedUsersCount} ({totalUsersCount > 0 ? Math.round((verifiedUsersCount / totalUsersCount) * 100) : 0}%)
                         </strong>
                       </div>
                       <div className="flex items-center justify-between">
                         <span>Hoạt động 24h qua:</span>
-                        <strong className="text-white font-mono font-bold">{active24hCount}</strong>
+                        <strong className="text-zinc-200 font-mono font-medium">{active24hCount}</strong>
                       </div>
                     </div>
                   </div>
                   <button
                     onClick={() => switchTab("users")}
-                    className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs font-bold text-brand-green hover:text-brand-green-hover transition-colors cursor-pointer"
+                    className="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs text-zinc-400 hover:text-white transition-colors cursor-pointer"
                   >
-                    <span>Quản lý thành viên & an toàn</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                    <span>Quản lý thành viên</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-zinc-500" />
                   </button>
                 </div>
 
                 {/* Metric Card 2: Live Watching Monitor */}
-                <div className="p-5 rounded-2xl bg-gradient-to-br from-brand-green/[0.08] to-white/[0.02] border border-brand-green/25 hover:border-brand-green/45 transition-all flex flex-col justify-between group shadow-lg">
+                <div className="p-4 sm:p-5 rounded-xl bg-[#11161A] border border-white/[0.08] hover:border-white/20 transition-all flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-white/70 uppercase tracking-wider">Đang Xem Trực Tiếp</span>
-                        {watchingCount > 0 && (
-                          <span className="w-2 h-2 rounded-full bg-brand-green animate-ping" />
-                        )}
-                      </div>
-                      <div className="w-9 h-9 rounded-xl bg-brand-green/20 border border-brand-green/35 flex items-center justify-center text-brand-green shadow-[0_0_15px_rgba(34,197,94,0.3)]">
+                      <span className="text-xs font-medium text-zinc-400">Đang Xem Trực Tiếp</span>
+                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                         <Radio className="w-4 h-4" />
                       </div>
                     </div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-black text-brand-green tracking-tight">{watchingCount}</span>
-                      <span className="text-xs text-white/50">thành viên đang xem</span>
+                      <span className="text-2xl sm:text-3xl font-bold text-white tracking-tight">{watchingCount}</span>
+                      <span className="text-xs text-zinc-500">thành viên</span>
                     </div>
-                    <div className="mt-3 space-y-1 text-[11px] text-white/60">
+                    <div className="mt-3 space-y-1 text-xs text-zinc-400">
                       <div className="flex items-center justify-between">
-                        <span>Lịch sử xem tích lũy:</span>
-                        <strong className="text-white font-mono font-bold">{totalWatchHistory} lượt</strong>
+                        <span>Lịch sử tích lũy:</span>
+                        <strong className="text-zinc-200 font-mono font-medium">{totalWatchHistory} lượt</strong>
                       </div>
                       <div className="flex items-center justify-between">
                         <span>Danh sách yêu thích:</span>
-                        <strong className="text-white font-mono font-bold">{totalFavorites} phim</strong>
+                        <strong className="text-zinc-200 font-mono font-medium">{totalFavorites} phim</strong>
                       </div>
                     </div>
                   </div>
                   <button
                     onClick={() => switchTab("users")}
-                    className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs font-bold text-brand-green hover:text-brand-green-hover transition-colors cursor-pointer"
+                    className="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs text-zinc-400 hover:text-white transition-colors cursor-pointer"
                   >
-                    <span>Xem bảng giám sát trực tuyến</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                    <span>Xem danh sách trực tuyến</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-zinc-500" />
                   </button>
                 </div>
 
                 {/* Metric Card 3: Featured Movies */}
-                <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-500/[0.07] to-white/[0.02] border border-amber-500/20 hover:border-amber-500/40 transition-all flex flex-col justify-between group shadow-lg">
+                <div className="p-4 sm:p-5 rounded-xl bg-[#11161A] border border-white/[0.08] hover:border-white/20 transition-all flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-bold text-white/70 uppercase tracking-wider">Phim Ghim Trang Chủ</span>
-                      <div className="w-9 h-9 rounded-xl bg-amber-400/20 border border-amber-400/30 flex items-center justify-center text-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.2)]">
+                      <span className="text-xs font-medium text-zinc-400">Phim Ghim Trang Chủ</span>
+                      <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-300">
                         <Film className="w-4 h-4" />
                       </div>
                     </div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-black text-amber-300 tracking-tight">{config.featuredSlugs.length}</span>
-                      <span className="text-xs text-white/50">phim trên Hero Banner</span>
+                      <span className="text-2xl sm:text-3xl font-bold text-white tracking-tight">{config.featuredSlugs.length}</span>
+                      <span className="text-xs text-zinc-500">phim trên Hero</span>
                     </div>
-                    <div className="mt-3 space-y-1 text-[11px] text-white/60">
+                    <div className="mt-3 space-y-1 text-xs text-zinc-400">
                       <div className="flex items-center justify-between">
                         <span>Vị trí hiển thị:</span>
-                        <strong className="text-amber-300 font-bold">Slider Trang Chủ</strong>
+                        <strong className="text-zinc-200 font-medium">Slider Trang Chủ</strong>
                       </div>
                       <div className="flex items-center justify-between truncate">
                         <span>Phim Top 1:</span>
-                        <strong className="text-white font-mono font-bold truncate max-w-[120px]" title={config.featuredSlugs[0] || "Chưa có"}>
+                        <strong className="text-zinc-200 font-mono font-medium truncate max-w-[120px]" title={config.featuredSlugs[0] || "Chưa có"}>
                           {config.featuredSlugs[0] || "Chưa có"}
                         </strong>
                       </div>
@@ -1477,47 +1462,47 @@ export default function AdminDashboardPage() {
                   </div>
                   <button
                     onClick={() => switchTab("featured")}
-                    className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs font-bold text-amber-300 hover:text-amber-200 transition-colors cursor-pointer"
+                    className="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs text-zinc-400 hover:text-white transition-colors cursor-pointer"
                   >
-                    <span>Quản lý danh sách ghim</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                    <span>Quản lý phim ghim</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-zinc-500" />
                   </button>
                 </div>
 
                 {/* Metric Card 4: Upstream API Health */}
-                <div className="p-5 rounded-2xl bg-gradient-to-br from-cyan-500/[0.07] to-white/[0.02] border border-cyan-500/20 hover:border-cyan-500/40 transition-all flex flex-col justify-between group shadow-lg">
+                <div className="p-4 sm:p-5 rounded-xl bg-[#11161A] border border-white/[0.08] hover:border-white/20 transition-all flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-bold text-white/70 uppercase tracking-wider">Máy Chủ Nguồn Phim</span>
+                      <span className="text-xs font-medium text-zinc-400">Nguồn Phim PhimAPI</span>
                       <button
                         onClick={checkApiHealth}
                         disabled={isCheckingPing}
-                        className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-300 hover:bg-cyan-500/30 transition-colors cursor-pointer"
+                        className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-300 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
                         title="Đo lại tốc độ phản hồi"
                       >
-                        <RefreshCw className={`w-4 h-4 ${isCheckingPing ? "animate-spin" : ""}`} />
+                        <RefreshCw className={`w-3.5 h-3.5 ${isCheckingPing ? "animate-spin" : ""}`} />
                       </button>
                     </div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-black text-cyan-300 tracking-tight">
-                        {apiPing === null ? "Đang đo..." : apiPing === -1 ? "Mất kết nối" : `${apiPing}ms`}
+                      <span className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                        {apiPing === null ? "..." : apiPing === -1 ? "Lỗi" : `${apiPing}ms`}
                       </span>
-                      <span className="text-xs text-white/50">độ trễ (ping)</span>
+                      <span className="text-xs text-zinc-500">độ trễ (ping)</span>
                     </div>
-                    <div className="mt-3 space-y-1 text-[11px] text-white/60">
+                    <div className="mt-3 space-y-1 text-xs text-zinc-400">
                       <div className="flex items-center justify-between">
                         <span>Nhà cung cấp:</span>
-                        <strong className="text-white font-mono font-bold">phimapi.com</strong>
+                        <strong className="text-zinc-200 font-mono font-medium">phimapi.com</strong>
                       </div>
                       <div className="flex items-center justify-between">
                         <span>Trạng thái VOD:</span>
-                        <strong className="text-emerald-400 font-bold">Ổn định &amp; CDN HLS</strong>
+                        <strong className="text-emerald-400 font-medium">Ổn định &amp; CDN</strong>
                       </div>
                     </div>
                   </div>
                   <button
                     onClick={checkApiHealth}
-                    className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs font-bold text-cyan-300 hover:text-cyan-200 transition-colors cursor-pointer"
+                    className="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs text-zinc-400 hover:text-white transition-colors cursor-pointer"
                   >
                     <span>Kiểm tra lại kết nối</span>
                     <RefreshCw className={`w-3.5 h-3.5 ${isCheckingPing ? "animate-spin" : ""}`} />
@@ -1549,7 +1534,7 @@ export default function AdminDashboardPage() {
 
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={fetchUsers}
+                      onClick={() => fetchUsers(true)}
                       disabled={isLoadingUsers}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 text-xs font-semibold transition-colors cursor-pointer"
                     >
@@ -3109,53 +3094,53 @@ export default function AdminDashboardPage() {
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2.5 flex-wrap">
-                      <h2 className="text-xl font-extrabold text-white flex items-center gap-2">
-                        <Users className="w-5 h-5 text-brand-green" />
-                        Quản Lý Thành Viên & Toàn Quyền Quản Trị
+                      <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                        <Users className="w-4 h-4 text-zinc-400" />
+                        Quản Lý Thành Viên
                       </h2>
-                      <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-brand-green/20 text-brand-green border border-brand-green/40 shadow-sm">
-                        Full Authority
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/[0.06] text-zinc-400 border border-white/[0.06]">
+                        {totalUsersCount} tài khoản
                       </span>
                     </div>
-                    <p className="text-xs text-white/50 mt-1">
-                      Giám sát thời gian thực, phân quyền (Admin / VIP / User), xác thực OTP 1 chạm, đặt lại mật khẩu và xử lý vi phạm.
+                    <p className="text-xs text-zinc-400 mt-0.5">
+                      Phân quyền (Admin / VIP / User), kích hoạt OTP, đặt lại mật khẩu và kiểm soát bảo mật.
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2.5 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {/* View Mode Switcher */}
-                    <div className="flex items-center bg-black/50 border border-white/10 rounded-xl p-1 shrink-0">
+                    <div className="flex items-center bg-white/[0.04] border border-white/[0.08] rounded-lg p-0.5 shrink-0">
                       <button
                         type="button"
                         onClick={() => setUserViewMode("card")}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-colors cursor-pointer ${
                           userViewMode === "card"
-                            ? "bg-brand-green text-black shadow-[0_0_12px_rgba(34,197,94,0.3)]"
-                            : "text-white/60 hover:text-white"
+                            ? "bg-white/[0.08] text-white font-medium"
+                            : "text-zinc-400 hover:text-white"
                         }`}
-                        title="Xem dạng thẻ toàn diện không bị che"
+                        title="Dạng Thẻ"
                       >
                         <Grid className="w-3.5 h-3.5" />
-                        <span>Dạng Thẻ</span>
+                        <span>Thẻ</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => setUserViewMode("table")}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-colors cursor-pointer ${
                           userViewMode === "table"
-                            ? "bg-gradient-to-r from-brand-green to-emerald-400 text-[#051309] font-extrabold shadow-[0_0_15px_rgba(34,197,94,0.35)]"
-                            : "text-white/60 hover:text-white"
+                            ? "bg-white/[0.08] text-white font-medium"
+                            : "text-zinc-400 hover:text-white"
                         }`}
-                        title="Xem dạng bảng dữ liệu cuộn mượt mà"
+                        title="Dạng Bảng"
                       >
                         <List className="w-3.5 h-3.5" />
-                        <span>Dạng Bảng</span>
+                        <span>Bảng</span>
                       </button>
                     </div>
 
                     {/* Search Box */}
                     <div className="relative">
-                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400" />
+                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
                       <input
                         type="text"
                         value={userSearchTerm}
@@ -3163,8 +3148,8 @@ export default function AdminDashboardPage() {
                           setUserSearchTerm(e.target.value);
                           setUserPage(1);
                         }}
-                        placeholder="Tìm theo tên, email, ID, phim..."
-                        className="bg-[#070C09]/90 border border-white/15 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-white/35 transition-all w-56 sm:w-72 md:w-80"
+                        placeholder="Tìm tên, email, ID..."
+                        className="bg-[#0B0F12] border border-white/[0.08] focus:border-emerald-500/50 rounded-lg pl-8 pr-7 py-1.5 text-xs text-white placeholder:text-zinc-500 transition-colors w-48 sm:w-64"
                       />
                       {userSearchTerm && (
                         <button
@@ -3173,28 +3158,12 @@ export default function AdminDashboardPage() {
                             setUserSearchTerm("");
                             setUserPage(1);
                           }}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white p-0.5 rounded transition-colors cursor-pointer"
-                          title="Xóa tìm kiếm"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white p-0.5 transition-colors cursor-pointer"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>
-
-                    {(userSearchTerm || userFilter !== "all") && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setUserSearchTerm("");
-                          setUserFilter("all");
-                          setUserPage(1);
-                        }}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs font-bold text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                        Xóa lọc
-                      </button>
-                    )}
 
                     <select
                       value={userSort}
@@ -3202,197 +3171,112 @@ export default function AdminDashboardPage() {
                         setUserSort(e.target.value as typeof userSort);
                         setUserPage(1);
                       }}
-                      className="bg-[#0A0F0D]/90 border border-white/15 rounded-xl px-3 py-2 text-xs text-white/85 focus:outline-none focus:border-brand-green cursor-pointer"
-                      title="Sắp xếp danh sách thành viên"
+                      className="bg-[#0B0F12] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 focus:outline-none cursor-pointer"
                     >
-                      <option value="recent" className="bg-[#111A15] text-white">Mới tham gia</option>
-                      <option value="activity" className="bg-[#111A15] text-white">Hoạt động gần đây</option>
-                      <option value="name" className="bg-[#111A15] text-white">Theo tên</option>
+                      <option value="recent">Mới tham gia</option>
+                      <option value="activity">Hoạt động gần đây</option>
+                      <option value="name">Theo tên</option>
                     </select>
 
                     <button
                       type="button"
                       onClick={exportUsersCsv}
                       disabled={filteredUsers.length === 0}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-brand-green/30 bg-brand-green/15 text-xs font-bold text-brand-green hover:bg-brand-green/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm active:scale-95 cursor-pointer"
-                      title="Xuất danh sách đang hiển thị ra CSV"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] text-xs font-medium text-zinc-300 hover:bg-white/[0.08] hover:text-white transition-colors cursor-pointer disabled:opacity-40"
                     >
-                      <Download className="w-3.5 h-3.5" />
-                      Xuất CSV
+                      <Download className="w-3.5 h-3.5 text-zinc-400" />
+                      CSV
                     </button>
 
                     {/* Refresh Button */}
                     <button
                       type="button"
-                      onClick={fetchUsers}
+                      onClick={() => fetchUsers(true)}
                       disabled={isLoadingUsers}
-                      className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 transition-all cursor-pointer active:scale-95"
-                      title="Tải lại danh sách người dùng"
+                      className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-400 hover:text-white border border-white/[0.08] transition-colors cursor-pointer"
+                      title="Tải lại danh sách (Lấy dữ liệu mới nhất)"
                     >
-                      <RefreshCw className={`w-4 h-4 ${isLoadingUsers ? "animate-spin text-brand-green" : ""}`} />
+                      <RefreshCw className={`w-3.5 h-3.5 ${isLoadingUsers ? "animate-spin text-emerald-400" : ""}`} />
                     </button>
                   </div>
                 </div>
 
-                {/* 5 High-End KPI Metric Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+                {/* 5 Clean KPI Metric Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                   {/* Card 1: Tổng Thành Viên */}
-                  <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-b from-[#121B16]/90 via-[#0B110E]/90 to-[#070B09]/90 border border-white/10 hover:border-emerald-500/40 transition-all duration-300 group shadow-[0_4px_24px_rgba(0,0,0,0.35)]">
-                    <div className="absolute -top-10 -right-10 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all pointer-events-none" />
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-[10.5px] text-white/50 font-bold uppercase tracking-wider">Tổng Thành Viên</span>
-                      <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 text-white/70 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:text-emerald-400 group-hover:border-emerald-500/30 transition-all">
-                        <Users className="w-4 h-4" />
-                      </div>
+                  <div className="p-3.5 rounded-xl bg-[#11161A] border border-white/[0.08] hover:border-white/20 transition-all">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] text-zinc-400 font-medium">Tổng Thành Viên</span>
+                      <Users className="w-3.5 h-3.5 text-zinc-500" />
                     </div>
-                    <div className="flex items-baseline justify-between gap-1">
-                      <p className="text-2xl sm:text-3xl font-black font-mono text-white tracking-tight">{totalUsersCount}</p>
-                      <span className="text-[10px] font-semibold text-white/40">Tài khoản</span>
-                    </div>
+                    <p className="text-xl sm:text-2xl font-bold font-mono text-white tracking-tight">{totalUsersCount}</p>
                   </div>
 
                   {/* Card 2: Online (24h) */}
-                  <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-b from-emerald-950/20 via-[#0B110E]/90 to-[#070B09]/90 border border-emerald-500/20 hover:border-emerald-500/50 transition-all duration-300 group shadow-[0_4px_24px_rgba(0,0,0,0.35)]">
-                    <div className="absolute -top-10 -right-10 w-24 h-24 bg-emerald-500/15 rounded-full blur-2xl group-hover:bg-emerald-500/25 transition-all pointer-events-none" />
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-[10.5px] text-emerald-400/80 font-bold uppercase tracking-wider">Online (24h)</span>
-                      <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:shadow-[0_0_12px_rgba(16,185,129,0.3)] transition-all">
-                        <Activity className="w-4 h-4" />
-                      </div>
+                  <div className="p-3.5 rounded-xl bg-[#11161A] border border-white/[0.08] hover:border-white/20 transition-all">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] text-zinc-400 font-medium">Hoạt Động 24h</span>
+                      <Activity className="w-3.5 h-3.5 text-zinc-500" />
                     </div>
-                    <div className="flex items-baseline justify-between gap-1">
-                      <p className="text-2xl sm:text-3xl font-black font-mono text-emerald-400 tracking-tight">{active24hCount}</p>
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/25">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        Live
-                      </span>
-                    </div>
+                    <p className="text-xl sm:text-2xl font-bold font-mono text-zinc-200 tracking-tight">{active24hCount}</p>
                   </div>
 
                   {/* Card 3: Đang Xem Phim */}
-                  <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-b from-brand-green/10 via-[#0B110E]/90 to-[#070B09]/90 border border-brand-green/25 hover:border-brand-green/50 transition-all duration-300 group shadow-[0_4px_24px_rgba(0,0,0,0.35)]">
-                    <div className="absolute -top-10 -right-10 w-24 h-24 bg-brand-green/15 rounded-full blur-2xl group-hover:bg-brand-green/25 transition-all pointer-events-none" />
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-[10.5px] text-brand-green/80 font-bold uppercase tracking-wider">Đang Xem Phim</span>
-                      <div className="w-8 h-8 rounded-xl bg-brand-green/15 border border-brand-green/30 text-brand-green flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:shadow-[0_0_12px_rgba(34,197,94,0.3)] transition-all">
-                        <Film className="w-4 h-4" />
-                      </div>
+                  <div className="p-3.5 rounded-xl bg-[#11161A] border border-white/[0.08] hover:border-white/20 transition-all">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] text-zinc-400 font-medium">Đang Xem</span>
+                      <Film className="w-3.5 h-3.5 text-zinc-500" />
                     </div>
-                    <div className="flex items-baseline justify-between gap-1">
-                      <p className="text-2xl sm:text-3xl font-black font-mono text-brand-green tracking-tight">{watchingCount}</p>
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-brand-green bg-brand-green/10 px-2 py-0.5 rounded-full border border-brand-green/25">
-                        <span className="w-1.5 h-1.5 rounded-full bg-brand-green animate-ping" />
-                        Phát
-                      </span>
-                    </div>
+                    <p className="text-xl sm:text-2xl font-bold font-mono text-emerald-400 tracking-tight">{watchingCount}</p>
                   </div>
 
                   {/* Card 4: Đã Xác Thực OTP */}
-                  <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-b from-teal-950/20 via-[#0B110E]/90 to-[#070B09]/90 border border-teal-500/20 hover:border-teal-500/50 transition-all duration-300 group shadow-[0_4px_24px_rgba(0,0,0,0.35)]">
-                    <div className="absolute -top-10 -right-10 w-24 h-24 bg-teal-500/15 rounded-full blur-2xl group-hover:bg-teal-500/25 transition-all pointer-events-none" />
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-[10.5px] text-teal-400/80 font-bold uppercase tracking-wider">Đã Xác Thực OTP</span>
-                      <div className="w-8 h-8 rounded-xl bg-teal-500/15 border border-teal-500/30 text-teal-400 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:shadow-[0_0_12px_rgba(20,184,166,0.3)] transition-all">
-                        <CheckCircle2 className="w-4 h-4" />
-                      </div>
+                  <div className="p-3.5 rounded-xl bg-[#11161A] border border-white/[0.08] hover:border-white/20 transition-all">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] text-zinc-400 font-medium">Đã Xác Thực</span>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-zinc-500" />
                     </div>
-                    <div className="flex items-baseline justify-between gap-1">
-                      <p className="text-2xl sm:text-3xl font-black font-mono text-teal-300 tracking-tight">{verifiedCount}</p>
-                      <span className="text-[10px] font-bold text-teal-300/80 bg-teal-500/10 px-2 py-0.5 rounded-full border border-teal-500/25">
-                        {totalUsersCount > 0 ? Math.round((verifiedCount / totalUsersCount) * 100) : 100}%
-                      </span>
-                    </div>
+                    <p className="text-xl sm:text-2xl font-bold font-mono text-zinc-200 tracking-tight">
+                      {verifiedCount} <span className="text-xs text-zinc-500 font-sans font-normal">({totalUsersCount > 0 ? Math.round((verifiedCount / totalUsersCount) * 100) : 100}%)</span>
+                    </p>
                   </div>
 
-                  {/* Card 5: Bị Khóa / Giới Hạn */}
-                  <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-b from-red-950/20 via-[#0B110E]/90 to-[#070B09]/90 border border-red-500/20 hover:border-red-500/50 transition-all duration-300 group shadow-[0_4px_24px_rgba(0,0,0,0.35)] col-span-2 sm:col-span-1">
-                    <div className="absolute -top-10 -right-10 w-24 h-24 bg-red-500/10 rounded-full blur-2xl group-hover:bg-red-500/20 transition-all pointer-events-none" />
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-[10.5px] text-red-400/80 font-bold uppercase tracking-wider">Bị Khóa / Giới Hạn</span>
-                      <div className={`w-8 h-8 rounded-xl ${bannedCount > 0 ? "bg-red-500/20 border-red-500/40 text-red-400" : "bg-white/5 border-white/10 text-white/50"} border flex items-center justify-center shrink-0 group-hover:scale-105 transition-all`}>
-                        <ShieldAlert className="w-4 h-4" />
-                      </div>
+                  {/* Card 5: Bị Khóa */}
+                  <div className="p-3.5 rounded-xl bg-[#11161A] border border-white/[0.08] hover:border-white/20 transition-all col-span-2 sm:col-span-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] text-zinc-400 font-medium">Tài Khoản Khóa</span>
+                      <ShieldAlert className="w-3.5 h-3.5 text-zinc-500" />
                     </div>
-                    <div className="flex items-baseline justify-between gap-1">
-                      <p className={`text-2xl sm:text-3xl font-black font-mono tracking-tight ${bannedCount > 0 ? "text-red-400" : "text-white"}`}>{bannedCount}</p>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${bannedCount > 0 ? "text-red-400 bg-red-500/15 border-red-500/30" : "text-emerald-400 bg-emerald-500/10 border-emerald-500/25"}`}>
-                        {bannedCount > 0 ? "Cần xử lý" : "An toàn"}
-                      </span>
-                    </div>
+                    <p className={`text-xl sm:text-2xl font-bold font-mono tracking-tight ${bannedCount > 0 ? "text-red-400" : "text-zinc-200"}`}>{bannedCount}</p>
                   </div>
                 </div>
 
                 {/* Filter Pills */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="mr-1 text-[11px] font-semibold text-white/45">
-                    Hiển thị <span className="text-white font-mono font-bold">{filteredUsers.length}</span> / {totalUsersCount}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="mr-2 text-xs text-zinc-500">
+                    {filteredUsers.length} / {totalUsersCount} thành viên
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => { setUserFilter("all"); setUserPage(1); }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                      userFilter === "all"
-                        ? "bg-gradient-to-r from-brand-green to-emerald-400 text-[#051309] font-bold shadow-[0_0_15px_rgba(34,197,94,0.35)]"
-                        : "bg-white/[0.04] hover:bg-white/[0.08] text-white/70 hover:text-white border border-white/10"
-                    }`}
-                  >
-                    Tất Cả ({totalUsersCount})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setUserFilter("active"); setUserPage(1); }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                      userFilter === "active"
-                        ? "bg-gradient-to-r from-brand-green to-emerald-400 text-[#051309] font-bold shadow-[0_0_15px_rgba(34,197,94,0.35)]"
-                        : "bg-white/[0.04] hover:bg-white/[0.08] text-white/70 hover:text-white border border-white/10"
-                    }`}
-                  >
-                    Đang Online / Hoạt Động ({active24hCount})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setUserFilter("watching"); setUserPage(1); }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                      userFilter === "watching"
-                        ? "bg-gradient-to-r from-brand-green to-emerald-400 text-[#051309] font-bold shadow-[0_0_15px_rgba(34,197,94,0.35)]"
-                        : "bg-white/[0.04] hover:bg-white/[0.08] text-white/70 hover:text-white border border-white/10"
-                    }`}
-                  >
-                    Đang Xem Phim ({watchingCount})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setUserFilter("verified"); setUserPage(1); }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                      userFilter === "verified"
-                        ? "bg-gradient-to-r from-teal-400 to-emerald-400 text-[#051309] font-bold shadow-[0_0_15px_rgba(20,184,166,0.35)]"
-                        : "bg-white/[0.04] hover:bg-white/[0.08] text-white/70 hover:text-white border border-white/10"
-                    }`}
-                  >
-                    Đã Xác Thực OTP ({verifiedCount})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setUserFilter("unverified"); setUserPage(1); }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                      userFilter === "unverified"
-                        ? "bg-amber-400 text-black font-bold shadow-[0_0_15px_rgba(251,191,36,0.35)]"
-                        : "bg-white/[0.04] hover:bg-white/[0.08] text-white/70 hover:text-white border border-white/10"
-                    }`}
-                  >
-                    Chưa Xác Thực ({unverifiedCount})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setUserFilter("banned"); setUserPage(1); }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                      userFilter === "banned"
-                        ? "bg-red-500 text-white font-bold shadow-[0_0_15px_rgba(239,68,68,0.35)]"
-                        : "bg-white/[0.04] hover:bg-white/[0.08] text-white/70 hover:text-white border border-white/10"
-                    }`}
-                  >
-                    Bị Khóa / Hạn Chế ({bannedCount})
-                  </button>
+                  {[
+                    { key: "all", label: `Tất cả (${totalUsersCount})` },
+                    { key: "active", label: `Online 24h (${active24hCount})` },
+                    { key: "watching", label: `Đang xem (${watchingCount})` },
+                    { key: "verified", label: `Đã xác thực (${verifiedCount})` },
+                    { key: "unverified", label: `Chưa xác thực (${unverifiedCount})` },
+                    { key: "banned", label: `Bị khóa (${bannedCount})` },
+                  ].map((tab) => (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() => { setUserFilter(tab.key as any); setUserPage(1); }}
+                      className={`px-2.5 py-1 rounded-md text-xs transition-colors cursor-pointer ${
+                        userFilter === tab.key
+                          ? "bg-white/[0.08] text-white font-medium border border-white/[0.12]"
+                          : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.03] border border-transparent"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
                 </div>
 
                 {/* Active Search / Filter State Indicator */}
@@ -3758,63 +3642,71 @@ export default function AdminDashboardPage() {
                       );
                     })}
 
-                    {filteredUsers.length === 0 && (
-                      <div className="col-span-full py-16 text-center text-white/40 border border-white/5 rounded-2xl bg-black/20">
-                        {isLoadingUsers ? (
-                          <div className="flex items-center justify-center gap-2">
-                            <RefreshCw className="w-4 h-4 animate-spin text-brand-green" />
-                            <span>Đang tải danh sách thành viên...</span>
-                          </div>
-                        ) : (
-                          <div className="space-y-3 max-w-md mx-auto px-4">
-                            <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-white/40">
-                              <Search className="w-6 h-6" />
+                    {isLoadingUsers && filteredUsers.length === 0 && (
+                      <div className="col-span-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
+                        {[1, 2, 3, 4, 5, 6].map((i) => (
+                          <div key={i} className="p-4 rounded-xl bg-[#11161A] border border-white/[0.06] animate-pulse space-y-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-full bg-white/[0.05]" />
+                              <div className="space-y-1.5 flex-1">
+                                <div className="h-3.5 bg-white/[0.06] rounded w-24" />
+                                <div className="h-2.5 bg-white/[0.04] rounded w-36" />
+                              </div>
                             </div>
-                            <p className="text-sm text-white/70 font-medium">
-                              {userSearchTerm.trim()
-                                ? `Không tìm thấy thành viên nào khớp với "${userSearchTerm.trim()}"`
-                                : "Không tìm thấy tài khoản thành viên nào phù hợp bộ lọc."}
-                            </p>
-                            {userSearchTerm.trim() && (
-                              <p className="text-xs text-white/40">
-                                Gợi ý: Thử tìm bằng tên không dấu, email hoặc User ID.
-                              </p>
-                            )}
+                            <div className="h-7 bg-white/[0.03] rounded" />
+                            <div className="flex justify-between pt-1">
+                              <div className="h-4 bg-white/[0.04] rounded w-14" />
+                              <div className="h-4 bg-white/[0.04] rounded w-16" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {!isLoadingUsers && filteredUsers.length === 0 && (
+                      <div className="col-span-full py-12 text-center text-zinc-500 border border-white/[0.06] rounded-xl bg-[#11161A]/50">
+                        <div className="space-y-2 max-w-sm mx-auto px-4">
+                          <Search className="w-5 h-5 mx-auto text-zinc-500" />
+                          <p className="text-xs text-zinc-300 font-medium">
+                            {userSearchTerm.trim()
+                              ? `Không tìm thấy thành viên nào khớp với "${userSearchTerm.trim()}"`
+                              : "Không tìm thấy tài khoản thành viên nào phù hợp bộ lọc."}
+                          </p>
+                          {userSearchTerm.trim() && (
                             <button
                               type="button"
                               onClick={() => {
                                 setUserSearchTerm("");
                                 setUserFilter("all");
                               }}
-                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-green text-black text-xs font-bold hover:bg-emerald-300 transition-colors shadow-[0_0_15px_rgba(16,185,129,0.2)] cursor-pointer"
+                              className="text-xs text-emerald-400 hover:underline cursor-pointer"
                             >
-                              <X className="w-3.5 h-3.5" />
-                              Hiển thị tất cả thành viên
+                              Xóa tìm kiếm
                             </button>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
                 )}
 
                 {/* ======================================================== */}
-                {/* 2. TABLE VIEW (FULL MIN-WIDTH & HORIZONTAL SMOOTH SCROLL) */}
+                {/* 2. TABLE VIEW                                            */}
                 {/* ======================================================== */}
                 {userViewMode === "table" && (
-                  <div className="w-full border border-white/10 rounded-3xl overflow-hidden bg-gradient-to-b from-[#0D1510]/80 via-[#090F0C]/80 to-[#060A08]/90 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl">
-                    <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
-                      <table className="w-full min-w-[1100px] text-left text-xs text-white/80 divide-y divide-white/5">
-                        <thead className="bg-white/[0.04] text-white/60 font-bold uppercase tracking-wider text-[10px] border-b border-white/10">
+                  <div className="w-full border border-white/[0.08] rounded-xl overflow-hidden bg-[#11161A]">
+                    <div className="overflow-x-auto w-full scrollbar-thin">
+                      <table className="w-full min-w-[1000px] text-left text-xs text-zinc-300 divide-y divide-white/[0.06]">
+                        <thead className="bg-white/[0.02] text-zinc-400 font-medium uppercase tracking-wider text-[11px] border-b border-white/[0.08]">
                           <tr>
-                            <th className="px-4 py-3.5 min-w-[240px] whitespace-nowrap">Thành Viên</th>
-                            <th className="px-4 py-3.5 min-w-[170px] whitespace-nowrap">Vai Trò & Xác Thực</th>
-                            <th className="px-4 py-3.5 min-w-[160px] whitespace-nowrap">Thời Lượng & Hoạt Động</th>
-                            <th className="px-4 py-3.5 min-w-[270px] whitespace-nowrap">Đang Xem Phim Nào</th>
-                            <th className="px-4 py-3.5 min-w-[260px] text-right whitespace-nowrap">Thao Tác Quản Trị</th>
+                            <th className="px-4 py-3 min-w-[220px]">Thành Viên</th>
+                            <th className="px-4 py-3 min-w-[150px]">Vai Trò &amp; Xác Thực</th>
+                            <th className="px-4 py-3 min-w-[150px]">Hoạt Động</th>
+                            <th className="px-4 py-3 min-w-[240px]">Đang Xem Phim</th>
+                            <th className="px-4 py-3 min-w-[220px] text-right">Thao Tác</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5">
+                        <tbody className="divide-y divide-white/[0.04]">
                           {paginatedUsers.map((u) => {
                             const isSuper = u.role === "superadmin" || u.email?.toLowerCase() === "kimdinhphuong205@gmail.com";
                             const isPermBanned = Boolean(u.isLocked);
@@ -4107,42 +3999,40 @@ export default function AdminDashboardPage() {
                             );
                           })}
 
-                          {filteredUsers.length === 0 && (
+                          {isLoadingUsers && filteredUsers.length === 0 && (
+                            [1, 2, 3, 4, 5].map((i) => (
+                              <tr key={i} className="animate-pulse">
+                                <td className="px-4 py-3"><div className="h-4 bg-white/[0.05] rounded w-32" /></td>
+                                <td className="px-4 py-3"><div className="h-4 bg-white/[0.05] rounded w-20" /></td>
+                                <td className="px-4 py-3"><div className="h-4 bg-white/[0.05] rounded w-24" /></td>
+                                <td className="px-4 py-3"><div className="h-4 bg-white/[0.05] rounded w-40" /></td>
+                                <td className="px-4 py-3 text-right"><div className="h-4 bg-white/[0.05] rounded w-28 ml-auto" /></td>
+                              </tr>
+                            ))
+                          )}
+                          {!isLoadingUsers && filteredUsers.length === 0 && (
                             <tr>
-                              <td colSpan={5} className="py-14 text-center text-white/40">
-                                {isLoadingUsers ? (
-                                  <div className="flex items-center justify-center gap-2">
-                                    <RefreshCw className="w-4 h-4 animate-spin text-brand-green" />
-                                    <span>Đang tải danh sách thành viên...</span>
-                                  </div>
-                                ) : (
-                                  <div className="space-y-3 max-w-md mx-auto px-4">
-                                    <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-white/40">
-                                      <Search className="w-5 h-5" />
-                                    </div>
-                                    <p className="text-sm text-white/70 font-medium">
-                                      {userSearchTerm.trim()
-                                        ? `Không tìm thấy thành viên nào khớp với "${userSearchTerm.trim()}"`
-                                        : "Không tìm thấy tài khoản thành viên nào phù hợp bộ lọc."}
-                                    </p>
-                                    {userSearchTerm.trim() && (
-                                      <p className="text-xs text-white/40">
-                                        Gợi ý: Thử tìm bằng tên không dấu, email hoặc User ID.
-                                      </p>
-                                    )}
+                              <td colSpan={5} className="py-12 text-center text-zinc-500">
+                                <div className="space-y-2 max-w-sm mx-auto px-4">
+                                  <Search className="w-5 h-5 mx-auto text-zinc-500" />
+                                  <p className="text-xs text-zinc-300 font-medium">
+                                    {userSearchTerm.trim()
+                                      ? `Không tìm thấy thành viên nào khớp với "${userSearchTerm.trim()}"`
+                                      : "Không tìm thấy tài khoản thành viên nào phù hợp bộ lọc."}
+                                  </p>
+                                  {userSearchTerm.trim() && (
                                     <button
                                       type="button"
                                       onClick={() => {
                                         setUserSearchTerm("");
                                         setUserFilter("all");
                                       }}
-                                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-brand-green text-black text-xs font-bold hover:bg-emerald-300 transition-colors shadow-[0_0_15px_rgba(16,185,129,0.2)] cursor-pointer"
+                                      className="text-xs text-emerald-400 hover:underline cursor-pointer"
                                     >
-                                      <X className="w-3.5 h-3.5" />
-                                      Hiển thị tất cả thành viên
+                                      Xóa tìm kiếm
                                     </button>
-                                  </div>
-                                )}
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           )}
@@ -4154,25 +4044,25 @@ export default function AdminDashboardPage() {
 
                 {totalUserPages > 1 && (
                   <div className="flex items-center justify-between gap-3 pt-2">
-                    <span className="text-xs text-white/50 font-medium">
-                      Trang <strong className="text-emerald-400 font-mono">{currentUserPage}</strong> / <span className="font-mono">{totalUserPages}</span>
+                    <span className="text-xs text-zinc-400 font-medium">
+                      Trang <strong className="text-white font-mono">{currentUserPage}</strong> / <span className="font-mono">{totalUserPages}</span>
                     </span>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         disabled={currentUserPage === 1}
                         onClick={() => setUserPage((page) => Math.max(1, page - 1))}
-                        className="px-3.5 py-1.5 rounded-xl border border-white/10 bg-white/[0.04] text-xs font-bold text-white/70 hover:bg-white/10 hover:text-white hover:border-emerald-500/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                        className="px-3 py-1 rounded-lg border border-white/[0.08] bg-white/[0.04] text-xs font-medium text-zinc-300 hover:bg-white/[0.08] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
                       >
-                        ← Trang trước
+                        ← Trước
                       </button>
                       <button
                         type="button"
                         disabled={currentUserPage === totalUserPages}
                         onClick={() => setUserPage((page) => Math.min(totalUserPages, page + 1))}
-                        className="px-3.5 py-1.5 rounded-xl border border-white/10 bg-white/[0.04] text-xs font-bold text-white/70 hover:bg-white/10 hover:text-white hover:border-emerald-500/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                        className="px-3 py-1 rounded-lg border border-white/[0.08] bg-white/[0.04] text-xs font-medium text-zinc-300 hover:bg-white/[0.08] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
                       >
-                        Trang sau →
+                        Sau →
                       </button>
                     </div>
                   </div>
@@ -4195,15 +4085,15 @@ export default function AdminDashboardPage() {
             return (
               <div className="space-y-6">
                 {/* Header Card */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-2xl bg-white/[0.03] border border-white/10">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-xl bg-[#11161A] border border-white/[0.08]">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
-                      <AlertTriangle className="w-5 h-5" />
+                    <div className="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+                      <AlertTriangle className="w-4 h-4" />
                     </div>
                     <div>
-                      <h2 className="text-lg sm:text-xl font-black text-white">Quản Lý Báo Lỗi Phim</h2>
-                      <p className="text-xs text-white/50">
-                        Theo dõi và xử lý kịp thời các sự cố đường truyền, mất tiếng, sai tập do khán giả báo cáo
+                      <h2 className="text-base font-bold text-white">Quản Lý Báo Lỗi Phim</h2>
+                      <p className="text-xs text-zinc-400">
+                        Theo dõi và xử lý các sự cố đường truyền, mất tiếng, sai tập do khán giả báo cáo
                       </p>
                     </div>
                   </div>
@@ -4213,7 +4103,7 @@ export default function AdminDashboardPage() {
                       type="button"
                       onClick={fetchReports}
                       disabled={isLoadingReports}
-                      className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/80 border border-white/10 text-xs font-bold flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+                      className="px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 hover:text-white border border-white/[0.08] text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
                     >
                       <RefreshCw className={`w-3.5 h-3.5 ${isLoadingReports ? "animate-spin" : ""}`} />
                       <span>Làm mới</span>
@@ -4222,7 +4112,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* Filter Tabs */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   {[
                     { id: "all", label: "Tất cả", count: reportsList.length },
                     { id: "pending", label: "Chờ xử lý", count: pendingCount },
@@ -4232,15 +4122,15 @@ export default function AdminDashboardPage() {
                       key={tab.id}
                       type="button"
                       onClick={() => setReportFilter(tab.id as any)}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                      className={`px-3 py-1 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
                         reportFilter === tab.id
-                          ? "bg-brand-green text-black shadow-[0_0_15px_rgba(34,197,94,0.3)]"
-                          : "bg-white/5 text-white/70 hover:text-white hover:bg-white/10 border border-white/5"
+                          ? "bg-white/[0.08] text-white border border-white/[0.12]"
+                          : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.03] border border-transparent"
                       }`}
                     >
                       <span>{tab.label}</span>
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
-                        reportFilter === tab.id ? "bg-black/20 text-black" : "bg-white/10 text-white/60"
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${
+                        reportFilter === tab.id ? "bg-white/[0.08] text-zinc-300" : "bg-white/[0.04] text-zinc-500"
                       }`}>
                         {tab.count}
                       </span>

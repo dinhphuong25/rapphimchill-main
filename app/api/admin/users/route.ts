@@ -22,7 +22,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const users = await getAllUsersForAdminPersistent();
+    const isFresh = req.nextUrl.searchParams.get("fresh") === "true";
+    const users = await getAllUsersForAdminPersistent(isFresh);
     return NextResponse.json({
       success: true,
       users,
