@@ -332,7 +332,7 @@ export default function VideoPlayer({
     setIsSlowNetwork(false);
   }, []);
   // Anti-Ad Banner Shield (Tự động phát hiện & chỉ che dải quảng cáo bài bạc khi có quảng cáo)
-  const [adShieldMode, setAdShieldMode] = useState<'auto' | 'always' | 'off'>('auto');
+  const [adShieldMode, setAdShieldMode] = useState<'auto' | 'always' | 'off'>('off');
   const [isAdDetected, setIsAdDetected] = useState(false);
   const detectorCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const consecutiveDetectionsRef = useRef(0);
@@ -497,7 +497,7 @@ export default function VideoPlayer({
         setAdShieldMode(savedShield);
         setIsAdDetected(savedShield === 'always');
       } else {
-        setAdShieldMode('auto');
+        setAdShieldMode('off');
         setIsAdDetected(false);
         try { localStorage.setItem('cinema_ad_shield', 'auto'); } catch (e) {}
       }
@@ -1695,33 +1695,8 @@ export default function VideoPlayer({
         }
       }
 
-      // Tự động kích hoạt khiên che quảng cáo thông minh:
-      // 1. Phân đoạn banner từ playlist m3u8 (convertv8 / banner_ad)
-      // 2. Đoạn intro sponsor cờ bạc đầu phim (0s - 480s / 8 phút) nơi video stream lồng dải quảng cáo bài bạc như 9922.com (cả chế độ thường & toàn màn hình web mobile)
-      // 3. Quét hình ảnh thời gian thực (visual OCR / edge detector)
-      // 4. KHI HẾT QUẢNG CÁO (cur > 480s hoặc ngoài dải banner), khiên che tự động tắt mượt mà, trả lại video nguyên bản cho người xem!
-      if (adShieldMode === 'always') {
-        setIsAdDetected(true);
-      } else if (adShieldMode === 'auto') {
-        let isAdNow = false;
-
-        // Ưu tiên 1: Dải banner từ playlist m3u8 nếu segment chứa từ khóa banner
-        if (bannerRangesRef.current.length > 0) {
-          for (const range of bannerRangesRef.current) {
-            if (cur >= range.start - 0.5 && cur <= range.end + 0.5) {
-              isAdNow = true;
-              break;
-            }
-          }
-        }
-
-        // Ưu tiên 2: Quét hình ảnh thời gian thực phát hiện text quảng cáo mép trên
-        if (!isAdNow && isVisualAdDetectedRef.current) {
-          isAdNow = true;
-        }
-
-        setIsAdDetected(isAdNow);
-      } else {
+      // Tạm gỡ phần che quảng cáo theo yêu cầu
+      if (isAdDetected) {
         setIsAdDetected(false);
       }
 
@@ -2115,184 +2090,11 @@ export default function VideoPlayer({
     };
   }, []);
 
-  // Intelligent Real-Time Ad Banner Detector Loop (Tự động nhận diện banner cờ bạc mép trên - chỉ che khi có quảng cáo)
+  // Intelligent Real-Time Ad Banner Detector Loop (Tạm gỡ theo yêu cầu)
   useEffect(() => {
-    if (adShieldMode === 'off') {
-      setIsAdDetected(false);
-      isVisualAdDetectedRef.current = false;
-      consecutiveDetectionsRef.current = 0;
-      consecutiveMissesRef.current = 0;
-      prevFrameLuminanceRef.current = null;
-      return;
-    }
-    if (adShieldMode === 'always') {
-      setIsAdDetected(true);
-      return;
-    }
-
-    // Chế độ 'auto': bắt đầu ở trạng thái không che, tuyệt đối chỉ che khi thực tế quét thấy banner
     setIsAdDetected(false);
     isVisualAdDetectedRef.current = false;
-    consecutiveDetectionsRef.current = 0;
-    consecutiveMissesRef.current = 0;
-    prevFrameLuminanceRef.current = null;
-
-    const checkInterval = setInterval(() => {
-      const video = videoRef.current;
-      if (!video || video.paused || video.ended || video.readyState < 2) return;
-
-      const vw = video.videoWidth;
-      const vh = video.videoHeight;
-      if (!vw || !vh) return;
-
-      let detected = false;
-      try {
-        const CW = 320;
-        const CH = 48;
-        let canvas = detectorCanvasRef.current;
-        if (!canvas) {
-          canvas = document.createElement('canvas');
-          canvas.width = CW;
-          canvas.height = CH;
-          detectorCanvasRef.current = canvas;
-        } else if (canvas.width !== CW || canvas.height !== CH) {
-          canvas.width = CW;
-          canvas.height = CH;
-        }
-
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        if (ctx) {
-          // Lấy dải mép trên 16% nơi in đóng dấu watermark quảng cáo cờ bạc
-          const sampleHeight = Math.max(Math.round(vh * 0.16), 36);
-          ctx.drawImage(video, 0, 0, vw, sampleHeight, 0, 0, CW, CH);
-
-          const imgData = ctx.getImageData(0, 0, CW, CH);
-          const data = imgData.data;
-
-          const currentLum = new Uint8Array(CW * CH);
-          let centerEdgeTransitions = 0;
-          let activeTextRows = 0;
-          let yellowGoldPixels = 0;
-          let textContrastPixels = 0;
-
-          // Quét ma trận hàng ngang ở vùng giữa khung hình (x từ ~12% đến 88% width = 38 -> 282)
-          for (let y = 4; y < CH - 4; y++) {
-            let prevLum = -1;
-            let rowTransitions = 0;
-            let rowTextPixels = 0;
-
-            for (let x = 38; x < 282; x++) {
-              const idx = (y * CW + x) * 4;
-              const r = data[idx];
-              const g = data[idx + 1];
-              const b = data[idx + 2];
-              const lum = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
-              currentLum[y * CW + x] = lum;
-
-              // Nhận diện pixel màu vàng kim đặc trưng cờ bạc (9922.com, OKVIP, v.v.)
-              const isYellowGold = r > 165 && g > 125 && b < 110 && (r - b) > 40;
-              // Nhận diện pixel chữ trắng gắt hoặc nền đen viền nét
-              const isBrightWhite = lum > 195 && Math.abs(r - g) < 25 && Math.abs(g - b) < 25;
-              const isDarkStroke = lum < 40;
-
-              if (isYellowGold) {
-                yellowGoldPixels++;
-                rowTextPixels++;
-              }
-              if (isBrightWhite || isDarkStroke) {
-                textContrastPixels++;
-                rowTextPixels++;
-              }
-
-              // Đếm chuyển tiếp nét chữ có độ tương phản cao
-              if (prevLum >= 0 && Math.abs(lum - prevLum) > 28) {
-                rowTransitions++;
-                centerEdgeTransitions++;
-              }
-              prevLum = lum;
-            }
-
-            // Hàng chữ quảng cáo sẽ có nhiều lần dao động nét viền-thân chữ
-            if (rowTransitions >= 14 && rowTextPixels >= 10) {
-              activeTextRows++;
-            }
-          }
-
-          // Kiểm tra tính tĩnh theo thời gian (Temporal Invariance):
-          // Watermark cờ bạc in cố định tọa độ trên video, sai số pixel giữa các frame rất nhỏ.
-          // Cảnh phim tự nhiên (người chuyển động, góc máy lia, phong cảnh) pixel thay đổi liên tục.
-          let isTemporallyStatic = false;
-          const prevLum = prevFrameLuminanceRef.current;
-          if (prevLum && prevLum.length === currentLum.length) {
-            let diffSum = 0;
-            let comparedCount = 0;
-            for (let i = 0; i < currentLum.length; i += 4) {
-              if (currentLum[i] > 160 || currentLum[i] < 45) {
-                diffSum += Math.abs(currentLum[i] - prevLum[i]);
-                comparedCount++;
-              }
-            }
-            if (comparedCount > 50) {
-              const avgDiff = diffSum / comparedCount;
-              // Ngưỡng 18 cho phép dung sai do nén video H264 hoặc hiệu ứng lấp lánh nhẹ
-              if (avgDiff < 18) {
-                isTemporallyStatic = true;
-              }
-            }
-          }
-          prevFrameLuminanceRef.current = currentLum;
-
-          // Tiêu chí nhận diện thông minh, chặt chẽ:
-          // Trường hợp 1: Chữ vàng cờ bạc đặc trưng rõ nét với cấu trúc chữ theo hàng
-          const hasYellowAdSignature = yellowGoldPixels >= 35 && activeTextRows >= 1 && centerEdgeTransitions >= 80;
-          // Trường hợp 2: Chữ watermark tương phản cao tĩnh bất động qua thời gian
-          const hasStaticWatermark = isTemporallyStatic && activeTextRows >= 1 && centerEdgeTransitions >= 90 && (textContrastPixels >= 100 || yellowGoldPixels >= 20);
-          // Trường hợp 3: Banner 2 hàng chữ dày đặc
-          const hasDenseMultiLineAd = activeTextRows >= 2 && centerEdgeTransitions >= 140 && (textContrastPixels >= 140 || yellowGoldPixels >= 20);
-
-          if (hasYellowAdSignature || hasStaticWatermark || hasDenseMultiLineAd) {
-            detected = true;
-          }
-        }
-      } catch {
-        detected = false;
-      }
-
-      // Check thêm phân đoạn banner đã xác định từ m3u8 playlist (nếu có segment banner)
-      if (!detected && bannerRangesRef.current.length > 0) {
-        const cur = video.currentTime;
-        for (const range of bannerRangesRef.current) {
-          if (cur >= range.start - 0.5 && cur <= range.end + 0.5) {
-            detected = true;
-            break;
-          }
-        }
-      }
-
-      if (detected) {
-        consecutiveDetectionsRef.current++;
-        consecutiveMissesRef.current = 0;
-        // Xác nhận 2 lần quét liên tiếp (~1.2s) mới kích hoạt khiên che
-        if (consecutiveDetectionsRef.current >= 2) {
-          isVisualAdDetectedRef.current = true;
-          setIsAdDetected(true);
-        }
-      } else {
-        consecutiveMissesRef.current++;
-        consecutiveDetectionsRef.current = 0;
-        // Tắt che nhanh chóng khi hết quảng cáo (2 lần quét không thấy ~1.2s)
-        if (consecutiveMissesRef.current >= 2) {
-          isVisualAdDetectedRef.current = false;
-          setIsAdDetected(false);
-          prevFrameLuminanceRef.current = null;
-        }
-      }
-    }, 600);
-
-    return () => {
-      clearInterval(checkInterval);
-    };
-  }, [adShieldMode, videoUrl]);
+  }, []);
 
   // Đảm bảo không tự bật PiP khi đổi tab
   useEffect(() => {
@@ -2539,18 +2341,7 @@ export default function VideoPlayer({
         </div>
       )}
 
-      {/* Intelligent Anti-Ad Banner Shield (Che sạch hoàn toàn dải watermark quảng cáo cờ bạc mép trên) */}
-      <div 
-        className={cn(
-          "absolute top-0 left-0 right-0 z-[28] transition-all duration-300 overflow-hidden pointer-events-none select-none",
-          isAdDetected
-            ? "opacity-100 h-[17.5%] sm:h-[16.5%]" 
-            : "opacity-0 h-0 pointer-events-none"
-        )}
-      >
-        {/* Cinematic gradient mask with frosted blur to obliterate gambling text */}
-        <div className="w-full h-full bg-gradient-to-b from-black via-black/95 via-55% to-transparent backdrop-blur-[6px]" />
-      </div>
+      {/* Intelligent Anti-Ad Banner Shield: Tạm gỡ theo yêu cầu */}
 
 
       <div 
@@ -3411,48 +3202,7 @@ export default function VideoPlayer({
                     />
                   </div>
 
-                  {/* Anti-Ad Shield Control */}
-                  <div className="pt-3 px-1 space-y-2 border-t border-white/10 mt-1">
-                    <div className="flex items-center justify-between text-xs text-white/80">
-                      <span className="flex items-center gap-1.5 font-bold">
-                        <Shield className="w-3.5 h-3.5 text-brand-green" />
-                        Khiên che quảng cáo mép trên
-                      </span>
-                      <span className="text-[10px] text-brand-green font-bold bg-brand-green/10 border border-brand-green/20 px-2 py-0.5 rounded-full">
-                        {adShieldMode === 'auto' ? (isAdDetected ? 'Đang che QC' : 'Tự động (Sạch)') : adShieldMode === 'always' ? 'Luôn che' : 'Đã tắt'}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {[
-                        { id: 'auto', label: 'Tự động', desc: 'Chỉ che khi có QC' },
-                        { id: 'always', label: 'Luôn che', desc: 'Che cố định mép trên' },
-                        { id: 'off', label: 'Tắt khiên', desc: 'Xem nguyên bản' },
-                      ].map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAdShieldModeChange(item.id as any);
-                          }}
-                          className={cn(
-                            "py-2 px-1.5 rounded-xl text-center flex flex-col items-center justify-center transition-all cursor-pointer border",
-                            adShieldMode === item.id
-                              ? "bg-brand-green text-black font-extrabold border-brand-green shadow-sm"
-                              : "bg-white/5 hover:bg-white/10 text-white/70 border-white/5"
-                          )}
-                        >
-                          <span className="text-xs font-bold leading-tight">{item.label}</span>
-                          <span className={cn(
-                            "text-[9px] leading-tight mt-0.5",
-                            adShieldMode === item.id ? "text-black/80 font-semibold" : "text-white/40"
-                          )}>
-                            {item.desc}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+
                 </div>
               )}
 
