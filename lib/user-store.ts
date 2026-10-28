@@ -111,7 +111,11 @@ async function readPersistentUserByEmail(email: string): Promise<User | null | u
   // Import a legacy local account the first time it is requested.
   const localUser = readUsers().find((user) => user.email.toLowerCase() === normalized);
   if (localUser) {
-    await vercelSql!`INSERT INTO hiphim_users (email, id, data) VALUES (${localUser.email}, ${localUser.id}, ${JSON.stringify(localUser)}::jsonb) ON CONFLICT (email) DO NOTHING`;
+    if (await ensureVercelDatabase()) {
+      try {
+        await vercelSql!`INSERT INTO hiphim_users (email, id, data) VALUES (${localUser.email}, ${localUser.id}, ${JSON.stringify(localUser)}::jsonb) ON CONFLICT (email) DO NOTHING`;
+      } catch {}
+    }
     userProfileCacheByEmail.set(normalized, { user: localUser, expires: Date.now() + USER_CACHE_TTL });
     if (localUser.id) userProfileCacheById.set(localUser.id, { user: localUser, expires: Date.now() + USER_CACHE_TTL });
     return localUser;

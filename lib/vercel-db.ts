@@ -23,11 +23,7 @@ let _cachedUrl = "";
 
 export function getVercelSql() {
   const url = getDatabaseUrl();
-  if (!url) {
-    throw new Error(
-      "DATABASE_URL is not configured. Please set the DATABASE_URL secret in your environment or Cloudflare Worker."
-    );
-  }
+  if (!url) return null;
   if (!_cachedSql || _cachedUrl !== url) {
     _cachedUrl = url;
     _cachedSql = neon(url);
