@@ -1,0 +1,19 @@
+version: 2
+
+secret:
+  # Paths excluded from secret scanning
+  ignored_paths:
+    - "node_modules/**"
+    - ".next/**"
+    - ".open-next/**"
+    - "dist/**"
+    - "build/**"
+    - "coverage/**"
+    - "scratch/**"
+    - ".agent/**"
+    - ".agents/**"
+    - "**/*.min.js"
+    - "**/*.bundle.js"
+
+  # Display settings
+  show_secrets: false

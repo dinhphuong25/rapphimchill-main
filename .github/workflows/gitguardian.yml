@@ -1,0 +1,41 @@
+name: GitGuardian Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: gitguardian-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ggshield-scan:
+    name: GitGuardian Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run GitGuardian Scan
+        if: ${{ env.GITGUARDIAN_API_KEY != '' }}
+        uses: GitGuardian/ggshield-action@v1
+        env:
+          GITHUB_PUSH_BEFORE_SHA: ${{ github.event.before }}
+          GITHUB_PULL_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GITHUB_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
+
+      - name: Secret Setup Notice
+        if: ${{ env.GITGUARDIAN_API_KEY == '' }}
+        run: |
+          echo "::warning title=GitGuardian API Key Missing::GITGUARDIAN_API_KEY is not configured in GitHub Secrets."
+          echo "To enable automated scans, add GITGUARDIAN_API_KEY in Repository Settings > Secrets and variables > Actions."
