@@ -11,6 +11,13 @@
 		"directory": ".open-next/assets",
 		"binding": "ASSETS"
 	},
+	"d1_databases": [
+		{
+			"binding": "HIPHIM_DB",
+			"database_name": "hiphim-users",
+			"database_id": "a5300649-2281-459d-8f57-a0e6f3c5dda7"
+		}
+	],
 	"services": [
 		{
 			"binding": "WORKER_SELF_REFERENCE",

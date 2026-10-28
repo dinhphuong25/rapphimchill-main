@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { ensureVercelDatabase, vercelSql } from "@/lib/vercel-db";
+import { getD1Database } from "@/lib/d1-db";
 import seedNotifications from "./seed-notifications.json";
 
 export interface SystemNotification {
@@ -93,6 +94,21 @@ async function ensureTable() {
 }
 
 export async function getSystemNotifications(limit = 30): Promise<SystemNotification[]> {
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      const { results } = await d1
+        .prepare("SELECT data FROM hiphim_system_notifications ORDER BY created_at DESC LIMIT ?")
+        .bind(limit)
+        .all<{ data: string }>();
+      if (results && results.length > 0) {
+        return results.map((r) => JSON.parse(r.data) as SystemNotification);
+      }
+    } catch (err) {
+      console.warn("[D1] Failed to fetch system notifications from D1:", err);
+    }
+  }
+
   const hasDb = await ensureTable();
   if (hasDb && vercelSql) {
     try {
@@ -120,6 +136,29 @@ export async function createSystemNotification(
     createdAt: Date.now(),
     author: input.author || "Ban Quản Trị",
   };
+
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      await d1
+        .prepare(
+          "INSERT INTO hiphim_system_notifications (id, title, content, type, link, created_at, author, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(
+          newNotif.id,
+          newNotif.title,
+          newNotif.content,
+          newNotif.type,
+          newNotif.link || null,
+          newNotif.createdAt,
+          newNotif.author,
+          JSON.stringify(newNotif)
+        )
+        .run();
+    } catch (err) {
+      console.warn("[D1] Failed to insert system notification into D1:", err);
+    }
+  }
 
   const hasDb = await ensureTable();
   if (hasDb && vercelSql) {
@@ -151,6 +190,15 @@ export async function createSystemNotification(
 }
 
 export async function deleteSystemNotification(id: string): Promise<boolean> {
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      await d1.prepare("DELETE FROM hiphim_system_notifications WHERE id = ?").bind(id).run();
+    } catch (err) {
+      console.warn("[D1] Failed to delete system notification from D1:", err);
+    }
+  }
+
   const hasDb = await ensureTable();
   if (hasDb && vercelSql) {
     try {

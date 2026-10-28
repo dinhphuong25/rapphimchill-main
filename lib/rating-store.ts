@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { ensureVercelDatabase, vercelSql } from "@/lib/vercel-db";
+import { getD1Database } from "@/lib/d1-db";
 
 export interface MovieRatingSummary {
   slug: string;
@@ -88,6 +89,28 @@ function getInitialSeedRating(slug: string): { score: number; votes: number } {
 export async function getMovieRating(slug: string): Promise<MovieRatingSummary> {
   const seed = getInitialSeedRating(slug);
 
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      const row = await d1
+        .prepare("SELECT total_score, total_votes FROM hiphim_ratings WHERE slug = ?")
+        .bind(slug)
+        .first<{ total_score: number; total_votes: number }>();
+      if (row) {
+        const totalScore = (seed.score * seed.votes) + Number(row.total_score);
+        const totalVotes = seed.votes + Number(row.total_votes);
+        const average = totalVotes > 0 ? parseFloat((totalScore / totalVotes).toFixed(1)) : seed.score;
+        return {
+          slug,
+          averageScore: average,
+          totalVotes,
+        };
+      }
+    } catch (err) {
+      console.warn("[D1] Failed to query rating from D1:", err);
+    }
+  }
+
   const hasDb = await ensureRatingsTable();
   if (hasDb && vercelSql) {
     try {
@@ -154,6 +177,18 @@ export async function submitMovieRating(
   movieEntry.userVotes[userIdOrIp] = clampedScore;
 
   writeRatingsToFile(fileData);
+
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      await d1
+        .prepare("INSERT OR REPLACE INTO hiphim_ratings (slug, total_score, total_votes, updated_at) VALUES (?, ?, ?, ?)")
+        .bind(slug, movieEntry.totalScore, movieEntry.totalVotes, Date.now())
+        .run();
+    } catch (err) {
+      console.warn("[D1] Failed to save rating to D1:", err);
+    }
+  }
 
   const hasDb = await ensureRatingsTable();
   if (hasDb && vercelSql) {

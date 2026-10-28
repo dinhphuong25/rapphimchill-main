@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { ensureVercelDatabase, vercelSql } from "@/lib/vercel-db";
+import { getD1Database } from "@/lib/d1-db";
 import seedUsers from "./seed-data.json";
 
 const USERS_FILE_PATH = path.join(process.cwd(), "data", "users.json");
@@ -64,6 +65,39 @@ async function readPersistentUserByEmail(email: string): Promise<User | null | u
   if (cached && cached.expires > Date.now()) {
     return cached.user;
   }
+
+  // 1. Try Cloudflare D1 first (Sub-10ms Edge Database)
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      const row = await d1
+        .prepare("SELECT data FROM hiphim_users WHERE email = ?")
+        .bind(normalized)
+        .first<{ data: string }>();
+      if (row?.data) {
+        const user = JSON.parse(row.data) as User;
+        userProfileCacheByEmail.set(normalized, { user, expires: Date.now() + USER_CACHE_TTL });
+        if (user.id) userProfileCacheById.set(user.id, { user, expires: Date.now() + USER_CACHE_TTL });
+        return user;
+      }
+      // Import a legacy local account the first time it is requested on D1
+      const localUser = readUsers().find((u) => u.email.toLowerCase() === normalized);
+      if (localUser) {
+        await d1
+          .prepare("INSERT OR IGNORE INTO hiphim_users (email, id, data, updated_at) VALUES (?, ?, ?, ?)")
+          .bind(localUser.email, localUser.id, JSON.stringify(localUser), Date.now())
+          .run();
+        userProfileCacheByEmail.set(normalized, { user: localUser, expires: Date.now() + USER_CACHE_TTL });
+        if (localUser.id) userProfileCacheById.set(localUser.id, { user: localUser, expires: Date.now() + USER_CACHE_TTL });
+        return localUser;
+      }
+      return null;
+    } catch (err) {
+      console.warn("[D1] Error reading user by email, falling back:", err);
+    }
+  }
+
+  // 2. Fallback to PostgreSQL (Neon)
   if (!(await ensureVercelDatabase())) return undefined;
   const rows = await vercelSql!`SELECT data FROM hiphim_users WHERE email = ${normalized}`;
   const row = rows[0] as { data: User } | undefined;
@@ -90,6 +124,27 @@ async function readPersistentUserById(id: string): Promise<User | null | undefin
   if (cached && cached.expires > Date.now()) {
     return cached.user;
   }
+
+  // 1. Try Cloudflare D1 first
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      const row = await d1
+        .prepare("SELECT data FROM hiphim_users WHERE id = ?")
+        .bind(id)
+        .first<{ data: string }>();
+      const user = row?.data ? (JSON.parse(row.data) as User) : null;
+      if (user) {
+        userProfileCacheById.set(id, { user, expires: Date.now() + USER_CACHE_TTL });
+        userProfileCacheByEmail.set(user.email.toLowerCase(), { user, expires: Date.now() + USER_CACHE_TTL });
+      }
+      return user;
+    } catch (err) {
+      console.warn("[D1] Error reading user by id, falling back:", err);
+    }
+  }
+
+  // 2. Fallback to PostgreSQL
   if (!(await ensureVercelDatabase())) return undefined;
   const rows = await vercelSql!`SELECT data FROM hiphim_users WHERE id = ${id}`;
   const user = rows[0] ? (rows[0] as { data: User }).data : null;
@@ -101,9 +156,26 @@ async function readPersistentUserById(id: string): Promise<User | null | undefin
 }
 
 async function writePersistentUser(user: User): Promise<boolean> {
-  if (!(await ensureVercelDatabase())) return false;
   invalidateUserProfileCache(user.id);
   invalidateUserProfileCache(user.email);
+  invalidateAdminUsersCache();
+
+  // 1. Try Cloudflare D1
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      await d1
+        .prepare("INSERT OR REPLACE INTO hiphim_users (email, id, data, updated_at) VALUES (?, ?, ?, ?)")
+        .bind(user.email.toLowerCase(), user.id, JSON.stringify(user), Date.now())
+        .run();
+      return true;
+    } catch (err) {
+      console.warn("[D1] Error writing user, falling back:", err);
+    }
+  }
+
+  // 2. Fallback to PostgreSQL
+  if (!(await ensureVercelDatabase())) return false;
   await vercelSql!`INSERT INTO hiphim_users (email, id, data) VALUES (${user.email}, ${user.id}, ${JSON.stringify(user)}::jsonb)
     ON CONFLICT (email) DO UPDATE SET id = EXCLUDED.id, data = EXCLUDED.data`;
   return true;
@@ -127,10 +199,6 @@ export async function savePendingRegistrationPersistent(
   otp: string
 ): Promise<void> {
   const normalized = email.trim().toLowerCase();
-  if (!(await ensureVercelDatabase())) {
-    savePendingRegistration(normalized, passwordHash, name, otp);
-    return;
-  }
   const pending: PendingRegistration = {
     email: normalized,
     passwordHash,
@@ -138,12 +206,45 @@ export async function savePendingRegistrationPersistent(
     otp,
     expiresAt: Date.now() + 10 * 60 * 1000,
   };
+
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      await d1
+        .prepare("INSERT OR REPLACE INTO hiphim_pending_registrations (email, data, expires_at) VALUES (?, ?, ?)")
+        .bind(normalized, JSON.stringify(pending), pending.expiresAt)
+        .run();
+      return;
+    } catch (err) {
+      console.warn("[D1] Error saving pending registration, falling back:", err);
+    }
+  }
+
+  if (!(await ensureVercelDatabase())) {
+    savePendingRegistration(normalized, passwordHash, name, otp);
+    return;
+  }
   await vercelSql!`INSERT INTO hiphim_pending_registrations (email, data, expires_at) VALUES (${normalized}, ${JSON.stringify(pending)}::jsonb, ${pending.expiresAt})
     ON CONFLICT (email) DO UPDATE SET data = EXCLUDED.data, expires_at = EXCLUDED.expires_at`;
 }
 
 export async function getPendingRegistrationPersistent(email: string): Promise<PendingRegistration | null> {
   const normalized = email.trim().toLowerCase();
+
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      const row = await d1
+        .prepare("SELECT data, expires_at FROM hiphim_pending_registrations WHERE email = ?")
+        .bind(normalized)
+        .first<{ data: string; expires_at: number }>();
+      if (!row || Number(row.expires_at) <= Date.now()) return null;
+      return JSON.parse(row.data) as PendingRegistration;
+    } catch (err) {
+      console.warn("[D1] Error getting pending registration, falling back:", err);
+    }
+  }
+
   if (!(await ensureVercelDatabase())) return getPendingRegistration(normalized);
   const rows = await vercelSql!`SELECT data, expires_at FROM hiphim_pending_registrations WHERE email = ${normalized}`;
   const row = rows[0] as { data: PendingRegistration; expires_at: number } | undefined;
@@ -157,8 +258,62 @@ export async function verifyAndCreateUserPersistent(
   pendingOverride?: PendingRegistration
 ): Promise<{ user?: User; error?: string }> {
   const normalized = email.trim().toLowerCase();
+  const d1 = await getD1Database();
+
+  if (d1) {
+    try {
+      const pending = (await getPendingRegistrationPersistent(normalized)) || pendingOverride;
+      if (!pending) {
+        return { error: "Không tìm thấy yêu cầu đăng ký hoặc mã đã hết hạn. Vui lòng đăng ký lại." };
+      }
+      if (pending.otp !== otp.trim()) {
+        return { error: "Mã xác thực OTP không chính xác. Vui lòng thử lại." };
+      }
+
+      // Check if user already exists
+      const existing = await d1
+        .prepare("SELECT id FROM hiphim_users WHERE email = ?")
+        .bind(normalized)
+        .first<{ id: string }>();
+      if (existing) {
+        return { error: "Email này đã được kích hoạt tài khoản trước đó. Vui lòng đăng nhập." };
+      }
+
+      const newUser: User = {
+        id: `user_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+        email: normalized,
+        name: pending.name,
+        passwordHash: pending.passwordHash,
+        avatar: "",
+        isVerified: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        favorites: [],
+        history: [],
+      };
+
+      await d1
+        .prepare("INSERT INTO hiphim_users (email, id, data, updated_at) VALUES (?, ?, ?, ?)")
+        .bind(newUser.email, newUser.id, JSON.stringify(newUser), Date.now())
+        .run();
+      await d1
+        .prepare("DELETE FROM hiphim_pending_registrations WHERE email = ?")
+        .bind(normalized)
+        .run();
+
+      invalidateUserProfileCache(newUser.id);
+      invalidateUserProfileCache(newUser.email);
+      invalidateAdminUsersCache();
+
+      return { user: newUser };
+    } catch (err) {
+      console.warn("[D1] Error in verifyAndCreateUser, falling back:", err);
+    }
+  }
+
+  // Fallback to PostgreSQL or file
   if (!(await ensureVercelDatabase())) return verifyAndCreateUser(normalized, otp, pendingOverride);
-  const pending = await getPendingRegistrationPersistent(normalized) || pendingOverride;
+  const pending = (await getPendingRegistrationPersistent(normalized)) || pendingOverride;
   if (!pending) {
     return { error: "Không tìm thấy yêu cầu đăng ký hoặc mã đã hết hạn. Vui lòng đăng ký lại." };
   }
@@ -642,6 +797,23 @@ export async function getAllUsersForAdminPersistent(forceFresh = false): Promise
   if (!forceFresh && adminUsersCache && Date.now() - adminUsersCache.timestamp < ADMIN_USERS_CACHE_TTL) {
     return adminUsersCache.data;
   }
+
+  // 1. Try Cloudflare D1
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      const { results } = await d1
+        .prepare("SELECT data FROM hiphim_users ORDER BY updated_at DESC")
+        .all<{ data: string }>();
+      const list = (results || []).map((row) => toAdminUserDetail(JSON.parse(row.data) as User));
+      adminUsersCache = { data: list, timestamp: Date.now() };
+      return list;
+    } catch (err) {
+      console.warn("[D1] Error fetching all users for admin, falling back:", err);
+    }
+  }
+
+  // 2. Fallback to PostgreSQL
   if (!(await ensureVercelDatabase())) return getAllUsersForAdmin();
   const rows = await vercelSql!`SELECT data FROM hiphim_users ORDER BY data->>'createdAt' DESC`;
   const result = (rows as Array<{ data: User }>).map((row) => toAdminUserDetail(row.data));
@@ -682,6 +854,19 @@ export async function deleteUserPersistent(userId: string): Promise<{ success: b
   invalidateAdminUsersCache();
   invalidateUserProfileCache(userId);
   if (user.email) invalidateUserProfileCache(user.email);
+
+  // 1. Try Cloudflare D1
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      await d1.prepare("DELETE FROM hiphim_users WHERE id = ?").bind(userId).run();
+      return { success: true };
+    } catch (err) {
+      console.warn("[D1] Error deleting user, falling back:", err);
+    }
+  }
+
+  // 2. Fallback to PostgreSQL
   if (!(await ensureVercelDatabase())) return deleteUser(userId);
   await vercelSql!`DELETE FROM hiphim_users WHERE id = ${userId}`;
   return { success: true };
@@ -727,6 +912,23 @@ export async function touchUserActivityPersistent(userId: string): Promise<void>
     return;
   }
   lastTouchedActivityMap.set(userId, now);
+
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      const user = await readPersistentUserById(userId);
+      if (user) {
+        user.lastActiveAt = new Date().toISOString();
+        await d1
+          .prepare("UPDATE hiphim_users SET data = ?, updated_at = ? WHERE id = ?")
+          .bind(JSON.stringify(user), Date.now(), userId)
+          .run();
+      }
+      return;
+    } catch {
+      // Non-blocking
+    }
+  }
 
   if (await ensureVercelDatabase()) {
     try {

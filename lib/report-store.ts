@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { ensureVercelDatabase, vercelSql } from "@/lib/vercel-db";
+import { getD1Database } from "@/lib/d1-db";
 import seedReports from "./seed-reports.json";
 
 export interface MovieReport {
@@ -95,6 +96,34 @@ export async function createReport(
     createdAt: Date.now(),
   };
 
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      await d1
+        .prepare(
+          "INSERT INTO hiphim_reports (id, movie_slug, movie_name, episode_name, server_name, issue_type, description, status, created_at, user_id, user_email, user_name, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(
+          newReport.id,
+          newReport.movieSlug,
+          newReport.movieName,
+          newReport.episodeName || "",
+          newReport.serverName || "",
+          newReport.issueType,
+          newReport.description || "",
+          newReport.status,
+          newReport.createdAt,
+          newReport.userId || null,
+          newReport.userEmail || null,
+          newReport.userName || null,
+          JSON.stringify(newReport)
+        )
+        .run();
+    } catch (err) {
+      console.warn("[D1] Failed to insert report into D1:", err);
+    }
+  }
+
   const hasDb = await ensureReportsTable();
   if (hasDb && vercelSql) {
     try {
@@ -132,6 +161,21 @@ export async function createReport(
 }
 
 export async function getReports(limit = 100): Promise<MovieReport[]> {
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      const { results } = await d1
+        .prepare("SELECT data FROM hiphim_reports ORDER BY created_at DESC LIMIT ?")
+        .bind(limit)
+        .all<{ data: string }>();
+      if (results && results.length > 0) {
+        return results.map((r) => JSON.parse(r.data) as MovieReport);
+      }
+    } catch (err) {
+      console.warn("[D1] Failed to fetch reports from D1:", err);
+    }
+  }
+
   const hasDb = await ensureReportsTable();
   if (hasDb && vercelSql) {
     try {
@@ -163,6 +207,18 @@ export async function getUserReports(userEmail: string, userId?: string, limit =
 }
 
 export async function getPendingReportsCount(): Promise<number> {
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      const row = await d1
+        .prepare("SELECT COUNT(*) as count FROM hiphim_reports WHERE status = 'pending'")
+        .first<{ count: number }>();
+      if (row) return Number(row.count) || 0;
+    } catch (err) {
+      console.warn("[D1] Failed to count pending reports from D1:", err);
+    }
+  }
+
   const hasDb = await ensureReportsTable();
   if (hasDb && vercelSql) {
     try {
@@ -182,6 +238,25 @@ export async function getPendingReportsCount(): Promise<number> {
 
 export async function updateReportStatus(id: string, status: "pending" | "resolved"): Promise<boolean> {
   const resolvedAt = status === "resolved" ? Date.now() : null;
+
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      const row = await d1.prepare("SELECT data FROM hiphim_reports WHERE id = ?").bind(id).first<{ data: string }>();
+      if (row?.data) {
+        const report = JSON.parse(row.data) as MovieReport;
+        report.status = status;
+        if (resolvedAt) report.resolvedAt = resolvedAt;
+        else delete report.resolvedAt;
+        await d1
+          .prepare("UPDATE hiphim_reports SET status = ?, resolved_at = ?, data = ? WHERE id = ?")
+          .bind(status, resolvedAt, JSON.stringify(report), id)
+          .run();
+      }
+    } catch (err) {
+      console.warn("[D1] Failed to update report status in D1:", err);
+    }
+  }
 
   const hasDb = await ensureReportsTable();
   if (hasDb && vercelSql) {
@@ -227,6 +302,15 @@ export async function updateReportStatus(id: string, status: "pending" | "resolv
 }
 
 export async function deleteReport(id: string): Promise<boolean> {
+  const d1 = await getD1Database();
+  if (d1) {
+    try {
+      await d1.prepare("DELETE FROM hiphim_reports WHERE id = ?").bind(id).run();
+    } catch (err) {
+      console.warn("[D1] Failed to delete report from D1:", err);
+    }
+  }
+
   const hasDb = await ensureReportsTable();
   if (hasDb && vercelSql) {
     try {

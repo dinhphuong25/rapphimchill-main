@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { vercelSql } from "@/lib/vercel-db";
+import { getD1Database } from "@/lib/d1-db";
 
 export interface SiteConfig {
   siteName: string;
@@ -164,6 +165,17 @@ export function saveSiteConfig(newConfig: Partial<SiteConfig>): SiteConfig {
   };
 
   globalThis.__HIPHIM_SITE_CONFIG__ = updated;
+
+  getD1Database()
+    .then((d1) => {
+      if (d1) {
+        d1.prepare("INSERT OR REPLACE INTO hiphim_site_config (key, data, updated_at) VALUES ('main', ?, ?)")
+          .bind(JSON.stringify(updated), Date.now())
+          .run()
+          .catch((err) => console.warn("[D1] Could not persist site config to D1:", err));
+      }
+    })
+    .catch(() => {});
 
   if (vercelSql) {
     vercelSql`
