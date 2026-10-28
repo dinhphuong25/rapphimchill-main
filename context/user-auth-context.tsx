@@ -567,7 +567,15 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        return {
+          success: false,
+          error: "Máy chủ đang phản hồi chậm. Vui lòng bấm thử lại.",
+        };
+      }
       if (!res.ok || !data.success) {
         return { success: false, error: data.error || "Đăng nhập thất bại" };
       }
@@ -630,7 +638,15 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, name }),
       });
-      const data = await res.json();
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        return {
+          success: false,
+          error: "Máy chủ đang xử lý gửi mã OTP. Vui lòng bấm thử lại.",
+        };
+      }
       if (!res.ok || !data.success) {
         return { success: false, error: data.error || "Đăng ký thất bại" };
       }
@@ -654,7 +670,15 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp }),
       });
-      const data = await res.json();
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        return {
+          success: false,
+          error: "Máy chủ đang xử lý xác thực. Vui lòng bấm thử lại.",
+        };
+      }
       if (!res.ok || !data.success) {
         return { success: false, error: data.error || "Xác thực mã OTP thất bại" };
       }
@@ -699,7 +723,15 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      const data = await res.json();
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        return {
+          success: false,
+          error: "Máy chủ đang xử lý gửi lại mã OTP. Vui lòng bấm thử lại.",
+        };
+      }
       if (!res.ok || !data.success) {
         return { success: false, error: data.error || "Gửi lại mã OTP thất bại" };
       }

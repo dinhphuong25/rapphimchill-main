@@ -7,8 +7,6 @@ import {
   verifyPendingRegistrationToken,
 } from "@/lib/user-token";
 
-export const runtime = "nodejs";
-
 const resendCooldownMap = new Map<string, number>();
 const RESEND_COOLDOWN_MS = 60_000; // 60 seconds per email
 
