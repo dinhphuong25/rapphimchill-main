@@ -141,22 +141,51 @@ async function readPersistentUserById(id: string): Promise<User | null | undefin
       if (user) {
         userProfileCacheById.set(id, { user, expires: Date.now() + USER_CACHE_TTL });
         userProfileCacheByEmail.set(user.email.toLowerCase(), { user, expires: Date.now() + USER_CACHE_TTL });
+        return user;
       }
-      return user;
+      // Import a legacy local account the first time it is requested on D1 by id
+      const localUser = readUsers().find((u) => u.id === id);
+      if (localUser) {
+        try {
+          await d1
+            .prepare("INSERT OR IGNORE INTO hiphim_users (email, id, data, updated_at) VALUES (?, ?, ?, ?)")
+            .bind(localUser.email.toLowerCase(), localUser.id, JSON.stringify(localUser), Date.now())
+            .run();
+        } catch {}
+        userProfileCacheById.set(id, { user: localUser, expires: Date.now() + USER_CACHE_TTL });
+        userProfileCacheByEmail.set(localUser.email.toLowerCase(), { user: localUser, expires: Date.now() + USER_CACHE_TTL });
+        return localUser;
+      }
+      return null;
     } catch (err) {
       console.warn("[D1] Error reading user by id, falling back:", err);
     }
   }
 
   // 2. Fallback to PostgreSQL
-  if (!(await ensureVercelDatabase())) return undefined;
-  const rows = await vercelSql!`SELECT data FROM hiphim_users WHERE id = ${id}`;
-  const user = rows[0] ? (rows[0] as { data: User }).data : null;
-  if (user) {
-    userProfileCacheById.set(id, { user, expires: Date.now() + USER_CACHE_TTL });
-    userProfileCacheByEmail.set(user.email.toLowerCase(), { user, expires: Date.now() + USER_CACHE_TTL });
+  if (await ensureVercelDatabase()) {
+    try {
+      const rows = await vercelSql!`SELECT data FROM hiphim_users WHERE id = ${id}`;
+      const user = rows[0] ? (rows[0] as { data: User }).data : null;
+      if (user) {
+        userProfileCacheById.set(id, { user, expires: Date.now() + USER_CACHE_TTL });
+        userProfileCacheByEmail.set(user.email.toLowerCase(), { user, expires: Date.now() + USER_CACHE_TTL });
+        return user;
+      }
+    } catch (err) {
+      console.warn("[Postgres] Error reading user by id:", err);
+    }
   }
-  return user;
+
+  // 3. Fallback to local / seed users
+  const localUser = readUsers().find((u) => u.id === id);
+  if (localUser) {
+    userProfileCacheById.set(id, { user: localUser, expires: Date.now() + USER_CACHE_TTL });
+    userProfileCacheByEmail.set(localUser.email.toLowerCase(), { user: localUser, expires: Date.now() + USER_CACHE_TTL });
+    return localUser;
+  }
+
+  return null;
 }
 
 async function writePersistentUser(user: User): Promise<boolean> {
@@ -188,12 +217,12 @@ async function writePersistentUser(user: User): Promise<boolean> {
 export async function findUserByEmailPersistent(email: string): Promise<User | null> {
   const normalized = email.trim().toLowerCase();
   const user = await readPersistentUserByEmail(normalized);
-  return user === undefined ? findUserByEmail(normalized) : user;
+  return user || findUserByEmail(normalized) || null;
 }
 
 export async function findUserByIdPersistent(id: string): Promise<User | null> {
   const user = await readPersistentUserById(id);
-  return user === undefined ? findUserById(id) : user;
+  return user || findUserById(id) || null;
 }
 
 export async function savePendingRegistrationPersistent(
@@ -772,7 +801,7 @@ function toAdminUserDetail(user: User): UserAdminDetail {
 
 async function getPersistentUserForAdmin(userId: string): Promise<User | null> {
   const user = await readPersistentUserById(userId);
-  return user === undefined ? findUserById(userId) : user;
+  return user || findUserById(userId) || null;
 }
 
 let adminUsersCache: { data: UserAdminDetail[]; timestamp: number } | null = null;
@@ -810,19 +839,35 @@ export async function getAllUsersForAdminPersistent(forceFresh = false): Promise
         .prepare("SELECT data FROM hiphim_users ORDER BY updated_at DESC")
         .all<{ data: string }>();
       const list = (results || []).map((row) => toAdminUserDetail(JSON.parse(row.data) as User));
-      adminUsersCache = { data: list, timestamp: Date.now() };
-      return list;
+      const existingEmails = new Set(list.map((u) => u.email.toLowerCase()));
+      const seedUsers = getAllUsersForAdmin().filter((u) => !existingEmails.has(u.email.toLowerCase()));
+      const combined = [...list, ...seedUsers];
+      adminUsersCache = { data: combined, timestamp: Date.now() };
+      return combined;
     } catch (err) {
       console.warn("[D1] Error fetching all users for admin, falling back:", err);
     }
   }
 
   // 2. Fallback to PostgreSQL
-  if (!(await ensureVercelDatabase())) return getAllUsersForAdmin();
-  const rows = await vercelSql!`SELECT data FROM hiphim_users ORDER BY data->>'createdAt' DESC`;
-  const result = (rows as Array<{ data: User }>).map((row) => toAdminUserDetail(row.data));
-  adminUsersCache = { data: result, timestamp: Date.now() };
-  return result;
+  if (await ensureVercelDatabase()) {
+    try {
+      const rows = await vercelSql!`SELECT data FROM hiphim_users ORDER BY data->>'createdAt' DESC`;
+      const result = (rows as Array<{ data: User }>).map((row) => toAdminUserDetail(row.data));
+      const existingEmails = new Set(result.map((u) => u.email.toLowerCase()));
+      const seedUsers = getAllUsersForAdmin().filter((u) => !existingEmails.has(u.email.toLowerCase()));
+      const combined = [...result, ...seedUsers];
+      adminUsersCache = { data: combined, timestamp: Date.now() };
+      return combined;
+    } catch (err) {
+      console.warn("[Postgres] Error fetching users for admin:", err);
+    }
+  }
+
+  // 3. Fallback to local / seed users
+  const localList = getAllUsersForAdmin();
+  adminUsersCache = { data: localList, timestamp: Date.now() };
+  return localList;
 }
 
 export async function banUserPersistent(
@@ -858,6 +903,9 @@ export async function deleteUserPersistent(userId: string): Promise<{ success: b
   invalidateAdminUsersCache();
   invalidateUserProfileCache(userId);
   if (user.email) invalidateUserProfileCache(user.email);
+  try {
+    deleteUser(userId);
+  } catch {}
 
   // 1. Try Cloudflare D1
   const d1 = await getD1Database();
@@ -871,8 +919,10 @@ export async function deleteUserPersistent(userId: string): Promise<{ success: b
   }
 
   // 2. Fallback to PostgreSQL
-  if (!(await ensureVercelDatabase())) return deleteUser(userId);
-  await vercelSql!`DELETE FROM hiphim_users WHERE id = ${userId}`;
+  if (!(await ensureVercelDatabase())) return { success: true };
+  try {
+    await vercelSql!`DELETE FROM hiphim_users WHERE id = ${userId}`;
+  } catch {}
   return { success: true };
 }
 
