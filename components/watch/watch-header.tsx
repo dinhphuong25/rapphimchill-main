@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import LiveViewersBadge from "@/components/movie/live-viewers-badge";
-import WatchPartyButton from "@/components/watch-party/watch-party-button";
 
 interface WatchHeaderProps {
   movieName: string;
@@ -74,7 +73,7 @@ export default function WatchHeader({
     <div className="sticky top-0 z-40 w-full max-w-[1600px] mx-auto transition-all shrink-0">
       <header className="w-full bg-[#0a0a0a]/90 backdrop-blur-2xl border-x border-b border-white/10 rounded-b-2xl sm:rounded-b-3xl px-3 sm:px-6 py-2.5 relative">
         <div className="flex items-center justify-between gap-2 sm:gap-4 w-full">
-          {/* Left: Back button & Watch Party */}
+          {/* Left: Back button & Live Viewers */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <a
               href={fallbackUrl}
@@ -86,17 +85,7 @@ export default function WatchHeader({
               <span className="text-xs font-bold whitespace-nowrap">Trở về</span>
             </a>
 
-            {movieSlug && (
-              <>
-                <LiveViewersBadge slug={movieSlug} variant="compact" />
-                <WatchPartyButton
-                  movieSlug={movieSlug}
-                  movieName={movieName}
-                  currentEpisodeName={currentEpName}
-                  variant="header"
-                />
-              </>
-            )}
+            {movieSlug && <LiveViewersBadge slug={movieSlug} variant="compact" />}
           </div>
 
           {/* Right: Movie Title & Episode info */}

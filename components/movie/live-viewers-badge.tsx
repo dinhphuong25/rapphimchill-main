@@ -88,16 +88,18 @@ export default function LiveViewersBadge({
     return (
       <div
         className={cn(
-          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-brand-green text-[10px] sm:text-xs font-semibold select-none",
+          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-brand-green text-xs font-semibold select-none shadow-sm",
           className
         )}
-        title={`${viewers} người đang xem phim này`}
+        title={`${viewers} người đang xem phim này trực tiếp`}
       >
-        <span className="relative flex h-1.5 w-1.5">
+        <span className="relative flex h-2 w-2 shrink-0">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-green opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-brand-green"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-green"></span>
         </span>
-        <span>{viewers}</span>
+        <Eye className="w-3.5 h-3.5 text-brand-green shrink-0" />
+        <span className="font-mono font-bold text-white">{viewers}</span>
+        <span className="text-white/60 text-[11px] hidden xs:inline">đang xem</span>
       </div>
     );
   }
