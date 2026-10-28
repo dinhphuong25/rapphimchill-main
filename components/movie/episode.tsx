@@ -164,7 +164,7 @@ export default function Episode({
           {/* Grid of Server Buttons */}
           <div className="grid grid-cols-2 gap-2.5">
             {serverData.flatMap((server, index) => {
-              const ep = server.server_data?.[0];
+              const ep = server.server_data?.[currentEpisodeIndex] || server.server_data?.[0];
               const hasM3u8 = Boolean(ep?.link_m3u8 && ep.link_m3u8.trim() !== "");
               const hasEmbed = Boolean(ep?.link_embed && ep.link_embed.trim() !== "");
 
@@ -331,20 +331,12 @@ export default function Episode({
                         const hasEmbed = Boolean(episode.link_embed && episode.link_embed.trim() !== "");
                         let targetLink = "";
 
-                        if (playerMode === "m3u8") {
-                          if (hasM3u8) {
-                            targetLink = episode.link_m3u8;
-                          } else if (hasEmbed) {
-                            onPlayerModeChange("embed");
-                            targetLink = episode.link_embed;
-                          }
-                        } else {
-                          if (hasEmbed) {
-                            targetLink = episode.link_embed;
-                          } else if (hasM3u8) {
-                            onPlayerModeChange("m3u8");
-                            targetLink = episode.link_m3u8;
-                          }
+                        if (hasM3u8) {
+                          onPlayerModeChange("m3u8");
+                          targetLink = episode.link_m3u8;
+                        } else if (hasEmbed) {
+                          onPlayerModeChange("embed");
+                          targetLink = episode.link_embed;
                         }
 
                         if (targetLink) {

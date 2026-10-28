@@ -33,7 +33,7 @@ const MAX_CACHE_ENTRIES = 1000; // High capacity for thousands of movie requests
 
 // Single-flight / In-Flight Request Deduplication:
 // If 1,000 users request the same movie at the same instant, only ONE fetch goes upstream.
-const inFlightRequests = new Map<string, Promise<string>>();
+const inFlightRequests = new Map<string, Promise<{ jsonString: string; isFallback: boolean }>>();
 
 function evictOldestEntry() {
   let oldestKey: string | null = null;
@@ -191,21 +191,30 @@ export async function GET(req: NextRequest) {
         let res: Response | null = null;
         let lastError: any = null;
 
-        // Try primary fetch with 6s timeout
-        try {
-          const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 6000);
-          res = await fetch(parsedUrl.toString(), {
-            signal: controller.signal,
-            headers: {
-              "User-Agent":
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-              Accept: "application/json",
-            },
-          });
-          clearTimeout(timer);
-        } catch (err) {
-          lastError = err;
+        // Try primary fetch with up to 2 attempts (10s on 1st, 8s on 2nd)
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), attempt === 1 ? 10000 : 8000);
+            res = await fetch(parsedUrl.toString(), {
+              signal: controller.signal,
+              headers: {
+                "User-Agent":
+                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                Accept: "application/json",
+              },
+            });
+            clearTimeout(timer);
+            if (res && res.ok) {
+              lastError = null;
+              break;
+            }
+          } catch (err) {
+            lastError = err;
+            if (attempt < 2) {
+              await new Promise((r) => setTimeout(r, 500));
+            }
+          }
         }
 
         // If primary failed or returned error, and it's a movie detail request, fallback to NguonC
@@ -239,8 +248,8 @@ export async function GET(req: NextRequest) {
                       quality: fbData.movie.quality || "HD",
                       lang: fbData.movie.language || "Vietsub",
                     },
-                    episodes: (fbData.movie.episodes || []).map((s: any) => ({
-                      server_name: s.server_name || "Dự Phòng (NguonC)",
+                    episodes: (fbData.movie.episodes || []).map((s: any, idx: number) => ({
+                      server_name: s.server_name ? `Dự Phòng (${s.server_name})` : `Dự Phòng ${idx > 0 ? idx + 1 : ""}`.trim(),
                       server_data: (s.items || []).map((it: any) => ({
                         name: it.name?.startsWith("Tập") ? it.name : `Tập ${it.name}`,
                         slug: it.slug,
@@ -250,7 +259,7 @@ export async function GET(req: NextRequest) {
                       })),
                     })),
                   };
-                  return JSON.stringify(mapped);
+                  return { jsonString: JSON.stringify(mapped), isFallback: true };
                 }
               }
             } catch {}
@@ -298,13 +307,12 @@ export async function GET(req: NextRequest) {
                           totalItems: fbData.paginate?.total_items || fbData.items.length,
                           totalItemsPerPage: fbData.paginate?.items_per_page || 10,
                           currentPage: fbData.paginate?.current_page || parseInt(page),
-                          totalPages: fbData.paginate?.total_page || 1,
+                          totalPages: fbData.paginate?.total_pages || 1,
                         },
                       },
-                      APP_DOMAIN_CDN_IMAGE: "https://phimimg.com",
                     },
                   };
-                  return JSON.stringify(mapped);
+                  return { jsonString: JSON.stringify(mapped), isFallback: true };
                 }
               }
             } catch {}
@@ -348,8 +356,8 @@ export async function GET(req: NextRequest) {
                       quality: fbData.movie.quality || "HD",
                       lang: fbData.movie.language || "Vietsub",
                     },
-                    episodes: (fbData.movie.episodes || []).map((s: any) => ({
-                      server_name: s.server_name || "Dự Phòng (NguonC)",
+                    episodes: (fbData.movie.episodes || []).map((s: any, idx: number) => ({
+                      server_name: s.server_name ? `Dự Phòng (${s.server_name})` : `Dự Phòng ${idx > 0 ? idx + 1 : ""}`.trim(),
                       server_data: (s.items || []).map((it: any) => ({
                         name: it.name?.startsWith("Tập") ? it.name : `Tập ${it.name}`,
                         slug: it.slug,
@@ -359,14 +367,14 @@ export async function GET(req: NextRequest) {
                       })),
                     })),
                   };
-                  return JSON.stringify(mapped);
+                  return { jsonString: JSON.stringify(mapped), isFallback: true };
                 }
               }
             } catch {}
           }
         }
 
-        return JSON.stringify(data);
+        return { jsonString: JSON.stringify(data), isFallback: false };
       })()
         .catch((err) => {
           inFlightRequests.delete(cacheKey);
@@ -379,7 +387,12 @@ export async function GET(req: NextRequest) {
       inFlightRequests.set(cacheKey, pendingFetch);
     }
 
-    const jsonString = await pendingFetch;
+    const { jsonString, isFallback } = await pendingFetch;
+
+    if (isFallback) {
+      currentTTL = 60_000; // Only 60s cache for fallback
+      edgeCacheControl = "public, s-maxage=60, max-age=30, stale-while-revalidate=120";
+    }
 
     // Cache the result
     if (memoryCache.size >= MAX_CACHE_ENTRIES) {
@@ -395,13 +408,15 @@ export async function GET(req: NextRequest) {
       headers: {
         "Content-Type": "application/json; charset=utf-8",
         "Cache-Control": edgeCacheControl,
-        "X-Cache": "MISS-UPSTREAM",
+        "X-Cache": isFallback ? "MISS-FALLBACK" : "MISS-UPSTREAM",
         Vary: "Accept-Encoding",
       },
     });
 
-    // Save to Cloudflare Workers KV
-    kvSet(cacheKey, jsonString, Math.floor(currentTTL / 1000)).catch(() => {});
+    // Save to Cloudflare Workers KV only if NOT fallback
+    if (!isFallback) {
+      kvSet(cacheKey, jsonString, Math.floor(currentTTL / 1000)).catch(() => {});
+    }
 
     try {
       const cfCache = (globalThis as any).caches?.default;

@@ -63,26 +63,45 @@ export default class PhimApi {
 
   async get(slug: string): Promise<{ movie: Movie; server: MovieEpisode[] }> {
     const url = `${this.apiUrl}/phim/${slug}`;
-    try {
-      const response = await fetch(url, {
-        headers: this.fetchHeaders(),
-        next: { revalidate: 1800, tags: ["movies", `movie-${slug}`] },
-      });
-      if (!response.ok) throw new Error(`API error: ${response.status}`);
-      const data = await response.json();
-      if (!data?.status || !data?.movie?.slug) {
-        throw new Error("Movie not found in primary API");
-      }
+    let primaryData: any = null;
+    let primaryErr: any = null;
 
+    // Retry primary fetch up to 2 times with 10s timeout to avoid false-fallback to NguonC
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 10000);
+        const response = await fetch(url, {
+          signal: controller.signal,
+          headers: this.fetchHeaders(),
+          next: { revalidate: 1800, tags: ["movies", `movie-${slug}`] },
+        });
+        clearTimeout(timer);
+        if (response.ok) {
+          const data = await response.json();
+          if (data?.status && data?.movie?.slug) {
+            primaryData = data;
+            break;
+          }
+        }
+      } catch (err) {
+        primaryErr = err;
+        if (attempt < 2) {
+          await new Promise((r) => setTimeout(r, 600));
+        }
+      }
+    }
+
+    if (primaryData) {
       // Normalize movie image URLs
       const cdnDomain = this.defaultCdnDomain;
       const movie = {
-        ...data.movie,
-        thumb_url: normalizeCdnUrl(data.movie?.thumb_url, cdnDomain),
-        poster_url: normalizeCdnUrl(data.movie?.poster_url, cdnDomain),
+        ...primaryData.movie,
+        thumb_url: normalizeCdnUrl(primaryData.movie?.thumb_url, cdnDomain),
+        poster_url: normalizeCdnUrl(primaryData.movie?.poster_url, cdnDomain),
       };
 
-      let allServers: MovieEpisode[] = data.episodes || [];
+      let allServers: MovieEpisode[] = primaryData.episodes || [];
       if (!allServers || allServers.length === 0) {
         try {
           const searchTerm = movie.origin_name || movie.name;
@@ -90,7 +109,7 @@ export default class PhimApi {
             const nguoncSearchUrl = `https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(searchTerm)}`;
             const nSearchRes = await fetch(nguoncSearchUrl, {
               headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
-              signal: AbortSignal.timeout(2000),
+              signal: AbortSignal.timeout(3000),
               next: { revalidate: 1800 },
             });
             if (nSearchRes.ok) {
@@ -99,7 +118,7 @@ export default class PhimApi {
               if (matchedItem && matchedItem.slug) {
                 const nFilmRes = await fetch(`https://phim.nguonc.com/api/film/${matchedItem.slug}`, {
                   headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
-                  signal: AbortSignal.timeout(2000),
+                  signal: AbortSignal.timeout(3000),
                   next: { revalidate: 1800 },
                 });
                 if (nFilmRes.ok) {
@@ -131,54 +150,53 @@ export default class PhimApi {
         movie,
         server: allServers,
       };
-    } catch (primaryErr) {
-      // Automatic Multi-Source Fallback to NguonC if primary source fails or times out
-      try {
-        const fallbackUrl = `https://phim.nguonc.com/api/film/${slug}`;
-        const fbRes = await fetch(fallbackUrl, {
-          headers: {
-            "User-Agent": USER_AGENT,
-            Accept: "application/json",
-          },
-          next: { revalidate: 1800, tags: ["movies", `movie-${slug}`] },
-        });
-        if (fbRes.ok) {
-          const fbData = await fbRes.json();
-          const fbMovie = fbData.movie;
-          if (fbMovie && fbMovie.slug) {
-            const mappedMovie = {
-              name: fbMovie.name,
-              slug: fbMovie.slug,
-              origin_name: fbMovie.original_name,
-              // NguonC stores widescreen backdrop in poster_url and portrait poster in thumb_url
-              thumb_url: fbMovie.poster_url || fbMovie.thumb_url,
-              poster_url: fbMovie.thumb_url || fbMovie.poster_url,
-              year: fbMovie.created ? new Date(fbMovie.created).getFullYear() : 2026,
-              episode_current: fbMovie.current_episode,
-              quality: fbMovie.quality || "HD",
-              lang: fbMovie.language || "Vietsub",
-            };
-            const mappedServer: MovieEpisode[] = (fbMovie.episodes || []).map((s: any) => ({
-              server_name: s.server_name || "Dự Phòng (NguonC)",
-              server_data: (s.items || []).map((it: any) => ({
-                name: it.name?.startsWith("Tập") ? it.name : `Tập ${it.name}`,
-                slug: it.slug,
-                filename: it.name,
-                link_embed: it.embed,
-                link_m3u8: "",
-              })),
-            }));
-            return {
-              movie: mappedMovie as any,
-              server: mappedServer,
-            };
-          }
-        }
-      } catch {
-        // Fallback error ignored, throw primary error
-      }
-      throw primaryErr;
     }
+
+    // Automatic Multi-Source Fallback to NguonC if primary source completely fails
+    try {
+      const fallbackUrl = `https://phim.nguonc.com/api/film/${slug}`;
+      const fbRes = await fetch(fallbackUrl, {
+        headers: {
+          "User-Agent": USER_AGENT,
+          Accept: "application/json",
+        },
+        next: { revalidate: 60, tags: ["movies", `movie-${slug}`] },
+      });
+      if (fbRes.ok) {
+        const fbData = await fbRes.json();
+        const fbMovie = fbData.movie;
+        if (fbMovie && fbMovie.slug) {
+          const mappedMovie = {
+            name: fbMovie.name,
+            slug: fbMovie.slug,
+            origin_name: fbMovie.original_name,
+            thumb_url: fbMovie.poster_url || fbMovie.thumb_url,
+            poster_url: fbMovie.thumb_url || fbMovie.poster_url,
+            year: fbMovie.created ? new Date(fbMovie.created).getFullYear() : 2026,
+            episode_current: fbMovie.current_episode,
+            quality: fbMovie.quality || "HD",
+            lang: fbMovie.language || "Vietsub",
+          };
+          const mappedServer: MovieEpisode[] = (fbMovie.episodes || []).map((s: any, idx: number) => ({
+            server_name: s.server_name ? `Dự Phòng (${s.server_name})` : `Dự Phòng ${idx > 0 ? idx + 1 : ""}`.trim(),
+            server_data: (s.items || []).map((it: any) => ({
+              name: it.name?.startsWith("Tập") ? it.name : `Tập ${it.name}`,
+              slug: it.slug,
+              filename: it.name,
+              link_embed: it.embed,
+              link_m3u8: "",
+            })),
+          }));
+          return {
+            movie: mappedMovie as any,
+            server: mappedServer,
+          };
+        }
+      }
+    } catch {
+      // Fallback error ignored, throw primary error
+    }
+    throw primaryErr || new Error("Movie not found");
   }
 
   listTopics(): Array<{ name: string; slug: string }> {

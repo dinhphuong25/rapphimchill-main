@@ -70,9 +70,18 @@ function resolveInitialWatchState(
             if (matchedIdx !== -1) resolvedEpisode = matchedIdx;
           }
         } else {
-          const matchedIdx = episodes.findIndex(
-            (ep: any) => ep.slug === epParam || ep.name?.toLowerCase() === epParam.toLowerCase()
-          );
+          const cleanParam = epParam.toLowerCase().replace(/^tap-?/, "").trim();
+          const matchedIdx = episodes.findIndex((ep: any) => {
+            const s = ep.slug?.toLowerCase() || "";
+            const n = ep.name?.toLowerCase() || "";
+            return (
+              s === epParam.toLowerCase() ||
+              n === epParam.toLowerCase() ||
+              s === cleanParam ||
+              n === cleanParam ||
+              s.replace(/^tap-?/, "") === cleanParam
+            );
+          });
           if (matchedIdx !== -1) resolvedEpisode = matchedIdx;
         }
       } else {
@@ -200,20 +209,29 @@ function resolveInitialWatchState(
     }
   }
 
-  const targetEpisode =
+  let targetEpisode =
     serverData?.[resolvedServer]?.server_data?.[resolvedEpisode] ||
     serverData?.[0]?.server_data?.[0];
 
-  const hasM3u8 = Boolean(targetEpisode?.link_m3u8 && targetEpisode.link_m3u8.trim() !== "");
-  const hasEmbed = Boolean(targetEpisode?.link_embed && targetEpisode.link_embed.trim() !== "");
+  let hasM3u8 = Boolean(targetEpisode?.link_m3u8 && targetEpisode.link_m3u8.trim() !== "");
+  let hasEmbed = Boolean(targetEpisode?.link_embed && targetEpisode.link_embed.trim() !== "");
 
-  let resolvedMode: "m3u8" | "embed" = "m3u8";
-  if (!hasM3u8 && hasEmbed) {
-    resolvedMode = "embed";
-  } else {
-    resolvedMode = "m3u8";
+  // Priority: ALWAYS prefer server that has m3u8 (Máy chủ Mặc định)
+  if (!hasM3u8 && Array.isArray(serverData)) {
+    const serverWithM3u8Idx = serverData.findIndex((s: any) =>
+      Boolean(s?.server_data?.[resolvedEpisode]?.link_m3u8 || s?.server_data?.[0]?.link_m3u8)
+    );
+    if (serverWithM3u8Idx !== -1) {
+      resolvedServer = serverWithM3u8Idx;
+      targetEpisode =
+        serverData[resolvedServer]?.server_data?.[resolvedEpisode] ||
+        serverData[resolvedServer]?.server_data?.[0];
+      hasM3u8 = Boolean(targetEpisode?.link_m3u8 && targetEpisode.link_m3u8.trim() !== "");
+      hasEmbed = Boolean(targetEpisode?.link_embed && targetEpisode.link_embed.trim() !== "");
+    }
   }
 
+  const resolvedMode: "m3u8" | "embed" = hasM3u8 ? "m3u8" : (hasEmbed ? "embed" : "m3u8");
   const resolvedUrl =
     resolvedMode === "m3u8" && hasM3u8
       ? targetEpisode.link_m3u8
@@ -277,12 +295,12 @@ export default function Description({ movie, serverData: rawServerData }: any) {
       if (curEpData) {
         const hasM3u8 = Boolean(curEpData.link_m3u8 && curEpData.link_m3u8.trim() !== "");
         const hasEmbed = Boolean(curEpData.link_embed && curEpData.link_embed.trim() !== "");
-        if (!hasM3u8 && hasEmbed) {
-          setPlayerMode('embed');
-          setCurrentEpisodeUrl(curEpData.link_embed);
-        } else if (!hasEmbed && hasM3u8) {
+        if (hasM3u8) {
           setPlayerMode('m3u8');
           setCurrentEpisodeUrl(curEpData.link_m3u8);
+        } else if (hasEmbed) {
+          setPlayerMode('embed');
+          setCurrentEpisodeUrl(curEpData.link_embed);
         }
       }
     }
@@ -456,16 +474,23 @@ export default function Description({ movie, serverData: rawServerData }: any) {
     serverIndex: number,
     episodeIndex: number
   ) => {
-    const isEmbedLink = !link.includes('.m3u8') || link.includes('embed') || link.includes('streamc') || link.includes('player.phimapi.com');
     const epData = currentServerData?.[serverIndex]?.server_data?.[episodeIndex];
+    const hasM3u8 = Boolean(epData?.link_m3u8 && epData.link_m3u8.trim() !== "");
+    const hasEmbed = Boolean(epData?.link_embed && epData.link_embed.trim() !== "");
 
-    if (isEmbedLink) {
-      setPlayerMode('embed');
-    } else if (playerMode === 'embed' && epData?.link_m3u8 === link) {
+    let effectiveUrl = link;
+    if (hasM3u8) {
       setPlayerMode('m3u8');
+      effectiveUrl = epData.link_m3u8;
+    } else if (hasEmbed) {
+      setPlayerMode('embed');
+      effectiveUrl = epData.link_embed;
+    } else {
+      const isEmbedLink = !link.includes('.m3u8') || link.includes('embed') || link.includes('streamc') || link.includes('player.phimapi.com');
+      setPlayerMode(isEmbedLink ? 'embed' : 'm3u8');
     }
 
-    setCurrentEpisodeUrl(link);
+    setCurrentEpisodeUrl(effectiveUrl);
     setCurrentEpisodeIndex({ server: serverIndex, episode: episodeIndex });
 
     // Look up saved resume time for this specific episode
@@ -816,20 +841,12 @@ export default function Description({ movie, serverData: rawServerData }: any) {
       const hasM3u8 = Boolean(currentEpisode.link_m3u8 && currentEpisode.link_m3u8.trim() !== "");
       const hasEmbed = Boolean(currentEpisode.link_embed && currentEpisode.link_embed.trim() !== "");
 
-      if (playerMode === 'm3u8') {
-        if (hasM3u8) {
-          setCurrentEpisodeUrl(currentEpisode.link_m3u8);
-        } else if (hasEmbed) {
-          setPlayerMode('embed');
-          setCurrentEpisodeUrl(currentEpisode.link_embed);
-        }
-      } else {
-        if (hasEmbed) {
-          setCurrentEpisodeUrl(currentEpisode.link_embed);
-        } else if (hasM3u8) {
-          setPlayerMode('m3u8');
-          setCurrentEpisodeUrl(currentEpisode.link_m3u8);
-        }
+      if (hasM3u8) {
+        if (playerMode !== 'm3u8') setPlayerMode('m3u8');
+        setCurrentEpisodeUrl(currentEpisode.link_m3u8);
+      } else if (hasEmbed) {
+        if (playerMode !== 'embed') setPlayerMode('embed');
+        setCurrentEpisodeUrl(currentEpisode.link_embed);
       }
     }
   }, [playerMode, currentEpisodeIndex, serverData]);
