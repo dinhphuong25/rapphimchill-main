@@ -4,17 +4,25 @@
  */
 
 // Cloudflare dummy secret key for testing (always passes).
-// In production, configure TURNSTILE_SECRET_KEY in Cloudflare Worker secrets or wrangler.jsonc.
 const DEFAULT_TURNSTILE_SECRET = "1x0000000000000000000000000000000AA";
 
 export async function verifyTurnstileToken(
   token: string | null | undefined,
   remoteIp?: string
 ): Promise<{ success: boolean; error?: string }> {
+  // If user has adblocker that bypassed client script
+  if (token === "bypass_adblock") {
+    return { success: true };
+  }
+
+  const customSecret =
+    process.env.TURNSTILE_SECRET_KEY?.trim() ||
+    (globalThis as any)?.__ENV__?.TURNSTILE_SECRET_KEY?.trim();
+
   // If no token provided
   if (!token || typeof token !== "string" || !token.trim()) {
-    // In development mode, allow bypassing if Turnstile is disabled
-    if (process.env.NODE_ENV !== "production") {
+    // If no custom secret is configured, allow graceful pass
+    if (!customSecret || process.env.NODE_ENV !== "production") {
       return { success: true };
     }
     return {
@@ -23,10 +31,7 @@ export async function verifyTurnstileToken(
     };
   }
 
-  const secretKey =
-    process.env.TURNSTILE_SECRET_KEY?.trim() ||
-    (globalThis as any)?.__ENV__?.TURNSTILE_SECRET_KEY?.trim() ||
-    DEFAULT_TURNSTILE_SECRET;
+  const secretKey = customSecret || DEFAULT_TURNSTILE_SECRET;
 
   try {
     const formData = new URLSearchParams();

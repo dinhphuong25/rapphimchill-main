@@ -341,7 +341,6 @@ export default function AuthModal() {
                 <TurnstileWidget
                   onVerify={(token) => setTurnstileToken(token)}
                   onExpire={() => setTurnstileToken("")}
-                  onError={() => setErrorMessage("Lỗi xác thực bảo vệ Cloudflare. Vui lòng tải lại.")}
                 />
               </div>
 
