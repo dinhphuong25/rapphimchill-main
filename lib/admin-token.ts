@@ -1,6 +1,6 @@
 export const ADMIN_COOKIE_NAME = "hiphim_admin_session";
 const SESSION_MAX_AGE_SECONDS = 86400 * 7; // 7 days
-const SECRET_SALT = process.env.ADMIN_JWT_SECRET || "hiphim_admin_jwt_secret_salt_2026";
+const SECRET_SALT = process.env.ADMIN_JWT_SECRET || "hiphim_admin_jwt_secret_key_2026_super_secure";
 
 /**
  * Creates an HMAC signed session token using Web Crypto API.

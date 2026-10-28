@@ -19,5 +19,11 @@
 	],
 	"images": {
 		"binding": "IMAGES"
+	},
+	"vars": {
+		"DATABASE_URL": "postgresql://neondb_owner:npg_ImaUR5q9jhyF@ep-tiny-wave-awkfe27v-pooler.c-12.us-east-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require",
+		"USER_JWT_SECRET": "hiphim_user_jwt_secret_key_2026_super_secure",
+		"ADMIN_JWT_SECRET": "hiphim_admin_jwt_secret_key_2026_super_secure",
+		"EMAIL_FROM": "Hi Phim <noreply@hiphim.one>"
 	}
 }

@@ -170,7 +170,7 @@ export function saveSiteConfig(newConfig: Partial<SiteConfig>): SiteConfig {
       INSERT INTO hiphim_site_config (key, data)
       VALUES ('main', ${JSON.stringify(updated)}::jsonb)
       ON CONFLICT (key) DO UPDATE SET data = EXCLUDED.data
-    `.catch((dbErr) => console.warn("[DB] Could not persist site config to PostgreSQL:", dbErr));
+    `.catch((dbErr: any) => console.warn("[DB] Could not persist site config to PostgreSQL:", dbErr));
   }
 
   try {

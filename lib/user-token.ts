@@ -1,7 +1,7 @@
 export const USER_COOKIE_NAME = "hiphim_user_session";
 export const PENDING_REGISTRATION_COOKIE_NAME = "hiphim_pending_registration";
 const SESSION_MAX_AGE_SECONDS = 86400 * 30; // 30 days session
-const SECRET_SALT = process.env.USER_JWT_SECRET || "hiphim_user_jwt_secret_salt_2026";
+const SECRET_SALT = process.env.USER_JWT_SECRET || "hiphim_user_jwt_secret_key_2026_super_secure";
 
 export interface UserSessionPayload {
   userId: string;
