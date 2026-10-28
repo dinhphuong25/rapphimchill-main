@@ -15,6 +15,8 @@ import PlayerErrorBoundary, { PlayerErrorBoundary as PlayerErrorBoundaryNamed } 
 import UnreleasedMovieOverlay from "../player/unreleased-movie-overlay";
 import { normalizeImageUrl } from "@/lib/image-helper";
 import ReportModal from "./report-modal";
+import LiveViewersBadge from "./live-viewers-badge";
+import WatchPartyButton from "@/components/watch-party/watch-party-button";
 
 const SafePlayerErrorBoundary: any = PlayerErrorBoundary || PlayerErrorBoundaryNamed || (({ children }: any) => <>{children}</>);
 
@@ -403,8 +405,20 @@ export default function Description({ movie, serverData: rawServerData }: any) {
   );
 
   const actionButtons = (
-    <div className="w-full flex items-center justify-center gap-2 max-w-[360px] mx-auto">
+    <div className="w-full flex items-center justify-center gap-2 max-w-[420px] mx-auto flex-wrap">
       {favoriteButton}
+      <WatchPartyButton
+        movieSlug={movie.slug}
+        movieName={movie.name}
+        currentEpisodeIndex={currentEpisodeIndex?.episode}
+        currentEpisodeName={
+          currentEpisodeIndex && currentServerData?.[currentEpisodeIndex.server]?.server_data?.[currentEpisodeIndex.episode]?.name
+            ? currentServerData[currentEpisodeIndex.server].server_data[currentEpisodeIndex.episode].name
+            : "Tập 1"
+        }
+        currentServerIndex={currentEpisodeIndex?.server}
+        currentTime={lastSavedProgressRef.current || resumeTime || 0}
+      />
       <button
         type="button"
         onClick={() => {

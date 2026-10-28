@@ -57,3 +57,17 @@ CREATE TABLE IF NOT EXISTS hiphim_site_config (
   data TEXT NOT NULL,
   updated_at INTEGER
 );
+
+CREATE TABLE IF NOT EXISTS hiphim_watch_party_rooms (
+  room_id TEXT PRIMARY KEY,
+  movie_slug TEXT NOT NULL,
+  movie_name TEXT NOT NULL,
+  host_id TEXT NOT NULL,
+  host_name TEXT NOT NULL,
+  state TEXT NOT NULL,
+  messages TEXT NOT NULL,
+  members TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_hiphim_party_updated ON hiphim_watch_party_rooms (updated_at DESC);

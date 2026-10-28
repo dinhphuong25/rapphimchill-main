@@ -5,6 +5,7 @@ import { X, Mail, Lock, User, KeyRound, ArrowRight, RefreshCw, CheckCircle2, Shi
 import { useUserAuth } from "@/context/user-auth-context";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import TurnstileWidget from "./turnstile-widget";
 
 export default function AuthModal() {
   const {
@@ -27,6 +28,7 @@ export default function AuthModal() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [devCodeBanner, setDevCodeBanner] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState("");
 
   // OTP Countdown
   const [countdown, setCountdown] = useState(60);
@@ -39,6 +41,7 @@ export default function AuthModal() {
     if (isAuthModalOpen) {
       setErrorMessage("");
       setDevCodeBanner(null);
+      setTurnstileToken("");
       if (authModalMode === "otp") {
         setOtp("");
         setCountdown(60);
@@ -105,7 +108,7 @@ export default function AuthModal() {
     }
 
     setIsSubmitting(true);
-    const res = await register(cleanEmail, password, cleanName);
+    const res = await register(cleanEmail, password, cleanName, turnstileToken);
     setIsSubmitting(false);
     if (res.success) {
       if (res.devMode && res.devCode) {
@@ -331,6 +334,15 @@ export default function AuthModal() {
                     className="w-full h-10 pl-10 pr-3 rounded-xl bg-white/[0.04] border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-brand-green/80 focus:ring-1 focus:ring-brand-green/50 transition-colors"
                   />
                 </div>
+              </div>
+
+              {/* Cloudflare Turnstile Bot Protection */}
+              <div className="pt-1">
+                <TurnstileWidget
+                  onVerify={(token) => setTurnstileToken(token)}
+                  onExpire={() => setTurnstileToken("")}
+                  onError={() => setErrorMessage("Lỗi xác thực bảo vệ Cloudflare. Vui lòng tải lại.")}
+                />
               </div>
 
               <button

@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { kvGet, kvSet } from "@/lib/kv-cache";
 
 // Rate limiting: in-memory store per Edge worker node
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -155,7 +156,20 @@ export async function GET(req: NextRequest) {
     }
   } catch {}
 
-  // 1. Return from In-Memory Cache if fresh
+  // 1. Check Cloudflare Workers KV Cache (< 2ms response)
+  const kvData = await kvGet<string>(cacheKey);
+  if (kvData) {
+    return new Response(typeof kvData === "string" ? kvData : JSON.stringify(kvData), {
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": edgeCacheControl,
+        "X-Cache": "HIT-CF-KV",
+        Vary: "Accept-Encoding",
+      },
+    });
+  }
+
+  // 2. Return from In-Memory Cache if fresh
   if (cached && now - cached.timestamp < currentTTL) {
     cached.lastAccessed = now;
     return new Response(cached.data, {
@@ -385,6 +399,9 @@ export async function GET(req: NextRequest) {
         Vary: "Accept-Encoding",
       },
     });
+
+    // Save to Cloudflare Workers KV
+    kvSet(cacheKey, jsonString, Math.floor(currentTTL / 1000)).catch(() => {});
 
     try {
       const cfCache = (globalThis as any).caches?.default;

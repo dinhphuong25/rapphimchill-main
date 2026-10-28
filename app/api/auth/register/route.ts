@@ -2,11 +2,26 @@ import { NextResponse } from "next/server";
 import { findUserByEmailPersistent, hashPassword, savePendingRegistrationPersistent } from "@/lib/user-store";
 import { sendOtpEmail } from "@/lib/email-service";
 import { createPendingRegistrationToken, PENDING_REGISTRATION_COOKIE_NAME } from "@/lib/user-token";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, name } = body;
+    const { email, password, name, turnstileToken } = body;
+
+    // Verify Cloudflare Turnstile token
+    const clientIp =
+      request.headers.get("cf-connecting-ip") ||
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      undefined;
+
+    const cfCheck = await verifyTurnstileToken(turnstileToken, clientIp);
+    if (!cfCheck.success) {
+      return NextResponse.json(
+        { success: false, error: cfCheck.error || "Xác thực bảo vệ Cloudflare không thành công." },
+        { status: 403 }
+      );
+    }
 
     const normalizedEmail = (email || "").trim().toLowerCase();
 

@@ -33,7 +33,7 @@ interface UserAuthContextType {
   openAuthModal: (mode?: "login" | "register" | "otp", email?: string) => void;
   closeAuthModal: () => void;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string; devMode?: boolean; devCode?: string }>;
+  register: (email: string, password: string, name: string, turnstileToken?: string) => Promise<{ success: boolean; error?: string; devMode?: boolean; devCode?: string }>;
   verifyOtp: (email: string, otp: string) => Promise<{ success: boolean; error?: string }>;
   resendOtp: (email: string) => Promise<{ success: boolean; error?: string; devMode?: boolean; devCode?: string }>;
   logout: () => Promise<void>;
@@ -631,12 +631,12 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [syncWithServer]);
 
-  const register = useCallback(async (email: string, password: string, name: string) => {
+  const register = useCallback(async (email: string, password: string, name: string, turnstileToken?: string) => {
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name }),
+        body: JSON.stringify({ email, password, name, turnstileToken }),
       });
       let data: any = null;
       try {
