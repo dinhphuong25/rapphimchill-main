@@ -22,6 +22,8 @@ const databaseUrl = getDatabaseUrl();
 
 export const vercelSql = databaseUrl ? neon(databaseUrl) : null;
 
+let hasCreatedIndex = false;
+
 /**
  * Super-fast check: returns true if database connection is configured.
  * Bảng dữ liệu đã được tạo sẵn trong Neon PostgreSQL nên không chạy lại DDL thừa.
@@ -32,6 +34,14 @@ export async function ensureVercelDatabase(): Promise<boolean> {
       throw new Error("DATABASE_URL hoặc POSTGRES_URL chưa được cấu hình.");
     }
     return false;
+  }
+  if (!hasCreatedIndex) {
+    hasCreatedIndex = true;
+    (async () => {
+      try {
+        await vercelSql`CREATE INDEX IF NOT EXISTS hiphim_users_id_idx ON hiphim_users (id)`;
+      } catch {}
+    })();
   }
   return true;
 }

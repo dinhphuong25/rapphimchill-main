@@ -202,6 +202,8 @@ function TempBanModal({
   );
 }
 
+const CACHED_USER_KEY = "hiphim_cached_user_profile";
+
 export function UserAuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -213,10 +215,23 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
   const [permBanModal, setPermBanModal] = useState<{ open: boolean; reason: string }>({ open: false, reason: "" });
   const [tempBanModal, setTempBanModal] = useState<{ open: boolean; reason: string; bannedUntil: number }>({ open: false, reason: "", bannedUntil: 0 });
 
-
   // Refs to track previous ban state for change detection
   const prevBanStateRef = useRef<{ isLocked: boolean; bannedUntil: number }>({ isLocked: false, bannedUntil: 0 });
   const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Restore cached profile on client mount for 0ms instant display (no skeleton delay)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(CACHED_USER_KEY);
+      if (raw) {
+        const cached = JSON.parse(raw);
+        if (cached && (cached.id || cached.email)) {
+          setUser(cached);
+          setLoading(false);
+        }
+      }
+    } catch {}
+  }, []);
 
   const updateServerData = useCallback(
     async (data: { favorites?: any[]; history?: any[] }) => {
@@ -241,17 +256,20 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
             }
             window.dispatchEvent(new Event("storage"));
 
-            setUser((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    favorites: resData.favorites || prev.favorites,
-                    history: resData.history || prev.history,
-                    favoritesCount: Array.isArray(resData.favorites) ? resData.favorites.length : prev.favoritesCount,
-                    historyCount: Array.isArray(resData.history) ? resData.history.length : prev.historyCount,
-                  }
-                : null
-            );
+            setUser((prev) => {
+              if (!prev) return null;
+              const next = {
+                ...prev,
+                favorites: resData.favorites || prev.favorites,
+                history: resData.history || prev.history,
+                favoritesCount: Array.isArray(resData.favorites) ? resData.favorites.length : prev.favoritesCount,
+                historyCount: Array.isArray(resData.history) ? resData.history.length : prev.historyCount,
+              };
+              try {
+                localStorage.setItem(CACHED_USER_KEY, JSON.stringify(next));
+              } catch {}
+              return next;
+            });
           }
         }
       } catch (err) {
@@ -289,17 +307,20 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
           }
           window.dispatchEvent(new Event("storage"));
 
-          setUser((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  favorites: data.favorites || prev.favorites,
-                  history: data.history || prev.history,
-                  favoritesCount: Array.isArray(data.favorites) ? data.favorites.length : prev.favoritesCount,
-                  historyCount: Array.isArray(data.history) ? data.history.length : prev.historyCount,
-                }
-              : null
-          );
+          setUser((prev) => {
+            if (!prev) return null;
+            const next = {
+              ...prev,
+              favorites: data.favorites || prev.favorites,
+              history: data.history || prev.history,
+              favoritesCount: Array.isArray(data.favorites) ? data.favorites.length : prev.favoritesCount,
+              historyCount: Array.isArray(data.history) ? data.history.length : prev.historyCount,
+            };
+            try {
+              localStorage.setItem(CACHED_USER_KEY, JSON.stringify(next));
+            } catch {}
+            return next;
+          });
         }
       }
     } catch (err) {
@@ -314,6 +335,9 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" },
     });
     setUser(null);
+    try {
+      localStorage.removeItem(CACHED_USER_KEY);
+    } catch {}
     localStorage.removeItem(STORAGE_KEYS.FAVORITES);
     localStorage.removeItem(STORAGE_KEYS.HISTORY);
     localStorage.removeItem("continue_watching_list");
@@ -336,7 +360,11 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchCurrentUser = useCallback(async () => {
     try {
-      setLoading(true);
+      // Don't flash blank skeleton if we already have a cached profile on screen
+      const hasCached = typeof window !== "undefined" && Boolean(localStorage.getItem(CACHED_USER_KEY));
+      if (!hasCached) {
+        setLoading(true);
+      }
       const res = await fetch("/api/auth/me", {
         cache: "no-store",
         headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" },
@@ -345,6 +373,9 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
         const data = await res.json();
         if (data.authenticated && data.user) {
           setUser(data.user);
+          try {
+            localStorage.setItem(CACHED_USER_KEY, JSON.stringify(data.user));
+          } catch {}
           prevBanStateRef.current = {
             isLocked: Boolean(data.user.isLocked),
             bannedUntil: Number(data.user.bannedUntil) || 0,
@@ -359,6 +390,9 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
           syncWithServer();
         } else {
           setUser(null);
+          try {
+            localStorage.removeItem(CACHED_USER_KEY);
+          } catch {}
           localStorage.removeItem(STORAGE_KEYS.FAVORITES);
           localStorage.removeItem(STORAGE_KEYS.HISTORY);
           localStorage.removeItem("continue_watching_list");
@@ -366,6 +400,9 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
         }
       } else {
         setUser(null);
+        try {
+          localStorage.removeItem(CACHED_USER_KEY);
+        } catch {}
         localStorage.removeItem(STORAGE_KEYS.FAVORITES);
         localStorage.removeItem(STORAGE_KEYS.HISTORY);
         localStorage.removeItem("continue_watching_list");
@@ -373,7 +410,6 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (err) {
       console.error("Fetch current user failed:", err);
-      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -537,6 +573,9 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setUser(data.user);
+      try {
+        localStorage.setItem(CACHED_USER_KEY, JSON.stringify(data.user));
+      } catch {}
       prevBanStateRef.current = {
         isLocked: Boolean(data.user.isLocked),
         bannedUntil: Number(data.user.bannedUntil) || 0,
@@ -621,6 +660,9 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setUser(data.user);
+      try {
+        localStorage.setItem(CACHED_USER_KEY, JSON.stringify(data.user));
+      } catch {}
       setIsAuthModalOpen(false);
 
       if (typeof window !== "undefined") {

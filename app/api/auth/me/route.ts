@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { findUserByIdPersistent, isSuperAdmin } from "@/lib/user-store";
+import { findUserByIdPersistent, findUserByEmailPersistent, touchUserActivityPersistent, isSuperAdmin } from "@/lib/user-store";
 import { verifyUserSessionToken, USER_COOKIE_NAME } from "@/lib/user-token";
 import { createSessionToken, ADMIN_COOKIE_NAME, SUPER_ADMIN_EMAIL } from "@/lib/admin-auth";
 
@@ -27,7 +27,8 @@ export async function GET() {
       return NextResponse.json({ authenticated: false }, { headers: NO_CACHE_HEADERS });
     }
 
-    const storedUser = await findUserByIdPersistent(payload.userId);
+    // Fast lookup: query by email first (primary key index), fallback to ID
+    const storedUser = (payload.email ? await findUserByEmailPersistent(payload.email) : null) || (await findUserByIdPersistent(payload.userId));
     if (!storedUser && !payload.name) {
       return NextResponse.json({ authenticated: false }, { headers: NO_CACHE_HEADERS });
     }
@@ -48,10 +49,9 @@ export async function GET() {
       history: [],
     };
 
-    // Update real-time user activity
+    // Update real-time user activity non-blocking in background (never delay response)
     if (storedUser) {
-      const { touchUserActivityPersistent } = await import("@/lib/user-store");
-      await touchUserActivityPersistent(user.id);
+      touchUserActivityPersistent(user.id).catch(() => {});
     }
 
     const isSuper = isSuperAdmin(user);

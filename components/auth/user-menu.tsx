@@ -50,9 +50,12 @@ export default function UserMenu() {
     toast.success("Đã đồng bộ phim yêu thích & lịch sử xem!");
   };
 
-  if (loading) {
+  if (loading && !user) {
     return (
-      <div className="w-9 sm:w-28 h-9 sm:h-10 rounded-full bg-white/5 animate-pulse shrink-0" />
+      <div className="w-9 sm:w-28 h-9 sm:h-10 rounded-full bg-white/5 flex items-center justify-center gap-1.5 px-3 text-white/30 text-xs shrink-0 animate-pulse">
+        <User className="w-4 h-4 opacity-40 shrink-0" />
+        <span className="hidden sm:inline text-[11px] font-medium">Đang tải...</span>
+      </div>
     );
   }
 

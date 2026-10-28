@@ -40,29 +40,70 @@ export interface PendingRegistration {
   expiresAt: number;
 }
 
+interface CachedUser {
+  user: User;
+  expires: number;
+}
+const userProfileCacheById = new Map<string, CachedUser>();
+const userProfileCacheByEmail = new Map<string, CachedUser>();
+const USER_CACHE_TTL = 30_000; // 30 seconds
+
+export function invalidateUserProfileCache(idOrEmail?: string): void {
+  if (!idOrEmail) {
+    userProfileCacheById.clear();
+    userProfileCacheByEmail.clear();
+    return;
+  }
+  userProfileCacheById.delete(idOrEmail);
+  userProfileCacheByEmail.delete(idOrEmail.toLowerCase());
+}
+
 async function readPersistentUserByEmail(email: string): Promise<User | null | undefined> {
+  const normalized = email.toLowerCase();
+  const cached = userProfileCacheByEmail.get(normalized);
+  if (cached && cached.expires > Date.now()) {
+    return cached.user;
+  }
   if (!(await ensureVercelDatabase())) return undefined;
-  const rows = await vercelSql!`SELECT data FROM hiphim_users WHERE email = ${email}`;
+  const rows = await vercelSql!`SELECT data FROM hiphim_users WHERE email = ${normalized}`;
   const row = rows[0] as { data: User } | undefined;
-  if (row) return row.data;
+  if (row) {
+    const user = row.data;
+    userProfileCacheByEmail.set(normalized, { user, expires: Date.now() + USER_CACHE_TTL });
+    if (user.id) userProfileCacheById.set(user.id, { user, expires: Date.now() + USER_CACHE_TTL });
+    return user;
+  }
 
   // Import a legacy local account the first time it is requested.
-  const localUser = readUsers().find((user) => user.email.toLowerCase() === email);
+  const localUser = readUsers().find((user) => user.email.toLowerCase() === normalized);
   if (localUser) {
     await vercelSql!`INSERT INTO hiphim_users (email, id, data) VALUES (${localUser.email}, ${localUser.id}, ${JSON.stringify(localUser)}::jsonb) ON CONFLICT (email) DO NOTHING`;
+    userProfileCacheByEmail.set(normalized, { user: localUser, expires: Date.now() + USER_CACHE_TTL });
+    if (localUser.id) userProfileCacheById.set(localUser.id, { user: localUser, expires: Date.now() + USER_CACHE_TTL });
     return localUser;
   }
   return null;
 }
 
 async function readPersistentUserById(id: string): Promise<User | null | undefined> {
+  const cached = userProfileCacheById.get(id);
+  if (cached && cached.expires > Date.now()) {
+    return cached.user;
+  }
   if (!(await ensureVercelDatabase())) return undefined;
   const rows = await vercelSql!`SELECT data FROM hiphim_users WHERE id = ${id}`;
-  return rows[0] ? (rows[0] as { data: User }).data : null;
+  const user = rows[0] ? (rows[0] as { data: User }).data : null;
+  if (user) {
+    userProfileCacheById.set(id, { user, expires: Date.now() + USER_CACHE_TTL });
+    userProfileCacheByEmail.set(user.email.toLowerCase(), { user, expires: Date.now() + USER_CACHE_TTL });
+  }
+  return user;
 }
 
 async function writePersistentUser(user: User): Promise<boolean> {
   if (!(await ensureVercelDatabase())) return false;
+  invalidateUserProfileCache(user.id);
+  invalidateUserProfileCache(user.email);
   await vercelSql!`INSERT INTO hiphim_users (email, id, data) VALUES (${user.email}, ${user.id}, ${JSON.stringify(user)}::jsonb)
     ON CONFLICT (email) DO UPDATE SET id = EXCLUDED.id, data = EXCLUDED.data`;
   return true;
@@ -639,6 +680,8 @@ export async function deleteUserPersistent(userId: string): Promise<{ success: b
   if (!user) return { success: false, error: "Không tìm thấy người dùng" };
   if (isSuperAdmin(user.email)) return { success: false, error: "Không thể xóa tài khoản Super Admin!" };
   invalidateAdminUsersCache();
+  invalidateUserProfileCache(userId);
+  if (user.email) invalidateUserProfileCache(user.email);
   if (!(await ensureVercelDatabase())) return deleteUser(userId);
   await vercelSql!`DELETE FROM hiphim_users WHERE id = ${userId}`;
   return { success: true };
@@ -674,10 +717,25 @@ export async function adminResetPasswordPersistent(userId: string, newPasswordPl
   return { success: Boolean(updated) };
 }
 
+const lastTouchedActivityMap = new Map<string, number>();
+
 export async function touchUserActivityPersistent(userId: string): Promise<void> {
-  if (await ensureVercelDatabase()) {
-    await updatePersistentUser(userId, { lastActiveAt: new Date().toISOString() });
+  const now = Date.now();
+  const lastTouch = lastTouchedActivityMap.get(userId) || 0;
+  // Throttle: only update lastActiveAt once every 15 minutes to eliminate redundant database writes
+  if (now - lastTouch < 15 * 60 * 1000) {
     return;
+  }
+  lastTouchedActivityMap.set(userId, now);
+
+  if (await ensureVercelDatabase()) {
+    try {
+      await vercelSql!`UPDATE hiphim_users SET data = jsonb_set(data, '{lastActiveAt}', to_jsonb(${new Date().toISOString()})) WHERE id = ${userId}`;
+      return;
+    } catch {
+      await updatePersistentUser(userId, { lastActiveAt: new Date().toISOString() });
+      return;
+    }
   }
   touchUserActivity(userId);
 }
