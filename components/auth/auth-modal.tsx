@@ -380,37 +380,64 @@ export default function AuthModal() {
           {/* 3. OTP VERIFICATION MODE */}
           {authModalMode === "otp" && (
             <form onSubmit={handleVerifyOtp} className="space-y-4">
-              <div className="space-y-1.5 text-center">
-                <label className="text-xs font-semibold text-white/80">Nhập 6 số mã OTP</label>
-                <div className="relative max-w-[260px] mx-auto">
-                  <input
-                    ref={otpInputRef}
-                    type="text"
-                    maxLength={6}
-                    pattern="[0-9]*"
-                    inputMode="numeric"
-                    required
-                    autoFocus
-                    aria-label="Mã xác thực OTP 6 số"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="••••••"
-                    className="w-full h-12 text-center text-2xl font-mono font-black tracking-[10px] rounded-xl bg-white/[0.06] border-2 border-brand-green/40 focus:border-brand-green text-brand-green focus:outline-none focus:shadow-[0_0_20px_rgba(32,214,107,0.3)] transition-all"
-                  />
+              {/* Destination Email Info */}
+              <div className="text-center space-y-1 mb-2">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-green/10 border border-brand-green/30 text-brand-green text-xs font-semibold">
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Mã đã gửi đến: <strong className="underline">{pendingEmail || email}</strong></span>
+                </div>
+                <p className="text-[11px] text-white/50">Vui lòng kiểm tra hộp thư đến (hoặc hòm thư Spam)</p>
+              </div>
+
+              {/* 6 Segmented Digit Boxes */}
+              <div className="relative max-w-[320px] mx-auto py-1">
+                <input
+                  ref={otpInputRef}
+                  type="text"
+                  maxLength={6}
+                  pattern="[0-9]*"
+                  inputMode="numeric"
+                  required
+                  autoFocus
+                  aria-label="Mã xác thực OTP 6 số"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-text z-10 font-mono"
+                />
+                <div className="flex items-center justify-between gap-1.5 sm:gap-2">
+                  {[0, 1, 2, 3, 4, 5].map((index) => {
+                    const digit = otp[index] || "";
+                    const isCurrent = otp.length === index;
+                    return (
+                      <div
+                        key={index}
+                        className={cn(
+                          "w-10 sm:w-12 h-12 sm:h-14 rounded-xl flex items-center justify-center font-mono font-black text-2xl transition-all border-2 select-none",
+                          digit
+                            ? "bg-brand-green/10 border-brand-green text-brand-green shadow-[0_0_15px_rgba(32,214,107,0.3)]"
+                            : isCurrent
+                            ? "bg-white/[0.08] border-brand-green/80 text-white animate-pulse"
+                            : "bg-white/[0.03] border-white/10 text-white/20"
+                        )}
+                      >
+                        {digit || "•"}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
               <button
                 type="submit"
                 disabled={isSubmitting || otp.length < 6}
-                className="w-full h-10 flex items-center justify-center gap-2 rounded-xl bg-brand-green hover:bg-[#1bb85c] active:scale-[0.98] text-black font-bold text-sm shadow-[0_0_20px_rgba(32,214,107,0.3)] transition-all disabled:opacity-50"
+                className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-brand-green hover:bg-[#1bb85c] active:scale-[0.98] text-black font-bold text-sm shadow-[0_0_20px_rgba(32,214,107,0.3)] transition-all disabled:opacity-50 cursor-pointer"
               >
                 {isSubmitting ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>Kích Hoạt Tài Khoản</span>
+                    <span>Kích Hoạt Tài Khoản Ngay</span>
                   </>
                 )}
               </button>

@@ -30,26 +30,135 @@ export interface SendOtpResult {
   error?: string;
 }
 
+export function generateOtpEmailHtml(otp: string, userName?: string): string {
+  const name = userName?.trim() || "bạn";
+  const digits = (otp || "").split("");
+
+  const digitCells = digits
+    .map(
+      (d) => `
+      <td style="padding: 0 4px;" align="center">
+        <div style="width: 44px; height: 56px; line-height: 56px; background: #08140e; border: 2px solid #20D66B; border-radius: 12px; color: #20D66B; font-family: 'SF Mono', Consolas, Menlo, Monaco, 'Courier New', monospace; font-size: 32px; font-weight: 800; text-align: center; box-shadow: 0 0 16px rgba(32, 214, 107, 0.25);">
+          ${d}
+        </div>
+      </td>`
+    )
+    .join("");
+
+  return `<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <meta name="supported-color-schemes" content="dark">
+  <title>Mã kích hoạt tài khoản Hi Phim</title>
+</head>
+<body style="margin: 0; padding: 24px 10px; background-color: #050806; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+  <!-- Preview text -->
+  <div style="display: none; max-height: 0px; overflow: hidden; mso-hide: all;">
+    Mã xác thực kích hoạt tài khoản Hi Phim của bạn là ${otp}. Có hiệu lực trong 10 phút.
+  </div>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation">
+    <tr>
+      <td align="center">
+        <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 560px; background-color: #0e1410; border: 1px solid rgba(32, 214, 107, 0.3); border-radius: 20px; overflow: hidden; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(32, 214, 107, 0.1);">
+          
+          <!-- Top Brand Header -->
+          <tr>
+            <td style="padding: 32px 24px 20px; text-align: center; background: linear-gradient(180deg, #16241b 0%, #0e1410 100%); border-bottom: 1px solid rgba(255, 255, 255, 0.06);">
+              <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation">
+                <tr>
+                  <td style="padding: 8px 20px; background: rgba(32, 214, 107, 0.12); border: 1px solid rgba(32, 214, 107, 0.4); border-radius: 12px;">
+                    <span style="font-size: 24px; font-weight: 900; color: #ffffff; letter-spacing: 0.5px; text-decoration: none;">
+                      Hi <span style="color: #20D66B;">Phim</span>
+                    </span>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 12px 0 0; color: rgba(255, 255, 255, 0.5); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px;">
+                Xác Thực Tài Khoản Người Dùng
+              </p>
+            </td>
+          </tr>
+
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 32px 28px 24px; text-align: center;">
+              <h2 style="margin: 0 0 12px; color: #ffffff; font-size: 20px; font-weight: 700; letter-spacing: -0.3px;">
+                Chào mừng <span style="color: #20D66B;">${name}</span>!
+              </h2>
+              <p style="margin: 0 0 24px; color: rgba(255, 255, 255, 0.75); font-size: 14px; line-height: 1.6;">
+                Cảm ơn bạn đã đăng ký tại <strong>Hi Phim</strong>. Vui lòng nhập mã OTP 6 chữ số dưới đây để kích hoạt tài khoản của bạn:
+              </p>
+
+              <!-- 6-Digit OTP Box -->
+              <table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto;">
+                <tr>
+                  ${digitCells}
+                </tr>
+              </table>
+
+              <!-- Expiration Notice -->
+              <div style="margin-top: 22px;">
+                <span style="display: inline-block; padding: 6px 14px; background: rgba(32, 214, 107, 0.1); border: 1px solid rgba(32, 214, 107, 0.3); border-radius: 30px; color: #20D66B; font-size: 12px; font-weight: 600;">
+                  ⏱️ Mã có hiệu lực trong vòng 10 phút
+                </span>
+              </div>
+
+              <!-- Security Warning Box -->
+              <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="margin-top: 28px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; text-align: left;">
+                <tr>
+                  <td style="padding: 16px 18px;">
+                    <p style="margin: 0 0 6px; color: #ffffff; font-size: 12px; font-weight: 700;">
+                      🛡️ Lưu ý bảo mật quan trọng:
+                    </p>
+                    <p style="margin: 0; color: rgba(255, 255, 255, 0.6); font-size: 12px; line-height: 1.6;">
+                      • Tuyệt đối <strong>không chia sẻ</strong> mã OTP này cho bất kỳ ai.<br>
+                      • Ban quản trị Hi Phim không bao giờ yêu cầu cung cấp OTP qua tin nhắn hay điện thoại.<br>
+                      • Nếu bạn không yêu cầu tạo tài khoản, bạn có thể an tâm bỏ qua email này.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Website Link Button -->
+              <div style="margin-top: 28px;">
+                <a href="https://hiphim.one" target="_blank" style="display: inline-block; padding: 11px 26px; background: #20D66B; color: #050806; font-size: 13px; font-weight: 800; text-decoration: none; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 0 20px rgba(32, 214, 107, 0.3);">
+                  Vào Trang Chủ Hi Phim
+                </a>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 20px; text-align: center; background-color: #070b08; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+              <p style="margin: 0; color: rgba(255, 255, 255, 0.4); font-size: 11px; line-height: 1.6;">
+                © 2026 <strong>Hi Phim</strong> • Nền tảng xem phim chất lượng cao miễn phí.<br>
+                Đây là thư điện tử được gửi tự động, vui lòng không trả lời thư này.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
 /**
  * Sends a 6-digit activation OTP email through Resend API (Edge native) with fallback.
  */
 export async function sendOtpEmail(toEmail: string, otp: string, userName?: string): Promise<SendOtpResult> {
   const resendApiKey = getResendApiKey();
   const emailFrom = getEmailFrom();
-  const subject = "Mã xác nhận kích hoạt tài khoản Hi Phim của bạn";
-  const textContent = `Mã xác thực kích hoạt tài khoản Hi Phim của bạn là: ${otp}\n\nTuyệt đối không chia sẻ mã này cho bất kỳ ai.\n\nTrân trọng,\nĐội ngũ Hi Phim`;
-  const htmlContent = `
-<!DOCTYPE html>
-<html lang="vi">
-<body style="margin:0;padding:35px 12px;background:#080b09;color:#fff;font-family:Arial,sans-serif">
-  <div style="max-width:540px;margin:auto;padding:36px;background:#121714;border:1px solid #20d66b;border-radius:20px;text-align:center">
-    <h1 style="margin:0 0 16px"><span style="color:#fff">Hi</span> <span style="color:#20d66b">Phim</span></h1>
-    <p style="color:#ddd;font-size:16px;margin:0 0 24px">Mã xác thực kích hoạt tài khoản của bạn:</p>
-    <div style="display:inline-block;padding:16px 32px;border:2px solid #20d66b;border-radius:14px;background:#0d1f15;color:#20d66b;font:900 38px monospace;letter-spacing:10px">${otp}</div>
-    <p style="color:#aaa;font-size:13px;margin:24px 0 0">Mã này có hiệu lực trong 10 phút. Nếu bạn không yêu cầu tạo tài khoản tại Hi Phim, vui lòng bỏ qua email này.</p>
-  </div>
-</body>
-</html>`;
+  const subject = `[Hi Phim] Mã xác thực kích hoạt tài khoản của bạn: ${otp}`;
+  const textContent = `Xin chào ${userName || "bạn"},\n\nMã xác thực kích hoạt tài khoản Hi Phim của bạn là: ${otp}\n\nMã có hiệu lực trong 10 phút. Tuyệt đối không chia sẻ mã này cho bất kỳ ai.\n\nTrân trọng,\nĐội ngũ Hi Phim\nhttps://hiphim.one`;
+  const htmlContent = generateOtpEmailHtml(otp, userName);
 
   // 1. Primary: Send via Resend REST API (High deliverability & 100% Edge/Worker compatible)
   if (resendApiKey) {
