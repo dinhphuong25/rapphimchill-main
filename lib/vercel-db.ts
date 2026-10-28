@@ -1,8 +1,5 @@
 import { neon } from "@neondatabase/serverless";
 
-export const FALLBACK_DATABASE_URL =
-  "postgresql://neondb_owner:npg_ImaUR5q9jhyF@ep-tiny-wave-awkfe27v-pooler.c-12.us-east-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require";
-
 export function getDatabaseUrl(): string {
   const primary = (
     process.env.DATABASE_URL ||
@@ -18,7 +15,7 @@ export function getDatabaseUrl(): string {
     }
   }
 
-  return FALLBACK_DATABASE_URL;
+  return "";
 }
 
 let _cachedSql: any = null;
@@ -26,6 +23,11 @@ let _cachedUrl = "";
 
 export function getVercelSql() {
   const url = getDatabaseUrl();
+  if (!url) {
+    throw new Error(
+      "DATABASE_URL is not configured. Please set the DATABASE_URL secret in your environment or Cloudflare Worker."
+    );
+  }
   if (!_cachedSql || _cachedUrl !== url) {
     _cachedUrl = url;
     _cachedSql = neon(url);
