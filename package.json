@@ -14,7 +14,7 @@
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
     "build:cf": "npx opennextjs-cloudflare build",
-    "deploy:cf": "npm run build:cf && npx opennextjs-cloudflare deploy",
+    "deploy:cf": "npm run build:cf && npx opennextjs-cloudflare deploy -- --keep-vars",
     "preview:cf": "npx opennextjs-cloudflare preview",
     "vercel-build": "next build"
   },

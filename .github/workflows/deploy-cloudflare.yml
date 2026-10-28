@@ -40,7 +40,7 @@ jobs:
 
       - name: Deploy Worker
         if: ${{ env.CLOUDFLARE_API_TOKEN != '' }}
-        run: npx opennextjs-cloudflare deploy
+        run: npx opennextjs-cloudflare deploy -- --keep-vars
 
       - name: Notice
         if: ${{ env.CLOUDFLARE_API_TOKEN == '' }}
