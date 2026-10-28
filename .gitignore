@@ -35,6 +35,7 @@ yarn-error.log*
 
 # runtime user data
 /data/users.json
+/data/users-restored*.json
 /data/pending-registrations.json
 /data/ratings.json
 /data/reports.json
