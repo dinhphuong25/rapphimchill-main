@@ -62,3 +62,8 @@ skills-lock.json
 /mobile/android/
 /mobile/dist/
 
+# cloudflare / open-next
+/.open-next/
+/.wrangler/
+
+

@@ -13,6 +13,9 @@
     "start": "next start",
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
+    "build:cf": "npx opennextjs-cloudflare build",
+    "deploy:cf": "npm run build:cf && npx opennextjs-cloudflare deploy",
+    "preview:cf": "npx opennextjs-cloudflare preview",
     "vercel-build": "next build"
   },
   "dependencies": {
@@ -48,6 +51,7 @@
     "web-vitals": "^5.1.0"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.13",
     "@svgr/webpack": "^8.1.0",
     "@types/bootstrap": "^5.2.11",
     "@types/js-cookie": "^3.0.6",
@@ -61,7 +65,8 @@
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3",
-    "webpack-bundle-analyzer": "^5.3.1"
+    "webpack-bundle-analyzer": "^5.3.1",
+    "wrangler": "^4.154.0"
   },
   "optionalDependencies": {
     "@ast-grep/napi-win32-x64-msvc": "0.45.1"

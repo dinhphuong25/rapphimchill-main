@@ -39,4 +39,9 @@ jobs:
         run: npm run build:cf
 
       - name: Deploy Worker
-        run: npx @opennextjs/cloudflare deploy
+        if: ${{ env.CLOUDFLARE_API_TOKEN != '' }}
+        run: npx opennextjs-cloudflare deploy
+
+      - name: Notice
+        if: ${{ env.CLOUDFLARE_API_TOKEN == '' }}
+        run: echo "CLOUDFLARE_API_TOKEN not configured in GitHub Secrets. Deploy is handled by Cloudflare Workers Builds."
