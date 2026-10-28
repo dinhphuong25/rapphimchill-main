@@ -1,5 +1,6 @@
 export const revalidate = 300; // Cache 5 minutes at Edge CDN
 import MovieListClient from "@/components/movie/movie-list-client";
+import { getCachedNewUpdates } from "@/lib/data";
 
 type NewUpdatesProps = {
   searchParams: Promise<{
@@ -22,10 +23,19 @@ export default async function NewUpdatesPage({ searchParams }: NewUpdatesProps) 
   const params = await searchParams;
   const index = Number(params.index) || 1;
 
+  let initialMovies: any[] = [];
+  try {
+    if (index === 1) {
+      initialMovies = await getCachedNewUpdates();
+    }
+  } catch (err) {
+    console.warn("Could not pre-fetch new updates for SSR:", err);
+  }
+
   return (
     <>
       <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 pt-24 pb-20">
-        <MovieListClient index={index} />
+        <MovieListClient index={index} initialMovies={initialMovies} />
       </div>
     </>
   );

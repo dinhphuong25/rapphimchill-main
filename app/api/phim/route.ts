@@ -1,8 +1,5 @@
 import { NextRequest } from "next/server";
 
-// Edge Runtime — responds 50-80ms faster than Node.js with zero cold-start latency
-export const runtime = "edge";
-
 // Rate limiting: in-memory store per Edge worker node
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT = 1200; // Allow 1200 requests per minute per IP (high-concurrency friendly for NAT/shared networks)
@@ -144,6 +141,19 @@ export async function GET(req: NextRequest) {
     currentTTL = 600_000; // 10 mins in-memory
     edgeCacheControl = "public, s-maxage=600, max-age=120, stale-while-revalidate=1200";
   }
+
+  // 0. Check Cloudflare Global Edge Cache API if running on Worker
+  try {
+    const cfCache = (globalThis as any).caches?.default;
+    if (cfCache) {
+      const match = await cfCache.match(req.url);
+      if (match) {
+        const cachedRes = new Response(match.body, match);
+        cachedRes.headers.set("X-Cache", "HIT-CF-EDGE");
+        return cachedRes;
+      }
+    }
+  } catch {}
 
   // 1. Return from In-Memory Cache if fresh
   if (cached && now - cached.timestamp < currentTTL) {
@@ -367,7 +377,7 @@ export async function GET(req: NextRequest) {
       lastAccessed: now,
     });
 
-    return new Response(jsonString, {
+    const response = new Response(jsonString, {
       headers: {
         "Content-Type": "application/json; charset=utf-8",
         "Cache-Control": edgeCacheControl,
@@ -375,6 +385,15 @@ export async function GET(req: NextRequest) {
         Vary: "Accept-Encoding",
       },
     });
+
+    try {
+      const cfCache = (globalThis as any).caches?.default;
+      if (cfCache && response.ok) {
+        cfCache.put(req.url, response.clone()).catch(() => {});
+      }
+    } catch {}
+
+    return response;
   } catch (error: any) {
     // If upstream failed but we have stale cache, serve stale cache as graceful fallback!
     if (cached) {
