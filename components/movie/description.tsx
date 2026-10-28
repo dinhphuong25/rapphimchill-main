@@ -15,7 +15,6 @@ import PlayerErrorBoundary, { PlayerErrorBoundary as PlayerErrorBoundaryNamed } 
 import UnreleasedMovieOverlay from "../player/unreleased-movie-overlay";
 import { normalizeImageUrl } from "@/lib/image-helper";
 import ReportModal from "./report-modal";
-import LiveViewersBadge from "./live-viewers-badge";
 
 const SafePlayerErrorBoundary: any = PlayerErrorBoundary || PlayerErrorBoundaryNamed || (({ children }: any) => <>{children}</>);
 

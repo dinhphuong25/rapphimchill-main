@@ -26,7 +26,6 @@ import { toast } from "sonner";
 import { useFavorites } from "@/hooks/useLocalStorage";
 import { useUserAuth } from "@/context/user-auth-context";
 import { getMovieImageCandidates, STATIC_BLUR_DATA_URL } from "@/lib/image-helper";
-import LiveViewersBadge from "./live-viewers-badge";
 
 interface EpisodeItem {
   name: string;
@@ -311,9 +310,8 @@ export default function MovieDetailView({ movie, episodes = [] }: MovieDetailVie
         {/* BANNER META INFO (OVERLAID AT BOTTOM OF HERO BANNER)   */}
         {/* ====================================================== */}
         <div className="absolute inset-x-0 bottom-2 sm:bottom-3 px-3.5 sm:px-6 md:px-8 max-w-5xl mx-auto z-20 space-y-1 sm:space-y-1.5 pointer-events-auto">
-          {/* Badges Row: Quality, Lang, Year, Time, Live Viewers */}
+          {/* Badges Row: Quality, Lang, Year, Time */}
           <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
-            <LiveViewersBadge slug={movie.slug} variant="pill" />
             {movie.quality && (
               <span className="px-1.5 py-0.5 rounded text-[9.5px] xs:text-[10px] sm:text-xs font-mono font-bold uppercase bg-brand-green/20 text-brand-green border border-brand-green/40 shadow-[0_0_10px_rgba(32,214,107,0.2)]">
                 {movie.quality}
