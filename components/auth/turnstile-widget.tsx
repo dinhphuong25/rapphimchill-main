@@ -150,22 +150,25 @@ export default function TurnstileWidget({
   }, [onVerify, onError, onExpire]);
 
   return (
-    <div className={`w-full my-2 flex flex-col items-center justify-center min-h-[65px] ${className}`}>
+    <div className={`w-full my-0.5 flex flex-col items-center justify-center ${className}`}>
       {/* Turnstile Container */}
-      <div ref={containerRef} className={status === "bypassed" ? "hidden" : "flex justify-center w-full"} />
+      <div
+        ref={containerRef}
+        className={status === "bypassed" ? "hidden" : "flex justify-center w-full min-h-[65px]"}
+      />
 
       {/* Loading state before Turnstile iframe appears */}
       {status === "loading" && (
-        <div className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white/[0.03] border border-white/10 text-white/50 text-xs select-none">
-          <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-green" />
+        <div className="flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg bg-white/[0.03] border border-white/10 text-white/50 text-[11px] select-none">
+          <Loader2 className="w-3 h-3 animate-spin text-brand-green" />
           <span>Đang kết nối bảo vệ Cloudflare...</span>
         </div>
       )}
 
       {/* Graceful Adblock / Bypassed state */}
       {status === "bypassed" && (
-        <div className="flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-medium select-none animate-in fade-in">
-          <ShieldCheck className="w-4 h-4 text-brand-green shrink-0" />
+        <div className="inline-flex items-center justify-center gap-1.5 py-1 px-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium select-none animate-in fade-in">
+          <ShieldCheck className="w-3.5 h-3.5 text-brand-green shrink-0" />
           <span>Bảo mật chống bot Cloudflare: Đã xác thực</span>
         </div>
       )}

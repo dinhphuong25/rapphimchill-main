@@ -337,7 +337,7 @@ export default function AuthModal() {
               </div>
 
               {/* Cloudflare Turnstile Bot Protection */}
-              <div className="pt-1">
+              <div>
                 <TurnstileWidget
                   onVerify={(token) => setTurnstileToken(token)}
                   onExpire={() => setTurnstileToken("")}
@@ -347,7 +347,7 @@ export default function AuthModal() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full h-10 mt-2 flex items-center justify-center gap-2 rounded-xl bg-brand-green hover:bg-[#1bb85c] active:scale-[0.98] text-black font-bold text-xs sm:text-[13px] tracking-wide shadow-[0_0_20px_rgba(32,214,107,0.3)] transition-all disabled:opacity-50"
+                className="w-full h-10 flex items-center justify-center gap-2 rounded-xl bg-brand-green hover:bg-[#1bb85c] active:scale-[0.98] text-black font-bold text-xs sm:text-[13px] tracking-wide shadow-[0_0_20px_rgba(32,214,107,0.3)] transition-all disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
