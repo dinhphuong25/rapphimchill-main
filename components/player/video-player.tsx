@@ -257,6 +257,20 @@ export default function VideoPlayer({
               skipAfterSeconds: ads.tvcSkipAfterSeconds ?? prev.skipAfterSeconds,
             }));
           }
+
+          // Kích hoạt khiên che quảng cáo nếu Admin bật
+          const isShieldActive = ads.enabled !== false && ads.adShieldEnabled === true;
+          setIsAdShieldSystemEnabled(isShieldActive);
+          if (isShieldActive) {
+            const systemMode = (ads.adShieldMode as 'auto' | 'always') || 'auto';
+            const savedShield = typeof window !== 'undefined' ? (localStorage.getItem('cinema_ad_shield') as 'auto' | 'always' | 'off') : null;
+            const effectiveMode = savedShield && ['auto', 'always', 'off'].includes(savedShield) ? savedShield : systemMode;
+            setAdShieldMode(effectiveMode);
+            setIsAdDetected(effectiveMode === 'always');
+          } else {
+            setAdShieldMode('off');
+            setIsAdDetected(false);
+          }
         }
       })
       .catch(() => {});
@@ -334,6 +348,7 @@ export default function VideoPlayer({
   // Anti-Ad Banner Shield (Tự động phát hiện & chỉ che dải quảng cáo bài bạc khi có quảng cáo)
   const [adShieldMode, setAdShieldMode] = useState<'auto' | 'always' | 'off'>('off');
   const [isAdDetected, setIsAdDetected] = useState(false);
+  const [isAdShieldSystemEnabled, setIsAdShieldSystemEnabled] = useState<boolean>(false);
   const detectorCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const consecutiveDetectionsRef = useRef(0);
   const consecutiveMissesRef = useRef(0);
@@ -1695,9 +1710,32 @@ export default function VideoPlayer({
         }
       }
 
-      // Tạm gỡ phần che quảng cáo theo yêu cầu
-      if (isAdDetected) {
-        setIsAdDetected(false);
+      // Tự động kích hoạt khiên che quảng cáo thông minh khi Admin bật
+      if (!isAdShieldSystemEnabled || adShieldMode === 'off') {
+        if (isAdDetected) {
+          setIsAdDetected(false);
+        }
+      } else if (adShieldMode === 'always') {
+        setIsAdDetected(true);
+      } else if (adShieldMode === 'auto') {
+        let isAdNow = false;
+
+        // Ưu tiên 1: Dải banner từ playlist m3u8 nếu segment chứa từ khóa banner
+        if (bannerRangesRef.current.length > 0) {
+          for (const range of bannerRangesRef.current) {
+            if (cur >= range.start - 0.5 && cur <= range.end + 0.5) {
+              isAdNow = true;
+              break;
+            }
+          }
+        }
+
+        // Ưu tiên 2: Quét hình ảnh thời gian thực phát hiện text quảng cáo mép trên
+        if (!isAdNow && isVisualAdDetectedRef.current) {
+          isAdNow = true;
+        }
+
+        setIsAdDetected(isAdNow);
       }
 
 
@@ -2090,11 +2128,110 @@ export default function VideoPlayer({
     };
   }, []);
 
-  // Intelligent Real-Time Ad Banner Detector Loop (Tạm gỡ theo yêu cầu)
+  // Intelligent Real-Time Ad Banner Detector Loop (Tự động nhận diện banner cờ bạc mép trên khi Admin bật)
   useEffect(() => {
-    setIsAdDetected(false);
-    isVisualAdDetectedRef.current = false;
-  }, []);
+    if (!isAdShieldSystemEnabled || adShieldMode === 'off') {
+      setIsAdDetected(false);
+      isVisualAdDetectedRef.current = false;
+      consecutiveDetectionsRef.current = 0;
+      consecutiveMissesRef.current = 0;
+      prevFrameLuminanceRef.current = null;
+      return;
+    }
+    if (adShieldMode === 'always') {
+      setIsAdDetected(true);
+      return;
+    }
+
+    // Chế độ 'auto': bắt đầu ở trạng thái không che, tự động quét video frame mép trên
+    const video = videoRef.current;
+    if (!video) return;
+
+    const checkInterval = setInterval(() => {
+      if (video.paused || video.ended || video.readyState < 2) return;
+      const cur = video.currentTime;
+      if (cur < 0.5) return;
+
+      // Kỹ thuật 1: Phân tích Luminance & Edge Transition trên 16% đỉnh video
+      let detected = false;
+      try {
+        if (!detectorCanvasRef.current) {
+          const canvas = document.createElement('canvas');
+          canvas.width = 160;
+          canvas.height = 36;
+          detectorCanvasRef.current = canvas;
+        }
+        const canvas = detectorCanvasRef.current;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, video.videoWidth || 640, (video.videoHeight || 360) * 0.17, 0, 0, 160, 36);
+          const imgData = ctx.getImageData(0, 0, 160, 36);
+          const data = imgData.data;
+
+          let highContrastPixels = 0;
+          let bannerColorCount = 0;
+          const totalSampled = 160 * 36;
+
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            // Nhận diện dải màu vàng rực/đỏ rực/trắng sáng đặc trưng của watermark bài bạc
+            const isGamblingGold = r > 180 && g > 150 && b < 60;
+            const isGamblingRed = r > 190 && g < 50 && b < 50;
+            const isGamblingWhite = r > 230 && g > 230 && b > 230;
+            if (isGamblingGold || isGamblingRed || isGamblingWhite) {
+              bannerColorCount++;
+            }
+
+            const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+            if (lum > 220 || lum < 20) {
+              highContrastPixels++;
+            }
+          }
+
+          // Tỷ lệ text/banner vượt ngưỡng đặc trưng
+          if (bannerColorCount / totalSampled > 0.08 || highContrastPixels / totalSampled > 0.35) {
+            detected = true;
+          }
+        }
+      } catch {
+        // Cross-origin canvas read fallback
+      }
+
+      // Kỹ thuật 2: Kiểm tra phân đoạn xác định từ m3u8 playlist (nếu có segment banner)
+      if (!detected && bannerRangesRef.current.length > 0) {
+        const cur = video.currentTime;
+        for (const range of bannerRangesRef.current) {
+          if (cur >= range.start - 0.5 && cur <= range.end + 0.5) {
+            detected = true;
+            break;
+          }
+        }
+      }
+
+      if (detected) {
+        consecutiveDetectionsRef.current++;
+        consecutiveMissesRef.current = 0;
+        if (consecutiveDetectionsRef.current >= 2) {
+          isVisualAdDetectedRef.current = true;
+          setIsAdDetected(true);
+        }
+      } else {
+        consecutiveMissesRef.current++;
+        consecutiveDetectionsRef.current = 0;
+        if (consecutiveMissesRef.current >= 2) {
+          isVisualAdDetectedRef.current = false;
+          setIsAdDetected(false);
+          prevFrameLuminanceRef.current = null;
+        }
+      }
+    }, 600);
+
+    return () => {
+      clearInterval(checkInterval);
+    };
+  }, [isAdShieldSystemEnabled, adShieldMode, videoUrl]);
 
   // Đảm bảo không tự bật PiP khi đổi tab
   useEffect(() => {
@@ -2341,7 +2478,20 @@ export default function VideoPlayer({
         </div>
       )}
 
-      {/* Intelligent Anti-Ad Banner Shield: Tạm gỡ theo yêu cầu */}
+      {/* Intelligent Anti-Ad Banner Shield (Che sạch dải watermark quảng cáo cờ bạc mép trên khi Admin bật) */}
+      {isAdShieldSystemEnabled && (
+        <div 
+          className={cn(
+            "absolute top-0 left-0 right-0 z-[28] transition-all duration-300 overflow-hidden pointer-events-none select-none",
+            isAdDetected
+              ? "opacity-100 h-[17.5%] sm:h-[16.5%]" 
+              : "opacity-0 h-0 pointer-events-none"
+          )}
+        >
+          {/* Cinematic gradient mask with frosted blur to obliterate gambling text */}
+          <div className="w-full h-full bg-gradient-to-b from-black via-black/95 via-55% to-transparent backdrop-blur-[6px]" />
+        </div>
+      )}
 
 
       <div 
@@ -3201,6 +3351,51 @@ export default function VideoPlayer({
                       className="w-full cursor-pointer"
                     />
                   </div>
+
+                  {/* Anti-Ad Shield Control (Chỉ hiện khi Admin đã bật tính năng Khiên Che) */}
+                  {isAdShieldSystemEnabled && (
+                    <div className="pt-3 px-1 space-y-2 border-t border-white/10 mt-1">
+                      <div className="flex items-center justify-between text-xs text-white/80">
+                        <span className="flex items-center gap-1.5 font-bold">
+                          <Shield className="w-3.5 h-3.5 text-brand-green" />
+                          Khiên che quảng cáo mép trên
+                        </span>
+                        <span className="text-[10px] text-brand-green font-bold bg-brand-green/10 border border-brand-green/20 px-2 py-0.5 rounded-full">
+                          {adShieldMode === 'auto' ? (isAdDetected ? 'Đang che QC' : 'Tự động (Sạch)') : adShieldMode === 'always' ? 'Luôn che' : 'Đã tắt'}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {[
+                          { id: 'auto', label: 'Tự động', desc: 'Chỉ che khi có QC' },
+                          { id: 'always', label: 'Luôn che', desc: 'Che cố định mép trên' },
+                          { id: 'off', label: 'Tắt khiên', desc: 'Xem nguyên bản' },
+                        ].map((item) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAdShieldModeChange(item.id as any);
+                            }}
+                            className={cn(
+                              "py-2 px-1.5 rounded-xl text-center flex flex-col items-center justify-center transition-all cursor-pointer border",
+                              adShieldMode === item.id
+                                ? "bg-brand-green text-black font-extrabold border-brand-green shadow-sm"
+                                : "bg-white/5 hover:bg-white/10 text-white/70 border-white/5"
+                            )}
+                          >
+                            <span className="text-xs font-bold leading-tight">{item.label}</span>
+                            <span className={cn(
+                              "text-[9px] leading-tight mt-0.5",
+                              adShieldMode === item.id ? "text-black/80 font-semibold" : "text-white/40"
+                            )}>
+                              {item.desc}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
 
                 </div>

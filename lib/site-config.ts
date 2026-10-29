@@ -38,6 +38,9 @@ export interface SiteConfig {
     tvcEnabled?: boolean;
     tvcVideoUrl?: string;
     tvcSkipAfterSeconds?: number;
+    adShieldEnabled?: boolean;
+    adShieldMode?: "auto" | "always";
+    adDisclaimerEnabled?: boolean;
   };
 }
 
@@ -84,6 +87,9 @@ export const DEFAULT_SITE_CONFIG: SiteConfig = {
     tvcEnabled: true,
     tvcVideoUrl: "https://bf.333xbet.com/18881999/video9922.mp4",
     tvcSkipAfterSeconds: 5,
+    adShieldEnabled: false,
+    adShieldMode: "auto",
+    adDisclaimerEnabled: false,
   },
 };
 

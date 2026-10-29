@@ -11,6 +11,7 @@ import {
   Database,
   Settings,
   Shield,
+  Info,
   LogOut,
   Plus,
   Trash2,
@@ -561,6 +562,28 @@ export default function AdminDashboardPage() {
       setApiPing(-1);
     } finally {
       setIsCheckingPing(false);
+    }
+  };
+
+  const handleToggleAdOption = async (
+    key: keyof NonNullable<SiteConfig["ads"]>,
+    val: boolean,
+    label: string
+  ) => {
+    if (!config) return;
+    const updated: SiteConfig = {
+      ...config,
+      ads: {
+        ...(config.ads || {}),
+        [key]: val,
+      },
+    };
+    setConfig(updated);
+    await handleSaveConfig(updated);
+    if (val) {
+      toast.success(`Đã BẬT ${label}! Website đã được cập nhật tức thì.`);
+    } else {
+      toast.success(`Đã TẮT ${label}! Website đã được cập nhật tức thì.`);
     }
   };
 
@@ -2322,41 +2345,42 @@ export default function AdminDashboardPage() {
           )}
 
           {/* ======================================================== */}
-          {/* TAB: QUẢN LÝ QUẢNG CÁO (POPUP & CATFISH) */}
+          {/* TAB: QUẢN LÝ QUẢNG CÁO & KHIÊN CHE VIDEO */}
           {/* ======================================================== */}
           {activeTab === "ads" && (
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-extrabold text-white flex items-center gap-2">
                   <DollarSign className="w-6 h-6 text-brand-green" />
-                  Quản Lý Hệ Thống Quảng Cáo
+                  Quản Lý Hệ Thống Quảng Cáo & Khiên Che Video
                 </h2>
                 <p className="text-xs text-white/50 mt-1">
-                  Cấu hình 2 vị trí quảng cáo chiến lược: Popup giữa màn hình và Catfish bám chân trang.
+                  Cấu hình toàn diện hệ thống: Popup, Catfish, Video TVC và Khiên che quảng cáo bài bạc từ nguồn phát gốc. Các nút bật/tắt sẽ tự động lưu và áp dụng ngay lập tức.
                 </p>
               </div>
 
               {/* Master Toggle: Kích hoạt toàn bộ quảng cáo */}
               <div className="flex items-center justify-between p-5 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-xl shadow-lg">
                 <div className="space-y-0.5">
-                  <span className="text-sm font-bold text-white block">Kích hoạt Hệ Thống Quảng Cáo</span>
-                  <span className="text-xs text-white/40 block">Bật hoặc tắt toàn bộ quảng cáo trên website</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-white block">Kích hoạt Hệ Thống Quảng Cáo</span>
+                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${
+                      config?.ads?.enabled !== false
+                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                        : "bg-red-500/10 text-red-400 border-red-500/20"
+                    }`}>
+                      {config?.ads?.enabled !== false ? "ĐANG BẬT" : "ĐÃ TẮT TOÀN BỘ"}
+                    </span>
+                  </div>
+                  <span className="text-xs text-white/40 block">
+                    Bật hoặc tắt toàn bộ quảng cáo trên website (Popup, Catfish, TVC). Khi tắt, website hoàn toàn sạch quảng cáo tài trợ.
+                  </span>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
                     checked={config?.ads?.enabled ?? true}
-                    onChange={(e) => {
-                      if (!config) return;
-                      const updated = {
-                        ...config,
-                        ads: {
-                          ...(config.ads || {}),
-                          enabled: e.target.checked,
-                        },
-                      };
-                      setConfig(updated);
-                    }}
+                    onChange={(e) => handleToggleAdOption("enabled", e.target.checked, "Hệ Thống Quảng Cáo")}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-green" />
@@ -2403,8 +2427,8 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
-              {/* 2 Cards: Popup & Catfish */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+              {/* 5 Cards: Popup, Catfish, TVC, Ad Shield, Disclaimer */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {/* 1. POPUP */}
                 <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/10 space-y-4 flex flex-col justify-between">
                   <div className="space-y-3">
@@ -2417,24 +2441,14 @@ export default function AdminDashboardPage() {
                         <input
                           type="checkbox"
                           checked={config?.ads?.showPopup ?? true}
-                          onChange={(e) => {
-                            if (!config) return;
-                            const updated = {
-                              ...config,
-                              ads: {
-                                ...(config.ads || {}),
-                                showPopup: e.target.checked,
-                              },
-                            };
-                            setConfig(updated);
-                          }}
+                          onChange={(e) => handleToggleAdOption("showPopup", e.target.checked, "Popup Giữa Màn Hình")}
                           className="sr-only peer"
                         />
                         <div className="w-9 h-5 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-400" />
                       </label>
                     </div>
                     <p className="text-[11px] text-white/40 leading-relaxed">
-                      Modal popup nổi lên giữa màn hình khi người dùng truy cập web, có nền mờ và nút tắt tròn X.
+                      Modal popup nổi lên giữa màn hình khi người dùng truy cập web, có nền mờ và nút tắt tròn X. Tự động lưu khi gạt nút.
                     </p>
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-white/60 block">Đường dẫn ảnh</label>
@@ -2483,24 +2497,14 @@ export default function AdminDashboardPage() {
                         <input
                           type="checkbox"
                           checked={config?.ads?.showBottomBanner ?? true}
-                          onChange={(e) => {
-                            if (!config) return;
-                            const updated = {
-                              ...config,
-                              ads: {
-                                ...(config.ads || {}),
-                                showBottomBanner: e.target.checked,
-                              },
-                            };
-                            setConfig(updated);
-                          }}
+                          onChange={(e) => handleToggleAdOption("showBottomBanner", e.target.checked, "Catfish Chân Trang")}
                           className="sr-only peer"
                         />
                         <div className="w-9 h-5 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-green" />
                       </label>
                     </div>
                     <p className="text-[11px] text-white/40 leading-relaxed">
-                      Banner dính cố định ở đáy màn hình khi cuộn trang, có nút tắt QC x góc phải.
+                      Banner dính cố định ở đáy màn hình khi cuộn trang, có nút tắt QC x góc phải. Tự động lưu khi gạt nút.
                     </p>
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-white/60 block">Đường dẫn ảnh động / banner</label>
@@ -2549,17 +2553,7 @@ export default function AdminDashboardPage() {
                         <input
                           type="checkbox"
                           checked={config?.ads?.tvcEnabled ?? true}
-                          onChange={(e) => {
-                            if (!config) return;
-                            const updated = {
-                              ...config,
-                              ads: {
-                                ...(config.ads || {}),
-                                tvcEnabled: e.target.checked,
-                              },
-                            };
-                            setConfig(updated);
-                          }}
+                          onChange={(e) => handleToggleAdOption("tvcEnabled", e.target.checked, "TVC Video")}
                           className="sr-only peer"
                         />
                         <div className="w-9 h-5 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-500" />
@@ -2624,6 +2618,107 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* 4. KHIÊN CHE QUẢNG CÁO NGUỒN PHÁT (AD SHIELD) */}
+                <div className="p-5 rounded-2xl bg-white/[0.02] border border-brand-green/20 space-y-4 flex flex-col justify-between shadow-[0_0_20px_rgba(34,197,94,0.05)]">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-bold uppercase tracking-wider text-brand-green flex items-center gap-1 block">
+                          <Shield className="w-3 h-3" />
+                          4. Khiên Che Video
+                        </span>
+                        <h4 className="text-sm font-bold text-white">Che QC Nguồn Phát (Ad Shield)</h4>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={config?.ads?.adShieldEnabled ?? false}
+                          onChange={(e) => handleToggleAdOption("adShieldEnabled", e.target.checked, "Khiên Che Quảng Cáo Video")}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-green" />
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-white/40 leading-relaxed">
+                      Tự động phát hiện và che dải banner/watermark cờ bạc mép trên của video phát từ nguồn gốc (như 9922.com). Không che khi hết quảng cáo. Tự động lưu khi gạt nút.
+                    </p>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-white/60 block">Chế độ che mặc định</label>
+                      <select
+                        value={config?.ads?.adShieldMode || "auto"}
+                        onChange={async (e) => {
+                          if (!config) return;
+                          const mode = e.target.value as "auto" | "always";
+                          const updated: SiteConfig = {
+                            ...config,
+                            ads: {
+                              ...(config.ads || {}),
+                              adShieldMode: mode,
+                            },
+                          };
+                          setConfig(updated);
+                          await handleSaveConfig(updated);
+                          toast.success(`Đã lưu chế độ khiên: ${mode === "auto" ? "Tự động nhận diện" : "Luôn che mép trên"}`);
+                        }}
+                        className="w-full bg-black/60 border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-green"
+                      >
+                        <option value="auto">Tự động (Chỉ che khi phát hiện quảng cáo)</option>
+                        <option value="always">Luôn che (Cố định dải mờ mép trên 17%)</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px]">
+                    <span className="text-white/40">Trạng thái:</span>
+                    <span className={`font-bold px-2 py-0.5 rounded-full text-[10px] ${
+                      config?.ads?.adShieldEnabled
+                        ? "bg-brand-green/20 text-brand-green border border-brand-green/30"
+                        : "bg-white/5 text-white/40 border border-white/10"
+                    }`}>
+                      {config?.ads?.adShieldEnabled ? "Đang Bật Che QC" : "Đang Tắt (Xem gốc)"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 5. LƯU Ý MIỄN TRỪ QUẢNG CÁO (DISCLAIMER) */}
+                <div className="p-5 rounded-2xl bg-white/[0.02] border border-cyan-500/20 space-y-4 flex flex-col justify-between shadow-[0_0_20px_rgba(6,182,212,0.05)]">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1 block">
+                          <Info className="w-3 h-3" />
+                          5. Lưu Ý Miễn Trừ
+                        </span>
+                        <h4 className="text-sm font-bold text-white">Dưới Danh Sách Tập</h4>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={config?.ads?.adDisclaimerEnabled ?? false}
+                          onChange={(e) => handleToggleAdOption("adDisclaimerEnabled", e.target.checked, "Dòng Lưu Ý Miễn Trừ Quảng Cáo")}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500" />
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-white/40 leading-relaxed">
+                      Hiển thị dòng chữ giải thích minh bạch bên dưới danh sách tập phim để người xem thông cảm cho quảng cáo nhúng từ nguồn gốc.
+                    </p>
+                    <div className="p-3 rounded-xl bg-black/40 border border-white/10 text-[11px] text-white/60 leading-relaxed italic">
+                      &quot;Quảng cáo trong video được nhúng cố định từ nguồn phát gốc. Đội ngũ kỹ thuật đã nỗ lực can thiệp để che chắn tối đa, rất mong mọi người thông cảm cho sự bất tiện này.&quot;
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px]">
+                    <span className="text-white/40">Trạng thái:</span>
+                    <span className={`font-bold px-2 py-0.5 rounded-full text-[10px] ${
+                      config?.ads?.adDisclaimerEnabled
+                        ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+                        : "bg-white/5 text-white/40 border border-white/10"
+                    }`}>
+                      {config?.ads?.adDisclaimerEnabled ? "Đang Hiện Lưu Ý" : "Đang Ẩn"}
+                    </span>
+                  </div>
                 </div>
               </div>
 
