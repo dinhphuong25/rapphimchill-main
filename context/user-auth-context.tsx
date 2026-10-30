@@ -11,7 +11,7 @@ export interface UserProfile {
   name: string;
   avatar?: string;
   isVerified: boolean;
-  role?: "user" | "admin" | "superadmin";
+  role?: "user" | "vip" | "admin" | "superadmin";
   createdAt?: string;
   lastActiveAt?: string;
   isLocked?: boolean;

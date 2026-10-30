@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { verifyMaintenanceToken } from "@/lib/maintenance";
+import { runStreamHealthCheck } from "@/lib/health-checker";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // Max execution timeout on Vercel
@@ -103,6 +104,11 @@ async function handleAutoUpdate(req: NextRequest) {
     }
 
     const durationMs = Date.now() - startTime;
+
+    // Trigger auto stream health check in the background for top featured/new movies
+    try {
+      runStreamHealthCheck(4).catch((err) => console.warn("[Cron] Health check error:", err));
+    } catch {}
 
     return NextResponse.json({
       success: true,

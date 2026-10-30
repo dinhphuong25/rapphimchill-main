@@ -77,6 +77,7 @@ export default function UserMenu() {
   // Logged in -> Show User Avatar & Dropdown Menu
   const initial = (user.name || user.email || "U").charAt(0).toUpperCase();
   const isSuperAdmin = user.role === "superadmin" || user.role === "admin" || user.email.toLowerCase() === "kimdinhphuong205@gmail.com";
+  const isVip = user.role === "vip";
 
   return (
     <div className="relative shrink-0 pointer-events-auto" ref={dropdownRef}>
@@ -86,6 +87,7 @@ export default function UserMenu() {
         className={cn(
           "flex items-center gap-1.5 sm:gap-2 h-9 sm:h-10 pl-1.5 pr-2 sm:pr-3 rounded-full bg-[#111714]/90 backdrop-blur-md border border-white/15 hover:border-brand-green/60 text-white transition-all duration-300 group active:scale-95",
           isSuperAdmin && "border-amber-400/50 hover:border-amber-400/80 shadow-[0_0_15px_rgba(251,191,36,0.2)]",
+          !isSuperAdmin && isVip && "border-amber-400/40 hover:border-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.2)]",
           isOpen && "border-brand-green shadow-[0_0_20px_rgba(32,214,107,0.3)]"
         )}
         aria-label="Menu tài khoản"
@@ -98,7 +100,7 @@ export default function UserMenu() {
             : "bg-gradient-to-tr from-brand-green to-emerald-300 text-black shadow-[0_0_10px_rgba(32,214,107,0.4)]"
         )}>
           {initial}
-          {isSuperAdmin && (
+          {(isSuperAdmin || isVip) && (
             <span className="sm:hidden absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-400 text-black flex items-center justify-center ring-1 ring-[#111714]">
               <Crown className="w-2 h-2 fill-current" />
             </span>
@@ -110,13 +112,18 @@ export default function UserMenu() {
           {user.name || user.email.split("@")[0]}
         </span>
 
-        {/* Super Admin Pill Badge */}
-        {isSuperAdmin && (
+        {/* Super Admin / VIP Pill Badge */}
+        {isSuperAdmin ? (
           <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400/25 to-amber-500/15 text-amber-300 border border-amber-400/40 shadow-[0_0_10px_rgba(251,191,36,0.25)]">
             <Crown className="w-3 h-3 text-amber-300" />
             Admin
           </span>
-        )}
+        ) : isVip ? (
+          <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400/25 to-yellow-500/15 text-amber-300 border border-amber-400/40 shadow-[0_0_10px_rgba(251,191,36,0.2)]">
+            <Crown className="w-3 h-3 text-amber-300" />
+            VIP
+          </span>
+        ) : null}
 
         <ChevronDown
           className={cn(
@@ -151,11 +158,19 @@ export default function UserMenu() {
                   {user.name}
                   {isSuperAdmin ? (
                     <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  ) : isVip ? (
+                    <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                   ) : (
                     <ShieldCheck className="w-3.5 h-3.5 text-brand-green shrink-0" />
                   )}
                 </p>
                 <p className="text-xs text-white/50 truncate font-mono">{user.email}</p>
+                {isVip && !isSuperAdmin && (
+                  <span className="inline-flex items-center gap-1 mt-1 text-[9.5px] font-bold text-amber-300 bg-amber-400/10 border border-amber-400/30 px-1.5 py-0.5 rounded-md">
+                    <Sparkles className="w-2.5 h-2.5" />
+                    Thành Viên VIP (Không Quảng Cáo)
+                  </span>
+                )}
               </div>
             </div>
           </div>

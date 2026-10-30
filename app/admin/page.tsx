@@ -115,6 +115,13 @@ export default function AdminDashboardPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
+  // Ads Analytics state
+  const [adsAnalytics, setAdsAnalytics] = useState<any>(null);
+  const [isLoadingAdsAnalytics, setIsLoadingAdsAnalytics] = useState(false);
+
+  // Health-check state
+  const [isScanningHealth, setIsScanningHealth] = useState(false);
+
   // Users Management state
   const [usersList, setUsersList] = useState<any[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
@@ -507,6 +514,9 @@ export default function AdminDashboardPage() {
     if (tab === "announcement") {
       fetchSystemNotifs();
     }
+    if (tab === "ads") {
+      fetchAdsAnalytics();
+    }
   };
 
   // Load config on mount
@@ -516,6 +526,7 @@ export default function AdminDashboardPage() {
     fetchUsers();
     fetchReports();
     fetchSystemNotifs();
+    fetchAdsAnalytics();
 
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -526,6 +537,52 @@ export default function AdminDashboardPage() {
       }
     }
   }, []);
+
+  const fetchAdsAnalytics = async () => {
+    setIsLoadingAdsAnalytics(true);
+    try {
+      const res = await fetch("/api/admin/ads/analytics");
+      const data = await res.json();
+      if (data.success && data.analytics) {
+        setAdsAnalytics(data.analytics);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setIsLoadingAdsAnalytics(false);
+    }
+  };
+
+  const handleTriggerHealthCheck = async () => {
+    setIsScanningHealth(true);
+    try {
+      const res = await fetch("/api/admin/health-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ limit: 8 }),
+      });
+      const data = await res.json();
+      if (data.success && data.result) {
+        const { totalStreamsChecked, brokenCount, durationMs } = data.result;
+        await fetchReports();
+        if (brokenCount > 0) {
+          toast.warning(
+            `Đã quét ${totalStreamsChecked} server phát (${(durationMs / 1000).toFixed(1)}s)! Phát hiện ${brokenCount} link phản hồi lỗi và đã tự động đưa vào danh sách Báo Lỗi.`
+          );
+        } else {
+          toast.success(
+            `Tuyệt vời! Đã quét ${totalStreamsChecked} server phát (${(durationMs / 1000).toFixed(1)}s), 100% server đều đang hoạt động tốt!`
+          );
+        }
+      } else {
+        toast.error(data.error || "Không thể thực hiện quét link!");
+      }
+    } catch {
+      toast.error("Lỗi khi kết nối đến server kiểm tra!");
+    } finally {
+      setIsScanningHealth(false);
+    }
+  };
 
   const fetchConfig = async () => {
     setIsLoading(true);
@@ -2357,6 +2414,123 @@ export default function AdminDashboardPage() {
                 <p className="text-xs text-white/50 mt-1">
                   Cấu hình toàn diện hệ thống: Popup, Catfish, Video TVC và Khiên che quảng cáo bài bạc từ nguồn phát gốc. Các nút bật/tắt sẽ tự động lưu và áp dụng ngay lập tức.
                 </p>
+              </div>
+
+              {/* BẢNG THỐNG KÊ HIỆU QUẢ QUẢNG CÁO (ADS ANALYTICS & CTR) */}
+              <div className="p-5 rounded-2xl bg-gradient-to-br from-white/[0.04] to-black/60 border border-white/10 shadow-xl space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-emerald-400" />
+                      Thống Kê Lượt Xem & Click Quảng Cáo (Ads Analytics & CTR)
+                    </h3>
+                    <p className="text-[11px] text-white/50 mt-0.5">
+                      Theo dõi hiệu quả chuyển đổi và tương tác thực tế của khán giả với từng vị trí quảng cáo
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={fetchAdsAnalytics}
+                    disabled={isLoadingAdsAnalytics}
+                    className="px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/10 text-xs font-semibold flex items-center gap-1.5 self-start sm:self-auto cursor-pointer transition-colors"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isLoadingAdsAnalytics ? "animate-spin" : ""}`} />
+                    <span>Làm mới số liệu</span>
+                  </button>
+                </div>
+
+                {/* 3 Metric Cards: Hôm nay, 7 ngày, Toàn thời gian */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-1">
+                    <span className="text-[11px] text-white/50 block font-medium">Hôm Nay</span>
+                    <div className="flex items-baseline justify-between">
+                      <div className="text-lg font-black text-white font-mono">
+                        {(adsAnalytics?.today?.impressions || 0).toLocaleString()} <span className="text-xs font-normal text-white/40">views</span>
+                      </div>
+                      <span className="text-xs font-bold text-emerald-400 font-mono">
+                        {adsAnalytics?.today?.clicks || 0} clicks
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-white/60 pt-1 border-t border-white/5">
+                      <span>CTR Chuyển đổi:</span>
+                      <span className="font-bold text-amber-400 font-mono">{adsAnalytics?.today?.ctr || 0}%</span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-1">
+                    <span className="text-[11px] text-white/50 block font-medium">7 Ngày Qua</span>
+                    <div className="flex items-baseline justify-between">
+                      <div className="text-lg font-black text-white font-mono">
+                        {(adsAnalytics?.last7Days?.impressions || 0).toLocaleString()} <span className="text-xs font-normal text-white/40">views</span>
+                      </div>
+                      <span className="text-xs font-bold text-emerald-400 font-mono">
+                        {adsAnalytics?.last7Days?.clicks || 0} clicks
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-white/60 pt-1 border-t border-white/5">
+                      <span>CTR Chuyển đổi:</span>
+                      <span className="font-bold text-amber-400 font-mono">{adsAnalytics?.last7Days?.ctr || 0}%</span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-1">
+                    <span className="text-[11px] text-white/50 block font-medium">Toàn Thời Gian</span>
+                    <div className="flex items-baseline justify-between">
+                      <div className="text-lg font-black text-white font-mono">
+                        {(adsAnalytics?.allTime?.impressions || 0).toLocaleString()} <span className="text-xs font-normal text-white/40">views</span>
+                      </div>
+                      <span className="text-xs font-bold text-emerald-400 font-mono">
+                        {adsAnalytics?.allTime?.clicks || 0} clicks
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-white/60 pt-1 border-t border-white/5">
+                      <span>CTR Trung bình:</span>
+                      <span className="font-bold text-amber-400 font-mono">{adsAnalytics?.allTime?.ctr || 0}%</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Chi tiết từng vị trí quảng cáo */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-amber-400/20 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-amber-400 block tracking-wider">1. Popup Giữa Màn Hình</span>
+                      <span className="text-xs font-extrabold text-white font-mono mt-0.5 block">
+                        {(adsAnalytics?.placements?.popup?.impressions || 0).toLocaleString()} views / {adsAnalytics?.placements?.popup?.clicks || 0} clicks
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] text-white/40 block">CTR</span>
+                      <span className="text-xs font-black text-amber-400 font-mono">{adsAnalytics?.placements?.popup?.ctr || 0}%</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-emerald-400/20 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-emerald-400 block tracking-wider">2. Catfish Chân Trang</span>
+                      <span className="text-xs font-extrabold text-white font-mono mt-0.5 block">
+                        {(adsAnalytics?.placements?.catfish?.impressions || 0).toLocaleString()} views / {adsAnalytics?.placements?.catfish?.clicks || 0} clicks
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] text-white/40 block">CTR</span>
+                      <span className="text-xs font-black text-emerald-400 font-mono">{adsAnalytics?.placements?.catfish?.ctr || 0}%</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-rose-400/20 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-rose-400 block tracking-wider">3. TVC Video Đầu Phim</span>
+                      <span className="text-xs font-extrabold text-white font-mono mt-0.5 block">
+                        {(adsAnalytics?.placements?.tvc?.impressions || 0).toLocaleString()} views / {adsAnalytics?.placements?.tvc?.clicks || 0} clicks
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] text-white/40 block">CTR</span>
+                      <span className="text-xs font-black text-rose-400 font-mono">{adsAnalytics?.placements?.tvc?.ctr || 0}%</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Master Toggle: Kích hoạt toàn bộ quảng cáo */}
@@ -4193,7 +4367,18 @@ export default function AdminDashboardPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+                    <button
+                      type="button"
+                      onClick={handleTriggerHealthCheck}
+                      disabled={isScanningHealth}
+                      className="px-3.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                      title="Tự động kiểm tra các server m3u8 và tự động đưa link hỏng vào danh sách báo lỗi"
+                    >
+                      <Activity className={`w-3.5 h-3.5 ${isScanningHealth ? "animate-spin text-amber-400" : ""}`} />
+                      <span>{isScanningHealth ? "Đang quét server..." : "🤖 Quét Tự Động Kiểm Tra Link"}</span>
+                    </button>
+
                     <button
                       type="button"
                       onClick={fetchReports}

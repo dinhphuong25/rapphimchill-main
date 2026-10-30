@@ -10,6 +10,19 @@ interface TVCPlayerOverlayProps {
   onComplete: () => void;
 }
 
+function trackAdEvent(placement: "popup" | "catfish" | "tvc", event: "impression" | "click") {
+  try {
+    if (typeof window !== "undefined") {
+      fetch("/api/ads/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ placement, event }),
+        keepalive: true,
+      }).catch(() => {});
+    }
+  } catch {}
+}
+
 export default function TVCPlayerOverlay({
   tvcUrl = "https://bf.333xbet.com/18881999/video9922.mp4",
   targetUrl = "https://154.82.109.157/2138063.html",
@@ -87,6 +100,7 @@ export default function TVCPlayerOverlay({
 
     if (!hasStarted && video.currentTime > 0) {
       setHasStarted(true);
+      trackAdEvent("tvc", "impression");
     }
 
     setCurrentTime(video.currentTime);
@@ -111,6 +125,7 @@ export default function TVCPlayerOverlay({
   };
 
   const handleOpenAd = () => {
+    trackAdEvent("tvc", "click");
     if (targetUrl) {
       window.open(targetUrl, "_blank", "noopener,noreferrer");
     }

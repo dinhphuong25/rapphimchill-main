@@ -3,6 +3,7 @@
 import React, { useState, useEffect, memo } from "react";
 import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
+import { useUserAuth } from "@/context/user-auth-context";
 
 interface AdConfig {
   enabled: boolean;
@@ -22,8 +23,23 @@ const DEFAULT_AD_CONFIG: AdConfig = {
   showBottomBanner: true,
 };
 
+function trackAdEvent(placement: "popup" | "catfish" | "tvc", event: "impression" | "click") {
+  try {
+    if (typeof window !== "undefined") {
+      fetch("/api/ads/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ placement, event }),
+        keepalive: true,
+      }).catch(() => {});
+    }
+  } catch {}
+}
+
 export function AdFloatingSystemComponent() {
   const pathname = usePathname();
+  const { user } = useUserAuth();
+  const isVipOrAdmin = user?.role === "vip" || user?.role === "admin" || user?.role === "superadmin";
   const [adConfig, setAdConfig] = useState<AdConfig>(DEFAULT_AD_CONFIG);
   const [showPopup, setShowPopup] = useState<boolean>(false);
   const [showBottomBanner, setShowBottomBanner] = useState<boolean>(true);
@@ -41,12 +57,16 @@ export function AdFloatingSystemComponent() {
       .then((res) => res.json())
       .then((data) => {
         if (data?.ads) {
+          const ads = data.ads;
           setAdConfig((prev) => ({
             ...prev,
-            ...data.ads,
-            showBottomBanner: data.ads.showBottomBanner ?? true,
-            showPopup: data.ads.showPopup ?? true,
+            ...ads,
+            showBottomBanner: ads.showBottomBanner ?? true,
+            showPopup: ads.showPopup ?? true,
           }));
+          if (ads.enabled !== false && ads.showBottomBanner !== false) {
+            trackAdEvent("catfish", "impression");
+          }
         }
       })
       .catch(() => {});
@@ -60,6 +80,7 @@ export function AdFloatingSystemComponent() {
         // Tự động bật popup sau 350ms khi vừa vào trang
         const timer = setTimeout(() => {
           setShowPopup(true);
+          trackAdEvent("popup", "impression");
         }, 350);
         return () => clearTimeout(timer);
       }
@@ -97,7 +118,7 @@ export function AdFloatingSystemComponent() {
     }
   };
 
-  if (!isMounted || isAdminOrMaintenance || !adConfig.enabled) return null;
+  if (!isMounted || isAdminOrMaintenance || !adConfig.enabled || isVipOrAdmin) return null;
 
   return (
     <>
@@ -128,6 +149,7 @@ export function AdFloatingSystemComponent() {
               href={adConfig.targetUrl}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackAdEvent("popup", "click")}
               className="block relative w-full overflow-hidden cursor-pointer active:opacity-95"
             >
               <img
@@ -163,6 +185,7 @@ export function AdFloatingSystemComponent() {
                 href={adConfig.targetUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => trackAdEvent("catfish", "click")}
                 className="block w-full max-w-[728px] overflow-hidden rounded-lg cursor-pointer text-center group"
               >
                 <img

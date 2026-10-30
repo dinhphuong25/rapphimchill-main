@@ -42,6 +42,7 @@ import TVCPlayerOverlay from "./tvc-player-overlay";
 import { Slider } from "@/components/ui/slider";
 import { AdRange, fetchAndParseAllAdRanges, extractAllAdRangesFromFragments } from "@/lib/ad-parser";
 import { pipStore } from "@/lib/pip-store";
+import { useUserAuth } from "@/context/user-auth-context";
 export type VideoFitMode = 'contain' | 'cover' | 'fill' | '4:3' | '21:9';
 
 export interface SubtitleCue {
@@ -152,6 +153,8 @@ export default function VideoPlayer({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const hlsRef = useRef<HLS | null>(null);
   const router = useRouter();
+  const { user } = useUserAuth();
+  const isVipOrAdmin = user?.role === "vip" || user?.role === "admin" || user?.role === "superadmin";
 
   const movieNameRef = useRef(movieName);
   const movieSlugRef = useRef(movieSlug);
@@ -246,7 +249,7 @@ export default function VideoPlayer({
       .then((data) => {
         if (data?.ads) {
           const ads = data.ads;
-          if (ads.tvcEnabled === false || ads.enabled === false) {
+          if (ads.tvcEnabled === false || ads.enabled === false || isVipOrAdmin) {
             setShowTVC(false);
             showTVCRef.current = false;
           } else {
@@ -3441,7 +3444,7 @@ export default function VideoPlayer({
       })()}
 
       {/* Pre-Roll TVC Video Player Overlay */}
-      {showTVC && (
+      {showTVC && !isVipOrAdmin && (
         <TVCPlayerOverlay
           tvcUrl={tvcConfig.videoUrl}
           targetUrl={tvcConfig.targetUrl}
