@@ -1,5 +1,3 @@
-import fs from "fs";
-import path from "path";
 import { vercelSql } from "@/lib/vercel-db";
 import { getD1Database } from "@/lib/d1-db";
 
@@ -102,8 +100,7 @@ declare global {
   var __HIPHIM_SITE_CONFIG_PROMISE__: Promise<SiteConfig> | undefined;
 }
 
-const CONFIG_FILE_PATH = path.join(process.cwd(), "data", "site-config.json");
-const CONFIG_MEMORY_TTL = 20_000; // 20s memory cache per Worker isolate
+const CONFIG_MEMORY_TTL = 120_000; // 2 minutes memory cache per Worker isolate
 
 function mergeWithDefaults(parsed: any): SiteConfig {
   if (!parsed || typeof parsed !== "object") return DEFAULT_SITE_CONFIG;
@@ -130,42 +127,19 @@ function mergeWithDefaults(parsed: any): SiteConfig {
 }
 
 /**
- * Reads the site configuration synchronously from memory or local file,
- * and triggers an asynchronous DB hydration if the isolate is cold.
+ * Pure synchronous in-memory read for SSR layouts (0ms CPU, no fs or unawaited DB promises).
  */
 export function getSiteConfig(): SiteConfig {
   if (globalThis.__HIPHIM_SITE_CONFIG__) {
-    if (
-      !globalThis.__HIPHIM_SITE_CONFIG_TS__ ||
-      Date.now() - globalThis.__HIPHIM_SITE_CONFIG_TS__ > CONFIG_MEMORY_TTL
-    ) {
-      getSiteConfigAsync().catch(() => {});
-    }
     return globalThis.__HIPHIM_SITE_CONFIG__;
   }
-
-  try {
-    if (fs.existsSync(CONFIG_FILE_PATH)) {
-      const fileData = fs.readFileSync(CONFIG_FILE_PATH, "utf-8");
-      const parsed = JSON.parse(fileData);
-      const merged = mergeWithDefaults(parsed);
-      globalThis.__HIPHIM_SITE_CONFIG__ = merged;
-      globalThis.__HIPHIM_SITE_CONFIG_TS__ = Date.now();
-      getSiteConfigAsync().catch(() => {});
-      return merged;
-    }
-  } catch (err) {
-    console.warn("Could not read site-config.json, using default config:", err);
-  }
-
   globalThis.__HIPHIM_SITE_CONFIG__ = DEFAULT_SITE_CONFIG;
-  getSiteConfigAsync().catch(() => {});
   return DEFAULT_SITE_CONFIG;
 }
 
 /**
- * Reads the authoritative site configuration from Cloudflare D1 or Neon PostgreSQL,
- * ensuring Admin changes (Ads toggles, Featured slugs, Announcements) persist across all Worker isolates.
+ * Reads the authoritative site configuration from Cloudflare D1 or Neon PostgreSQL
+ * inside async API route handlers (/api/announcement, /api/admin/config).
  */
 export async function getSiteConfigAsync(forceRefresh = false): Promise<SiteConfig> {
   const now = Date.now();
@@ -183,7 +157,7 @@ export async function getSiteConfigAsync(forceRefresh = false): Promise<SiteConf
   }
 
   const loadPromise = (async (): Promise<SiteConfig> => {
-    // 1. Try Cloudflare D1
+    // 1. Try Cloudflare D1 (fast native binding)
     try {
       const d1 = await getD1Database();
       if (d1) {
@@ -197,10 +171,15 @@ export async function getSiteConfigAsync(forceRefresh = false): Promise<SiteConf
           globalThis.__HIPHIM_SITE_CONFIG_TS__ = Date.now();
           return merged;
         }
+        // D1 is bound and healthy; cache current state without hitting external Postgres
+        const fallbackD1 = globalThis.__HIPHIM_SITE_CONFIG__ || DEFAULT_SITE_CONFIG;
+        globalThis.__HIPHIM_SITE_CONFIG__ = fallbackD1;
+        globalThis.__HIPHIM_SITE_CONFIG_TS__ = Date.now();
+        return fallbackD1;
       }
     } catch {}
 
-    // 2. Try Neon PostgreSQL
+    // 2. Fallback to Neon PostgreSQL only if D1 is unavailable
     if (vercelSql) {
       try {
         const rows = await vercelSql`
@@ -217,7 +196,6 @@ export async function getSiteConfigAsync(forceRefresh = false): Promise<SiteConf
       } catch {}
     }
 
-    // 3. Fallback to file/memory
     const fallback = globalThis.__HIPHIM_SITE_CONFIG__ || DEFAULT_SITE_CONFIG;
     globalThis.__HIPHIM_SITE_CONFIG_TS__ = Date.now();
     return fallback;
@@ -232,7 +210,7 @@ export async function getSiteConfigAsync(forceRefresh = false): Promise<SiteConf
 }
 
 /**
- * Updates the site configuration and persists it to D1, PostgreSQL, and file.
+ * Updates the site configuration and persists it to D1 and PostgreSQL.
  */
 export async function saveSiteConfigAsync(newConfig: Partial<SiteConfig>): Promise<SiteConfig> {
   const current = await getSiteConfigAsync(true).catch(() => getSiteConfig());
@@ -265,8 +243,14 @@ export async function saveSiteConfigAsync(newConfig: Partial<SiteConfig>): Promi
 
   dbWrites.push(
     getD1Database()
-      .then((d1) => {
+      .then(async (d1) => {
         if (d1) {
+          await d1
+            .prepare(
+              "CREATE TABLE IF NOT EXISTS hiphim_site_config (key TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at INTEGER)"
+            )
+            .run()
+            .catch(() => {});
           return d1
             .prepare("INSERT OR REPLACE INTO hiphim_site_config (key, data, updated_at) VALUES ('main', ?, ?)")
             .bind(JSON.stringify(updated), Date.now())
@@ -287,15 +271,6 @@ export async function saveSiteConfigAsync(newConfig: Partial<SiteConfig>): Promi
   }
 
   await Promise.allSettled(dbWrites);
-
-  try {
-    const dir = path.dirname(CONFIG_FILE_PATH);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(CONFIG_FILE_PATH, JSON.stringify(updated, null, 2), "utf-8");
-  } catch {}
-
   return updated;
 }
 

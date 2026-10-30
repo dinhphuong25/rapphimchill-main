@@ -14,13 +14,29 @@ import Link from "next/link";
 import PlayerErrorBoundary, { PlayerErrorBoundary as PlayerErrorBoundaryNamed } from "@/components/player/player-error-boundary";
 import UnreleasedMovieOverlay from "../player/unreleased-movie-overlay";
 import { normalizeImageUrl } from "@/lib/image-helper";
+import dynamic from "next/dynamic";
 import ReportModal from "./report-modal";
-import { fetchPrimaryPhimApiClient, hasAnyM3u8Stream, injectM3u8IntoServers } from "./movie-client-rescue";
+import { fetchPrimaryPhimApiClient, hasAnyM3u8Stream, injectM3u8IntoServers } from "@/lib/movie-rescue-client";
 
 const SafePlayerErrorBoundary: any = PlayerErrorBoundary || PlayerErrorBoundaryNamed || (({ children }: any) => <>{children}</>);
 
-import VideoPlayer from "../player/video-player";
-import EmbedPlayer from "../player/embed-player";
+const VideoPlayer = dynamic(() => import("../player/video-player"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full min-h-[240px] aspect-video bg-black flex items-center justify-center">
+      <div className="w-10 h-10 rounded-full border-2 border-brand-green/30 border-t-brand-green animate-spin" />
+    </div>
+  ),
+});
+
+const EmbedPlayer = dynamic(() => import("../player/embed-player"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full min-h-[240px] aspect-video bg-black flex items-center justify-center">
+      <div className="w-10 h-10 rounded-full border-2 border-brand-green/30 border-t-brand-green animate-spin" />
+    </div>
+  ),
+});
 
 function extractPlayableM3u8(ep: any, fallbackUrl?: string): string {
   if (ep?.link_m3u8 && ep.link_m3u8.trim() !== "") {

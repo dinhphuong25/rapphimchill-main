@@ -1,27 +1,23 @@
-import { notFound } from "next/navigation";
-import { unstable_cache } from "next/cache";
+import { cache } from "react";
 import PhimApi from "@/libs/phimapi.com";
 import { HIDDEN_MOVIE_SLUGS } from "@/lib/hidden-movies";
 import { MovieStructuredData, BreadcrumbStructuredData } from "@/components/seo/structured-data";
 import MovieDetailView from "@/components/movie/movie-detail-view";
-import { MovieDetailClientRescue } from "@/components/movie/movie-client-rescue";
+import { MovieDetailClientRescue, TrueNotFoundCard } from "@/components/movie/movie-client-rescue";
 
-const getMovie = async (slug: string) => {
-  return unstable_cache(
-    async () => {
-      const api = new PhimApi();
-      return api.get(slug);
-    },
-    [`phim-detail-v6-${slug}`],
-    { revalidate: 1800, tags: ["movies", `movie-${slug}`] }
-  )();
-};
+// Request-level memoization via React cache() — avoids double JSON serialization on Cloudflare Workers
+const getMovie = cache(async (slug: string) => {
+  const api = new PhimApi();
+  return api.get(slug);
+});
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  if (!slug || HIDDEN_MOVIE_SLUGS.includes(slug)) return { title: "Chi Tiết Phim | Hi Phim" };
+
   try {
     const { movie } = await getMovie(slug);
-    
+
     const posterUrl = movie.poster_url?.startsWith("http")
       ? movie.poster_url
       : `https://phimimg.com/${movie.poster_url}`;
@@ -44,7 +40,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function PhimDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
-  if (HIDDEN_MOVIE_SLUGS.includes(slug)) notFound();
+  if (!slug || HIDDEN_MOVIE_SLUGS.includes(slug)) {
+    return <TrueNotFoundCard />;
+  }
 
   let movie: any = null;
   let episodes: any[] = [];

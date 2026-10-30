@@ -66,30 +66,21 @@ export default class PhimApi {
     let primaryData: any = null;
     let primaryErr: any = null;
 
-    // Retry primary fetch up to 2 times with 10s timeout to avoid false-fallback to NguonC
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 10000);
-        const response = await fetch(url, {
-          signal: controller.signal,
-          headers: this.fetchHeaders(),
-          next: { revalidate: 1800, tags: ["movies", `movie-${slug}`] },
-        });
-        clearTimeout(timer);
-        if (response.ok) {
-          const data = await response.json();
-          if (data?.status && data?.movie?.slug) {
-            primaryData = data;
-            break;
-          }
-        }
-      } catch (err) {
-        primaryErr = err;
-        if (attempt < 2) {
-          await new Promise((r) => setTimeout(r, 600));
+    // Fast single-attempt primary fetch (4s timeout) to preserve Cloudflare Worker CPU & wall-time limits
+    try {
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(4000),
+        headers: this.fetchHeaders(),
+        next: { revalidate: 1800, tags: ["movies", `movie-${slug}`] },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data?.status && data?.movie?.slug) {
+          primaryData = data;
         }
       }
+    } catch (err) {
+      primaryErr = err;
     }
 
     if (primaryData) {

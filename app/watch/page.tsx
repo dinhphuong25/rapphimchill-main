@@ -1,46 +1,40 @@
+import { cache, Suspense, Fragment } from "react";
 import PhimApi from "@/libs/phimapi.com";
 import Description from "@/components/movie/description";
 import { MovieStructuredData, BreadcrumbStructuredData } from "@/components/seo/structured-data";
-import { notFound } from "next/navigation";
 import { HIDDEN_MOVIE_SLUGS } from "@/lib/hidden-movies";
-import { unstable_cache } from "next/cache";
-import { Suspense, Fragment } from "react";
 import { LoadingWatch } from "@/components/ui/page-loaders";
-import { getCachedCategories, getCachedCountries } from "@/lib/data";
 import { normalizeImageUrl } from "@/lib/image-helper";
-import { WatchClientRescue } from "@/components/movie/movie-client-rescue";
+import { WatchClientRescue, TrueNotFoundCard } from "@/components/movie/movie-client-rescue";
 
-const getMovieData = (slug: string) =>
-  unstable_cache(
-    async () => {
-      const api = new PhimApi();
-      return api.get(slug);
-    },
-    [`movie-data-v6-${slug}`],
-    { revalidate: 1800, tags: ["movies", `movie-${slug}`] }
-  )();
+// Request-level memoization via React cache() — shares the exact same parsed JS object
+// between generateMetadata() and WatchContent() without double JSON serialization on Cloudflare Workers
+const getMovieData = cache(async (slug: string) => {
+  const api = new PhimApi();
+  return api.get(slug);
+});
 
 export async function generateMetadata({ searchParams }: any) {
   const { slug } = await searchParams;
-  if (!slug) return { title: "Xem phim" };
-  
+  if (!slug || HIDDEN_MOVIE_SLUGS.includes(slug)) return { title: "Xem phim | Hi Phim" };
+
   try {
     const data = await getMovieData(slug);
     const movie = data?.movie;
-    if (!movie?.name) return { title: "Xem phim" };
+    if (!movie?.name) return { title: "Xem phim | Hi Phim" };
     const watchUrl = `https://hiphim.one/watch?slug=${slug}`;
     const canonicalUrl = watchUrl;
-    
+
     const posterUrl = normalizeImageUrl(movie.poster_url);
     const thumbUrl = normalizeImageUrl(movie.thumb_url);
 
     const ogParams = new URLSearchParams({
-      title: movie.name || '',
-      origin_name: movie.origin_name || '',
-      year: String(movie.year || ''),
-      quality: movie.quality || 'Full HD',
-      ep: movie.episode_current || '',
-      poster: thumbUrl || posterUrl || '',
+      title: movie.name || "",
+      origin_name: movie.origin_name || "",
+      year: String(movie.year || ""),
+      quality: movie.quality || "Full HD",
+      ep: movie.episode_current || "",
+      poster: thumbUrl || posterUrl || "",
     });
     const dynamicOgUrl = `https://hiphim.one/api/og?${ogParams.toString()}`;
 
@@ -77,14 +71,16 @@ export async function generateMetadata({ searchParams }: any) {
       alternates: { canonical: canonicalUrl },
     };
   } catch {
-    return { title: "Xem phim" };
+    return { title: "Xem phim | Hi Phim" };
   }
 }
 
 export default async function WatchPage({ searchParams }: any) {
   const { slug, ep, sv } = await searchParams;
 
-  if (!slug || HIDDEN_MOVIE_SLUGS.includes(slug)) notFound();
+  if (!slug || HIDDEN_MOVIE_SLUGS.includes(slug)) {
+    return <TrueNotFoundCard />;
+  }
 
   return (
     <Suspense fallback={<LoadingWatch />}>
@@ -98,11 +94,7 @@ async function WatchContent({ slug, ep, sv }: { slug: string; ep?: string; sv?: 
   let server: any = [];
 
   try {
-    const [data] = await Promise.all([
-      getMovieData(slug),
-      getCachedCategories().catch(() => []),
-      getCachedCountries().catch(() => []),
-    ]);
+    const data = await getMovieData(slug);
     movie = data?.movie || null;
     server = data?.server || [];
   } catch {
@@ -114,20 +106,20 @@ async function WatchContent({ slug, ep, sv }: { slug: string; ep?: string; sv?: 
   }
 
   const breadcrumbItems = [
-    { name: 'Trang chủ', url: '/' },
-    { name: 'Xem phim', url: '/watch' },
-    { name: movie.name, url: `/watch?slug=${slug}`, current: true }
+    { name: "Trang chủ", url: "/" },
+    { name: "Xem phim", url: "/watch" },
+    { name: movie.name, url: `/watch?slug=${slug}`, current: true },
   ];
 
-  const structuredBreadcrumbItems = breadcrumbItems.map(item => ({
+  const structuredBreadcrumbItems = breadcrumbItems.map((item) => ({
     name: item.name,
-    url: `https://hiphim.one${item.url}`
+    url: `https://hiphim.one${item.url}`,
   }));
 
   let targetM3u8 = "";
   if (server && Array.isArray(server) && server.length > 0) {
     const svIndex = sv ? parseInt(sv, 10) : 0;
-    const activeServer = (svIndex >= 0 && svIndex < server.length) ? server[svIndex] : server[0];
+    const activeServer = svIndex >= 0 && svIndex < server.length ? server[svIndex] : server[0];
     const episodes = activeServer?.server_data || [];
     if (ep) {
       const parsedEp = parseInt(ep, 10);
@@ -143,7 +135,9 @@ async function WatchContent({ slug, ep, sv }: { slug: string; ep?: string; sv?: 
           if (matched) targetM3u8 = matched.link_m3u8 || "";
         }
       } else {
-        const matched = episodes.find((e: any) => e.slug === ep || e.name?.toLowerCase() === String(ep).toLowerCase());
+        const matched = episodes.find(
+          (e: any) => e.slug === ep || e.name?.toLowerCase() === String(ep).toLowerCase()
+        );
         if (matched) targetM3u8 = matched.link_m3u8 || "";
       }
     }
@@ -181,10 +175,7 @@ async function WatchContent({ slug, ep, sv }: { slug: string; ep?: string; sv?: 
         </Fragment>
       ))}
       <main className="relative z-10 min-h-0 sm:min-h-screen flex flex-col w-full">
-        <MovieStructuredData
-          movie={movie}
-          url={`https://hiphim.one/watch?slug=${slug}`}
-        />
+        <MovieStructuredData movie={movie} url={`https://hiphim.one/watch?slug=${slug}`} />
         <BreadcrumbStructuredData items={structuredBreadcrumbItems} />
 
         <div className="w-full max-w-[1920px] mx-auto pb-3 sm:pb-16 px-3 sm:px-6 lg:px-8 xl:px-10 flex flex-col">

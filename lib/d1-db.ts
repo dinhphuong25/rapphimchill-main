@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS hiphim_site_config (
 let _d1TablesEnsured = false;
 
 /**
- * Ensures D1 tables and indices are created once.
+ * Ensures D1 tables and indices are created when explicitly requested.
  */
 export async function ensureD1Tables(db: D1Database): Promise<void> {
   if (_d1TablesEnsured) return;
@@ -81,23 +81,6 @@ export async function ensureD1Tables(db: D1Database): Promise<void> {
   try {
     if (typeof db.exec === "function") {
       await db.exec(D1_INIT_SCHEMA);
-    } else {
-      // Fallback if exec is unavailable on certain bindings
-      await db.prepare(`
-        CREATE TABLE IF NOT EXISTS hiphim_users (
-          email TEXT PRIMARY KEY,
-          id TEXT NOT NULL UNIQUE,
-          data TEXT NOT NULL,
-          updated_at INTEGER
-        )
-      `).run();
-      await db.prepare(`
-        CREATE TABLE IF NOT EXISTS hiphim_pending_registrations (
-          email TEXT PRIMARY KEY,
-          data TEXT NOT NULL,
-          expires_at INTEGER NOT NULL
-        )
-      `).run();
     }
   } catch (err) {
     console.warn("[D1] Auto-schema execution warning:", err);
@@ -106,7 +89,7 @@ export async function ensureD1Tables(db: D1Database): Promise<void> {
 
 /**
  * Dynamically resolves the Cloudflare D1 database instance when running on Cloudflare Workers.
- * Returns null when running outside Cloudflare Workers (e.g. Next.js local dev or Node SSR).
+ * Does NOT run DDL schema initialization on every cold start to preserve Worker CPU limits.
  */
 export async function getD1Database(): Promise<D1Database | null> {
   try {
@@ -114,10 +97,6 @@ export async function getD1Database(): Promise<D1Database | null> {
     const context = await getCloudflareContext({ async: true });
     const db = (context?.env as Record<string, unknown>)?.HIPHIM_DB as D1Database | undefined;
     if (db && typeof db.prepare === "function") {
-      if (!_d1TablesEnsured) {
-        // Run schema creation non-blocking
-        ensureD1Tables(db).catch(() => {});
-      }
       return db;
     }
     return null;
