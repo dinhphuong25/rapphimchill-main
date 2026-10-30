@@ -589,7 +589,7 @@ export default function AdminDashboardPage() {
     try {
       const res = await fetch("/api/admin/config");
       if (res.status === 401) {
-        router.push("/admin/login");
+        router.push("/");
         return;
       }
       const data = await res.json();
@@ -678,9 +678,9 @@ export default function AdminDashboardPage() {
         headers: { "Cache-Control": "no-cache" },
       });
       toast.success("Đã đăng xuất thành công!");
-      window.location.href = "/admin/login";
+      window.location.href = "/";
     } catch {
-      window.location.href = "/admin/login";
+      window.location.href = "/";
     }
   };
 

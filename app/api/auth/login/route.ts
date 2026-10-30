@@ -83,9 +83,9 @@ export async function POST(request: Request) {
       path: "/",
     });
 
-    // Single Sign-On: If Super Admin, automatically issue admin session cookie
-    if (isSuper) {
-      const adminToken = await createSessionToken(SUPER_ADMIN_EMAIL);
+    // Single Sign-On: If Super Admin or Admin, automatically issue admin session cookie
+    if (isSuper || role === "admin") {
+      const adminToken = await createSessionToken(user.email || SUPER_ADMIN_EMAIL);
       response.cookies.set({
         name: ADMIN_COOKIE_NAME,
         value: adminToken,

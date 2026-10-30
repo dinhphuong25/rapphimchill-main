@@ -92,9 +92,9 @@ export async function GET() {
       { headers: NO_CACHE_HEADERS }
     );
 
-    // Automatically maintain admin session cookie for Super Admin
-    if (isSuper) {
-      const adminToken = await createSessionToken(SUPER_ADMIN_EMAIL);
+    // Automatically maintain admin session cookie for Super Admin / Admin
+    if (isSuper || role === "admin") {
+      const adminToken = await createSessionToken(user.email || SUPER_ADMIN_EMAIL);
       response.cookies.set({
         name: ADMIN_COOKIE_NAME,
         value: adminToken,

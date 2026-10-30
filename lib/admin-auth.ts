@@ -16,19 +16,23 @@ export { SUPER_ADMIN_EMAIL };
  * Checks if incoming request has valid superadmin permissions (either via admin cookie or superadmin user cookie).
  */
 export async function isAuthorizedAdminRequest(req: NextRequest): Promise<boolean> {
-  // 1. Check admin session cookie
-  const adminToken = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
-  if (adminToken && (await verifySessionToken(adminToken))) {
-    return true;
-  }
-
-  // 2. Check user session cookie for Super Admin
+  // 1. Check user session cookie from main website for Super Admin / Admin
   const userToken = req.cookies.get(USER_COOKIE_NAME)?.value;
   if (userToken) {
     const userPayload = await verifyUserSessionToken(userToken);
-    if (userPayload?.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) {
+    if (
+      userPayload?.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() ||
+      userPayload?.role === "superadmin" ||
+      userPayload?.role === "admin"
+    ) {
       return true;
     }
+  }
+
+  // 2. Check admin session cookie
+  const adminToken = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
+  if (adminToken && (await verifySessionToken(adminToken))) {
+    return true;
   }
 
   return false;

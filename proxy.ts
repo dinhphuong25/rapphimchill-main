@@ -291,41 +291,40 @@ export async function proxy(request: NextRequest) {
     }
 
     // -------------------------------------------------------------
-    // 2. ADMIN PANEL AUTHENTICATION GUARD
+    // 2. ADMIN PANEL AUTHENTICATION GUARD (WEB SSO ONLY - NO PUBLIC ADMIN LOGIN)
     // -------------------------------------------------------------
     if (pathname.startsWith('/admin')) {
         let hasAdminAccess = false;
 
-        // 1. Check admin session cookie
-        const adminSessionCookie = request.cookies.get('hiphim_admin_session')?.value;
-        if (adminSessionCookie) {
-            hasAdminAccess = await verifySessionToken(adminSessionCookie);
-        }
-
-        // 2. If not verified via admin cookie, check Super Admin user session
-        if (!hasAdminAccess) {
-            const userSessionCookie = request.cookies.get('hiphim_user_session')?.value;
-            if (userSessionCookie) {
-                const userPayload = await verifyUserSessionToken(userSessionCookie);
-                if (userPayload?.email?.toLowerCase() === 'kimdinhphuong205@gmail.com') {
-                    hasAdminAccess = true;
-                }
+        // 1. Check user session cookie from main website login
+        const userSessionCookie = request.cookies.get('hiphim_user_session')?.value;
+        if (userSessionCookie) {
+            const userPayload = await verifyUserSessionToken(userSessionCookie);
+            if (
+                userPayload?.email?.toLowerCase() === 'kimdinhphuong205@gmail.com' ||
+                userPayload?.role === 'superadmin' ||
+                userPayload?.role === 'admin'
+            ) {
+                hasAdminAccess = true;
             }
         }
 
-        // Public login page
-        if (pathname === '/admin/login') {
-            if (hasAdminAccess) {
-                return NextResponse.redirect(new URL('/admin', request.url));
+        // 2. Fallback check: admin session cookie
+        if (!hasAdminAccess) {
+            const adminSessionCookie = request.cookies.get('hiphim_admin_session')?.value;
+            if (adminSessionCookie) {
+                hasAdminAccess = await verifySessionToken(adminSessionCookie);
             }
-            return NextResponse.next();
         }
 
-        // All other /admin routes require valid authenticated session
+        // Disable /admin/login completely: redirect to /admin if authorized, otherwise to /
+        if (pathname === '/admin/login' || pathname.startsWith('/admin/login/')) {
+            return NextResponse.redirect(new URL(hasAdminAccess ? '/admin' : '/', request.url));
+        }
+
+        // Require authenticated admin session from main website; otherwise bounce to homepage
         if (!hasAdminAccess) {
-            const loginUrl = new URL('/admin/login', request.url);
-            loginUrl.searchParams.set('redirect', pathname);
-            return NextResponse.redirect(loginUrl);
+            return NextResponse.redirect(new URL('/', request.url));
         }
     }
 
