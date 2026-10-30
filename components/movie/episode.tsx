@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Search, Server, Film, Info } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { fetchAnnouncementShared } from "@/lib/announcement-client";
 
 interface EpisodeData {
   name: string;
@@ -58,8 +59,7 @@ export default function Episode({
   const [showAdDisclaimer, setShowAdDisclaimer] = useState(false);
 
   useEffect(() => {
-    fetch('/api/announcement')
-      .then((res) => res.json())
+    fetchAnnouncementShared()
       .then((data) => {
         if (data?.ads?.enabled !== false && data?.ads?.adDisclaimerEnabled === true) {
           setShowAdDisclaimer(true);

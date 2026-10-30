@@ -96,15 +96,51 @@ export const DEFAULT_SITE_CONFIG: SiteConfig = {
 declare global {
   // eslint-disable-next-line no-var
   var __HIPHIM_SITE_CONFIG__: SiteConfig | undefined;
+  // eslint-disable-next-line no-var
+  var __HIPHIM_SITE_CONFIG_TS__: number | undefined;
+  // eslint-disable-next-line no-var
+  var __HIPHIM_SITE_CONFIG_PROMISE__: Promise<SiteConfig> | undefined;
 }
 
 const CONFIG_FILE_PATH = path.join(process.cwd(), "data", "site-config.json");
+const CONFIG_MEMORY_TTL = 20_000; // 20s memory cache per Worker isolate
+
+function mergeWithDefaults(parsed: any): SiteConfig {
+  if (!parsed || typeof parsed !== "object") return DEFAULT_SITE_CONFIG;
+  return {
+    ...DEFAULT_SITE_CONFIG,
+    ...parsed,
+    announcement: {
+      ...DEFAULT_SITE_CONFIG.announcement,
+      ...(parsed.announcement || {}),
+    },
+    maintenance: {
+      ...DEFAULT_SITE_CONFIG.maintenance,
+      ...(parsed.maintenance || {}),
+    },
+    player: {
+      ...DEFAULT_SITE_CONFIG.player,
+      ...(parsed.player || {}),
+    },
+    ads: {
+      ...DEFAULT_SITE_CONFIG.ads,
+      ...(parsed.ads || {}),
+    },
+  };
+}
 
 /**
- * Reads the site configuration from file or memory.
+ * Reads the site configuration synchronously from memory or local file,
+ * and triggers an asynchronous DB hydration if the isolate is cold.
  */
 export function getSiteConfig(): SiteConfig {
   if (globalThis.__HIPHIM_SITE_CONFIG__) {
+    if (
+      !globalThis.__HIPHIM_SITE_CONFIG_TS__ ||
+      Date.now() - globalThis.__HIPHIM_SITE_CONFIG_TS__ > CONFIG_MEMORY_TTL
+    ) {
+      getSiteConfigAsync().catch(() => {});
+    }
     return globalThis.__HIPHIM_SITE_CONFIG__;
   }
 
@@ -112,27 +148,10 @@ export function getSiteConfig(): SiteConfig {
     if (fs.existsSync(CONFIG_FILE_PATH)) {
       const fileData = fs.readFileSync(CONFIG_FILE_PATH, "utf-8");
       const parsed = JSON.parse(fileData);
-      const merged: SiteConfig = {
-        ...DEFAULT_SITE_CONFIG,
-        ...parsed,
-        announcement: {
-          ...DEFAULT_SITE_CONFIG.announcement,
-          ...(parsed.announcement || {}),
-        },
-        maintenance: {
-          ...DEFAULT_SITE_CONFIG.maintenance,
-          ...(parsed.maintenance || {}),
-        },
-        player: {
-          ...DEFAULT_SITE_CONFIG.player,
-          ...(parsed.player || {}),
-        },
-        ads: {
-          ...DEFAULT_SITE_CONFIG.ads,
-          ...(parsed.ads || {}),
-        },
-      };
+      const merged = mergeWithDefaults(parsed);
       globalThis.__HIPHIM_SITE_CONFIG__ = merged;
+      globalThis.__HIPHIM_SITE_CONFIG_TS__ = Date.now();
+      getSiteConfigAsync().catch(() => {});
       return merged;
     }
   } catch (err) {
@@ -140,12 +159,146 @@ export function getSiteConfig(): SiteConfig {
   }
 
   globalThis.__HIPHIM_SITE_CONFIG__ = DEFAULT_SITE_CONFIG;
+  getSiteConfigAsync().catch(() => {});
   return DEFAULT_SITE_CONFIG;
 }
 
 /**
- * Updates the site configuration and persists it to file.
+ * Reads the authoritative site configuration from Cloudflare D1 or Neon PostgreSQL,
+ * ensuring Admin changes (Ads toggles, Featured slugs, Announcements) persist across all Worker isolates.
  */
+export async function getSiteConfigAsync(forceRefresh = false): Promise<SiteConfig> {
+  const now = Date.now();
+  if (
+    !forceRefresh &&
+    globalThis.__HIPHIM_SITE_CONFIG__ &&
+    globalThis.__HIPHIM_SITE_CONFIG_TS__ &&
+    now - globalThis.__HIPHIM_SITE_CONFIG_TS__ < CONFIG_MEMORY_TTL
+  ) {
+    return globalThis.__HIPHIM_SITE_CONFIG__;
+  }
+
+  if (!forceRefresh && globalThis.__HIPHIM_SITE_CONFIG_PROMISE__) {
+    return globalThis.__HIPHIM_SITE_CONFIG_PROMISE__;
+  }
+
+  const loadPromise = (async (): Promise<SiteConfig> => {
+    // 1. Try Cloudflare D1
+    try {
+      const d1 = await getD1Database();
+      if (d1) {
+        const row = await d1
+          .prepare("SELECT data FROM hiphim_site_config WHERE key = 'main' LIMIT 1")
+          .first<{ data: string }>();
+        if (row?.data) {
+          const parsed = typeof row.data === "string" ? JSON.parse(row.data) : row.data;
+          const merged = mergeWithDefaults(parsed);
+          globalThis.__HIPHIM_SITE_CONFIG__ = merged;
+          globalThis.__HIPHIM_SITE_CONFIG_TS__ = Date.now();
+          return merged;
+        }
+      }
+    } catch {}
+
+    // 2. Try Neon PostgreSQL
+    if (vercelSql) {
+      try {
+        const rows = await vercelSql`
+          SELECT data FROM hiphim_site_config WHERE key = 'main' LIMIT 1
+        `;
+        if (rows && rows.length > 0 && rows[0]?.data) {
+          const raw = rows[0].data;
+          const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+          const merged = mergeWithDefaults(parsed);
+          globalThis.__HIPHIM_SITE_CONFIG__ = merged;
+          globalThis.__HIPHIM_SITE_CONFIG_TS__ = Date.now();
+          return merged;
+        }
+      } catch {}
+    }
+
+    // 3. Fallback to file/memory
+    const fallback = globalThis.__HIPHIM_SITE_CONFIG__ || DEFAULT_SITE_CONFIG;
+    globalThis.__HIPHIM_SITE_CONFIG_TS__ = Date.now();
+    return fallback;
+  })();
+
+  globalThis.__HIPHIM_SITE_CONFIG_PROMISE__ = loadPromise;
+  try {
+    return await loadPromise;
+  } finally {
+    globalThis.__HIPHIM_SITE_CONFIG_PROMISE__ = undefined;
+  }
+}
+
+/**
+ * Updates the site configuration and persists it to D1, PostgreSQL, and file.
+ */
+export async function saveSiteConfigAsync(newConfig: Partial<SiteConfig>): Promise<SiteConfig> {
+  const current = await getSiteConfigAsync(true).catch(() => getSiteConfig());
+  const updated: SiteConfig = {
+    ...current,
+    ...newConfig,
+    announcement: {
+      ...current.announcement,
+      ...(newConfig.announcement || {}),
+    },
+    maintenance: {
+      ...current.maintenance,
+      ...(newConfig.maintenance || {}),
+    },
+    player: {
+      ...current.player,
+      ...(newConfig.player || {}),
+    },
+    ads: {
+      ...DEFAULT_SITE_CONFIG.ads,
+      ...(current.ads || {}),
+      ...(newConfig.ads || {}),
+    },
+  };
+
+  globalThis.__HIPHIM_SITE_CONFIG__ = updated;
+  globalThis.__HIPHIM_SITE_CONFIG_TS__ = Date.now();
+
+  const dbWrites: Promise<any>[] = [];
+
+  dbWrites.push(
+    getD1Database()
+      .then((d1) => {
+        if (d1) {
+          return d1
+            .prepare("INSERT OR REPLACE INTO hiphim_site_config (key, data, updated_at) VALUES ('main', ?, ?)")
+            .bind(JSON.stringify(updated), Date.now())
+            .run();
+        }
+      })
+      .catch((err) => console.warn("[D1] Could not persist site config to D1:", err))
+  );
+
+  if (vercelSql) {
+    dbWrites.push(
+      vercelSql`
+        INSERT INTO hiphim_site_config (key, data)
+        VALUES ('main', ${JSON.stringify(updated)}::jsonb)
+        ON CONFLICT (key) DO UPDATE SET data = EXCLUDED.data
+      `.catch((dbErr: any) => console.warn("[DB] Could not persist site config to PostgreSQL:", dbErr))
+    );
+  }
+
+  await Promise.allSettled(dbWrites);
+
+  try {
+    const dir = path.dirname(CONFIG_FILE_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(CONFIG_FILE_PATH, JSON.stringify(updated, null, 2), "utf-8");
+  } catch {}
+
+  return updated;
+}
+
 export function saveSiteConfig(newConfig: Partial<SiteConfig>): SiteConfig {
   const current = getSiteConfig();
   const updated: SiteConfig = {
@@ -171,35 +324,7 @@ export function saveSiteConfig(newConfig: Partial<SiteConfig>): SiteConfig {
   };
 
   globalThis.__HIPHIM_SITE_CONFIG__ = updated;
-
-  getD1Database()
-    .then((d1) => {
-      if (d1) {
-        d1.prepare("INSERT OR REPLACE INTO hiphim_site_config (key, data, updated_at) VALUES ('main', ?, ?)")
-          .bind(JSON.stringify(updated), Date.now())
-          .run()
-          .catch((err) => console.warn("[D1] Could not persist site config to D1:", err));
-      }
-    })
-    .catch(() => {});
-
-  if (vercelSql) {
-    vercelSql`
-      INSERT INTO hiphim_site_config (key, data)
-      VALUES ('main', ${JSON.stringify(updated)}::jsonb)
-      ON CONFLICT (key) DO UPDATE SET data = EXCLUDED.data
-    `.catch((dbErr: any) => console.warn("[DB] Could not persist site config to PostgreSQL:", dbErr));
-  }
-
-  try {
-    const dir = path.dirname(CONFIG_FILE_PATH);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(CONFIG_FILE_PATH, JSON.stringify(updated, null, 2), "utf-8");
-  } catch (err) {
-    console.error("Could not write site-config.json:", err);
-  }
-
+  globalThis.__HIPHIM_SITE_CONFIG_TS__ = Date.now();
+  saveSiteConfigAsync(newConfig).catch(() => {});
   return updated;
 }

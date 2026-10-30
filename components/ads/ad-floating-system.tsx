@@ -4,6 +4,7 @@ import React, { useState, useEffect, memo } from "react";
 import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 import { useUserAuth } from "@/context/user-auth-context";
+import { fetchAnnouncementShared } from "@/lib/announcement-client";
 
 interface AdConfig {
   enabled: boolean;
@@ -52,9 +53,8 @@ export function AdFloatingSystemComponent() {
   useEffect(() => {
     setIsMounted(true);
 
-    // Tải cấu hình quảng cáo từ server nếu có
-    fetch("/api/announcement")
-      .then((res) => res.json())
+    // Tải cấu hình quảng cáo từ server (dùng chung request deduplication)
+    fetchAnnouncementShared()
       .then((data) => {
         if (data?.ads) {
           const ads = data.ads;

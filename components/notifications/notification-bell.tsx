@@ -27,6 +27,7 @@ import { AnimatedHeaderBellIcon } from "@/components/ui/animated-header-icons";
 import { useUserAuth } from "@/context/user-auth-context";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { fetchAnnouncementShared } from "@/lib/announcement-client";
 
 export interface MovieReportItem {
   id: string;
@@ -180,10 +181,8 @@ export default function NotificationBell({ className }: { className?: string }) 
   // Fetch system broadcast notifications (Public, No Auth Required)
   const fetchSystemNotifications = useCallback(async () => {
     try {
-      const res = await fetch("/api/announcement", { method: "GET" });
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.success) {
+      const data = await fetchAnnouncementShared();
+      if (data?.success) {
         if (Array.isArray(data.notifications)) {
           setSystemNotifs(data.notifications);
           try {

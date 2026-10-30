@@ -1314,31 +1314,10 @@ export default function Description({ movie, serverData: rawServerData }: any) {
               </CardContent>
             </Card>
           </div>
-
-
-
-          {/* Mobile Server Selector & Episode List (Directly after player & toolbar on mobile/tablet) */}
-          <div className="w-full lg:hidden">
-            <Episode
-              serverData={currentServerData}
-              currentServerIndex={currentEpisodeIndex?.server || 0}
-              currentEpisodeIndex={currentEpisodeIndex?.episode || 0}
-              onSelectEpisode={handleSelectEpisode}
-              onServerChange={handleServerChange}
-              thumb_url={movie.thumb_url}
-              playerMode={playerMode}
-              onPlayerModeChange={(mode) => setPlayerMode(mode)}
-              movieSlug={movie.slug}
-              completedEpisodes={completedEpisodes}
-              newestEpisodeIndices={newestEpisodeIndices}
-            >
-              {actionButtons}
-            </Episode>
-          </div>
         </div>
 
-        {/* Desktop Right Sidebar Episode List */}
-        <div className="hidden lg:flex w-full lg:w-[380px] 2xl:w-[420px] shrink-0 flex-col gap-4">
+        {/* Responsive Episode List & Server Selector (Below player on mobile, Right Sidebar on desktop) */}
+        <div className="flex w-full lg:w-[380px] 2xl:w-[420px] shrink-0 flex-col gap-4">
           <Episode
             serverData={currentServerData}
             currentServerIndex={currentEpisodeIndex?.server || 0}

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Megaphone, AlertTriangle, CheckCircle2, X, ExternalLink, ArrowRight } from "lucide-react";
+import { fetchAnnouncementShared } from "@/lib/announcement-client";
 
 export interface AnnouncementData {
   enabled: boolean;
@@ -42,15 +43,12 @@ export default function AnnouncementBanner({ initialAnnouncement }: Announcement
 
   const fetchAnnouncement = async () => {
     try {
-      const res = await fetch("/api/announcement", { cache: "no-store" });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.announcement && data.announcement.enabled && data.announcement.text.trim()) {
-          const dismissedText = localStorage.getItem("hiphim_dismissed_announcement");
-          if (dismissedText !== data.announcement.text.trim()) {
-            setAnnouncement(data.announcement);
-            setDismissed(false);
-          }
+      const data = await fetchAnnouncementShared();
+      if (data?.announcement && data.announcement.enabled && data.announcement.text.trim()) {
+        const dismissedText = localStorage.getItem("hiphim_dismissed_announcement");
+        if (dismissedText !== data.announcement.text.trim()) {
+          setAnnouncement(data.announcement);
+          setDismissed(false);
         }
       }
     } catch {

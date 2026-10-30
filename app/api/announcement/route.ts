@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSiteConfig } from "@/lib/site-config";
+import { getSiteConfigAsync } from "@/lib/site-config";
 import {
   getSystemNotifications,
   createSystemNotification,
@@ -11,8 +11,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const config = getSiteConfig();
-    const systemNotifications = await getSystemNotifications(30);
+    const [config, systemNotifications] = await Promise.all([
+      getSiteConfigAsync(),
+      getSystemNotifications(30),
+    ]);
 
     return NextResponse.json(
       {
@@ -24,7 +26,7 @@ export async function GET() {
       },
       {
         headers: {
-          "Cache-Control": "public, s-maxage=60, max-age=30, stale-while-revalidate=300",
+          "Cache-Control": "public, s-maxage=30, max-age=15, stale-while-revalidate=120",
         },
       }
     );

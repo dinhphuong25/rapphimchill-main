@@ -43,6 +43,7 @@ import { Slider } from "@/components/ui/slider";
 import { AdRange, fetchAndParseAllAdRanges, extractAllAdRangesFromFragments } from "@/lib/ad-parser";
 import { pipStore } from "@/lib/pip-store";
 import { useUserAuth } from "@/context/user-auth-context";
+import { fetchAnnouncementShared } from "@/lib/announcement-client";
 export type VideoFitMode = 'contain' | 'cover' | 'fill' | '4:3' | '21:9';
 
 export interface SubtitleCue {
@@ -244,8 +245,7 @@ export default function VideoPlayer({
   });
 
   useEffect(() => {
-    fetch("/api/announcement")
-      .then((res) => res.json())
+    fetchAnnouncementShared()
       .then((data) => {
         if (data?.ads) {
           const ads = data.ads;

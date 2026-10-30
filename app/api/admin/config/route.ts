@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSiteConfig, saveSiteConfig } from "@/lib/site-config";
+import { getSiteConfigAsync, saveSiteConfigAsync } from "@/lib/site-config";
 import { isAuthorizedAdminRequest } from "@/lib/admin-auth";
 import { setMaintenanceState } from "@/lib/maintenance";
 import { revalidatePath, revalidateTag } from "next/cache";
@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const config = getSiteConfig();
+  const config = await getSiteConfigAsync(true);
   return NextResponse.json({
     success: true,
     config,
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const updatedConfig = saveSiteConfig(body);
+    const updatedConfig = await saveSiteConfigAsync(body);
 
     // Synchronize maintenance state if included
     if (body.maintenance) {

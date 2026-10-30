@@ -6,16 +6,17 @@ export default function GTM() {
   useEffect(() => {
     let loaded = false;
 
-    const loadGTM = () => {
+    const loadAnalytics = () => {
       if (loaded) return;
       loaded = true;
 
       // Remove listeners
-      window.removeEventListener("scroll", loadGTM);
-      window.removeEventListener("pointerdown", loadGTM);
-      window.removeEventListener("touchstart", loadGTM);
-      window.removeEventListener("keydown", loadGTM);
+      window.removeEventListener("scroll", loadAnalytics);
+      window.removeEventListener("pointerdown", loadAnalytics);
+      window.removeEventListener("touchstart", loadAnalytics);
+      window.removeEventListener("keydown", loadAnalytics);
 
+      // 1. Google Tag Manager (GTM-WP2MWVB8)
       (function (w: any, d: any, s: string, l: string, i: string) {
         w[l] = w[l] || [];
         w[l].push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
@@ -26,29 +27,44 @@ export default function GTM() {
         j.src = "https://www.googletagmanager.com/gtm.js?id=" + i + dl;
         f.parentNode?.insertBefore(j, f);
       })(window, document, "script", "dataLayer", "GTM-WP2MWVB8");
+
+      // 2. Google Analytics 4 (G-RZVHT1Y5B4) — deferred out of <head> for faster FCP/LCP
+      const w = window as any;
+      w.dataLayer = w.dataLayer || [];
+      function gtag(...args: any[]) {
+        w.dataLayer.push(args);
+      }
+      w.gtag = w.gtag || gtag;
+      w.gtag("js", new Date());
+      w.gtag("config", "G-RZVHT1Y5B4");
+
+      const gaScript = document.createElement("script");
+      gaScript.async = true;
+      gaScript.src = "https://www.googletagmanager.com/gtag/js?id=G-RZVHT1Y5B4";
+      document.head.appendChild(gaScript);
     };
 
-    // Trigger on user interaction
-    window.addEventListener("scroll", loadGTM, { passive: true, once: true });
-    window.addEventListener("pointerdown", loadGTM, { passive: true, once: true });
-    window.addEventListener("touchstart", loadGTM, { passive: true, once: true });
-    window.addEventListener("keydown", loadGTM, { passive: true, once: true });
+    // Trigger on first user interaction
+    window.addEventListener("scroll", loadAnalytics, { passive: true, once: true });
+    window.addEventListener("pointerdown", loadAnalytics, { passive: true, once: true });
+    window.addEventListener("touchstart", loadAnalytics, { passive: true, once: true });
+    window.addEventListener("keydown", loadAnalytics, { passive: true, once: true });
 
     // Fallback timer if no user interaction after page idle
     const timer = setTimeout(() => {
       if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-        (window as any).requestIdleCallback(() => loadGTM(), { timeout: 2000 });
+        (window as any).requestIdleCallback(() => loadAnalytics(), { timeout: 2000 });
       } else {
-        loadGTM();
+        loadAnalytics();
       }
-    }, 4000);
+    }, 3500);
 
     return () => {
       clearTimeout(timer);
-      window.removeEventListener("scroll", loadGTM);
-      window.removeEventListener("pointerdown", loadGTM);
-      window.removeEventListener("touchstart", loadGTM);
-      window.removeEventListener("keydown", loadGTM);
+      window.removeEventListener("scroll", loadAnalytics);
+      window.removeEventListener("pointerdown", loadAnalytics);
+      window.removeEventListener("touchstart", loadAnalytics);
+      window.removeEventListener("keydown", loadAnalytics);
     };
   }, []);
 

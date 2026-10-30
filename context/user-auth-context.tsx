@@ -380,14 +380,54 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
             isLocked: Boolean(data.user.isLocked),
             bannedUntil: Number(data.user.bannedUntil) || 0,
           };
-          if (Array.isArray(data.user.favorites) && data.user.favorites.length > 0) {
-            localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify(data.user.favorites));
+          const serverFavorites = Array.isArray(data.user.favorites) ? data.user.favorites : [];
+          const serverHistory = Array.isArray(data.user.history) ? data.user.history : [];
+
+          let hasUnsyncedLocalData = false;
+          try {
+            const localFavRaw = localStorage.getItem(STORAGE_KEYS.FAVORITES);
+            const localHistRaw = localStorage.getItem(STORAGE_KEYS.HISTORY);
+            const localFavs = localFavRaw ? JSON.parse(localFavRaw) : [];
+            const localHist = localHistRaw ? JSON.parse(localHistRaw) : [];
+
+            const serverFavSlugs = new Set(
+              serverFavorites.map((f: any) => f?.slug || f?.movie?.slug).filter(Boolean)
+            );
+            const serverHistSlugs = new Set(
+              serverHistory.map((h: any) => h?.slug || h?.movieSlug).filter(Boolean)
+            );
+
+            if (
+              Array.isArray(localFavs) &&
+              localFavs.some((f: any) => {
+                const s = f?.slug || f?.movie?.slug;
+                return s && !serverFavSlugs.has(s);
+              })
+            ) {
+              hasUnsyncedLocalData = true;
+            }
+            if (
+              !hasUnsyncedLocalData &&
+              Array.isArray(localHist) &&
+              localHist.some((h: any) => {
+                const s = h?.slug || h?.movieSlug;
+                return s && !serverHistSlugs.has(s);
+              })
+            ) {
+              hasUnsyncedLocalData = true;
+            }
+          } catch {}
+
+          if (serverFavorites.length > 0) {
+            localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify(serverFavorites));
           }
-          if (Array.isArray(data.user.history) && data.user.history.length > 0) {
-            localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(data.user.history));
+          if (serverHistory.length > 0) {
+            localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(serverHistory));
           }
           window.dispatchEvent(new Event("storage"));
-          syncWithServer();
+          if (hasUnsyncedLocalData) {
+            syncWithServer();
+          }
         } else {
           setUser(null);
           try {

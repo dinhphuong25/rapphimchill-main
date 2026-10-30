@@ -150,23 +150,6 @@ export default function RootLayout({
   return (
     <html lang="vi" suppressHydrationWarning className="dark">
       <head>
-        {/* Google tag (gtag.js) */}
-        <script
-          async
-          src="https://www.googletagmanager.com/gtag/js?id=G-RZVHT1Y5B4"
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-
-              gtag('config', 'G-RZVHT1Y5B4');
-            `,
-          }}
-        />
-
         {/* Favicon */}
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -228,7 +211,7 @@ export default function RootLayout({
       >
         <SplashScreen />
 
-        {/* Google Tag Manager */}
+        {/* Google Tag Manager & GA4 (Deferred on interaction / idle) */}
         <GTM />
         <EnhancedGTMTracking />
         <noscript>
