@@ -1,12 +1,12 @@
 // Security & Performance Proxy for Next.js 16+
-// Protects against common attacks and optimizes performance
+// Enterprise WAF, Anti-DDoS, CSRF Shield & Admin SSO Guard
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifySessionToken } from '@/lib/admin-token';
 import { verifyUserSessionToken } from '@/lib/user-token';
 
-// Blocked user agents (common scraper bots)
+// Blocked user agents (common scraper bots & penetration scanners)
 const BLOCKED_USER_AGENTS = [
     // Common scraper & automated bots
     'httrack',
@@ -14,17 +14,20 @@ const BLOCKED_USER_AGENTS = [
     'curl',
     'scrapy',
     'python-requests',
+    'python-urllib',
     'go-http-client',
     'java/',
     'libwww-perl',
     'apache-httpclient',
     'http.rb',
+    'okhttp',
     // AI scrapers
     'gptbot',
     'chatgpt-user',
     'ccbot',
     'anthropic-ai',
     'claude-web',
+    'bytespider',
     // Penetration & Attack Scanners
     'sqlmap',
     'nikto',
@@ -37,6 +40,8 @@ const BLOCKED_USER_AGENTS = [
     'dirbuster',
     'nuclei',
     'gobuster',
+    'ffuf',
+    'feroxbuster',
     'wpscan',
     'hydra',
     'metasploit',
@@ -44,26 +49,55 @@ const BLOCKED_USER_AGENTS = [
     'pangolin',
     'nessus',
     'openvas',
+    'burpsuite',
 ];
 
-// Blocked paths - prevent access to sensitive files
+// Blocked paths - prevent access to sensitive files and vulnerability scanners
 const BLOCKED_PATHS = [
     '/.env',
     '/.git',
+    '/.svn',
+    '/.hg',
+    '/.aws',
+    '/.ssh',
+    '/.docker',
     '/wp-admin',
     '/wp-login',
+    '/wp-content',
+    '/wp-includes',
     '/phpmyadmin',
+    '/pma',
+    '/adminer',
     '/admin.php',
     '/.htaccess',
     '/config.php',
     '/xmlrpc.php',
+    '/cgi-bin',
+    '/vendor/phpunit',
+    '/actuator',
+    '/server-status',
+    '/telescope',
+    '/_profiler',
 ];
+
+const BLOCKED_EXTENSIONS = /\.(?:sql|bak|old|orig|save|swp|tar\.gz|tgz|env|ini|log|conf|pem|key)$/i;
 
 // Cache-friendly paths (static fonts and assets)
 const CACHE_ASSET_PATHS = [
     /\.woff2?$/,
     /\.ttf$/,
     /\.eot$/,
+];
+
+const ALLOWED_ORIGINS = [
+    'hiphim.one',
+    'www.hiphim.one',
+    'hiphim.biz',
+    'www.hiphim.biz',
+    'rapphimchill.app',
+    'www.rapphimchill.app',
+    'localhost',
+    '127.0.0.1',
 ];
 
 function isGoogleOrVerificationAgent(userAgent: string | null): boolean {
@@ -84,23 +118,59 @@ function isGoogleOrVerificationAgent(userAgent: string | null): boolean {
 
 function isBlockedUserAgent(userAgent: string | null): boolean {
     if (!userAgent) return false;
-
-    // Never block Google bots, Google Tag Assistant, or Google Analytics verification
     if (isGoogleOrVerificationAgent(userAgent)) {
         return false;
     }
-
     const lowerUA = userAgent.toLowerCase();
     return BLOCKED_USER_AGENTS.some(blocked => lowerUA.includes(blocked));
 }
 
 function isBlockedPath(pathname: string): boolean {
     const lowerPath = pathname.toLowerCase();
+    if (BLOCKED_EXTENSIONS.test(lowerPath)) return true;
     return BLOCKED_PATHS.some(blocked => lowerPath.startsWith(blocked));
 }
 
 function isCacheableAsset(pathname: string): boolean {
     return CACHE_ASSET_PATHS.some(pattern => pattern.test(pathname));
+}
+
+/**
+ * Validates Origin / Referer on mutating API requests to prevent Cross-Site Request Forgery (CSRF).
+ */
+function isValidCsrfOrigin(request: NextRequest): boolean {
+    const originHeader = request.headers.get('origin');
+    const refererHeader = request.headers.get('referer');
+    const currentHost = request.nextUrl.hostname.toLowerCase();
+
+    const checkUrlHost = (rawUrl: string): boolean => {
+        try {
+            const parsed = new URL(rawUrl);
+            const h = parsed.hostname.toLowerCase();
+            return (
+                h === currentHost ||
+                ALLOWED_ORIGINS.includes(h) ||
+                h.endsWith('.workers.dev') ||
+                h.endsWith('.pages.dev') ||
+                h.endsWith('.vercel.app')
+            );
+        } catch {
+            return false;
+        }
+    };
+
+    if (originHeader && originHeader !== 'null') {
+        return checkUrlHost(originHeader);
+    }
+    if (refererHeader) {
+        return checkUrlHost(refererHeader);
+    }
+    // Same-origin fetch from modern browsers with Sec-Fetch-Site
+    const secFetchSite = request.headers.get('sec-fetch-site');
+    if (secFetchSite && secFetchSite !== 'same-origin' && secFetchSite !== 'same-site' && secFetchSite !== 'none') {
+        return false;
+    }
+    return true;
 }
 
 // -------------------------------------------------------------
@@ -114,13 +184,13 @@ interface RateLimitConfig {
 }
 
 const RATE_LIMITS: Record<string, RateLimitConfig> = {
-  auth: { windowMs: 30_000, maxRequests: 30 }, // 30 req / 30s for Auth/OTP endpoints (brute-force & email flood shield)
-  api_proxy: { windowMs: 10_000, maxRequests: 600 }, // 600 req / 10s (60 req/s) for movie API & search (scraping shield, NAT/4G carrier friendly)
-  general: { windowMs: 10_000, maxRequests: 1200 }, // 1200 req / 10s (120 req/s) for normal browsing (NAT / 4G shared IP friendly)
+  auth: { windowMs: 30_000, maxRequests: 25 }, // 25 req / 30s for Auth/Admin endpoints
+  api_proxy: { windowMs: 10_000, maxRequests: 600 }, // 600 req / 10s for movie API & search
+  general: { windowMs: 10_000, maxRequests: 1200 }, // 1200 req / 10s for normal browsing
 };
 
 function getRateLimitCategory(pathname: string): 'auth' | 'api_proxy' | 'general' {
-  if (pathname.startsWith('/api/auth/') || pathname === '/api/admin/login') {
+  if (pathname.startsWith('/api/auth/') || pathname.startsWith('/api/admin/')) {
     return 'auth';
   }
   if (pathname.startsWith('/api/phim') || pathname.startsWith('/search') || pathname.startsWith('/new-updates')) {
@@ -141,7 +211,6 @@ function checkRateLimit(ip: string, category: 'auth' | 'api_proxy' | 'general'):
   const config = RATE_LIMITS[category];
   const key = `${category}:${ip}`;
 
-  // Flush expired cache entries when map grows
   if (rateLimitMap.size > 8000) {
     const entriesToDelete: string[] = [];
     rateLimitMap.forEach((data, k) => {
@@ -167,14 +236,15 @@ function checkRateLimit(ip: string, category: 'auth' | 'api_proxy' | 'general'):
   return { allowed: true, retryAfter: 0, limit: config.maxRequests };
 }
 
-// Common malicious URL patterns (Path traversal, SQLi, XSS, Remote File Inclusion)
+// Common malicious URL patterns (Path traversal, SQLi, XSS, Remote File Inclusion, Null Byte)
 const SUSPICIOUS_PATTERNS = [
   /\.\.\//, // Directory traversal ../
   /%2e%2e%2f/i, // Encoded ../
-  /(?:union\s+select|select\s+.*\s+from|information_schema)/i, // SQL injection
+  /%00/, // Null byte injection
+  /(?:union\s+all\s+select|union\s+select|select\s+.*\s+from|information_schema|benchmark\s*\(|sleep\s*\()/i, // SQL injection
   /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/i, // Script injection
   /javascript:/i, // JavaScript URI scheme
-  /\b(?:etc\/passwd|win\.ini|boot\.ini)\b/i, // Sensitive local files
+  /\b(?:etc\/passwd|etc\/shadow|win\.ini|boot\.ini|proc\/self\/environ)\b/i, // Sensitive local files
 ];
 
 function containsSuspiciousPayload(urlStr: string): boolean {
@@ -212,8 +282,30 @@ async function getIsMaintenanceActive(request: NextRequest): Promise<boolean> {
   return maintenanceCache.enabled;
 }
 
+async function checkVerifiedAdminCookies(request: NextRequest): Promise<boolean> {
+  const userSessionCookie = request.cookies.get('hiphim_user_session')?.value;
+  if (userSessionCookie) {
+    const userPayload = await verifyUserSessionToken(userSessionCookie);
+    if (
+      userPayload?.email?.toLowerCase() === 'kimdinhphuong205@gmail.com' ||
+      userPayload?.role === 'superadmin' ||
+      userPayload?.role === 'admin'
+    ) {
+      return true;
+    }
+  }
+
+  const adminSessionCookie = request.cookies.get('hiphim_admin_session')?.value;
+  if (adminSessionCookie && (await verifySessionToken(adminSessionCookie))) {
+    return true;
+  }
+
+  return false;
+}
+
 export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
+    const method = request.method.toUpperCase();
     const userAgent = request.headers.get('user-agent');
     const ip =
         request.headers.get('cf-connecting-ip') ||
@@ -223,22 +315,35 @@ export async function proxy(request: NextRequest) {
 
     // 1. Restrict HTTP Methods to standard safe methods (Block TRACE, TRACK, CONNECT)
     const ALLOWED_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
-    if (!ALLOWED_METHODS.includes(request.method.toUpperCase())) {
+    if (!ALLOWED_METHODS.includes(method)) {
         return new NextResponse('Method Not Allowed', { 
             status: 405,
             headers: { 'Content-Type': 'text/plain; charset=utf-8' }
         });
     }
 
-    // Require User-Agent on mutating requests (automated attack scripts often omit User-Agent)
-    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method.toUpperCase()) && (!userAgent || userAgent.trim() === '')) {
+    // Require User-Agent on mutating requests
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) && (!userAgent || userAgent.trim() === '')) {
         return new NextResponse('Forbidden - User Agent Required', { 
             status: 403,
             headers: { 'Content-Type': 'text/plain; charset=utf-8' }
         });
     }
 
-    // Canonical host normalization: redirect www to apex, and redirect old domain (hiphim.biz) to hiphim.one
+    // CSRF Protection on mutating API calls
+    if (pathname.startsWith('/api/') && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+        if (!isValidCsrfOrigin(request)) {
+            return new NextResponse(
+                JSON.stringify({ success: false, error: 'Forbidden - Cross-Origin Request Blocked (CSRF Shield)' }),
+                {
+                    status: 403,
+                    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+                }
+            );
+        }
+    }
+
+    // Canonical host normalization
     if (
         request.nextUrl.hostname === 'www.hiphim.one' ||
         request.nextUrl.hostname === 'hiphim.biz' ||
@@ -258,7 +363,7 @@ export async function proxy(request: NextRequest) {
         });
     }
 
-    // Block suspicious paths
+    // Block suspicious paths & sensitive file extensions
     if (isBlockedPath(pathname)) {
         return new NextResponse('Forbidden', { 
             status: 403,
@@ -274,7 +379,7 @@ export async function proxy(request: NextRequest) {
         });
     }
 
-    // Multi-tier Anti-DDoS Rate Limiting (Soft limit per window, no persistent IP jail)
+    // Multi-tier Anti-DDoS Rate Limiting
     const category = getRateLimitCategory(pathname);
     const rateCheck = checkRateLimit(ip, category);
     if (!rateCheck.allowed) {
@@ -294,28 +399,7 @@ export async function proxy(request: NextRequest) {
     // 2. ADMIN PANEL AUTHENTICATION GUARD (WEB SSO ONLY - NO PUBLIC ADMIN LOGIN)
     // -------------------------------------------------------------
     if (pathname.startsWith('/admin')) {
-        let hasAdminAccess = false;
-
-        // 1. Check user session cookie from main website login
-        const userSessionCookie = request.cookies.get('hiphim_user_session')?.value;
-        if (userSessionCookie) {
-            const userPayload = await verifyUserSessionToken(userSessionCookie);
-            if (
-                userPayload?.email?.toLowerCase() === 'kimdinhphuong205@gmail.com' ||
-                userPayload?.role === 'superadmin' ||
-                userPayload?.role === 'admin'
-            ) {
-                hasAdminAccess = true;
-            }
-        }
-
-        // 2. Fallback check: admin session cookie
-        if (!hasAdminAccess) {
-            const adminSessionCookie = request.cookies.get('hiphim_admin_session')?.value;
-            if (adminSessionCookie) {
-                hasAdminAccess = await verifySessionToken(adminSessionCookie);
-            }
-        }
+        const hasAdminAccess = await checkVerifiedAdminCookies(request);
 
         // Disable /admin/login completely: redirect to /admin if authorized, otherwise to /
         if (pathname === '/admin/login' || pathname.startsWith('/admin/login/')) {
@@ -334,19 +418,9 @@ export async function proxy(request: NextRequest) {
     const bypassToken = request.nextUrl.searchParams.get('bypass');
     const bypassCookie = request.cookies.get('hiphim_maintenance_bypass')?.value;
     const maintenanceCookie = request.cookies.get('hiphim_maintenance_active')?.value;
-    const secretToken = process.env.SYSTEM_MAINTENANCE_TOKEN || "hiphim_secret_2026";
-    
-    // Check if bypass token in query or cookie is valid, or if logged in as admin
-    const hasAdminSession = Boolean(
-        request.cookies.get('hiphim_admin_session')?.value ||
-        request.cookies.get('hiphim_user_session')?.value
-    );
-    const hasValidBypass = 
-        bypassToken === secretToken || 
-        bypassCookie === secretToken ||
-        hasAdminSession;
+    const configuredSecret = process.env.SYSTEM_MAINTENANCE_TOKEN;
+    const hasCustomSecret = Boolean(configuredSecret && configuredSecret !== 'hiphim_secret_2026');
 
-    // Paths exempt from maintenance redirection:
     const isExemptPath = 
         pathname === '/maintenance' ||
         pathname.startsWith('/admin') ||
@@ -358,14 +432,12 @@ export async function proxy(request: NextRequest) {
         pathname === '/sitemap.xml' ||
         pathname === '/dmca-validation.html';
 
-    // Check if maintenance is currently active
     let isMaintenanceActive = 
         process.env.MAINTENANCE_MODE === 'true' || 
         process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true' ||
         maintenanceCookie === 'true' ||
         (globalThis as any).__HIPHIM_MAINTENANCE__?.enabled === true;
 
-    // If not flagged by env/cookie, query internal system status (cached 2s) for HTML pages
     if (!isMaintenanceActive && !isExemptPath) {
         try {
             isMaintenanceActive = await getIsMaintenanceActive(request);
@@ -374,34 +446,40 @@ export async function proxy(request: NextRequest) {
         }
     }
 
-    // A. When Maintenance is ON: Redirect all non-exempt visitors to /maintenance
-    if (isMaintenanceActive && !hasValidBypass && !isExemptPath) {
-        const maintenanceUrl = new URL('/maintenance', request.url);
-        return NextResponse.redirect(maintenanceUrl, 307);
+    if (isMaintenanceActive && !isExemptPath) {
+        const isVerifiedAdmin = await checkVerifiedAdminCookies(request);
+        const hasValidBypass =
+            isVerifiedAdmin ||
+            (hasCustomSecret && (bypassToken === configuredSecret || bypassCookie === configuredSecret));
+
+        if (!hasValidBypass) {
+            const maintenanceUrl = new URL('/maintenance', request.url);
+            return NextResponse.redirect(maintenanceUrl, 307);
+        }
     }
 
-    // B. When Maintenance is OFF: If visitor navigates to /maintenance, redirect back to /
+    // When Maintenance is OFF: If visitor navigates to /maintenance, redirect back to /
     if (pathname === '/maintenance' && !isMaintenanceActive && !request.nextUrl.searchParams.has('preview')) {
         const homeUrl = new URL('/', request.url);
         return NextResponse.redirect(homeUrl, 307);
     }
 
-    // If valid bypass token was passed in query, set cookie and redirect to clean URL
-    if (bypassToken === secretToken) {
+    // If valid custom bypass token was passed in query, set cookie and redirect to clean URL
+    if (hasCustomSecret && bypassToken === configuredSecret) {
         const cleanUrl = request.nextUrl.clone();
         cleanUrl.searchParams.delete('bypass');
         const response = NextResponse.redirect(cleanUrl);
-        response.cookies.set('hiphim_maintenance_bypass', secretToken, {
+        response.cookies.set('hiphim_maintenance_bypass', configuredSecret!, {
             path: '/',
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
-            maxAge: 86400 * 7, // 7 days bypass
+            maxAge: 86400 * 7,
         });
         return response;
     }
 
-    // 2. Open Redirect Mitigation: Sanitize suspicious redirect parameters (Exclude /api/ routes which proxy internal/external APIs)
+    // 4. Open Redirect Mitigation: Sanitize suspicious redirect parameters
     const url = request.nextUrl.clone();
     let hasModifiedParams = false;
     
@@ -410,7 +488,6 @@ export async function proxy(request: NextRequest) {
         redirectParams.forEach(param => {
             const value = url.searchParams.get(param);
             if (value) {
-                // If the redirect parameter points to an absolute external domain, strip it to prevent open redirect
                 if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('//')) {
                     try {
                         const parsed = new URL(value, request.nextUrl.origin);
@@ -419,7 +496,8 @@ export async function proxy(request: NextRequest) {
                             parsed.hostname === 'hiphim.one' ||
                             parsed.hostname === 'hiphim.biz' ||
                             parsed.hostname === 'rapphimchill.app' ||
-                            parsed.hostname.endsWith('phimapi.com');
+                            parsed.hostname.endsWith('.phimapi.com') ||
+                            parsed.hostname === 'phimapi.com';
                         if (!isAllowedHost) {
                             url.searchParams.delete(param);
                             hasModifiedParams = true;
@@ -433,8 +511,7 @@ export async function proxy(request: NextRequest) {
         });
     }
 
-    // Strip URL tracking parameters to ensure ISR cache hit (Facebook fbclid issue)
-    // EXEMPT Google verification and Google Tag Assistant debug sessions
+    // Strip URL tracking parameters to ensure ISR cache hit
     const isGoogleTesting = isGoogleOrVerificationAgent(userAgent) || url.searchParams.has('gtm_debug') || url.searchParams.has('_gl');
     if (!isGoogleTesting) {
         const trackingParams = [
@@ -450,45 +527,37 @@ export async function proxy(request: NextRequest) {
         });
 
         if (hasModifiedParams) {
-            // Redirect to the clean URL so it hits the static Next.js cache and prevents open redirect
             return NextResponse.redirect(url, 307);
         }
     }
 
-    // Continue with request
     const response = NextResponse.next();
 
-    // Add security headers (Resolves Security Headers Audit P1 findings)
+    // 5. Enterprise Security Headers (Defense-in-Depth)
+    response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
     response.headers.set('X-Frame-Options', 'SAMEORIGIN');
     response.headers.set('X-Content-Type-Options', 'nosniff');
     response.headers.set('X-XSS-Protection', '1; mode=block');
     response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-    response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
-    
-    // Add compression headers for better performance
+    response.headers.set('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+    response.headers.set('X-Permitted-Cross-Domain-Policies', 'none');
+    response.headers.set('X-DNS-Prefetch-Control', 'on');
+    response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()');
+    response.headers.set(
+        'Content-Security-Policy',
+        "frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self';"
+    );
     response.headers.set('Vary', 'Accept-Encoding');
     
-    // Add cache headers for static assets
     if (isCacheableAsset(pathname)) {
         response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
     }
 
-    // Add performance timing header for monitoring
-    response.headers.set('X-Response-Time', new Date().getTime().toString());
-
     return response;
 }
 
-// Configure which paths the proxy runs on
 export const config = {
     matcher: [
-        /*
-         * Match all request paths except:
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         * - public folder assets
-         */
         '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
     ],
 };

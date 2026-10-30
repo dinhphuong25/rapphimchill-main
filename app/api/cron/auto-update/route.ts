@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { verifyMaintenanceToken } from "@/lib/maintenance";
+import { isAuthorizedAdminRequest } from "@/lib/admin-auth";
 import { runStreamHealthCheck } from "@/lib/health-checker";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60; // Max execution timeout on Vercel
+export const maxDuration = 60;
+
+let lastCronExecutionTime = 0;
+const CRON_COOLDOWN_MS = 20_000; // Minimum 20s cooldown between executions
 
 export async function GET(req: NextRequest) {
   return handleAutoUpdate(req);
@@ -22,18 +25,26 @@ async function handleAutoUpdate(req: NextRequest) {
     searchParams.get("secret") ||
     req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
 
-  const cronSecret = process.env.CRON_SECRET || "hiphim_auto_cron";
-  const isAuthorizedSecret = Boolean(
-    token === cronSecret || token === "hiphim_auto_cron"
-  );
+  const isAdmin = await isAuthorizedAdminRequest(req);
+  const envCronSecret = process.env.CRON_SECRET;
+  const isAuthorizedSecret = Boolean(envCronSecret && token === envCronSecret);
   const isVercelCron = req.headers.get("x-vercel-cron") === "1";
 
-  if (!isVercelCron && !isAuthorizedSecret && !verifyMaintenanceToken(token || undefined)) {
+  if (!isAdmin && !isVercelCron && !isAuthorizedSecret) {
     return NextResponse.json(
-      { success: false, error: "Unauthorized. Valid token required." },
+      { success: false, error: "Unauthorized. Admin session or valid cron secret required." },
       { status: 401 }
     );
   }
+
+  // Cooldown guard against rapid repeated triggers
+  if (!isAdmin && startTime - lastCronExecutionTime < CRON_COOLDOWN_MS) {
+    return NextResponse.json(
+      { success: false, error: "Cron cooldown active. Please wait a few seconds." },
+      { status: 429 }
+    );
+  }
+  lastCronExecutionTime = startTime;
 
   try {
     // 1. Revalidate Next.js ISR static & dynamic pages

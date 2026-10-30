@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   getMaintenanceState,
   setMaintenanceState,
-  verifyMaintenanceToken,
-  DEFAULT_MAINTENANCE_TOKEN,
   MAINTENANCE_COOKIE_NAME,
   BYPASS_COOKIE_NAME,
 } from "@/lib/maintenance";
+import { isAuthorizedAdminRequest } from "@/lib/admin-auth";
+
+function hasConfiguredMaintenanceSecret(secret: string | null | undefined): boolean {
+  const envSecret = process.env.SYSTEM_MAINTENANCE_TOKEN;
+  if (!envSecret || envSecret === "hiphim_secret_2026") return false;
+  return Boolean(secret && secret === envSecret);
+}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -15,7 +20,7 @@ export async function GET(req: NextRequest) {
   const reason = searchParams.get("reason");
   const duration = parseInt(searchParams.get("duration") || "60", 10);
 
-  // 1. Check current status without secret (Cache at Edge for 30s to protect serverless quotas)
+  // 1. Public read-only status check (Cache at Edge for 30s)
   if (!action) {
     const state = getMaintenanceState();
     return NextResponse.json(state, {
@@ -25,37 +30,37 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // 2. Admin Bypass Verification
-  if (action === "bypass") {
-    if (!verifyMaintenanceToken(secret)) {
-      return NextResponse.json(
-        { success: false, error: "Invalid secret token" },
-        { status: 401 }
-      );
-    }
+  // Require authenticated Admin session OR a custom environment SYSTEM_MAINTENANCE_TOKEN
+  const isAdmin = await isAuthorizedAdminRequest(req);
+  const isSecretValid = hasConfiguredMaintenanceSecret(secret);
 
-    const res = NextResponse.json({
-      success: true,
-      message: "Admin bypass verified successfully",
-    });
-    res.cookies.set(BYPASS_COOKIE_NAME, DEFAULT_MAINTENANCE_TOKEN, {
-      path: "/",
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 86400 * 7, // 7 days
-    });
-    return res;
-  }
-
-  // 3. Enable / Disable Maintenance Mode
-  if (!verifyMaintenanceToken(secret)) {
+  if (!isAdmin && !isSecretValid) {
     return NextResponse.json(
-      { success: false, error: "Unauthorized. Valid secret required." },
+      { success: false, error: "Unauthorized. Admin authentication required." },
       { status: 401 }
     );
   }
 
+  // 2. Admin Bypass Verification
+  if (action === "bypass") {
+    const res = NextResponse.json({
+      success: true,
+      message: "Admin bypass verified successfully",
+    });
+    const envSecret = process.env.SYSTEM_MAINTENANCE_TOKEN;
+    if (envSecret) {
+      res.cookies.set(BYPASS_COOKIE_NAME, envSecret, {
+        path: "/",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 86400 * 7,
+      });
+    }
+    return res;
+  }
+
+  // 3. Enable / Disable Maintenance Mode
   if (action === "enable") {
     const estimatedEndTime = new Date(Date.now() + duration * 60 * 1000).toISOString();
     const updatedState = setMaintenanceState({
@@ -76,7 +81,7 @@ export async function GET(req: NextRequest) {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 86400 * 3, // 3 days
+      maxAge: 86400 * 3,
     });
 
     return res;
@@ -112,9 +117,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { action, secret, duration = 60, reason } = body;
 
-    if (!verifyMaintenanceToken(secret)) {
+    const isAdmin = await isAuthorizedAdminRequest(req);
+    const isSecretValid = hasConfiguredMaintenanceSecret(secret);
+
+    if (!isAdmin && !isSecretValid) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized. Valid secret required." },
+        { success: false, error: "Unauthorized. Admin authentication required." },
         { status: 401 }
       );
     }

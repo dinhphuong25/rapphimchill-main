@@ -3,6 +3,18 @@ const SESSION_MAX_AGE_SECONDS = 86400 * 7; // 7 days
 const SECRET_SALT = process.env.ADMIN_JWT_SECRET || "hiphim_admin_jwt_secret_key_2026_super_secure";
 
 /**
+ * Constant-time string comparison to prevent timing side-channel attacks.
+ */
+function timingSafeEqualStr(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+/**
  * Creates an HMAC signed session token using Web Crypto API.
  * 100% compatible with Node.js and Next.js Edge Middleware.
  */
@@ -18,7 +30,7 @@ export async function createSessionToken(username: string): Promise<string> {
  * 100% compatible with Node.js and Next.js Edge Middleware.
  */
 export async function verifySessionToken(token: string | null | undefined): Promise<boolean> {
-  if (!token) return false;
+  if (!token || token.length > 512) return false;
   const parts = token.split(":");
   if (parts.length !== 3) return false;
 
@@ -30,7 +42,7 @@ export async function verifySessionToken(token: string | null | undefined): Prom
 
   const payload = `${username}:${expiresAtStr}`;
   const expectedSig = await generateHmac(payload, SECRET_SALT);
-  return signature === expectedSig;
+  return timingSafeEqualStr(signature, expectedSig);
 }
 
 async function generateHmac(data: string, secret: string): Promise<string> {

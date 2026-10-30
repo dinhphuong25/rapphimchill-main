@@ -3,6 +3,18 @@ export const PENDING_REGISTRATION_COOKIE_NAME = "hiphim_pending_registration";
 const SESSION_MAX_AGE_SECONDS = 86400 * 30; // 30 days session
 const SECRET_SALT = process.env.USER_JWT_SECRET || "hiphim_user_jwt_secret_key_2026_super_secure";
 
+/**
+ * Constant-time string comparison to prevent timing side-channel attacks.
+ */
+function timingSafeEqualStr(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
 export interface UserSessionPayload {
   userId: string;
   email: string;
@@ -30,7 +42,7 @@ export async function createPendingRegistrationToken(payload: PendingRegistratio
 export async function verifyPendingRegistrationToken(
   token: string | null | undefined
 ): Promise<PendingRegistrationPayload | null> {
-  if (!token) return null;
+  if (!token || token.length > 2048) return null;
 
   const separator = token.lastIndexOf(".");
   if (separator === -1) return null;
@@ -38,7 +50,7 @@ export async function verifyPendingRegistrationToken(
   const encodedPayload = token.slice(0, separator);
   const signature = token.slice(separator + 1);
   const expectedSignature = await generateHmac(encodedPayload, SECRET_SALT);
-  if (signature !== expectedSignature) return null;
+  if (!timingSafeEqualStr(signature, expectedSignature)) return null;
 
   try {
     const payload = JSON.parse(decodeBase64Url(encodedPayload)) as PendingRegistrationPayload;
@@ -71,13 +83,13 @@ export async function createUserSessionToken(
  * Verifies an HMAC signed session token using Web Crypto API.
  */
 export async function verifyUserSessionToken(token: string | null | undefined): Promise<UserSessionPayload | null> {
-  if (!token) return null;
+  if (!token || token.length > 2048) return null;
 
   if (token.startsWith("v2.")) {
     const [, encodedPayload, signature] = token.split(".");
     if (!encodedPayload || !signature) return null;
     const expectedSignature = await generateHmac(encodedPayload, SECRET_SALT);
-    if (signature !== expectedSignature) return null;
+    if (!timingSafeEqualStr(signature, expectedSignature)) return null;
 
     try {
       const payload = JSON.parse(decodeBase64Url(encodedPayload)) as UserSessionPayload;
@@ -101,7 +113,7 @@ export async function verifyUserSessionToken(token: string | null | undefined): 
 
   const payload = `${userId}:${email}:${expiresAtStr}`;
   const expectedSig = await generateHmac(payload, SECRET_SALT);
-  if (signature !== expectedSig) {
+  if (!timingSafeEqualStr(signature, expectedSig)) {
     return null; // Invalid signature
   }
 

@@ -7,28 +7,51 @@ import {
   verifyPendingRegistrationToken,
 } from "@/lib/user-token";
 
+// OTP Brute-Force Shield: max 5 failed guesses per 10 minutes
+const otpAttemptMap = new Map<string, { count: number; lockUntil: number }>();
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { email, otp } = body;
 
-    if (!email || !otp) {
+    if (!email || !otp || typeof email !== "string" || typeof otp !== "string") {
       return NextResponse.json(
         { success: false, error: "Vui lòng nhập đầy đủ email và mã OTP" },
         { status: 400 }
       );
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+    const now = Date.now();
+    const existingAttempt = otpAttemptMap.get(normalizedEmail);
+    if (existingAttempt && existingAttempt.lockUntil > now) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Bạn đã nhập sai mã OTP quá 5 lần. Vui lòng chờ 10 phút hoặc gửi lại mã OTP mới.",
+        },
+        { status: 429 }
+      );
+    }
+
     const pendingCookie = getCookie(request, PENDING_REGISTRATION_COOKIE_NAME);
     const pendingToken = await verifyPendingRegistrationToken(pendingCookie);
     const pendingOverride: PendingRegistration | undefined = pendingToken || undefined;
-    const result = await verifyAndCreateUserPersistent(email, otp, pendingOverride);
+    const result = await verifyAndCreateUserPersistent(normalizedEmail, otp.trim(), pendingOverride);
     if (result.error || !result.user) {
+      const count = (existingAttempt?.count || 0) + 1;
+      otpAttemptMap.set(normalizedEmail, {
+        count,
+        lockUntil: count >= 5 ? now + 10 * 60 * 1000 : 0,
+      });
       return NextResponse.json(
         { success: false, error: result.error || "Mã OTP không hợp lệ" },
         { status: 400 }
       );
     }
+
+    otpAttemptMap.delete(normalizedEmail);
 
     const user = result.user;
     const sessionToken = await createUserSessionToken(user.id, user.email, {

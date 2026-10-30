@@ -106,7 +106,11 @@ export async function GET(req: NextRequest) {
   }
 
   const ALLOWED_HOSTS = ["phimapi.com", "phim.nguonc.com"];
-  const isAllowedHost = ALLOWED_HOSTS.some((h) => parsedUrl.hostname.endsWith(h));
+  const isAllowedHost =
+    ALLOWED_HOSTS.some((h) => parsedUrl.hostname === h || parsedUrl.hostname.endsWith(`.${h}`)) &&
+    (!parsedUrl.port || parsedUrl.port === "443") &&
+    !parsedUrl.username &&
+    !parsedUrl.password;
   if (!isAllowedHost) {
     return new Response(
       JSON.stringify({ error: "Forbidden host" }),
