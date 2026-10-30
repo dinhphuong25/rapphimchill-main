@@ -4,6 +4,7 @@ import PhimApi from "@/libs/phimapi.com";
 import { HIDDEN_MOVIE_SLUGS } from "@/lib/hidden-movies";
 import { MovieStructuredData, BreadcrumbStructuredData } from "@/components/seo/structured-data";
 import MovieDetailView from "@/components/movie/movie-detail-view";
+import { MovieDetailClientRescue } from "@/components/movie/movie-client-rescue";
 
 const getMovie = async (slug: string) => {
   return unstable_cache(
@@ -11,7 +12,7 @@ const getMovie = async (slug: string) => {
       const api = new PhimApi();
       return api.get(slug);
     },
-    [`phim-detail-v4-${slug}`],
+    [`phim-detail-v5-${slug}`],
     { revalidate: 1800, tags: ["movies", `movie-${slug}`] }
   )();
 };
@@ -45,17 +46,19 @@ export default async function PhimDetailPage({ params }: { params: Promise<{ slu
 
   if (HIDDEN_MOVIE_SLUGS.includes(slug)) notFound();
 
-  let movie: any, episodes: any[];
+  let movie: any = null;
+  let episodes: any[] = [];
   try {
     const data = await getMovie(slug);
-    movie = data.movie;
-    episodes = data.server || (data as any).episodes || [];
+    movie = data?.movie || null;
+    episodes = data?.server || (data as any)?.episodes || [];
   } catch {
-    notFound();
+    // Server fetch timed out or rate-limited on Worker — hand off to Client Rescue
+    return <MovieDetailClientRescue slug={slug} />;
   }
 
   if (!movie) {
-    notFound();
+    return <MovieDetailClientRescue slug={slug} />;
   }
 
   return (

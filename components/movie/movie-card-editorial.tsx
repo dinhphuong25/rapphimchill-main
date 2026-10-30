@@ -102,7 +102,7 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
       <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-cinema-surface border border-white/10 group-hover:border-brand-green/60 transition-[border-color,box-shadow] duration-300 shadow-xl group-hover:shadow-[0_12px_32px_rgba(32,214,107,0.25)]">
         
         <Link
-          href={movieHref}
+          href={movieHref} prefetch={false}
           aria-label={`Xem phim ${movie.name}`}
           className="absolute inset-0 z-0 block"
         >
@@ -235,7 +235,7 @@ export const MovieCardEditorial = memo(function MovieCardEditorial({
       <div className="mt-2.5 flex flex-col">
         <h3 className="text-xs font-bold text-cinema-text hover:text-brand-green transition-colors line-clamp-1 flex items-center justify-between group/title">
           <Link
-            href={movieHref}
+            href={movieHref} prefetch={false}
             className="truncate"
           >
             {movie.name}

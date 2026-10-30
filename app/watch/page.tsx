@@ -1,4 +1,3 @@
-
 import PhimApi from "@/libs/phimapi.com";
 import Description from "@/components/movie/description";
 import { MovieStructuredData, BreadcrumbStructuredData } from "@/components/seo/structured-data";
@@ -9,6 +8,7 @@ import { Suspense, Fragment } from "react";
 import { LoadingWatch } from "@/components/ui/page-loaders";
 import { getCachedCategories, getCachedCountries } from "@/lib/data";
 import { normalizeImageUrl } from "@/lib/image-helper";
+import { WatchClientRescue } from "@/components/movie/movie-client-rescue";
 
 const getMovieData = (slug: string) =>
   unstable_cache(
@@ -16,7 +16,7 @@ const getMovieData = (slug: string) =>
       const api = new PhimApi();
       return api.get(slug);
     },
-    [`movie-data-v4-${slug}`],
+    [`movie-data-v5-${slug}`],
     { revalidate: 1800, tags: ["movies", `movie-${slug}`] }
   )();
 
@@ -94,25 +94,24 @@ export default async function WatchPage({ searchParams }: any) {
 }
 
 async function WatchContent({ slug, ep, sv }: { slug: string; ep?: string; sv?: string }) {
-  let movie: any, server: any;
-  let categories: any[] = [];
-  let countries: any[] = [];
+  let movie: any = null;
+  let server: any = [];
 
   try {
-    const [data, fetchedCategories, fetchedCountries] = await Promise.all([
+    const [data] = await Promise.all([
       getMovieData(slug),
       getCachedCategories().catch(() => []),
       getCachedCountries().catch(() => []),
     ]);
-    movie = data?.movie;
-    server = data?.server;
-    categories = fetchedCategories || [];
-    countries = fetchedCountries || [];
+    movie = data?.movie || null;
+    server = data?.server || [];
   } catch {
-    notFound();
+    return <WatchClientRescue slug={slug} />;
   }
 
-  if (!movie?.name) notFound();
+  if (!movie?.name) {
+    return <WatchClientRescue slug={slug} />;
+  }
 
   const breadcrumbItems = [
     { name: 'Trang chủ', url: '/' },
@@ -125,7 +124,6 @@ async function WatchContent({ slug, ep, sv }: { slug: string; ep?: string; sv?: 
     url: `https://hiphim.one${item.url}`
   }));
 
-  // Dynamically resolve target episode m3u8 for instant preload and preconnect
   let targetM3u8 = "";
   if (server && Array.isArray(server) && server.length > 0) {
     const svIndex = sv ? parseInt(sv, 10) : 0;
@@ -182,7 +180,6 @@ async function WatchContent({ slug, ep, sv }: { slug: string; ep?: string; sv?: 
           <link rel="preconnect" href={orig} crossOrigin="anonymous" />
         </Fragment>
       ))}
-      {/* Main Cinema Page Layout - Full-width Standalone Cinema View */}
       <main className="relative z-10 min-h-0 sm:min-h-screen flex flex-col w-full">
         <MovieStructuredData
           movie={movie}
@@ -190,7 +187,6 @@ async function WatchContent({ slug, ep, sv }: { slug: string; ep?: string; sv?: 
         />
         <BreadcrumbStructuredData items={structuredBreadcrumbItems} />
 
-        {/* Main Watch Container */}
         <div className="w-full max-w-[1920px] mx-auto pb-3 sm:pb-16 px-3 sm:px-6 lg:px-8 xl:px-10 flex flex-col">
           <Description movie={movie} serverData={server} slug={slug} thumb_url={movie.thumb_url} />
         </div>
