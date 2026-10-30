@@ -181,6 +181,9 @@ export default function Episode({
               const ep = server.server_data?.[currentEpisodeIndex] || server.server_data?.[0];
               const hasM3u8 = Boolean(ep?.link_m3u8 && ep.link_m3u8.trim() !== "");
               const hasEmbed = Boolean(ep?.link_embed && ep.link_embed.trim() !== "");
+              const cleanServerName = (server.server_name || "Vietsub")
+                .replace(/^Dự Phòng\s*\((.*)\)$/i, "$1")
+                .trim();
 
               const buttons = [];
 
@@ -207,7 +210,7 @@ export default function Episode({
                           : "text-white font-bold"
                       )}
                     >
-                      {server.server_name}
+                      {cleanServerName}
                     </span>
                     <span
                       className={cn(
@@ -246,7 +249,7 @@ export default function Episode({
                           : "text-white font-bold"
                       )}
                     >
-                      {server.server_name}
+                      {cleanServerName}
                     </span>
                     <span
                       className={cn(
@@ -345,7 +348,9 @@ export default function Episode({
                         const hasEmbed = Boolean(episode.link_embed && episode.link_embed.trim() !== "");
                         let targetLink = "";
 
-                        if (hasM3u8) {
+                        if (playerMode === "embed" && hasEmbed) {
+                          targetLink = episode.link_embed;
+                        } else if (hasM3u8) {
                           onPlayerModeChange("m3u8");
                           targetLink = episode.link_m3u8;
                         } else if (hasEmbed) {

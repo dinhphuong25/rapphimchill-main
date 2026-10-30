@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Episode from "./episode";
 import WatchHeader from "../watch/watch-header";
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart, ShieldAlert, Clock, AlertTriangle } from "lucide-react";
+import { Heart, ShieldAlert, Clock, AlertTriangle, Loader2 } from "lucide-react";
 import { useContinueWatching } from "@/hooks/useContinueWatching";
 import { useWatchHistory, useFavorites } from "@/hooks/useLocalStorage";
 import { useUserAuth } from "@/context/user-auth-context";
@@ -15,11 +15,34 @@ import PlayerErrorBoundary, { PlayerErrorBoundary as PlayerErrorBoundaryNamed } 
 import UnreleasedMovieOverlay from "../player/unreleased-movie-overlay";
 import { normalizeImageUrl } from "@/lib/image-helper";
 import ReportModal from "./report-modal";
+import { fetchPrimaryPhimApiClient, hasAnyM3u8Stream, injectM3u8IntoServers } from "./movie-client-rescue";
 
 const SafePlayerErrorBoundary: any = PlayerErrorBoundary || PlayerErrorBoundaryNamed || (({ children }: any) => <>{children}</>);
 
 import VideoPlayer from "../player/video-player";
 import EmbedPlayer from "../player/embed-player";
+
+function extractPlayableM3u8(ep: any, fallbackUrl?: string): string {
+  if (ep?.link_m3u8 && ep.link_m3u8.trim() !== "") {
+    return ep.link_m3u8.trim();
+  }
+  const candidates = [ep?.link_embed, fallbackUrl].filter(Boolean) as string[];
+  for (const raw of candidates) {
+    if (raw.includes(".m3u8")) {
+      try {
+        const u = new URL(raw);
+        const paramUrl = u.searchParams.get("url");
+        if (paramUrl && paramUrl.includes(".m3u8")) {
+          return paramUrl.trim();
+        }
+      } catch {}
+      if (raw.startsWith("http") && !raw.includes("player.phimapi.com")) {
+        return raw.trim();
+      }
+    }
+  }
+  return "";
+}
 
 interface ResolvedInitialWatch {
   serverIndex: number;
@@ -285,6 +308,10 @@ export default function Description({ movie, serverData: rawServerData }: any) {
 
   const [resumeTime, setResumeTime] = useState<number>(() => initialWatchState.resumeTime);
   const [isPlayerFullscreen, setIsPlayerFullscreen] = useState(false);
+  const [isResolvingPrimary, setIsResolvingPrimary] = useState<boolean>(
+    () => !hasAnyM3u8Stream(serverData)
+  );
+  const resolvedPrimarySlugRef = useRef<string>("");
 
   useEffect(() => {
     if (Array.isArray(serverData) && serverData.length > 0) {
@@ -296,15 +323,63 @@ export default function Description({ movie, serverData: rawServerData }: any) {
         const hasM3u8 = Boolean(curEpData.link_m3u8 && curEpData.link_m3u8.trim() !== "");
         const hasEmbed = Boolean(curEpData.link_embed && curEpData.link_embed.trim() !== "");
         if (hasM3u8) {
-          setPlayerMode('m3u8');
           setCurrentEpisodeUrl(curEpData.link_m3u8);
         } else if (hasEmbed) {
-          setPlayerMode('embed');
           setCurrentEpisodeUrl(curEpData.link_embed);
         }
       }
     }
   }, [serverData, currentEpisodeIndex?.server, currentEpisodeIndex?.episode]);
+
+  // Client-side rescue for Backup Server (NguonC) when SSR Worker fell back due to rate-limiting:
+  // Automatically fetches primary m3u8 streams from phimapi.com directly via client's residential/4G IP
+  // so Backup Server uses the exact same custom Default Player UI (<VideoPlayer>).
+  useEffect(() => {
+    if (!movie?.slug) return;
+    if (hasAnyM3u8Stream(currentServerData)) {
+      setIsResolvingPrimary(false);
+      return;
+    }
+    if (resolvedPrimarySlugRef.current === movie.slug) return;
+    resolvedPrimarySlugRef.current = movie.slug;
+
+    let cancelled = false;
+    setIsResolvingPrimary(true);
+
+    fetchPrimaryPhimApiClient(movie.slug, movie.name, movie.origin_name)
+      .then((rescued) => {
+        if (cancelled) return;
+        if (rescued && hasAnyM3u8Stream(rescued.episodes)) {
+          const upgradedServers =
+            Array.isArray(currentServerData) && currentServerData.length > 0
+              ? injectM3u8IntoServers(rescued.episodes, rescued.episodes)
+              : rescued.episodes;
+          setCurrentServerData(upgradedServers);
+          const svIdx = Math.min(
+            currentEpisodeIndex?.server || 0,
+            Math.max(0, upgradedServers.length - 1)
+          );
+          const epList = upgradedServers[svIdx]?.server_data || [];
+          const epIdx = Math.min(
+            currentEpisodeIndex?.episode || 0,
+            Math.max(0, epList.length - 1)
+          );
+          const targetEp = epList[epIdx] || upgradedServers[0]?.server_data?.[0];
+          const m3u8 = extractPlayableM3u8(targetEp);
+          if (m3u8) {
+            setCurrentEpisodeUrl(m3u8);
+          }
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setIsResolvingPrimary(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [movie?.slug, movie?.name, movie?.origin_name, currentServerData, currentEpisodeIndex?.server, currentEpisodeIndex?.episode]);
 
   // Sync document.title with the active movie name and episode on client-side
   useEffect(() => {
@@ -479,7 +554,9 @@ export default function Description({ movie, serverData: rawServerData }: any) {
     const hasEmbed = Boolean(epData?.link_embed && epData.link_embed.trim() !== "");
 
     let effectiveUrl = link;
-    if (hasM3u8) {
+    if (playerMode === "embed" && hasEmbed) {
+      effectiveUrl = epData.link_embed;
+    } else if (hasM3u8) {
       setPlayerMode('m3u8');
       effectiveUrl = epData.link_m3u8;
     } else if (hasEmbed) {
@@ -833,27 +910,28 @@ export default function Description({ movie, serverData: rawServerData }: any) {
     }
   }, [movie?.slug, user?.id, currentEpisodeIndex?.server, currentEpisodeIndex?.episode]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Update episode URL and sync playerMode on changes
+  // Update episode URL on changes while preserving user's selected server mode (Mặc định vs Dự phòng)
   useEffect(() => {
-    if (!currentEpisodeIndex || !serverData) return;
-    const currentEpisode = serverData[currentEpisodeIndex.server]?.server_data?.[currentEpisodeIndex.episode];
+    if (!currentEpisodeIndex || !currentServerData) return;
+    const currentEpisode = currentServerData[currentEpisodeIndex.server]?.server_data?.[currentEpisodeIndex.episode];
     if (currentEpisode) {
       const hasM3u8 = Boolean(currentEpisode.link_m3u8 && currentEpisode.link_m3u8.trim() !== "");
       const hasEmbed = Boolean(currentEpisode.link_embed && currentEpisode.link_embed.trim() !== "");
 
-      if (hasM3u8) {
-        if (playerMode !== 'm3u8') setPlayerMode('m3u8');
+      if (playerMode === 'embed' && hasEmbed) {
+        setCurrentEpisodeUrl(currentEpisode.link_embed);
+      } else if (hasM3u8) {
         setCurrentEpisodeUrl(currentEpisode.link_m3u8);
       } else if (hasEmbed) {
         if (playerMode !== 'embed') setPlayerMode('embed');
         setCurrentEpisodeUrl(currentEpisode.link_embed);
       }
     }
-  }, [playerMode, currentEpisodeIndex, serverData]);
+  }, [playerMode, currentEpisodeIndex, currentServerData]);
 
   // Resume progress on server/episode change
   useEffect(() => {
-    if (typeof window === "undefined" || !currentEpisodeIndex || playerMode !== 'm3u8') {
+    if (typeof window === "undefined" || !currentEpisodeIndex) {
       return;
     }
     const urlParams = new URLSearchParams(window.location.search);
@@ -869,7 +947,7 @@ export default function Description({ movie, serverData: rawServerData }: any) {
 
   const handleProgress = useCallback((currentTime: number, duration: number) => {
     if (isUserBanned) return;
-    if (!currentEpisodeIndex || playerMode !== 'm3u8') return;
+    if (!currentEpisodeIndex) return;
     const { server, episode } = currentEpisodeIndex;
     const key = getEpisodeProgressKey(server, episode);
 
@@ -1149,51 +1227,90 @@ export default function Description({ movie, serverData: rawServerData }: any) {
                       Quay Về Trang Chủ
                     </Link>
                   </div>
-                ) : isUnreleasedMovie ? (
+                ) : isUnreleasedMovie && !isResolvingPrimary ? (
                   <UnreleasedMovieOverlay
                     movie={movie}
                     isFavorite={isFav}
                     onToggleFavorite={handleToggleFavorite}
                   />
-                ) : playerMode === 'm3u8' ? (
-                  <SafePlayerErrorBoundary
-                    onReset={() => {
-                      setPlayerMode('m3u8');
-                      const ep = currentServerData?.[currentEpisodeIndex?.server || 0]?.server_data?.[currentEpisodeIndex?.episode || 0];
-                      if (ep?.link_m3u8) setCurrentEpisodeUrl(ep.link_m3u8);
-                    }}
-                  >
-                    <VideoPlayer
-                      videoUrl={currentEpisodeUrl}
-                      autoplay={true}
-                      poster={normalizeImageUrl(movie.thumb_url || movie.poster_url)}
-                      initialTime={resumeTime}
-                      movieName={movie.name}
-                      episodeName={currentServerData?.[currentEpisodeIndex?.server || 0]?.server_data?.[currentEpisodeIndex?.episode || 0]?.name}
-                      movieSlug={movie.slug}
-                      onProgress={handleProgress}
-                      hasNextEpisode={hasNextEpisode()}
-                      onNextEpisode={handleNextEpisode}
-                      onEnded={handleEnded}
-                      onFullscreenChange={setIsPlayerFullscreen}
-                      hasAlternativeServer={false}
+                ) : (() => {
+                  const activeEpObj =
+                    currentServerData?.[currentEpisodeIndex?.server || 0]?.server_data?.[
+                      currentEpisodeIndex?.episode || 0
+                    ];
+                  const playableM3u8Url = extractPlayableM3u8(activeEpObj, currentEpisodeUrl);
+                  const posterImg = normalizeImageUrl(movie.thumb_url || movie.poster_url);
+
+                  if (isResolvingPrimary && !playableM3u8Url) {
+                    return (
+                      <div className="relative w-full h-full aspect-video bg-black flex flex-col items-center justify-center overflow-hidden select-none">
+                        {posterImg && (
+                          <img
+                            src={posterImg}
+                            alt={movie.name || "Movie Poster"}
+                            className="w-full h-full object-cover filter blur-md scale-105 opacity-30 pointer-events-none absolute inset-0"
+                          />
+                        )}
+                        <div className="absolute top-3.5 right-4 z-20 text-[11px] sm:text-xs font-black tracking-widest text-white/50 uppercase font-mono">
+                          HIPHIM<span className="text-brand-green">.</span>
+                        </div>
+                        <div className="relative z-10 flex flex-col items-center justify-center">
+                          <Loader2 className="w-11 h-11 sm:w-12 sm:h-12 text-brand-green animate-spin mb-3" />
+                          <p className="text-white/90 text-sm font-bold tracking-wide">
+                            Đang tải video...
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Use default Hi Phim <VideoPlayer> UI for BOTH "Mặc định" and "Dự phòng" whenever an m3u8 stream is available
+                  if (playableM3u8Url) {
+                    return (
+                      <SafePlayerErrorBoundary
+                        onReset={() => {
+                          setPlayerMode('m3u8');
+                          const ep = currentServerData?.[currentEpisodeIndex?.server || 0]?.server_data?.[currentEpisodeIndex?.episode || 0];
+                          const m3u8 = extractPlayableM3u8(ep);
+                          if (m3u8) setCurrentEpisodeUrl(m3u8);
+                        }}
+                      >
+                        <VideoPlayer
+                          key={`${playerMode}-${playableM3u8Url}`}
+                          videoUrl={playableM3u8Url}
+                          autoplay={true}
+                          poster={posterImg}
+                          initialTime={resumeTime}
+                          movieName={movie.name}
+                          episodeName={activeEpObj?.name}
+                          movieSlug={movie.slug}
+                          onProgress={handleProgress}
+                          hasNextEpisode={hasNextEpisode()}
+                          onNextEpisode={handleNextEpisode}
+                          onEnded={handleEnded}
+                          onFullscreenChange={setIsPlayerFullscreen}
+                          hasAlternativeServer={false}
+                          onReportError={() => setShowReportModal(true)}
+                        />
+                      </SafePlayerErrorBoundary>
+                    );
+                  }
+
+                  return (
+                    <EmbedPlayer
+                      videoUrl={
+                        activeEpObj?.link_embed ||
+                        (currentEpisodeUrl.includes('.m3u8')
+                          ? `https://player.phimapi.com/player/?url=${encodeURIComponent(currentEpisodeUrl)}`
+                          : currentEpisodeUrl)
+                      }
                       onReportError={() => setShowReportModal(true)}
+                      movieName={movie.name}
+                      episodeName={activeEpObj?.name}
+                      hasAlternativeServer={false}
                     />
-                  </SafePlayerErrorBoundary>
-                ) : (
-                  <EmbedPlayer
-                    videoUrl={
-                      (currentEpisodeIndex && currentServerData?.[currentEpisodeIndex.server]?.server_data?.[currentEpisodeIndex.episode]?.link_embed) ||
-                      (currentEpisodeUrl.includes('.m3u8')
-                        ? `https://player.phimapi.com/player/?url=${encodeURIComponent(currentEpisodeUrl)}`
-                        : currentEpisodeUrl)
-                    }
-                    onReportError={() => setShowReportModal(true)}
-                    movieName={movie.name}
-                    episodeName={currentServerData?.[currentEpisodeIndex?.server || 0]?.server_data?.[currentEpisodeIndex?.episode || 0]?.name}
-                    hasAlternativeServer={false}
-                  />
-                )}
+                  );
+                })()}
               </CardContent>
             </Card>
           </div>
