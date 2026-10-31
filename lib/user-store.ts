@@ -208,9 +208,26 @@ async function writePersistentUser(user: User): Promise<boolean> {
   }
 
   // 2. Fallback to PostgreSQL
-  if (!(await ensureVercelDatabase())) return false;
-  await vercelSql!`INSERT INTO hiphim_users (email, id, data) VALUES (${user.email}, ${user.id}, ${JSON.stringify(user)}::jsonb)
-    ON CONFLICT (email) DO UPDATE SET id = EXCLUDED.id, data = EXCLUDED.data`;
+  if (await ensureVercelDatabase()) {
+    try {
+      await vercelSql!`INSERT INTO hiphim_users (email, id, data) VALUES (${user.email}, ${user.id}, ${JSON.stringify(user)}::jsonb)
+        ON CONFLICT (email) DO UPDATE SET id = EXCLUDED.id, data = EXCLUDED.data`;
+      return true;
+    } catch (err) {
+      console.warn("[Postgres] Error writing user, falling back to local file:", err);
+    }
+  }
+
+  // 3. Fallback to local users.json
+  updateUser(user.id, {
+    favorites: user.favorites,
+    history: user.history,
+    isLocked: user.isLocked,
+    bannedUntil: user.bannedUntil,
+    banReason: user.banReason,
+    role: user.role,
+    isVerified: user.isVerified,
+  });
   return true;
 }
 
@@ -386,38 +403,112 @@ export async function syncUserDataPersistent(
   localHistory?: any[],
   mode: "merge" | "replace" = "merge"
 ): Promise<{ favorites: any[]; history: any[] }> {
-  if (!(await ensureVercelDatabase())) return syncUserData(userId, localFavorites, localHistory, mode);
-
   const user = await findUserByIdPersistent(userId);
   if (!user) return { favorites: localFavorites || [], history: localHistory || [] };
 
-  let mergedFavorites = user.favorites || [];
-  let mergedHistory = user.history || [];
-  if (mode === "replace") {
-    if (Array.isArray(localFavorites)) mergedFavorites = localFavorites;
-    if (Array.isArray(localHistory)) mergedHistory = localHistory;
-  } else {
+  const dedupeAndSortFavorites = (list: any[]) => {
     const favMap = new Map<string, any>();
-    [...(user.favorites || []), ...(localFavorites || [])].forEach((favorite) => {
-      if (favorite?.slug) favMap.set(favorite.slug, favorite);
-    });
-    mergedFavorites = Array.from(favMap.values());
+    for (const fav of list) {
+      const slug = (fav?.slug || fav?.movie?.slug || "").trim();
+      if (!slug) continue;
+      const existing = favMap.get(slug);
+      const addedAt = Number(fav.addedAt || fav.timestamp || existing?.addedAt || Date.now());
+      favMap.set(slug, {
+        ...(existing || {}),
+        ...fav,
+        slug,
+        addedAt,
+      });
+    }
+    return Array.from(favMap.values())
+      .sort((a, b) => (Number(b.addedAt) || 0) - (Number(a.addedAt) || 0))
+      .slice(0, 200);
+  };
 
+  const dedupeAndSortHistory = (list: any[]) => {
     const historyMap = new Map<string, any>();
-    [...(user.history || []), ...(localHistory || [])].forEach((historyItem) => {
-      if (historyItem?.slug) {
-        const existing = historyMap.get(historyItem.slug);
-        const itemTime = historyItem.watchedAt || historyItem.timestamp || 0;
-        const existingTime = existing ? (existing.watchedAt || existing.timestamp || 0) : 0;
-        if (!existing || itemTime > existingTime) historyMap.set(historyItem.slug, historyItem);
+    for (const item of list) {
+      const slug = (item?.slug || item?.movieSlug || "").trim();
+      if (!slug) continue;
+      const existing = historyMap.get(slug);
+      const itemTime = Number(item.watchedAt || item.timestamp || 0);
+      const existingTime = existing ? Number(existing.watchedAt || existing.timestamp || 0) : 0;
+      const isSameEp =
+        existing &&
+        (item.episodeIndex === undefined ||
+          existing.episodeIndex === undefined ||
+          item.episodeIndex === existing.episodeIndex);
+
+      if (!existing || itemTime >= existingTime) {
+        historyMap.set(slug, {
+          ...(existing || {}),
+          ...item,
+          slug,
+          currentTime:
+            Number(item.currentTime) > 0
+              ? Number(item.currentTime)
+              : isSameEp
+              ? Number(existing?.currentTime) || 0
+              : 0,
+          duration:
+            Number(item.duration) > 0
+              ? Number(item.duration)
+              : isSameEp
+              ? Number(existing?.duration) || 0
+              : 0,
+          watchedAt: Math.max(itemTime, existingTime) || Date.now(),
+        });
+      } else {
+        historyMap.set(slug, {
+          ...item,
+          ...existing,
+          slug,
+          currentTime:
+            Number(existing.currentTime) > 0
+              ? Number(existing.currentTime)
+              : isSameEp
+              ? Number(item.currentTime) || 0
+              : 0,
+          duration:
+            Number(existing.duration) > 0
+              ? Number(existing.duration)
+              : isSameEp
+              ? Number(item.duration) || 0
+              : 0,
+          watchedAt: Math.max(itemTime, existingTime) || Date.now(),
+        });
       }
-    });
-    mergedHistory = Array.from(historyMap.values()).sort((a, b) =>
-      (b.watchedAt || b.timestamp || 0) - (a.watchedAt || a.timestamp || 0)
-    );
+    }
+    return Array.from(historyMap.values())
+      .sort((a, b) => (Number(b.watchedAt || b.timestamp) || 0) - (Number(a.watchedAt || a.timestamp) || 0))
+      .slice(0, 50);
+  };
+
+  let mergedFavorites = Array.isArray(user.favorites) ? user.favorites : [];
+  let mergedHistory = Array.isArray(user.history) ? user.history : [];
+
+  if (mode === "replace") {
+    if (Array.isArray(localFavorites)) {
+      mergedFavorites = dedupeAndSortFavorites(localFavorites);
+    }
+    if (Array.isArray(localHistory)) {
+      mergedHistory = dedupeAndSortHistory(localHistory);
+    }
+  } else {
+    if (Array.isArray(localFavorites)) {
+      mergedFavorites = dedupeAndSortFavorites([...mergedFavorites, ...localFavorites]);
+    }
+    if (Array.isArray(localHistory)) {
+      mergedHistory = dedupeAndSortHistory([...mergedHistory, ...localHistory]);
+    }
   }
 
-  const updated = { ...user, favorites: mergedFavorites, history: mergedHistory, updatedAt: new Date().toISOString() };
+  const updated: User = {
+    ...user,
+    favorites: mergedFavorites,
+    history: mergedHistory,
+    updatedAt: new Date().toISOString(),
+  };
   await writePersistentUser(updated);
   return { favorites: mergedFavorites, history: mergedHistory };
 }

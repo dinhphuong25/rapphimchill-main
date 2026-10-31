@@ -3,7 +3,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { toast } from "sonner";
 import { Lock, ShieldAlert, Clock } from "lucide-react";
-import { STORAGE_KEYS } from "@/hooks/useLocalStorage";
+import {
+  STORAGE_KEYS,
+  hydrateGlobalFavorites,
+  hydrateGlobalHistory,
+} from "@/hooks/useLocalStorage";
 
 export interface UserProfile {
   id: string;
@@ -218,6 +222,8 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
   // Refs to track previous ban state for change detection
   const prevBanStateRef = useRef<{ isLocked: boolean; bannedUntil: number }>({ isLocked: false, bannedUntil: 0 });
   const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const favMutationVersionRef = useRef<number>(0);
+  const histMutationVersionRef = useRef<number>(0);
 
   // Restore cached profile on client mount for 0ms instant display (no skeleton delay)
   useEffect(() => {
@@ -235,10 +241,41 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateServerData = useCallback(
     async (data: { favorites?: any[]; history?: any[] }) => {
+      const hasFavUpdate = Array.isArray(data.favorites);
+      const hasHistUpdate = Array.isArray(data.history);
+      if (!hasFavUpdate && !hasHistUpdate) return;
+
+      const reqFavVer = hasFavUpdate ? ++favMutationVersionRef.current : favMutationVersionRef.current;
+      const reqHistVer = hasHistUpdate ? ++histMutationVersionRef.current : histMutationVersionRef.current;
+
+      // 1. Optimistic immediate local state update (0ms latency)
+      if (hasFavUpdate) {
+        hydrateGlobalFavorites(data.favorites!);
+      }
+      if (hasHistUpdate) {
+        hydrateGlobalHistory(data.history!);
+      }
+
+      setUser((prev) => {
+        if (!prev) return null;
+        const next = {
+          ...prev,
+          favorites: hasFavUpdate ? data.favorites! : prev.favorites,
+          history: hasHistUpdate ? data.history! : prev.history,
+          favoritesCount: hasFavUpdate ? data.favorites!.length : prev.favoritesCount,
+          historyCount: hasHistUpdate ? data.history!.length : prev.historyCount,
+        };
+        try {
+          localStorage.setItem(CACHED_USER_KEY, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      // 2. Persist to server (Cloudflare D1 / Postgres)
       try {
         const payload: any = { mode: "replace" };
-        if (Array.isArray(data.favorites)) payload.favorites = data.favorites;
-        if (Array.isArray(data.history)) payload.history = data.history;
+        if (hasFavUpdate) payload.favorites = data.favorites;
+        if (hasHistUpdate) payload.history = data.history;
 
         const res = await fetch("/api/auth/sync", {
           method: "POST",
@@ -248,28 +285,32 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
         if (res.ok) {
           const resData = await res.json();
           if (resData.success) {
-            if (Array.isArray(resData.favorites)) {
-              localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify(resData.favorites));
-            }
-            if (Array.isArray(resData.history)) {
-              localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(resData.history));
-            }
-            window.dispatchEvent(new Event("storage"));
+            const canApplyFav = hasFavUpdate && favMutationVersionRef.current === reqFavVer && Array.isArray(resData.favorites);
+            const canApplyHist = hasHistUpdate && histMutationVersionRef.current === reqHistVer && Array.isArray(resData.history);
 
-            setUser((prev) => {
-              if (!prev) return null;
-              const next = {
-                ...prev,
-                favorites: resData.favorites || prev.favorites,
-                history: resData.history || prev.history,
-                favoritesCount: Array.isArray(resData.favorites) ? resData.favorites.length : prev.favoritesCount,
-                historyCount: Array.isArray(resData.history) ? resData.history.length : prev.historyCount,
-              };
-              try {
-                localStorage.setItem(CACHED_USER_KEY, JSON.stringify(next));
-              } catch {}
-              return next;
-            });
+            if (canApplyFav) {
+              hydrateGlobalFavorites(resData.favorites);
+            }
+            if (canApplyHist) {
+              hydrateGlobalHistory(resData.history);
+            }
+
+            if (canApplyFav || canApplyHist) {
+              setUser((prev) => {
+                if (!prev) return null;
+                const next = {
+                  ...prev,
+                  favorites: canApplyFav ? resData.favorites : prev.favorites,
+                  history: canApplyHist ? resData.history : prev.history,
+                  favoritesCount: canApplyFav ? resData.favorites.length : prev.favoritesCount,
+                  historyCount: canApplyHist ? resData.history.length : prev.historyCount,
+                };
+                try {
+                  localStorage.setItem(CACHED_USER_KEY, JSON.stringify(next));
+                } catch {}
+                return next;
+              });
+            }
           }
         }
       } catch (err) {
@@ -281,6 +322,9 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
 
   const syncWithServer = useCallback(async () => {
     try {
+      const reqFavVer = favMutationVersionRef.current;
+      const reqHistVer = histMutationVersionRef.current;
+
       let localFavorites = [];
       let localHistory = [];
       try {
@@ -299,22 +343,24 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         if (data.success) {
-          if (Array.isArray(data.favorites)) {
-            localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify(data.favorites));
+          const canApplyFav = favMutationVersionRef.current === reqFavVer && Array.isArray(data.favorites);
+          const canApplyHist = histMutationVersionRef.current === reqHistVer && Array.isArray(data.history);
+
+          if (canApplyFav) {
+            hydrateGlobalFavorites(data.favorites);
           }
-          if (Array.isArray(data.history)) {
-            localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(data.history));
+          if (canApplyHist) {
+            hydrateGlobalHistory(data.history);
           }
-          window.dispatchEvent(new Event("storage"));
 
           setUser((prev) => {
             if (!prev) return null;
             const next = {
               ...prev,
-              favorites: data.favorites || prev.favorites,
-              history: data.history || prev.history,
-              favoritesCount: Array.isArray(data.favorites) ? data.favorites.length : prev.favoritesCount,
-              historyCount: Array.isArray(data.history) ? data.history.length : prev.historyCount,
+              favorites: canApplyFav ? data.favorites : prev.favorites,
+              history: canApplyHist ? data.history : prev.history,
+              favoritesCount: canApplyFav ? data.favorites.length : prev.favoritesCount,
+              historyCount: canApplyHist ? data.history.length : prev.historyCount,
             };
             try {
               localStorage.setItem(CACHED_USER_KEY, JSON.stringify(next));
@@ -335,11 +381,13 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" },
     });
     setUser(null);
+    favMutationVersionRef.current++;
+    histMutationVersionRef.current++;
     try {
       localStorage.removeItem(CACHED_USER_KEY);
     } catch {}
-    localStorage.removeItem(STORAGE_KEYS.FAVORITES);
-    localStorage.removeItem(STORAGE_KEYS.HISTORY);
+    hydrateGlobalFavorites([]);
+    hydrateGlobalHistory([]);
     localStorage.removeItem("continue_watching_list");
     if (oldUserId) {
       localStorage.removeItem(`continue_watching_${oldUserId}`);
@@ -360,11 +408,22 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchCurrentUser = useCallback(async () => {
     try {
-      // Don't flash blank skeleton if we already have a cached profile on screen
-      const hasCached = typeof window !== "undefined" && Boolean(localStorage.getItem(CACHED_USER_KEY));
-      if (!hasCached) {
+      let cachedUserId = "";
+      try {
+        const rawCached = typeof window !== "undefined" ? localStorage.getItem(CACHED_USER_KEY) : null;
+        if (rawCached) {
+          const parsedCached = JSON.parse(rawCached);
+          cachedUserId = parsedCached?.id || "";
+        }
+      } catch {}
+
+      if (!cachedUserId) {
         setLoading(true);
       }
+
+      const initFavVer = favMutationVersionRef.current;
+      const initHistVer = histMutationVersionRef.current;
+
       const res = await fetch("/api/auth/me", {
         cache: "no-store",
         headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" },
@@ -372,59 +431,79 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         if (data.authenticated && data.user) {
-          setUser(data.user);
-          try {
-            localStorage.setItem(CACHED_USER_KEY, JSON.stringify(data.user));
-          } catch {}
           prevBanStateRef.current = {
             isLocked: Boolean(data.user.isLocked),
             bannedUntil: Number(data.user.bannedUntil) || 0,
           };
+
           const serverFavorites = Array.isArray(data.user.favorites) ? data.user.favorites : [];
           const serverHistory = Array.isArray(data.user.history) ? data.user.history : [];
 
+          let finalFavorites = serverFavorites;
+          let finalHistory = serverHistory;
           let hasUnsyncedLocalData = false;
+
+          // Only merge local items if the cached session belonged to this exact same user ID
+          if (cachedUserId && cachedUserId === data.user.id) {
+            try {
+              const localFavRaw = localStorage.getItem(STORAGE_KEYS.FAVORITES);
+              const localHistRaw = localStorage.getItem(STORAGE_KEYS.HISTORY);
+              const localFavs = localFavRaw ? JSON.parse(localFavRaw) : [];
+              const localHist = localHistRaw ? JSON.parse(localHistRaw) : [];
+
+              const serverFavSlugs = new Set(
+                serverFavorites.map((f: any) => f?.slug || f?.movie?.slug).filter(Boolean)
+              );
+              const serverHistMap = new Map<string, any>(
+                serverHistory.map((h: any) => [h?.slug || h?.movieSlug, h])
+              );
+
+              if (Array.isArray(localFavs) && localFavs.length > 0) {
+                const unsyncedFavs = localFavs.filter((f: any) => {
+                  const s = f?.slug || f?.movie?.slug;
+                  return s && !serverFavSlugs.has(s);
+                });
+                if (unsyncedFavs.length > 0) {
+                  hasUnsyncedLocalData = true;
+                  finalFavorites = [...unsyncedFavs, ...serverFavorites];
+                }
+              }
+
+              if (Array.isArray(localHist) && localHist.length > 0) {
+                for (const lh of localHist) {
+                  const s = lh?.slug || lh?.movieSlug;
+                  if (!s) continue;
+                  const sh = serverHistMap.get(s);
+                  const lTime = Number(lh?.watchedAt || lh?.timestamp || 0);
+                  const sTime = sh ? Number(sh?.watchedAt || sh?.timestamp || 0) : 0;
+                  if (!sh || lTime > sTime) {
+                    hasUnsyncedLocalData = true;
+                  }
+                }
+                if (hasUnsyncedLocalData) {
+                  finalHistory = [...localHist, ...serverHistory];
+                }
+              }
+            } catch {}
+          }
+
+          if (favMutationVersionRef.current === initFavVer) {
+            hydrateGlobalFavorites(finalFavorites);
+          }
+          if (histMutationVersionRef.current === initHistVer) {
+            hydrateGlobalHistory(finalHistory);
+          }
+
+          const hydratedUser = {
+            ...data.user,
+            favorites: favMutationVersionRef.current === initFavVer ? finalFavorites : data.user.favorites,
+            history: histMutationVersionRef.current === initHistVer ? finalHistory : data.user.history,
+          };
+          setUser(hydratedUser);
           try {
-            const localFavRaw = localStorage.getItem(STORAGE_KEYS.FAVORITES);
-            const localHistRaw = localStorage.getItem(STORAGE_KEYS.HISTORY);
-            const localFavs = localFavRaw ? JSON.parse(localFavRaw) : [];
-            const localHist = localHistRaw ? JSON.parse(localHistRaw) : [];
-
-            const serverFavSlugs = new Set(
-              serverFavorites.map((f: any) => f?.slug || f?.movie?.slug).filter(Boolean)
-            );
-            const serverHistSlugs = new Set(
-              serverHistory.map((h: any) => h?.slug || h?.movieSlug).filter(Boolean)
-            );
-
-            if (
-              Array.isArray(localFavs) &&
-              localFavs.some((f: any) => {
-                const s = f?.slug || f?.movie?.slug;
-                return s && !serverFavSlugs.has(s);
-              })
-            ) {
-              hasUnsyncedLocalData = true;
-            }
-            if (
-              !hasUnsyncedLocalData &&
-              Array.isArray(localHist) &&
-              localHist.some((h: any) => {
-                const s = h?.slug || h?.movieSlug;
-                return s && !serverHistSlugs.has(s);
-              })
-            ) {
-              hasUnsyncedLocalData = true;
-            }
+            localStorage.setItem(CACHED_USER_KEY, JSON.stringify(hydratedUser));
           } catch {}
 
-          if (serverFavorites.length > 0) {
-            localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify(serverFavorites));
-          }
-          if (serverHistory.length > 0) {
-            localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(serverHistory));
-          }
-          window.dispatchEvent(new Event("storage"));
           if (hasUnsyncedLocalData) {
             syncWithServer();
           }
@@ -433,20 +512,18 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
           try {
             localStorage.removeItem(CACHED_USER_KEY);
           } catch {}
-          localStorage.removeItem(STORAGE_KEYS.FAVORITES);
-          localStorage.removeItem(STORAGE_KEYS.HISTORY);
+          hydrateGlobalFavorites([]);
+          hydrateGlobalHistory([]);
           localStorage.removeItem("continue_watching_list");
-          window.dispatchEvent(new Event("storage"));
         }
       } else {
         setUser(null);
         try {
           localStorage.removeItem(CACHED_USER_KEY);
         } catch {}
-        localStorage.removeItem(STORAGE_KEYS.FAVORITES);
-        localStorage.removeItem(STORAGE_KEYS.HISTORY);
+        hydrateGlobalFavorites([]);
+        hydrateGlobalHistory([]);
         localStorage.removeItem("continue_watching_list");
-        window.dispatchEvent(new Event("storage"));
       }
     } catch (err) {
       console.error("Fetch current user failed:", err);
@@ -630,14 +707,8 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       };
       setIsAuthModalOpen(false);
 
-      if (Array.isArray(data.user?.favorites)) {
-        localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify(data.user.favorites));
-      }
-      if (Array.isArray(data.user?.history)) {
-        localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(data.user.history));
-      }
-      window.dispatchEvent(new Event("storage"));
-      syncWithServer();
+      hydrateGlobalFavorites(Array.isArray(data.user?.favorites) ? data.user.favorites : []);
+      hydrateGlobalHistory(Array.isArray(data.user?.history) ? data.user.history : []);
 
       const isUserAdmin =
         data.user?.role === "admin" ||
@@ -742,14 +813,8 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       toast.success("Kích hoạt tài khoản thành công!");
-      if (Array.isArray(data.user?.favorites)) {
-        localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify(data.user.favorites));
-      }
-      if (Array.isArray(data.user?.history)) {
-        localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(data.user.history));
-      }
-      window.dispatchEvent(new Event("storage"));
-      syncWithServer();
+      hydrateGlobalFavorites(Array.isArray(data.user?.favorites) ? data.user.favorites : []);
+      hydrateGlobalHistory(Array.isArray(data.user?.history) ? data.user.history : []);
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err?.message || "Lỗi kết nối máy chủ" };
